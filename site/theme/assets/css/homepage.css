@@ -1,0 +1,229 @@
+/*
+  Molosoc — homepage-only layout.
+  Structure follows the 9-beat storytelling arc in
+  docs/molosoc-design-direction.md, mapped against the locked copy in
+  content/molosoc-site/01-homepage/homepage-copy.md — see
+  docs/homepage-story-mapping.md for exactly which beats map to which
+  written section, and the two beats (3, 6) that don't have 1:1 copy.
+*/
+
+.molosoc-home-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-s) var(--section-padding-x);
+  mix-blend-mode: difference;
+}
+
+.molosoc-home-header img {
+  height: 22px;
+  width: auto;
+  filter: invert(1);
+}
+
+/* ---------- Beat 1 — Hero / emotional opening ---------- */
+
+.molosoc-hero {
+  position: relative;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.molosoc-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.molosoc-hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.06);
+  transition: transform 6s var(--motion-ease);
+}
+
+.molosoc-hero.is-visible .molosoc-hero__media img {
+  transform: scale(1);
+}
+
+.molosoc-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(12,17,21,0.05) 0%, rgba(12,17,21,0.55) 100%);
+}
+
+.molosoc-hero__content {
+  position: relative;
+  z-index: 2;
+  padding: var(--space-2xl) var(--section-padding-x) var(--space-xl);
+  color: var(--color-white);
+  max-width: 46rem;
+}
+
+.molosoc-hero__content h1 {
+  color: var(--color-white);
+}
+
+.molosoc-hero__content p {
+  color: rgba(255,255,255,0.86);
+  margin-top: var(--space-m);
+  font-size: var(--text-body-l);
+}
+
+.molosoc-hero__scroll-cue {
+  position: absolute;
+  bottom: var(--space-m);
+  right: var(--section-padding-x);
+  z-index: 2;
+  color: var(--color-white);
+  font-size: var(--text-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+/* ---------- Beat 2 — The problem ("Why foot care never sticks") ---------- */
+
+.molosoc-problem__list {
+  display: grid;
+  gap: var(--space-l);
+  margin-top: var(--space-l);
+}
+
+.molosoc-problem__item {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: var(--space-l);
+  align-items: center;
+}
+
+.molosoc-problem__item:nth-child(even) {
+  direction: rtl;
+}
+
+.molosoc-problem__item:nth-child(even) > * {
+  direction: ltr;
+}
+
+@media (max-width: 860px) {
+  .molosoc-problem__item,
+  .molosoc-problem__item:nth-child(even) {
+    grid-template-columns: 1fr;
+    direction: ltr;
+  }
+}
+
+.molosoc-problem__item h3 {
+  font-size: var(--text-display-m);
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-problem__item p {
+  color: var(--color-text-muted);
+}
+
+.molosoc-problem__media {
+  aspect-ratio: 4 / 5;
+}
+
+/* ---------- Beats 4+5 — How Molosoc works / benefits (message hierarchy) ---------- */
+
+.molosoc-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+  counter-reset: pillar;
+}
+
+@media (max-width: 960px) {
+  .molosoc-pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .molosoc-pillars {
+    grid-template-columns: 1fr;
+  }
+}
+
+.molosoc-pillar {
+  padding-top: var(--space-m);
+  border-top: 1px solid rgba(12, 17, 21, 0.14);
+}
+
+.molosoc-pillar::before {
+  counter-increment: pillar;
+  content: counter(pillar, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-accent);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.molosoc-pillar p {
+  margin-top: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
+/* ---------- Beat 6 — Social proof ---------- */
+
+.molosoc-proof-section .molosoc-media {
+  aspect-ratio: 3 / 2;
+}
+
+/* ---------- Beat 7 — Product moment ---------- */
+
+.molosoc-product-cta {
+  text-align: center;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.molosoc-product-cta .molosoc-btn {
+  margin-top: var(--space-m);
+}
+
+/* ---------- Beat 8 — Educational content (topic grid) — see components.css ---------- */
+
+/* ---------- Beat 9 — Final CTA ---------- */
+
+.molosoc-final-cta {
+  text-align: center;
+  color: var(--color-white);
+  background: var(--color-ink);
+}
+
+.molosoc-final-cta h2 {
+  color: var(--color-white);
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.molosoc-final-cta p {
+  color: rgba(255,255,255,0.72);
+  margin: var(--space-m) auto 0;
+  max-width: 30rem;
+}
+
+.molosoc-final-cta .molosoc-btn {
+  margin-top: var(--space-l);
+  background: var(--color-white);
+  color: var(--color-ink);
+}

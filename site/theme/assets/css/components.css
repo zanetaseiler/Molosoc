@@ -1,0 +1,179 @@
+/*
+  Molosoc — reusable components.
+  These are shared across page types (homepage now; article/category/product
+  templates later), not homepage-specific. Homepage-only layout lives in
+  homepage.css.
+*/
+
+/* ---------- Section wrapper (the "one room" unit) ---------- */
+
+.molosoc-section {
+  position: relative;
+  padding: var(--section-padding-y) var(--section-padding-x);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.molosoc-section--full {
+  min-height: 100vh;
+}
+
+.molosoc-section--bg-cream {
+  background: var(--color-bg);
+}
+
+.molosoc-section--bg-deep {
+  background: var(--color-bg-alt);
+}
+
+.molosoc-section__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.molosoc-section__eyebrow {
+  margin-bottom: var(--space-s);
+}
+
+.molosoc-section__lede {
+  margin-top: var(--space-m);
+  font-size: var(--text-body-l);
+  color: var(--color-text-muted);
+  max-width: 34rem;
+}
+
+/* ---------- Buttons / CTA ---------- */
+
+.molosoc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2xs);
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 1.05em 2em;
+  border-radius: var(--radius-s);
+  border: none;
+  cursor: pointer;
+  transition: transform var(--motion-duration-s) var(--motion-ease),
+              box-shadow var(--motion-duration-s) var(--motion-ease),
+              opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-btn:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-2px);
+}
+
+.molosoc-btn:active {
+  transform: translateY(0);
+  opacity: 0.9;
+}
+
+.molosoc-btn--ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid currentColor;
+}
+
+/* ---------- Image reveal (motion.js toggles .is-visible) ---------- */
+
+.molosoc-reveal {
+  opacity: 0;
+  transform: translateY(var(--motion-distance)) scale(0.98);
+  transition: opacity var(--motion-duration-l) var(--motion-ease),
+              transform var(--motion-duration-l) var(--motion-ease);
+  will-change: opacity, transform;
+}
+
+.molosoc-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.molosoc-media {
+  overflow: hidden;
+  border-radius: var(--radius-m);
+}
+
+.molosoc-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--motion-duration-l) var(--motion-ease);
+}
+
+.molosoc-media:hover img {
+  transform: scale(1.03);
+}
+
+/* ---------- Topic / pillar link card (educational-content beat) ---------- */
+
+.molosoc-topic-grid {
+  display: grid;
+  /* 3 columns at typical desktop widths so 5 items sit 3+2, not a lonely
+     4th-row orphan — deliberate choice, not a CSS default. */
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--space-m) var(--space-l);
+  margin-top: var(--space-l);
+}
+
+.molosoc-topic-card {
+  display: block;
+  text-decoration: none;
+  color: var(--color-text);
+  padding: var(--space-m) 0;
+  border-top: 1px solid rgba(12, 17, 21, 0.12);
+  transition: opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-topic-card:hover {
+  opacity: 0.6;
+}
+
+.molosoc-topic-card h3 {
+  font-size: var(--text-display-m);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-topic-card p {
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
+/* ---------- Proof / social-proof block ---------- */
+
+.molosoc-proof {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: var(--space-l);
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .molosoc-proof {
+    grid-template-columns: 1fr;
+  }
+}
+
+.molosoc-proof__caption {
+  font-family: var(--font-accent);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin-top: var(--space-xs);
+}

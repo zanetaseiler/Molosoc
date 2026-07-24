@@ -1,0 +1,94 @@
+/* Molosoc — base reset + typography, built on tokens.css */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+picture {
+  max-width: 100%;
+  display: block;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  color: var(--color-text);
+  line-height: var(--leading-tight);
+  margin: 0;
+  font-weight: 400;
+}
+
+h1 { font-size: var(--text-display-xl); }
+h2 { font-size: var(--text-display-l); }
+h3 { font-size: var(--text-display-m); }
+
+p {
+  margin: 0;
+  max-width: var(--content-max-width);
+}
+
+a {
+  color: inherit;
+}
+
+.molosoc-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.molosoc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Skip link — accessibility requirement per docs/molosoc-design-direction.md */
+.molosoc-skip-link {
+  position: absolute;
+  left: -999px;
+  top: auto;
+  z-index: 100;
+  background: var(--color-ink);
+  color: var(--color-white);
+  padding: var(--space-xs) var(--space-s);
+  border-radius: var(--radius-s);
+}
+
+.molosoc-skip-link:focus {
+  left: var(--space-s);
+  top: var(--space-s);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
