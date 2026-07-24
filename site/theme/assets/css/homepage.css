@@ -56,7 +56,17 @@
 .molosoc-hero__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(12,17,21,0.05) 0%, rgba(12,17,21,0.55) 100%);
+  /* Steeper ramp than a plain linear fade: stays near-transparent over the
+     top ~40% (so the photo reads clearly) then deepens fast under the text
+     zone, so white text meets AA contrast regardless of what's in the photo
+     behind it — a flat low-alpha gradient can't guarantee that. */
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.02) 0%,
+    rgba(12, 17, 21, 0.08) 40%,
+    rgba(12, 17, 21, 0.55) 65%,
+    rgba(12, 17, 21, 0.82) 100%
+  );
 }
 
 .molosoc-hero__content {
@@ -82,19 +92,57 @@
   bottom: var(--space-m);
   right: var(--section-padding-x);
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
   color: var(--color-white);
   font-size: var(--text-label);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.75;
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-hero__scroll-cue:hover,
+.molosoc-hero__scroll-cue:focus-visible {
+  opacity: 1;
+}
+
+.molosoc-hero__scroll-cue::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 28px;
+  background: currentColor;
+  opacity: 0.6;
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform var(--motion-duration-l) var(--motion-ease) 200ms;
+}
+
+.molosoc-hero.is-visible .molosoc-hero__scroll-cue::after {
+  transform: scaleY(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-hero__scroll-cue::after {
+    transform: scaleY(1);
+    transition: none;
+  }
 }
 
 /* ---------- Beat 2 — The problem ("Why foot care never sticks") ---------- */
 
 .molosoc-problem__list {
   display: grid;
-  gap: var(--space-l);
-  margin-top: var(--space-l);
+  /* Generous gap between items — per docs/molosoc-design-direction.md each
+     screen should read as one idea, not a stacked list. This is one section
+     rather than four full-viewport ones (a genuine full-viewport-per-item
+     treatment made the page overlong for a 4-point list), but the wide gap
+     keeps each point feeling like its own beat rather than a dense block. */
+  gap: var(--space-2xl);
+  margin-top: var(--space-xl);
 }
 
 .molosoc-problem__item {

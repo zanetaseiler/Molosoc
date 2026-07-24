@@ -36,7 +36,7 @@ defined( 'ABSPATH' ) || exit;
 <a class="molosoc-skip-link" href="#main"><?php esc_html_e( 'Skip to content', 'molosoc' ); ?></a>
 
 <header class="molosoc-home-header">
-	<img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php bloginfo( 'name' ); ?>">
+	<img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php bloginfo( 'name' ); ?>" loading="eager" decoding="async">
 </header>
 
 <main id="main">
@@ -44,7 +44,8 @@ defined( 'ABSPATH' ) || exit;
 	<section class="molosoc-hero">
 		<div class="molosoc-hero__media">
 			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_01_bathmat.jpg"
-				alt="<?php esc_attr_e( 'Bare feet resting on a soft bathmat in a sunlit bathroom', 'molosoc' ); ?>">
+				alt="<?php esc_attr_e( 'Bare feet resting on a soft bathmat in a sunlit bathroom', 'molosoc' ); ?>"
+				loading="eager" fetchpriority="high" decoding="async">
 		</div>
 		<div class="molosoc-hero__scrim"></div>
 		<div class="molosoc-hero__content">
@@ -52,12 +53,12 @@ defined( 'ABSPATH' ) || exit;
 			<h1><?php esc_html_e( "Foot care you'll actually stick with", 'molosoc' ); ?></h1>
 			<p><?php esc_html_e( 'Molosoc is a foot care brand built around one idea: most people already own a cream that works — they just never finish the routine around it. The cream is already in your drawer. Molosoc is the missing piece that helps it finish the job, one short session at a time.', 'molosoc' ); ?></p>
 		</div>
-		<div class="molosoc-hero__scroll-cue"><?php esc_html_e( 'Scroll', 'molosoc' ); ?></div>
+		<a class="molosoc-hero__scroll-cue" href="#story-start"><?php esc_html_e( 'Scroll', 'molosoc' ); ?></a>
 	</section>
 
-	<section class="molosoc-section molosoc-section--bg-cream">
+	<section id="story-start" class="molosoc-section molosoc-section--bg-cream">
 		<div class="molosoc-section__inner">
-			<p class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Why foot care never sticks', 'molosoc' ); ?></p>
+			<h2 class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Why foot care never sticks', 'molosoc' ); ?></h2>
 
 			<div class="molosoc-problem__list">
 				<div class="molosoc-problem__item molosoc-reveal">
@@ -67,7 +68,8 @@ defined( 'ABSPATH' ) || exit;
 					</div>
 					<div class="molosoc-media molosoc-problem__media">
 						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_02_cream_massage.jpg"
-							alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel', 'molosoc' ); ?>">
+							alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
 					</div>
 				</div>
 
@@ -78,7 +80,8 @@ defined( 'ABSPATH' ) || exit;
 					</div>
 					<div class="molosoc-media molosoc-problem__media">
 						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_03_bathroom_shelf.jpg"
-							alt="<?php esc_attr_e( 'Bathroom shelf with a few skincare bottles, lived-in feel', 'molosoc' ); ?>">
+							alt="<?php esc_attr_e( 'Bathroom shelf with a few skincare bottles, lived-in feel', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
 					</div>
 				</div>
 
@@ -96,7 +99,8 @@ defined( 'ABSPATH' ) || exit;
 					</div>
 					<div class="molosoc-media molosoc-problem__media">
 						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_04_couch_evening.jpg"
-							alt="<?php esc_attr_e( 'Feet up on a couch under a blanket, evening wind-down mood', 'molosoc' ); ?>">
+							alt="<?php esc_attr_e( 'Feet up on a couch under a blanket, evening wind-down mood', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
 					</div>
 				</div>
 			</div>
@@ -134,7 +138,8 @@ defined( 'ABSPATH' ) || exit;
 			<div class="molosoc-proof">
 				<div class="molosoc-media molosoc-reveal">
 					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Molosoc-Real-3-months-results.jpg"
-						alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters', 'molosoc' ); ?>">
+						alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters', 'molosoc' ); ?>"
+						loading="lazy" decoding="async">
 				</div>
 				<div class="molosoc-reveal">
 					<p class="molosoc-eyebrow"><?php esc_html_e( 'Real results', 'molosoc' ); ?></p>
@@ -156,7 +161,7 @@ defined( 'ABSPATH' ) || exit;
 
 	<section class="molosoc-section molosoc-section--bg-cream">
 		<div class="molosoc-section__inner">
-			<p class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Foot care, topic by topic', 'molosoc' ); ?></p>
+			<h2 class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Foot care, topic by topic', 'molosoc' ); ?></h2>
 
 			<div class="molosoc-topic-grid molosoc-reveal">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">
