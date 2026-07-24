@@ -1,0 +1,27 @@
+name: Deploy Theme to Staging
+
+# Auto-deploys the WP child theme to staging on every push to `staging`.
+# Only syncs site/theme/ — never the whole WordPress install, so uploads,
+# order data, and plugin files on the server are untouched.
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - "site/theme/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.STAGING_SFTP_HOST }}
+          username: ${{ secrets.STAGING_SFTP_USER }}
+          password: ${{ secrets.STAGING_SFTP_PASS }}
+          protocol: ftps
+          local-dir: site/theme/
+          server-dir: /wp-content/themes/molosoc/

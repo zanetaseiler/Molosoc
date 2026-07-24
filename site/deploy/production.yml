@@ -1,0 +1,28 @@
+name: Deploy Theme to Production
+
+# Requires manual approval in GitHub (Settings > Environments > production >
+# add required reviewers) before this runs — the human gate before anything
+# touches the live site.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/theme/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: ftps
+          local-dir: site/theme/
+          server-dir: /wp-content/themes/molosoc/

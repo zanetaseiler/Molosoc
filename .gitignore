@@ -1,0 +1,16 @@
+# Never commit secrets
+.env
+*.env
+secrets/
+
+# OS/editor noise
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Node (if theme build tooling gets added later)
+node_modules/
