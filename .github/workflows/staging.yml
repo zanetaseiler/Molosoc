@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to staging via SFTP
+      - name: DEBUG list FTP root (dry-run, no uploads)
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.STAGING_SFTP_HOST }}
@@ -25,4 +25,6 @@ jobs:
           password: ${{ secrets.STAGING_SFTP_PASS }}
           protocol: ftps
           local-dir: site/theme/
-          server-dir: /public_html/staging.molosoc.com/wp-content/themes/molosoc/
+          server-dir: ./
+          dry-run: true
+          log-level: verbose
