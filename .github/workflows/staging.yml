@@ -23,7 +23,7 @@ jobs:
           FTP_USER: ${{ secrets.STAGING_SFTP_USER }}
           FTP_PASS: ${{ secrets.STAGING_SFTP_PASS }}
         run: |
-          for path in "/" "/public_html/" "/public_html/staging.molosoc.com/" "/staging.molosoc.com/" "/domains/" "/www/"; do
+          for path in "/wp-content/themes/" "/public_html/staging.molosoc.com/wp-content/themes/" "/wp-content/" "/public_html/staging.molosoc.com/wp-content/"; do
             echo "=== $path ==="
             curl -s -k --ftp-ssl --list-only "ftp://${FTP_HOST}${path}" -u "${FTP_USER}:${FTP_PASS}" || echo "(failed/does not exist)"
             echo
