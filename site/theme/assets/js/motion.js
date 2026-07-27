@@ -13,8 +13,17 @@
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
+  // Note: .molosoc-feature-card (Beat 8 editorial cards) deliberately does
+  // NOT use this observer. Those cards live inside a pinned stage (see
+  // topics-portal.js) that stays in the viewport for the whole pinned
+  // scroll range, so a plain "is it intersecting" check would fire for
+  // all of them at once instead of one at a time — topics-portal.js
+  // toggles their shared .is-visible class itself, off ScrollTrigger's
+  // own scroll progress, instead.
+  var revealSelector = ".molosoc-reveal";
+
   if (prefersReduced) {
-    document.querySelectorAll(".molosoc-reveal").forEach(function (el) {
+    document.querySelectorAll(revealSelector).forEach(function (el) {
       el.classList.add("is-visible");
     });
     return;
@@ -32,7 +41,7 @@
     { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
   );
 
-  document.querySelectorAll(".molosoc-reveal").forEach(function (el) {
+  document.querySelectorAll(revealSelector).forEach(function (el) {
     revealObserver.observe(el);
   });
 

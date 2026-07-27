@@ -43,8 +43,8 @@ defined( 'ABSPATH' ) || exit;
 
 	<section class="molosoc-hero">
 		<div class="molosoc-hero__media">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_01_bathmat.jpg"
-				alt="<?php esc_attr_e( 'Bare feet resting on a soft bathmat in a sunlit bathroom', 'molosoc' ); ?>"
+			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_01_bathroom_bench-scaled.jpg"
+				alt="<?php esc_attr_e( 'Bare feet resting on a linen bench in a sunlit minimalist bathroom hallway', 'molosoc' ); ?>"
 				loading="eager" fetchpriority="high" decoding="async">
 		</div>
 		<div class="molosoc-hero__scrim"></div>
@@ -79,8 +79,8 @@ defined( 'ABSPATH' ) || exit;
 						<p><?php esc_html_e( 'Routines survive on less friction, not more willpower. That\'s the design brief here.', 'molosoc' ); ?></p>
 					</div>
 					<div class="molosoc-media molosoc-problem__media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_03_bathroom_shelf.jpg"
-							alt="<?php esc_attr_e( 'Bathroom shelf with a few skincare bottles, lived-in feel', 'molosoc' ); ?>"
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_03_livingroom_footrest-scaled.jpg"
+							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
 				</div>
@@ -98,8 +98,8 @@ defined( 'ABSPATH' ) || exit;
 						<p><?php esc_html_e( 'Ten quiet minutes, just for you — not for anyone watching.', 'molosoc' ); ?></p>
 					</div>
 					<div class="molosoc-media molosoc-problem__media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_04_couch_evening.jpg"
-							alt="<?php esc_attr_e( 'Feet up on a couch under a blanket, evening wind-down mood', 'molosoc' ); ?>"
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_04_bedroom_blanket-scaled.jpg"
+							alt="<?php esc_attr_e( 'Bare feet peeking out from under a cream blanket in a serene bedroom', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
 				</div>

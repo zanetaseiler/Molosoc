@@ -15,8 +15,8 @@
   --color-white: #ffffff;
 
   /* Warm brand surface (approximate — see note above) */
-  --color-cream: #f7f2ea;
-  --color-cream-deep: #efe6d8;
+  --color-cream: #f8f7f4;
+  --color-cream-deep: #efeee9;
   --color-accent-peach: #e3c4a8;
 
   /* Semantic aliases */
@@ -51,15 +51,15 @@
   --space-xs: 0.75rem;
   --space-s: 1.25rem;
   --space-m: 2rem;
-  --space-l: 3.5rem;
-  --space-xl: 6rem;
-  --space-2xl: 9rem;
-  --space-3xl: 13rem;
+  --space-l: 4.5rem;
+  --space-xl: 7.5rem;
+  --space-2xl: 11rem;
+  --space-3xl: 15rem;
 
   /* Section rhythm — full-viewport story sections */
-  --section-padding-y: clamp(4rem, 10vw, 9rem);
+  --section-padding-y: clamp(5rem, 11vw, 10.5rem);
   --section-padding-x: clamp(1.5rem, 6vw, 6rem);
-  --content-max-width: 40rem;
+  --content-max-width: 36rem;
   --content-max-width-wide: 72rem;
 
   /* Motion — per docs/molosoc-animation-specification.md: 400-900ms, calm easing only */
@@ -68,6 +68,10 @@
   --motion-duration-l: 850ms;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-distance: 24px;
+  /* Symmetric in-out curve for scroll-scrubbed properties (tied 1:1 to
+     scroll position rather than a fixed-duration transition) — distinct
+     from --motion-ease above, which is for time-based reveals. */
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
 
   /* Radius / elevation — restrained, soft */
   --radius-s: 4px;

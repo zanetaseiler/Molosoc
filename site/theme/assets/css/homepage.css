@@ -30,6 +30,7 @@
 
 .molosoc-hero {
   position: relative;
+  width: 100%;
   min-height: 100svh;
   display: flex;
   align-items: flex-end;
@@ -45,27 +46,60 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.06);
-  transition: transform 6s var(--motion-ease);
+  transform: scale(1);
+  will-change: transform;
+}
+
+/* Continuous "breathing" zoom (100% <-> 106%), not a one-time reveal — a
+   full-bleed hero photo that just sits at a fixed final scale forever
+   reads as static the moment its (short) transition finishes; this instead
+   keeps the image gently alive for as long as the hero is on screen.
+   Starts once .is-visible is added (motion.js, on load) — same
+   progressive-enhancement gate as before: no JS/no rAF means this rule
+   never applies and the image stays a plain static scale(1).
+   Deliberately NOT using var(--motion-ease): that curve is tuned for the
+   site's short 400-900ms reveals (see tokens.css) and is heavily
+   front-loaded (both its control points sit at y:1) — a first attempt at
+   this used that easing over a single 12s transition and, confirmed by
+   testing, visually finished within the first second or two and then sat
+   motionless for the rest of its duration. A plain, symmetric ease-in-out
+   spreads the motion evenly across each 9s leg instead, which also matters
+   for `alternate`: every reversal decelerates smoothly into it rather than
+   snapping. 9s per leg = an 18s full up-and-back cycle. */
+@keyframes molosoc-hero-breathe {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
 }
 
 .molosoc-hero.is-visible .molosoc-hero__media img {
-  transform: scale(1);
+  animation: molosoc-hero-breathe 9s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-hero__media img {
+    animation: none;
+    transform: none;
+  }
 }
 
 .molosoc-hero__scrim {
   position: absolute;
   inset: 0;
-  /* Steeper ramp than a plain linear fade: stays near-transparent over the
-     top ~40% (so the photo reads clearly) then deepens fast under the text
-     zone, so white text meets AA contrast regardless of what's in the photo
-     behind it — a flat low-alpha gradient can't guarantee that. */
+  /* Lightened from an earlier pass that read as too heavy/muddy over the
+     photo — still steeper than a plain linear fade (near-transparent over
+     the top ~40%, deepening under the text zone for contrast), just with
+     lower ceiling values throughout so the bright bedroom actually reads as
+     bright, not dark and gray. */
   background: linear-gradient(
     180deg,
     rgba(12, 17, 21, 0.02) 0%,
-    rgba(12, 17, 21, 0.08) 40%,
-    rgba(12, 17, 21, 0.55) 65%,
-    rgba(12, 17, 21, 0.82) 100%
+    rgba(12, 17, 21, 0.06) 40%,
+    rgba(12, 17, 21, 0.32) 65%,
+    rgba(12, 17, 21, 0.5) 100%
   );
 }
 
@@ -181,7 +215,312 @@
   aspect-ratio: 4 / 5;
 }
 
+/* Immersive full-width treatment (item 4) — the source is a wide architectural
+   scene (window, curtains, hallway); the 4:5 portrait crop used elsewhere in
+   this list would throw most of that away. Show it near-native width so the
+   room reads as a place, not a cropped detail. */
+.molosoc-problem__media--immersive {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-top: var(--space-l);
+  overflow: hidden;
+  border-radius: var(--radius-m);
+}
+
+.molosoc-problem__media--immersive img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+/* ---------- Beat 2 — "Why foot care never sticks" ----------
+   A plain, independent section directly below the hero — normal document
+   flow, no pin/mask/crossfade/overlay tying it to the hero. The hero simply
+   scrolls away above it. Its own opening reveal is intentionally minimal:
+   the heading fades/rises in (.molosoc-reveal--flat) and the first image
+   follows with a slight delay (.molosoc-reveal--fade-only,
+   .molosoc-reveal--delay) — see components.css for those modifiers and
+   motion.js for the shared IntersectionObserver driving all of them. */
+
+.molosoc-arc-reveal-section {
+  position: relative;
+  background-color: var(--color-cream);
+}
+
+.molosoc-arc-reveal__heading {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(3rem, 6vw + 1rem, 6rem);
+  line-height: var(--leading-tight);
+  max-width: 46rem;
+  margin: 0 auto;
+  /* ~120px (--space-xl) of white space above the heading — enough that the
+     hero-to-section hand-off reads as calm and intentional rather than
+     abrupt, without the section feeling disconnected from what's above it. */
+  padding: var(--space-xl) var(--section-padding-x) 0;
+  text-align: center;
+}
+
+.molosoc-arc-reveal__rows {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  /* Tighter than a standard section rhythm — these are meant to read as one
+     continuous editorial flow, not separated cards. */
+  gap: var(--space-l);
+  width: 100%;
+  max-width: 90rem;
+  margin: 0 auto;
+  /* Gap between the heading and the first row below it. Smaller,
+     mobile-appropriate value in the @media block below. */
+  padding: 2.5rem var(--section-padding-x) var(--section-padding-y);
+}
+
+/* ---------- Story items — large editorial compositions, not cards ----------
+   Each .molosoc-story is one image + heading treated as a single unit: same
+   width on both (image and text share --story-w, set inline per item),
+   same alignment. Static in normal document flow — no .molosoc-reveal
+   scroll-triggered fade/slide/scale here, with one exception: Story 1's own
+   image, which carries .molosoc-reveal directly in the markup as part of
+   the section's opening beat (heading, then first image, see the section
+   comment above) — everything else just moves naturally with the page.
+   Alignment (--left/--right/--center) and heading placement (default:
+   directly beneath, minimal gap — or --overlap: sitting on the image's
+   lower edge) vary per item for an asymmetrical, curated rhythm instead of
+   a repeated 50/50 grid. */
+
+.molosoc-story {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.molosoc-story--left {
+  align-items: flex-start;
+}
+
+.molosoc-story--right {
+  align-items: flex-end;
+}
+
+.molosoc-story--center {
+  align-items: center;
+}
+
+.molosoc-story__media {
+  position: relative;
+  width: var(--story-w, 60%);
+  aspect-ratio: 4 / 3;
+  /* Sharp corners throughout — no border-radius, matching the editorial
+     reference rather than the site's usual softly-rounded media. */
+  overflow: hidden;
+}
+
+.molosoc-story__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.molosoc-story__text {
+  margin-top: var(--space-xs);
+  width: var(--story-w, 60%);
+  max-width: 26rem;
+}
+
+.molosoc-story--right .molosoc-story__text {
+  /* Text alignment always follows the image's side — right-aligned image,
+     right-aligned headline and paragraph — so the text block reads as
+     physically attached to its image rather than floating independently. */
+  text-align: right;
+  margin-left: auto;
+}
+
+.molosoc-story--center .molosoc-story__text {
+  text-align: center;
+}
+
+.molosoc-story__text h3 {
+  /* Larger than the site's normal display-m scale — the title is the
+     primary editorial element here, not a card label. */
+  font-size: clamp(2rem, 1.6vw + 1.3rem, 3.25rem);
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-3xs);
+  color: var(--color-ink);
+}
+
+.molosoc-story__text p {
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+}
+
+/* Overlap variant — heading sits on the image's own lower edge, over a
+   scrim for contrast, rather than floating below it. */
+.molosoc-story__text--overlap {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  margin-top: 0;
+  width: auto;
+  max-width: none;
+  padding: var(--space-l) var(--space-m) var(--space-m);
+}
+
+.molosoc-story--right .molosoc-story__text--overlap {
+  text-align: left;
+  margin-left: 0;
+}
+
+.molosoc-story__text--overlap h3 {
+  color: var(--color-white);
+}
+
+.molosoc-story__text--overlap p {
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 28rem;
+}
+
+.molosoc-story__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0) 45%,
+    rgba(12, 17, 21, 0.78) 100%
+  );
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .molosoc-story--left,
+  .molosoc-story--right,
+  .molosoc-story--center {
+    align-items: stretch;
+  }
+  .molosoc-story__media,
+  .molosoc-story__text {
+    width: 100%;
+    max-width: none;
+  }
+  .molosoc-story--right .molosoc-story__text,
+  .molosoc-story--center .molosoc-story__text {
+    text-align: left;
+    margin-left: 0;
+  }
+  .molosoc-story__media {
+    aspect-ratio: 4 / 3;
+  }
+  /* Smaller, mobile-appropriate version of the desktop gap between the
+     heading and the first row below it. */
+  .molosoc-arc-reveal__rows {
+    padding-top: var(--space-m);
+  }
+}
+
 /* ---------- Beats 4+5 — How Molosoc works / benefits (message hierarchy) ---------- */
+
+.molosoc-section--photo-bg {
+  position: relative;
+  overflow: hidden;
+  color: var(--color-white);
+}
+
+.molosoc-section--photo-bg .molosoc-section__media {
+  position: absolute;
+  inset: 0;
+}
+
+.molosoc-section--photo-bg .molosoc-section__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 75% 65%;
+}
+
+.molosoc-section--photo-bg .molosoc-section__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 17, 21, 0.6);
+}
+
+.molosoc-section--photo-bg .molosoc-section__inner {
+  position: relative;
+  z-index: 2;
+}
+
+.molosoc-section--photo-bg .molosoc-eyebrow,
+.molosoc-section--photo-bg h2 {
+  color: var(--color-white);
+}
+
+.molosoc-section--photo-bg .molosoc-pillar {
+  border-top-color: rgba(255, 255, 255, 0.3);
+}
+
+.molosoc-section--photo-bg .molosoc-pillar::before {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.molosoc-section--photo-bg .molosoc-pillar h3 {
+  color: var(--color-white);
+}
+
+.molosoc-section--photo-bg .molosoc-pillar p {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* ---------- "Merge and emerge" scroll-pinned sequence (merge-transition.js) ----------
+   Static-by-default: with no transforms applied (the state this HTML renders in with no
+   JS, or with prefers-reduced-motion), the two tiles sit flush and reconstruct the exact
+   source photo — indistinguishable from a single background image — and the text is
+   fully visible. merge-transition.js is what pulls the tiles apart into the "before
+   merge" state and drives the scrubbed animation back to this resting state. */
+
+.molosoc-merge-section {
+  min-height: 100svh;
+  /* Shows through the gap between the two tiles before they merge — same warm
+     off-white as the sections before/after this one, not a default gray. */
+  background-color: var(--color-cream);
+}
+
+.molosoc-merge__group {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.molosoc-merge__tile {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  will-change: transform;
+}
+
+.molosoc-merge__tile--left {
+  background-position: left center;
+}
+
+.molosoc-merge__tile--right {
+  background-position: right center;
+}
+
+.molosoc-merge__text {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-merge__tile {
+    will-change: auto;
+  }
+}
 
 .molosoc-pillars {
   display: grid;
@@ -232,8 +571,32 @@
 
 /* ---------- Beat 6 — Social proof ---------- */
 
-.molosoc-proof-section .molosoc-media {
-  aspect-ratio: 3 / 2;
+.molosoc-proof__intro {
+  max-width: 34rem;
+}
+
+.molosoc-proof__media {
+  width: 100%;
+  max-width: 34rem;
+  aspect-ratio: auto;
+  box-shadow: var(--shadow-soft);
+}
+
+.molosoc-proof__media img {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Scroll-linked scale for the results image only (see proof-scale.js).
+   Default --proof-scale is 1 so no-JS/reduced-motion shows the final,
+   static image — JS pulls it down to a small starting scale itself only
+   once it has confirmed it can scrub this back up on scroll. Scale only,
+   centered origin, so the image never shifts off-center while animating. */
+.molosoc-proof__media--scale {
+  transform: scale(var(--proof-scale, 1));
+  transform-origin: center center;
+  will-change: transform;
 }
 
 /* ---------- Beat 7 — Product moment ---------- */
@@ -245,10 +608,272 @@
 }
 
 .molosoc-product-cta .molosoc-btn {
-  margin-top: var(--space-m);
+  margin-top: var(--space-l);
 }
 
-/* ---------- Beat 8 — Educational content (topic grid) — see components.css ---------- */
+/* ---------- Beat 8 — Foot care, topic by topic: one pinned single screen ----------
+   New, self-contained section (preview-only markup — see homepage-preview.html;
+   front-page.php keeps its own plain .molosoc-topic-grid/.molosoc-topic-card,
+   in components.css, deliberately untouched).
+
+   Per explicit request, the ENTIRE sequence — Image 1, the portal reveal,
+   Image 2, and all five cards — lives inside .molosoc-topics__stage, a
+   single fixed 100vh box. topics-portal.js pins that stage (GSAP
+   ScrollTrigger) for two extra viewport-heights of scroll and scrubs
+   everything off that one progress value instead of laying the content
+   out down a tall page:
+     - Image 1 and Image 2 are both position:absolute; inset:0 inside the
+       SAME 100vh stage — identical crop/height, per explicit request
+       ("both images occupy the identical viewport area"). Image 1 sits on
+       top, masked with a circular opening that grows from center
+       (--portal-hole); neither image ever moves, scales, or fades.
+     - Once that reveal crosses ~90% of its own progress, Image 1 is
+       removed outright (topics-portal.js) — Image 2 was already sitting
+       there, same box, so nothing shifts.
+     - The five feature cards are positioned in two short rows entirely
+       within that same 100vh box (never taller than the image) and
+       toggle visible one at a time, thresholded against the second half
+       of the pinned scroll, staying visible afterward.
+   Progressive enhancement: no-JS/reduced-motion never pins anything —
+   Image 1 is hidden outright and every card already sits at its settled,
+   visible state (see the reduced-motion blocks below), all still confined
+   to the one 100vh stage. */
+
+.molosoc-topics {
+  position: relative;
+}
+
+.molosoc-topics__stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden; /* hard guarantee, not just a convention: nothing —
+     image or card — can ever visibly extend past this box. */
+  isolation: isolate;
+  background: var(--color-cream-deep);
+}
+
+.molosoc-topics__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-topics__bg {
+  position: absolute;
+  inset: 0; /* both images share this exact box — identical crop/height */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.molosoc-topics__bg--one {
+  /* Camera-iris reveal: a plain circular mask only. Same --portal-hole
+     value, same JS, same growth/timing/final size as before — the
+     transparent->black transition band is a fixed 1.5px (not vmax, so it
+     never grows on larger viewports), giving a crisp, clean edge with no
+     visible feather. No filter, no displacement, no distortion of any
+     kind — Image 1 itself is never touched, only how much of it the mask
+     reveals through. */
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--portal-hole, 200vmax),
+    black calc(var(--portal-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--portal-hole, 200vmax),
+    black calc(var(--portal-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* CSS default --portal-hole (200vmax) already masks Image 1 fully open;
+     display:none is belt-and-suspenders so no-JS/reduced-motion never
+     paints it at all, even for a first frame. */
+  .molosoc-topics__bg--one {
+    display: none;
+  }
+}
+
+.molosoc-topics__cards {
+  position: absolute;
+  inset: 0; /* same 100vh box as the two background layers */
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ---------- Feature cards: title + supporting text only, no images ----------
+   Pure white surface, a hairline warm border, a slightly rounded corner
+   (13px — intentionally more than the site's normal --radius-m, for a
+   softer, more tactile object than the rest of the UI), and a soft,
+   LAYERED shadow (three tight-to-diffuse passes rather than one flat
+   blur) — reads as a considered, premium editorial object that gently
+   invites interaction, not a button and not a UI panel. */
+.molosoc-feature-card {
+  position: absolute;
+  pointer-events: auto;
+  display: block;
+  background: var(--color-white);
+  border: 1px solid #ece8e2; /* warm hairline, not a cool/neutral gray */
+  border-radius: 13px;
+  padding: var(--space-s) var(--space-m);
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    0 8px 20px -12px rgba(12, 17, 21, 0.1),
+    0 24px 48px -28px rgba(12, 17, 21, 0.12);
+  text-decoration: none;
+  color: var(--color-text);
+  /* Only box-shadow transitions here in CSS. The hover LIFT itself is
+     driven by GSAP instead (topics-portal.js), not a CSS `:hover`
+     transform/translate — GSAP's CSSPlugin writes `translate`/`scale`/
+     `rotate` as inline styles on every element it tweens (normalizing
+     them into the single `transform` matrix it also sets for the
+     center-to-position entrance), and an inline style always outranks a
+     class-based CSS rule for that same property. A CSS `:hover {
+     translate: ... }` here would be silently overridden and never
+     actually apply once a card has run its entrance — confirmed by
+     inspecting the element's inline style attribute. box-shadow isn't
+     touched by GSAP at all, so it stays a plain, simple CSS transition. */
+  transition: box-shadow var(--motion-duration-s) var(--motion-ease);
+
+  /* Default = final, settled state (opaque, untransformed) — the usual
+     progressive-enhancement baseline for no-JS/reduced-motion (JS bails
+     out entirely under prefers-reduced-motion, see topics-portal.js).
+     When JS IS driving, it measures this exact resting position first,
+     then sets its own small-and-centered starting transform via GSAP
+     (opacity/transform become inline styles at that point) and tweens
+     smoothly back to here — one continuous, eased motion per card, not a
+     class toggle, so it can travel from the portal's center rather than
+     just fading in place. */
+  opacity: 1;
+  transform: none;
+}
+
+.molosoc-feature-card:hover {
+  /* No `scale` here — lift only, per explicit request. The lift itself
+     (2-4px) is applied by topics-portal.js via GSAP on mouseenter/
+     mouseleave, not here — see the comment above. */
+  box-shadow:
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 14px 28px -14px rgba(12, 17, 21, 0.14),
+    0 32px 64px -32px rgba(12, 17, 21, 0.16);
+}
+
+.molosoc-feature-card h3 {
+  font-family: var(--font-display);
+  font-size: clamp(1.25rem, 0.9vw + 1rem, 1.625rem);
+  line-height: var(--leading-snug);
+}
+
+.molosoc-feature-card p {
+  margin-top: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-snug);
+}
+
+/* Editorial magazine-spread composition — an invisible 3-tier grid
+   (upper / middle / bottom), not a random scatter: upper and middle tiers
+   each hold one card per side with the center left open so the hallway's
+   own perspective stays the focal point, and a single card centers the
+   bottom tier to resolve the composition. Left/right columns keep a
+   consistent inset per tier (slight stagger tier-to-tier — 5% upper vs
+   9%/8% middle — reads as intentional placement, not a repeated grid).
+   Three even ~11-12% gaps between tiers give consistent spacing
+   throughout; sizes/typography/colors/animations are all unchanged from
+   before, only these positions moved. */
+.molosoc-feature-card--1 {
+  top: 8%;
+  left: 5%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
+.molosoc-feature-card--2 {
+  top: 6%;
+  right: 5%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
+.molosoc-feature-card--3 {
+  top: 40%;
+  left: 9%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
+.molosoc-feature-card--4 {
+  top: 42%;
+  right: 8%;
+  width: clamp(15rem, 24vw, 18.5rem);
+}
+
+.molosoc-feature-card--5 {
+  /* Anchored to the stage's own bottom edge with a fixed 15px gap —
+     guarantees real clearance regardless of viewport height or this
+     card's own (content-driven) height, unlike a % top value which was
+     letting it sit flush against/clip on the frame's bottom edge on
+     shorter viewports. */
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  /* Centered via left:0/right:0/auto-margins rather than the usual
+     left:50%+translateX(-50%) — that would consume the transform
+     property, which topics-portal.js now needs free for this card's own
+     center-to-position entrance motion. */
+  width: clamp(15rem, 25vw, 19.5rem);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  /* topics-portal.js skips the pin below this width — plain stacked
+     fallback: Image 1 never shown, Image 2 sits at the top at its normal
+     100vh crop, cards stack below it in normal document flow. */
+  .molosoc-topics__stage {
+    height: auto;
+  }
+
+  .molosoc-topics__media {
+    position: relative;
+    height: 100vh;
+  }
+
+  .molosoc-topics__bg--one {
+    display: none;
+  }
+
+  .molosoc-topics__cards {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    padding: var(--space-l) var(--space-s);
+    pointer-events: auto;
+  }
+
+  .molosoc-feature-card,
+  .molosoc-feature-card--1,
+  .molosoc-feature-card--2,
+  .molosoc-feature-card--3,
+  .molosoc-feature-card--4,
+  .molosoc-feature-card--5 {
+    position: static;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    text-align: left;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Beat 8 (legacy) — plain topic grid, front-page.php only — see components.css ---------- */
 
 /* ---------- Beat 9 — Final CTA ---------- */
 
@@ -272,6 +897,9 @@
 
 .molosoc-final-cta .molosoc-btn {
   margin-top: var(--space-l);
+  padding: 1.4em 3em;
+  font-size: 0.875rem;
+  letter-spacing: 0.16em;
   background: var(--color-white);
   color: var(--color-ink);
 }

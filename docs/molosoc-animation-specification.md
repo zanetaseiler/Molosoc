@@ -44,6 +44,19 @@ The hero is emotional. Allow subtle movement. Examples:
 
 The product should remain the visual focus.
 
+**Documented exception — hero-to-section circular transition:** the
+scroll-pinned circle transition carrying the hero into the following story
+section (`assets/js/arc-reveal.js`) scales a shape from ~2% to 100%, well
+outside the 98–100% range in Image Motion below. This is intentional: the
+circle isn't "an image revealing," it's a full scene transformation — one
+section becoming the next, not a small element easing into place. It still
+follows every other rule here (scroll-scrubbed not time-based, no bounce/
+overshoot, `--ease-in-out: cubic-bezier(0.76, 0, 0.24, 1)` — a symmetric,
+monotonic curve, slower and more restrained than the site's default
+`--motion-ease`). Treat this as the one place scale range is allowed to
+depart from the general Image Motion guidance; it should stay a rare
+exception, not a precedent for other sections.
+
 ---
 
 ## Image Motion
@@ -119,6 +132,17 @@ Never dramatic.
 - Avoid heavy parallax.
 - Avoid scroll lag.
 - Prioritize responsiveness.
+
+**Documented exception — hero-to-section circular transition:** the
+scroll-pinned circle transition (`assets/js/arc-reveal.js`, see the Hero
+Section exception above) runs at all viewport widths, including mobile —
+confirmed explicitly as an intentional override of "avoid scroll lag" here,
+since this transition is the intended hero experience everywhere rather than
+a desktop-only flourish. Its math is vmax/viewport-relative throughout, so
+it doesn't need separate mobile tuning. Treat this alongside the Hero
+Section exception as the one place mobile gets the same weight of motion as
+desktop; it should stay a rare exception, not a precedent for other
+sections.
 
 ---
 

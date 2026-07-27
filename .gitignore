@@ -8,6 +8,9 @@ secrets/
 .vscode/
 .idea/
 
+# Local Claude Code session config (machine-specific, not shared)
+.claude/settings.local.json
+
 # Python
 __pycache__/
 *.pyc
