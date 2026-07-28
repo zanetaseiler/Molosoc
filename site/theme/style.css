@@ -1,18 +1,14 @@
 /*
 Theme Name: Molosoc
-Description: Custom child theme implementing the premium/editorial redesign per docs/molosoc-design-direction.md and docs/molosoc-animation-specification.md.
+Description: Custom standalone theme implementing the premium/editorial redesign per docs/molosoc-design-direction.md and docs/molosoc-animation-specification.md.
 Author: Molosoc
-Template: thrive-theme
-Version: 0.1.0
+Author URI: https://molosoc.com
+Version: 0.2.0
+Requires at least: 6.4
+Requires PHP: 7.4
 Text Domain: molosoc
 
-NOTE ON "Template": confirmed as "thrive-theme" from the live site's own body
-class (wp-theme-thrive-theme), observed directly on molosoc.com — not guessed.
-If the *staging* site's parent theme folder name differs from live, update
-this line before activating.
-
-This file intentionally stays minimal — WordPress requires style.css to exist
-with this header for a child theme to be recognized, but all real styling
+Standalone theme (no parent) — WooCommerce-compatible. All real styling
 lives in assets/css/ (tokens.css, base.css, components.css, homepage.css),
 enqueued via functions.php so the same files also drive preview/homepage-preview.html
 with zero duplication.

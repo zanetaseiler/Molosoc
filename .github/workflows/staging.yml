@@ -1,8 +1,8 @@
 name: Deploy Theme to Staging
 
-# Auto-deploys the WP child theme to staging on every push to `staging`.
-# Only syncs site/theme/ — never the whole WordPress install, so uploads,
-# order data, and plugin files on the server are untouched.
+# Auto-deploys the Molosoc standalone theme to staging on every push to
+# `staging`. Only syncs site/theme/ — never the whole WordPress install, so
+# uploads, order data, and plugin files on the server are untouched.
 
 on:
   push:
@@ -25,4 +25,4 @@ jobs:
           password: ${{ secrets.STAGING_SFTP_PASS }}
           protocol: ftps
           local-dir: site/theme/
-          server-dir: /public_html/staging.molosoc.com/wp-content/themes/thrive-theme/
+          server-dir: /public_html/staging.molosoc.com/wp-content/themes/molosoc-theme/
