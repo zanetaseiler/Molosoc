@@ -191,14 +191,13 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<!-- Beat 8 — Foot care, topic by topic: one pinned single-screen sequence,
 	     ported from homepage-preview.html so topics-portal.js has the
 	     .molosoc-topics__stage / .molosoc-feature-card markup it looks for.
-	     Previously this stayed on a plain topic-grid by deliberate scope
-	     decision (see homepage.css) — now brought to full parity with the
-	     finished design per explicit request. -->
+	     Single static photo (no circle-reveal, no second image) — the five
+	     feature cards emerge from center over it, see homepage.css /
+	     topics-portal.js. -->
 	<section class="molosoc-topics" id="topics-section" aria-label="<?php esc_attr_e( 'Foot care, topic by topic', 'molosoc' ); ?>">
 		<div class="molosoc-topics__stage">
 			<div class="molosoc-topics__media" aria-hidden="true">
 				<div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>');"></div>
-				<div class="molosoc-topics__bg molosoc-topics__bg--one" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_platform_bed_blanket-scaled.jpg' ); ?>');"></div>
 			</div>
 
 			<div class="molosoc-topics__cards">
