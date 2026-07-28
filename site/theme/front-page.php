@@ -23,12 +23,16 @@
  * file doesn't exist yet anywhere in the repo and needs to be designed/built
  * from scratch, not just wired up like everything else here.
  *
- * Deliberately does NOT call get_header()/get_footer(): those render the
- * site's own nav/footer chrome, which docs/molosoc-design-direction.md says
- * must "disappear visually" on this page. wp_head()/wp_footer() are still
- * called directly below so plugins (SEO, analytics, WooCommerce cart
- * fragments elsewhere) keep working — only the header.php/footer.php visual
- * chrome is skipped.
+ * Deliberately does NOT call get_header(): that renders the site's own nav
+ * chrome, and docs/molosoc-design-direction.md says WooCommerce "must
+ * disappear visually" on this page — the minimal floating logo below
+ * replaces it. wp_head() is still called directly so plugins (SEO,
+ * analytics, WooCommerce cart fragments elsewhere) keep working.
+ *
+ * DOES call get_footer() at the bottom, though — the homepage had no
+ * footer at all otherwise (no legal links, no copyright), which was never
+ * an intentional design decision, just a side effect of skipping both
+ * together. Reuses the same footer every other template already uses.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -237,6 +241,4 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 </main>
 
-<?php wp_footer(); ?>
-</body>
-</html>
+<?php get_footer(); ?>
