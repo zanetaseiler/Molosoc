@@ -17,14 +17,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: DEBUG real FTP directory listing (read-only)
+      - name: DEBUG verify new FTP account root (read-only)
         env:
           FTP_HOST: ${{ secrets.STAGING_SFTP_HOST }}
           FTP_USER: ${{ secrets.STAGING_SFTP_USER }}
           FTP_PASS: ${{ secrets.STAGING_SFTP_PASS }}
         run: |
-          for path in "/wp-content/themes/" "/public_html/staging.molosoc.com/wp-content/themes/" "/wp-content/" "/public_html/staging.molosoc.com/wp-content/"; do
-            echo "=== $path ==="
-            curl -s -k --ftp-ssl --list-only "ftp://${FTP_HOST}${path}" -u "${FTP_USER}:${FTP_PASS}" || echo "(failed/does not exist)"
-            echo
-          done
+          echo "=== / ==="
+          curl -s -k --ftp-ssl --list-only "ftp://${FTP_HOST}/" -u "${FTP_USER}:${FTP_PASS}" || echo "(failed)"
+
+      - name: Deploy to staging via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.STAGING_SFTP_HOST }}
+          username: ${{ secrets.STAGING_SFTP_USER }}
+          password: ${{ secrets.STAGING_SFTP_PASS }}
+          protocol: ftps
+          local-dir: site/theme/
+          server-dir: /wp-content/themes/molosoc/
