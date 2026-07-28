@@ -6,14 +6,16 @@
   box-sizing: border-box;
 }
 
+/* Deliberately not scroll-behavior: smooth — this page's GSAP ScrollTrigger
+   pins (merge-transition.js, topics-portal.js) call refresh() to stay in
+   sync with async layout changes (lazy images, etc.), and refresh() does
+   its own internal scroll measurements; smooth-scroll animates those
+   instead of landing instantly, so ScrollTrigger samples an in-flight
+   scroll position and caches badly-drifted start/end values for every
+   pin on the page — confirmed as the cause of pinned sections rendering
+   at the wrong scroll offset or going blank. */
 html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  scroll-behavior: auto;
 }
 
 body {

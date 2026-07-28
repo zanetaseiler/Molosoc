@@ -578,7 +578,15 @@
 .molosoc-proof__media {
   width: 100%;
   max-width: 34rem;
-  aspect-ratio: auto;
+  /* Matches homepage-results-full.jpg's real intrinsic size (760x1362) so
+     the browser reserves this image's height immediately, before it loads
+     — this image is lazy and was the one consistently causing a real,
+     asynchronous page-height jump (~975px) once it finally decoded,
+     which left every ScrollTrigger pin below it (and, transiently, ones
+     actively pinned elsewhere at that moment) with stale cached geometry.
+     Reserving the real space up front removes that shift at the source,
+     rather than trying to out-refresh it after the fact. */
+  aspect-ratio: 760 / 1362;
   box-shadow: var(--shadow-soft);
 }
 
@@ -616,28 +624,14 @@
    front-page.php keeps its own plain .molosoc-topic-grid/.molosoc-topic-card,
    in components.css, deliberately untouched).
 
-   Per explicit request, the ENTIRE sequence — Image 1, the portal reveal,
-   Image 2, and all five cards — lives inside .molosoc-topics__stage, a
-   single fixed 100vh box. topics-portal.js pins that stage (GSAP
-   ScrollTrigger) for two extra viewport-heights of scroll and scrubs
-   everything off that one progress value instead of laying the content
-   out down a tall page:
-     - Image 1 and Image 2 are both position:absolute; inset:0 inside the
-       SAME 100vh stage — identical crop/height, per explicit request
-       ("both images occupy the identical viewport area"). Image 1 sits on
-       top, masked with a circular opening that grows from center
-       (--portal-hole); neither image ever moves, scales, or fades.
-     - Once that reveal crosses ~90% of its own progress, Image 1 is
-       removed outright (topics-portal.js) — Image 2 was already sitting
-       there, same box, so nothing shifts.
-     - The five feature cards are positioned in two short rows entirely
-       within that same 100vh box (never taller than the image) and
-       toggle visible one at a time, thresholded against the second half
-       of the pinned scroll, staying visible afterward.
+   Single static photo (no circle-reveal, no second image) fills
+   .molosoc-topics__stage, a fixed 100vh box. topics-portal.js pins that
+   stage (GSAP ScrollTrigger) for extra scroll and scrubs the five feature
+   cards in, one at a time with a stagger, each starting small and centered
+   on the stage and growing/traveling out to its final resting position.
    Progressive enhancement: no-JS/reduced-motion never pins anything —
-   Image 1 is hidden outright and every card already sits at its settled,
-   visible state (see the reduced-motion blocks below), all still confined
-   to the one 100vh stage. */
+   every card already sits at its settled, visible position (see the
+   reduced-motion blocks below), still confined to the one 100vh stage. */
 
 .molosoc-topics {
   position: relative;
@@ -660,43 +654,10 @@
 
 .molosoc-topics__bg {
   position: absolute;
-  inset: 0; /* both images share this exact box — identical crop/height */
+  inset: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-.molosoc-topics__bg--one {
-  /* Camera-iris reveal: a plain circular mask only. Same --portal-hole
-     value, same JS, same growth/timing/final size as before — the
-     transparent->black transition band is a fixed 1.5px (not vmax, so it
-     never grows on larger viewports), giving a crisp, clean edge with no
-     visible feather. No filter, no displacement, no distortion of any
-     kind — Image 1 itself is never touched, only how much of it the mask
-     reveals through. */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--portal-hole, 200vmax),
-    black calc(var(--portal-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--portal-hole, 200vmax),
-    black calc(var(--portal-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* CSS default --portal-hole (200vmax) already masks Image 1 fully open;
-     display:none is belt-and-suspenders so no-JS/reduced-motion never
-     paints it at all, even for a first frame. */
-  .molosoc-topics__bg--one {
-    display: none;
-  }
 }
 
 .molosoc-topics__cards {
@@ -831,8 +792,8 @@
 
 @media (max-width: 760px) {
   /* topics-portal.js skips the pin below this width — plain stacked
-     fallback: Image 1 never shown, Image 2 sits at the top at its normal
-     100vh crop, cards stack below it in normal document flow. */
+     fallback: the photo sits at the top at its normal 100vh crop, cards
+     stack below it in normal document flow. */
   .molosoc-topics__stage {
     height: auto;
   }
@@ -840,10 +801,6 @@
   .molosoc-topics__media {
     position: relative;
     height: 100vh;
-  }
-
-  .molosoc-topics__bg--one {
-    display: none;
   }
 
   .molosoc-topics__cards {
