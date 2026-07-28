@@ -198,3 +198,126 @@
   color: var(--color-text-muted);
   max-width: 26rem;
 }
+
+/* ---------- Site header/nav (every template except front-page.php) ---------- */
+
+.molosoc-site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding: var(--space-s) var(--section-padding-x);
+  background: var(--color-bg);
+}
+
+.molosoc-site-header__logo {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.molosoc-site-header__nav ul {
+  display: flex;
+  gap: var(--space-m);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-site-header__nav a {
+  text-decoration: none;
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.molosoc-site-header__nav a:hover {
+  color: var(--color-text-muted);
+}
+
+/* ---------- Site footer (every template except front-page.php) ---------- */
+
+.molosoc-site-footer {
+  background: var(--color-ink);
+  color: var(--color-white);
+  padding: var(--space-l) var(--section-padding-x) var(--space-m);
+}
+
+.molosoc-site-footer a {
+  color: var(--color-white);
+}
+
+.molosoc-site-footer__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-site-footer__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+.molosoc-site-footer__brand > a {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  text-decoration: none;
+}
+
+.molosoc-social-links {
+  display: flex;
+  gap: var(--space-s);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-social-links a {
+  font-size: var(--text-small);
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.molosoc-social-links a:hover {
+  opacity: 1;
+}
+
+.molosoc-site-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  padding-top: var(--space-m);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.molosoc-site-footer__copyright {
+  font-size: var(--text-small);
+  opacity: 0.8;
+  margin: 0;
+}
+
+.molosoc-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-small);
+}
+
+.molosoc-legal-links a {
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.molosoc-legal-links a:hover {
+  opacity: 1;
+}
