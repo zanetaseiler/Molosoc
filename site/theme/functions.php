@@ -56,18 +56,24 @@ function molosoc_enqueue_assets() {
 		// GSAP + ScrollTrigger are being re-enabled one effect at a time (see
 		// git history: "Revert homepage to last confirmed-stable static state
 		// (pre-animation-port)" — the full stack caused a regression once
-		// before). Merge transition (the two-tile "How it helps" section) is
-		// re-enabled first; proof-scale and topics-portal stay off until
-		// merge is confirmed working, then get re-enabled the same way.
+		// before). Merge transition and topics-portal (five-card reveal) are
+		// confirmed working; proof-scale stays off until it's confirmed the
+		// same way.
 		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
 		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
 		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 
-		// Still disabled — CSS default state (--proof-scale:1, --portal-hole
-		// fully open, cards at final position) renders these correctly at
-		// rest with no JS, so leaving them off doesn't change how they look:
+		// Real file content, not wp_add_inline_script — see scroll-refresh.js
+		// for why (WPO Minify silently drops inline scripts on a bundled
+		// handle). Keeps every ScrollTrigger pin above matched to the real,
+		// settled DOM regardless of lazy-loaded images changing page height.
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-merge-transition', 'molosoc-topics-portal' ), $theme_version, true );
+
+		// Still disabled — CSS default state (--proof-scale:1) renders this
+		// correctly at rest with no JS, so leaving it off doesn't change how
+		// it looks:
 		// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		// wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
