@@ -62,6 +62,18 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+
+		// Images loading asynchronously after the section scripts run (large
+		// hero/section photos, in particular) can grow the page height again
+		// post-hoc, leaving ScrollTrigger's cached positions stale — this
+		// refresh, once on full page load, forces every ScrollTrigger to
+		// recalculate against final, settled DOM geometry. Ported from
+		// homepage-preview.html's inline script (was never wired into the
+		// theme build until now).
+		wp_add_inline_script(
+			'molosoc-topics-portal',
+			'window.addEventListener("load", function () { if (window.ScrollTrigger) ScrollTrigger.refresh(); });'
+		);
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
