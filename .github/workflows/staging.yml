@@ -17,15 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: DEBUG verify new FTP account root (read-only)
-        env:
-          FTP_HOST: ${{ secrets.STAGING_SFTP_HOST }}
-          FTP_USER: ${{ secrets.STAGING_SFTP_USER }}
-          FTP_PASS: ${{ secrets.STAGING_SFTP_PASS }}
-        run: |
-          echo "=== / ==="
-          curl -s -k --ftp-ssl --list-only "ftp://${FTP_HOST}/" -u "${FTP_USER}:${FTP_PASS}" || echo "(failed)"
-
       - name: Deploy to staging via SFTP
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
