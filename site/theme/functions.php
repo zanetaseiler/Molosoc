@@ -63,16 +63,46 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 
-		// Images loading asynchronously after the section scripts run (large
-		// hero/section photos, in particular) can grow the page height again
-		// post-hoc, leaving ScrollTrigger's cached positions stale — this
-		// refresh, once on full page load, forces every ScrollTrigger to
-		// recalculate against final, settled DOM geometry. Ported from
-		// homepage-preview.html's inline script (was never wired into the
-		// theme build until now).
+		// window.load alone isn't enough: it only waits for eagerly-loading
+		// resources. Most images on this page use loading="lazy" (deliberate,
+		// for performance) — a lazy image that hasn't scrolled near the
+		// viewport yet is never part of window.load's pending set, so it
+		// finishes loading LATER, growing page height and leaving every
+		// ScrollTrigger pin's cached start/end stale relative to the real,
+		// final layout. That's what produced the "plays once correctly, then
+		// the same section appears to repeat/jump further down, flickers on
+		// scroll-up" symptom: the pin was engaging against pre-lazy-load
+		// geometry.
+		//
+		// Fix: refresh on window.load (covers fonts + eager images), refresh
+		// again once every image still incomplete at that point has actually
+		// finished (covers lazy images triggered after load), AND refresh on
+		// every individual image's own load event as a standing safety net
+		// (covers anything loading later still — slow network, a font swap
+		// nudging layout, etc.).
 		wp_add_inline_script(
 			'molosoc-topics-portal',
-			'window.addEventListener("load", function () { if (window.ScrollTrigger) ScrollTrigger.refresh(); });'
+			'function molosocRefreshScrollTrigger() { if (window.ScrollTrigger) ScrollTrigger.refresh(); }
+			window.addEventListener("load", function () {
+				molosocRefreshScrollTrigger();
+
+				var pending = [];
+				document.querySelectorAll("img").forEach(function (img) {
+					if (!img.complete) {
+						pending.push(new Promise(function (resolve) {
+							img.addEventListener("load", resolve, { once: true });
+							img.addEventListener("error", resolve, { once: true });
+						}));
+					}
+					// Safety net — fires on every future image load, including
+					// ones not yet in the DOM/pending set at window.load time.
+					img.addEventListener("load", molosocRefreshScrollTrigger);
+				});
+
+				if (pending.length) {
+					Promise.all(pending).then(molosocRefreshScrollTrigger);
+				}
+			});'
 		);
 	}
 }
