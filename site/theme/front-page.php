@@ -1,29 +1,28 @@
 <?php
 /**
  * Homepage template — implements the 9-beat storytelling arc from
- * docs/molosoc-design-direction.md, ported from homepage-preview.html (the
- * finished design reference) so the live site actually uses the
- * arc-reveal/merge/proof-scale/topics-portal markup that homepage.css and
- * assets/js/{merge-transition,proof-scale,topics-portal}.js were built
- * against. See docs/homepage-story-mapping.md for the full beat-by-beat
- * mapping.
+ * docs/molosoc-design-direction.md, mapped against the locked copy in
+ * content/molosoc-site/01-homepage/homepage-copy.md.
  *
- * Not yet ported: the hero-to-section circular transition described in
- * docs/molosoc-animation-specification.md (assets/js/arc-reveal.js) — that
- * file doesn't exist yet anywhere in the repo and needs to be designed/built
- * from scratch, not just wired up like everything else here.
+ * See docs/homepage-story-mapping.md for the full beat-by-beat mapping,
+ * including the two beats (3 "why current solutions fail", and the
+ * disposable-vs-reusable argument) intentionally NOT duplicated here —
+ * that argument belongs to the Category page per docs/seo-geo-plan.md's
+ * layered architecture.
+ *
+ * Images: staging URLs match assets/molosoc-image-assets.csv exactly
+ * (page/section = "Homepage / Hero" and "Homepage / Brand pillars").
+ * Do not swap these for other CSV rows mapped to other pages.
  *
  * Deliberately does NOT call get_header()/get_footer(): those render the
- * site's own nav/footer chrome, which docs/molosoc-design-direction.md says
- * must "disappear visually" on this page. wp_head()/wp_footer() are still
- * called directly below so plugins (SEO, analytics, WooCommerce cart
- * fragments elsewhere) keep working — only the header.php/footer.php visual
- * chrome is skipped.
+ * parent Thrive theme's own nav/store chrome, which is exactly what
+ * docs/molosoc-design-direction.md says must "disappear visually" on this
+ * page. wp_head()/wp_footer() are still called directly below so plugins
+ * (SEO, analytics, WooCommerce cart fragments elsewhere) keep working —
+ * only the parent theme's visual header/footer markup is skipped.
  */
 
 defined( 'ABSPATH' ) || exit;
-
-$molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -42,11 +41,10 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 <main id="main">
 
-	<!-- Beat 1+2 — Hero / emotional opening -->
 	<section class="molosoc-hero">
 		<div class="molosoc-hero__media">
-			<img src="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.png' ); ?>"
-				alt="<?php esc_attr_e( 'Bare feet peeking out from under a clean white blanket in a bright, airy bedroom', 'molosoc' ); ?>"
+			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_01_bathroom_bench-scaled.jpg"
+				alt="<?php esc_attr_e( 'Bare feet resting on a linen bench in a sunlit minimalist bathroom hallway', 'molosoc' ); ?>"
 				loading="eager" fetchpriority="high" decoding="async">
 		</div>
 		<div class="molosoc-hero__scrim"></div>
@@ -58,91 +56,76 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		<a class="molosoc-hero__scroll-cue" href="#story-start"><?php esc_html_e( 'Scroll', 'molosoc' ); ?></a>
 	</section>
 
-	<!-- Beat 2 — The problem, ported from homepage-preview.html's arc-reveal
-	     story sequence (see homepage.css "Beat 2 — Why foot care never
-	     sticks" for the section this markup drives). -->
-	<section id="story-start" class="molosoc-arc-reveal-section">
-		<h2 class="molosoc-arc-reveal__heading molosoc-reveal molosoc-reveal--flat"><?php esc_html_e( 'Why foot care never sticks', 'molosoc' ); ?></h2>
+	<section id="story-start" class="molosoc-section molosoc-section--bg-cream">
+		<div class="molosoc-section__inner">
+			<h2 class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Why foot care never sticks', 'molosoc' ); ?></h2>
 
-		<div class="molosoc-arc-reveal__rows">
-			<div class="molosoc-story molosoc-story--left" style="--story-w: 74%;">
-				<div class="molosoc-story__media molosoc-reveal molosoc-reveal--fade-only molosoc-reveal--delay">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.png' ); ?>"
-						alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel, bright white bedroom', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+			<div class="molosoc-problem__list">
+				<div class="molosoc-problem__item molosoc-reveal">
+					<div>
+						<h3><?php esc_html_e( 'Feet deserve real care, not just intent', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Buying the cream was never the hard part. Finishing the routine is. Molosoc is for what comes after the good intention.', 'molosoc' ); ?></p>
+					</div>
+					<div class="molosoc-media molosoc-problem__media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_02_cream_massage.jpg"
+							alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
+					</div>
 				</div>
-				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Feet deserve real care, not just intent', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Buying the cream was never the hard part. Finishing the routine is. Molosoc is for what comes after the good intention.', 'molosoc' ); ?></p>
-				</div>
-			</div>
 
-			<div class="molosoc-story molosoc-story--right" style="--story-w: 52%;">
-				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.png' ); ?>"
-						alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+				<div class="molosoc-problem__item molosoc-reveal">
+					<div>
+						<h3><?php esc_html_e( 'Care should be simple enough to actually stick', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Routines survive on less friction, not more willpower. That\'s the design brief here.', 'molosoc' ); ?></p>
+					</div>
+					<div class="molosoc-media molosoc-problem__media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_03_livingroom_footrest-scaled.jpg"
+							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
+					</div>
 				</div>
-				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Care should be simple enough to actually stick', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Routines survive on less friction, not more willpower. That's the design brief here.", 'molosoc' ); ?></p>
-				</div>
-			</div>
 
-			<div class="molosoc-story molosoc-story--left" style="--story-w: 68%;">
-				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.png' ); ?>"
-						alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+				<div class="molosoc-problem__item molosoc-reveal" style="grid-template-columns: 1fr; max-width: 34rem;">
+					<div>
+						<h3><?php esc_html_e( "You don't need new products — you need the right ritual", 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Not another cream. The accessory that makes the one you own actually work.', 'molosoc' ); ?></p>
+					</div>
 				</div>
-				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( "You don't need new products — you need the right ritual", 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Not another cream. The accessory that makes the one you own actually work.', 'molosoc' ); ?></p>
-				</div>
-			</div>
 
-			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
-				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.png' ); ?>"
-						alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
-				</div>
-				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Foot care is self-care, not vanity', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Ten quiet minutes, just for you — not for anyone watching.', 'molosoc' ); ?></p>
+				<div class="molosoc-problem__item molosoc-reveal">
+					<div>
+						<h3><?php esc_html_e( 'Foot care is self-care, not vanity', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Ten quiet minutes, just for you — not for anyone watching.', 'molosoc' ); ?></p>
+					</div>
+					<div class="molosoc-media molosoc-problem__media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_04_bedroom_blanket-scaled.jpg"
+							alt="<?php esc_attr_e( 'Bare feet peeking out from under a cream blanket in a serene bedroom', 'molosoc' ); ?>"
+							loading="lazy" decoding="async">
+					</div>
 				</div>
 			</div>
 		</div>
 	</section>
 
-	<!-- Beats 4+5 — "Merge and emerge" scroll-pinned sequence, ported from
-	     homepage-preview.html so merge-transition.js has the markup it
-	     expects. Static-by-default: with no JS/reduced-motion this renders
-	     as one flush photo with all text visible (see homepage.css). -->
-	<section class="molosoc-section molosoc-section--photo-bg molosoc-merge-section">
-		<div class="molosoc-merge__group">
-			<div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.png' ); ?>');" role="img" aria-label="<?php esc_attr_e( 'A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench', 'molosoc' ); ?>"></div>
-			<div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.png' ); ?>');"></div>
-		</div>
-		<div class="molosoc-section__scrim"></div>
+	<section class="molosoc-section molosoc-section--bg-deep">
 		<div class="molosoc-section__inner">
-			<p class="molosoc-eyebrow molosoc-merge__text"><?php esc_html_e( 'How it helps', 'molosoc' ); ?></p>
-			<h2 class="molosoc-merge__text" style="max-width: 30rem; margin-top: var(--space-s);"><?php esc_html_e( 'The cream you own, finally finished', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'How it helps', 'molosoc' ); ?></p>
+			<h2 class="molosoc-reveal" style="max-width: 30rem; margin-top: var(--space-s);"><?php esc_html_e( 'The cream you own, finally finished', 'molosoc' ); ?></h2>
 
-			<div class="molosoc-pillars">
-				<div class="molosoc-pillar molosoc-merge__text">
+			<div class="molosoc-pillars molosoc-reveal">
+				<div class="molosoc-pillar">
 					<h3><?php esc_html_e( 'Locks in moisture', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Seals cream against skin for the length of the session.', 'molosoc' ); ?></p>
 				</div>
-				<div class="molosoc-pillar molosoc-merge__text">
+				<div class="molosoc-pillar">
 					<h3><?php esc_html_e( 'Reduces mess and slipping', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'No greasy floors, no ruined sheets, no reason to stop early.', 'molosoc' ); ?></p>
 				</div>
-				<div class="molosoc-pillar molosoc-merge__text">
+				<div class="molosoc-pillar">
 					<h3><?php esc_html_e( 'Works with your favorite cream', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Cream-agnostic by design — use whatever you already trust.', 'molosoc' ); ?></p>
 				</div>
-				<div class="molosoc-pillar molosoc-merge__text">
+				<div class="molosoc-pillar">
 					<h3><?php esc_html_e( 'Easy self-care ritual', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Soft, cared-for feet from ten quiet minutes, not a new habit to learn.', 'molosoc' ); ?></p>
 				</div>
@@ -150,25 +133,23 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		</div>
 	</section>
 
-	<!-- Beat 6 — Social proof, ported to add .molosoc-proof__media--scale so
-	     proof-scale.js has the element it looks for. -->
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-proof-section">
 		<div class="molosoc-section__inner">
 			<div class="molosoc-proof">
-				<div class="molosoc-proof__intro molosoc-reveal">
-					<p class="molosoc-eyebrow"><?php esc_html_e( 'Real results', 'molosoc' ); ?></p>
-					<h2><?php esc_html_e( 'Three months in, no filters', 'molosoc' ); ?></h2>
-				</div>
-				<div class="molosoc-media molosoc-proof__media molosoc-proof__media--scale">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-results-full.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
+				<div class="molosoc-media molosoc-reveal">
+					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Molosoc-Real-3-months-results.jpg"
+						alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
+				</div>
+				<div class="molosoc-reveal">
+					<p class="molosoc-eyebrow"><?php esc_html_e( 'Real results', 'molosoc' ); ?></p>
+					<h2 style="margin-top: var(--space-s);"><?php esc_html_e( 'Three months in, no filters', 'molosoc' ); ?></h2>
+					<p class="molosoc-proof__caption"><?php esc_html_e( 'Time-stamped, unedited — the kind of proof this brand leads with.', 'molosoc' ); ?></p>
 				</div>
 			</div>
 		</div>
 	</section>
 
-	<!-- Beat 7 — Product moment -->
 	<section class="molosoc-section molosoc-section--bg-deep">
 		<div class="molosoc-section__inner molosoc-product-cta molosoc-reveal">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'How Molosoc helps right now', 'molosoc' ); ?></p>
@@ -178,45 +159,35 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		</div>
 	</section>
 
-	<!-- Beat 8 — Foot care, topic by topic: one pinned single-screen sequence,
-	     ported from homepage-preview.html so topics-portal.js has the
-	     .molosoc-topics__stage / .molosoc-feature-card markup it looks for.
-	     Previously this stayed on a plain topic-grid by deliberate scope
-	     decision (see homepage.css) — now brought to full parity with the
-	     finished design per explicit request. -->
-	<section class="molosoc-topics" id="topics-section" aria-label="<?php esc_attr_e( 'Foot care, topic by topic', 'molosoc' ); ?>">
-		<div class="molosoc-topics__stage">
-			<div class="molosoc-topics__media" aria-hidden="true">
-				<div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>');"></div>
-				<div class="molosoc-topics__bg molosoc-topics__bg--one" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_platform_bed_blanket-scaled.jpg' ); ?>');"></div>
-			</div>
+	<section class="molosoc-section molosoc-section--bg-cream">
+		<div class="molosoc-section__inner">
+			<h2 class="molosoc-eyebrow molosoc-reveal"><?php esc_html_e( 'Foot care, topic by topic', 'molosoc' ); ?></h2>
 
-			<div class="molosoc-topics__cards">
-				<a class="molosoc-feature-card molosoc-feature-card--1" href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">
+			<div class="molosoc-topic-grid molosoc-reveal">
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">
 					<h3><?php esc_html_e( 'Cracked heels & dry skin', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Cracked heels form when dry skin loses elasticity and splits under pressure — they heal with consistent moisture, not overnight fixes.', 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--2" href="<?php echo esc_url( home_url( '/ingrown-toenails/' ) ); ?>">
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/ingrown-toenails/' ) ); ?>">
 					<h3><?php esc_html_e( 'Ingrown toenails', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'An ingrown toenail starts at the nail edge, not the skin around it — tight shoes and short trims are usually the real cause.', 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--3" href="<?php echo esc_url( home_url( '/hardened-skin-calluses/' ) ); ?>">
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/hardened-skin-calluses/' ) ); ?>">
 					<h3><?php esc_html_e( 'Hardened skin & calluses', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Hardened skin builds up gradually from pressure and friction — it softens with consistent care, not a one-time filing session.', 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--4" href="<?php echo esc_url( home_url( '/dry-skin-feet/' ) ); ?>">
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/dry-skin-feet/' ) ); ?>">
 					<h3><?php esc_html_e( 'Dry skin on feet', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Feet dry out differently than the rest of the body — socks, showers, and season all play a part, and moisturizing alone doesn't always fix it.", 'molosoc' ); ?></p>
+					<p><?php esc_html_e( 'Feet dry out differently than the rest of the body — socks, showers, and season all play a part.', 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--5" href="<?php echo esc_url( home_url( '/foot-cream-that-works/' ) ); ?>">
-					<h3><?php esc_html_e( 'Making the cream you already own actually work', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Most foot creams fail from inconsistent use, not a bad formula — the fix is finishing the routine, not switching products.', 'molosoc' ); ?></p>
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/foot-cream-that-works/' ) ); ?>">
+					<h3><?php esc_html_e( 'Making the cream you already own work', 'molosoc' ); ?></h3>
+					<p><?php esc_html_e( 'Most foot creams fail from inconsistent use, not a bad formula — the fix is finishing the routine.', 'molosoc' ); ?></p>
 				</a>
 			</div>
 		</div>
 	</section>
 
-	<!-- Beat 9 — Final CTA -->
 	<section class="molosoc-section molosoc-final-cta">
 		<div class="molosoc-section__inner molosoc-reveal" style="text-align:center;">
 			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php esc_html_e( 'The reusable alternative', 'molosoc' ); ?></p>

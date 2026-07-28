@@ -61,13 +61,6 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
 		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		// The ScrollTrigger position-refresh fix (wait for lazy images, then
-		// refresh) lives as real code at the bottom of topics-portal.js, not
-		// as a wp_add_inline_script() call here — this site's WPO Minify
-		// plugin combines enqueued script FILES into a bundle correctly but
-		// silently drops inline scripts attached to a bundled handle, so an
-		// inline-injected version of this fix was never actually reaching
-		// the browser. See the comment in that file for the full story.
 		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 	}
 }
