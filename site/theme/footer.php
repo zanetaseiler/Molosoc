@@ -7,6 +7,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+$molosoc_theme_uri = get_stylesheet_directory_uri();
+
 $molosoc_social_links = array(
 	'Facebook'  => 'https://www.facebook.com/molosoc',
 	'YouTube'   => 'https://www.youtube.com/@Molosoc',
@@ -25,7 +27,9 @@ $molosoc_legal_links = array(
 <footer class="molosoc-site-footer">
 	<div class="molosoc-site-footer__inner">
 		<div class="molosoc-site-footer__brand">
-			<a href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php bloginfo( 'name' ); ?></a>
+			<a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+				<img src="<?php echo esc_url( $molosoc_theme_uri . '/assets/images/molosoc-logo-white.png' ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" height="28" loading="lazy" decoding="async">
+			</a>
 
 			<ul class="molosoc-social-links">
 				<?php foreach ( $molosoc_social_links as $label => $url ) : ?>
@@ -36,6 +40,15 @@ $molosoc_legal_links = array(
 					</li>
 				<?php endforeach; ?>
 			</ul>
+		</div>
+
+		<!-- Visa/Mastercard logos are required in the e-shop footer under
+		     Comgate's terms of service; Comgate's own logo is recommended
+		     alongside them. Official pre-made banner from
+		     help.comgate.cz/docs/en/logos-and-info-on-web, dark-background
+		     variant. -->
+		<div class="molosoc-site-footer__payments">
+			<img src="<?php echo esc_url( $molosoc_theme_uri . '/assets/images/comgate-payment-methods-dark.png' ); ?>" alt="<?php esc_attr_e( 'Accepted payment methods: Comgate, Visa, Mastercard, Google Pay, Apple Pay', 'molosoc' ); ?>" height="24" loading="lazy" decoding="async">
 		</div>
 
 		<div class="molosoc-site-footer__legal">
