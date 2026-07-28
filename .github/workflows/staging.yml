@@ -25,4 +25,4 @@ jobs:
           password: ${{ secrets.STAGING_SFTP_PASS }}
           protocol: ftps
           local-dir: site/theme/
-          server-dir: /public_html/staging.molosoc.com/wp-content/themes/molosoc-theme/
+          server-dir: /wp-content/themes/molosoc/
