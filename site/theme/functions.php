@@ -53,15 +53,26 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
 
-		// GSAP + ScrollTrigger, scoped to the front page — see front-page.php
-		// for the sections that use these (merge transition, topics portal,
-		// proof-scale). CDN-hosted; each dependent script no-ops gracefully
-		// if this fails to load (see docs/molosoc-animation-specification.md).
-		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
-		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
-		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		// GSAP + ScrollTrigger (merge transition, topics portal, proof-scale)
+		// are TEMPORARILY DISABLED. front-page.php was just re-ported to full
+		// markup parity with homepage-preview.html after an earlier port of
+		// this same animation stack caused a regression that forced a revert
+		// back to a plain static page (see git history: "Revert homepage to
+		// last confirmed-stable static state (pre-animation-port)"). Per the
+		// current plan, the static markup/images/styling are being confirmed
+		// pixel-accurate first; every effect below already has a fully-settled
+		// default CSS state with no JS running (--proof-scale defaults to 1,
+		// merge tiles sit flush by default, --portal-hole defaults fully
+		// open, feature cards default to opacity:1/transform:none — see the
+		// comments in homepage.css for each), so leaving these disabled does
+		// not change how the page looks at rest. Re-enable one at a time,
+		// testing after each, once the static match is confirmed:
+		//
+		// wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		// wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		// wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		// wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
