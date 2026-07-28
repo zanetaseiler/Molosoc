@@ -56,21 +56,18 @@ function molosoc_enqueue_assets() {
 		// GSAP + ScrollTrigger are being re-enabled one effect at a time (see
 		// git history: "Revert homepage to last confirmed-stable static state
 		// (pre-animation-port)" — the full stack caused a regression once
-		// before). Merge transition confirmed working; topics-portal (five-
-		// card reveal) re-enabled next, including its ScrollTrigger refresh
-		// fix for lazy-loaded images (see the second IIFE at the bottom of
-		// topics-portal.js — this exact fix was diagnosed once already, then
-		// lost in the revert). proof-scale stays off until topics-portal is
-		// confirmed working.
+		// before). Merge transition (the two-tile "How it helps" section) is
+		// re-enabled first; proof-scale and topics-portal stay off until
+		// merge is confirmed working, then get re-enabled the same way.
 		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
 		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
 		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 
-		// Still disabled — CSS default state (--proof-scale:1) renders this
-		// correctly at rest with no JS, so leaving it off doesn't change how
-		// it looks:
+		// Still disabled — CSS default state (--proof-scale:1, --portal-hole
+		// fully open, cards at final position) renders these correctly at
+		// rest with no JS, so leaving them off doesn't change how they look:
 		// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		// wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
