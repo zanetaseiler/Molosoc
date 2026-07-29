@@ -22,11 +22,18 @@ defined( 'ABSPATH' ) || exit;
 		<?php bloginfo( 'name' ); ?>
 	</a>
 	<?php
+	// Turned off for now (2026-07-29) — most of the pillar/spoke/product
+	// pages a real nav would link to aren't built yet, so this waits until
+	// there's an actual decision on what should be in it. Re-enable by
+	// uncommenting; the 'primary' menu location and its registration in
+	// functions.php are untouched.
+	/*
 	wp_nav_menu( array(
 		'theme_location' => 'primary',
 		'container'      => 'nav',
 		'container_class' => 'molosoc-site-header__nav',
 		'fallback_cb'    => false,
 	) );
+	*/
 	?>
 </header>
