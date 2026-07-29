@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
 
 <header class="molosoc-site-header">
 	<a class="molosoc-site-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-		<?php bloginfo( 'name' ); ?>
+		<img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
 	</a>
 	<?php
 	// Turned off for now (2026-07-29) — most of the pillar/spoke/product

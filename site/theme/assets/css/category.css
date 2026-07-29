@@ -28,14 +28,6 @@
   object-position: right center;
 }
 
-/* ---------- Site header — real logo image, not a text wordmark ---------- */
-
-.molosoc-site-header__logo img {
-  height: 30px;
-  width: auto;
-  display: block;
-}
-
 /* ---------- Hero — full-bleed background photo, not a boxed inset image.
    The render (3d_turntable_01_mirror.jpg) is already mirrored at the source
    and shot on a plain white backdrop, so it's shown with object-fit:contain
