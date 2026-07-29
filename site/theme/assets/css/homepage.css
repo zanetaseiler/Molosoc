@@ -15,15 +15,12 @@
   z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: var(--space-s) var(--section-padding-x);
-  mix-blend-mode: difference;
 }
 
-.molosoc-home-header img {
-  height: 22px;
-  width: auto;
-  filter: invert(1);
+.molosoc-home-header__cta {
+  padding: 0.7em 1.5em;
 }
 
 /* ---------- Beat 1 — Hero / emotional opening ---------- */

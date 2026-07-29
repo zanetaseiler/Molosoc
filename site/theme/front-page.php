@@ -51,7 +51,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 <a class="molosoc-skip-link" href="#main"><?php esc_html_e( 'Skip to content', 'molosoc' ); ?></a>
 
 <header class="molosoc-home-header">
-	<img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php bloginfo( 'name' ); ?>" loading="eager" decoding="async">
+	<a class="molosoc-home-header__cta molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
 </header>
 
 <main id="main">
