@@ -144,6 +144,59 @@
   transform: scale(1.03);
 }
 
+/* ---------- Numbered fact card ("pillars"): reused by the homepage's
+   merge section (benefits grid) and the category page's cost-comparison
+   grid. Defaults to 4 columns collapsing to 2 then 1; pages needing a
+   different column count override grid-template-columns on their own
+   modifier class (see category.css's .molosoc-cost-grid). ---------- */
+
+.molosoc-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+  counter-reset: pillar;
+}
+
+@media (max-width: 960px) {
+  .molosoc-pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .molosoc-pillars {
+    grid-template-columns: 1fr;
+  }
+}
+
+.molosoc-pillar {
+  padding-top: var(--space-m);
+  border-top: 1px solid rgba(12, 17, 21, 0.14);
+}
+
+.molosoc-pillar::before {
+  counter-increment: pillar;
+  content: counter(pillar, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-accent);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.molosoc-pillar p {
+  margin-top: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
 /* ---------- Topic / pillar link card (educational-content beat) ---------- */
 
 .molosoc-topic-grid {

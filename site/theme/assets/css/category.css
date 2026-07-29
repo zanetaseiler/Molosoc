@@ -1,0 +1,654 @@
+/*
+  Molosoc — Category page ("Reusable Foot Covers") layout.
+  This page's job (docs/brand-architecture.md §3): argue reusable/cream-agnostic
+  vs. disposable pre-filled sock masks, explain the moisture-lock mechanism, and
+  carry the objection-handling content from docs/icp.md §4. Category-only
+  layout lives here — same convention as homepage.css for homepage-only layout.
+
+  Backgrounds are deliberately kept to the brand's warm cream tones (or a real
+  photo) throughout — no flat neutral-grey blocks (--color-bg-alt reads as
+  grey next to a photo, not as the warm Scandinavian surface it's meant to be).
+*/
+
+/* ---------- Disposable-block photo: no animation at all ----------
+   Overrides components.css's shared .molosoc-media:hover img zoom (a
+   site-wide micro-interaction on every other photo) — this one image
+   stays completely static, no entrance motion and no hover transform. */
+
+.molosoc-media--static:hover img {
+  transform: none;
+}
+
+/* ---------- Moisture-lock photo: justify right within its own frame ----------
+   Frame size/crop (object-fit:cover, aspect-ratio 4:5) is unchanged — this
+   only shifts which part of the source photo is anchored in that frame,
+   favoring the right side (where the foot/subject sits) over a plain
+   centered crop. */
+.molosoc-media--justify-right img {
+  object-position: right center;
+}
+
+/* ---------- Site header — real logo image, not a text wordmark ---------- */
+
+.molosoc-site-header__logo img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
+/* ---------- Hero — full-bleed background photo, not a boxed inset image.
+   The render (3d_turntable_01_mirror.jpg) is already mirrored at the source
+   and shot on a plain white backdrop, so it's shown with object-fit:contain
+   (whole product visible, no cropping) rather than cover — the render's own
+   white matches the section background closely enough that letterboxing
+   around it is invisible. Same light warm-scrim approach as
+   .molosoc-who-section for legibility over the parts it does cover. ---------- */
+
+.molosoc-category-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 42rem;
+  display: flex;
+  align-items: center;
+  padding: var(--space-2xl) var(--section-padding-x);
+}
+
+.molosoc-category-hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-category-hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right center;
+}
+
+.molosoc-category-hero__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    100deg,
+    rgba(248, 247, 244, 0.92) 0%,
+    rgba(248, 247, 244, 0.7) 32%,
+    rgba(248, 247, 244, 0.25) 55%,
+    rgba(248, 247, 244, 0.15) 100%
+  );
+}
+
+.molosoc-category-hero__text {
+  position: relative;
+  z-index: 2;
+  max-width: 34rem;
+}
+
+.molosoc-category-hero__text .molosoc-btn {
+  margin-top: var(--space-l);
+}
+
+/* ---------- Hero motion decoration ----------
+   Adapted from nexu-io/open-design's "motion-frames" template
+   (github.com/nexu-io/open-design/tree/main/design-templates/motion-frames):
+   concentric rotating rings + orbiting labels around a focal mark, corner
+   "chrome" stamps, a headline type-in reveal — all pure CSS @keyframes, no
+   JS, exactly like the source template. Re-themed to this site's own
+   tokens/copy instead of the template's wireframe-globe/lab-tag placeholder
+   content, and the focal mark is the existing real product photo, not a new
+   illustration. Real H1/lede/CTA content is untouched — the H1 just gains
+   the one-time type-in reveal on top of what's already there. */
+
+.molosoc-hero-motion {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.molosoc-hero-motion__rings {
+  position: absolute;
+  top: 50%;
+  right: 6%;
+  width: clamp(18rem, 32vw, 28rem);
+  aspect-ratio: 1 / 1;
+  transform: translateY(-50%);
+}
+
+.molosoc-hero-motion__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(12, 17, 21, 0.16);
+  animation: molosoc-ring-spin 70s linear infinite;
+}
+
+.molosoc-hero-motion__ring--2 {
+  inset: 7%;
+  border-color: rgba(12, 17, 21, 0.11);
+  animation-duration: 100s;
+  animation-direction: reverse;
+}
+
+.molosoc-hero-motion__ring--3 {
+  inset: 14%;
+  border-style: dashed;
+  border-color: rgba(12, 17, 21, 0.09);
+  animation-duration: 160s;
+}
+
+.molosoc-hero-motion__labels {
+  position: absolute;
+  inset: 0;
+  animation: molosoc-ring-spin 70s linear infinite;
+}
+
+.molosoc-hero-motion__labels span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  opacity: 0.45;
+  white-space: nowrap;
+  transform-origin: 0 0;
+}
+
+.molosoc-hero-motion__label--1 { transform: rotate(-20deg) translate(0, calc(clamp(9rem, 16vw, 14rem) * -1)); }
+.molosoc-hero-motion__label--2 { transform: rotate(70deg) translate(0, calc(clamp(9rem, 16vw, 14rem) * -1)); }
+.molosoc-hero-motion__label--3 { transform: rotate(160deg) translate(0, calc(clamp(9rem, 16vw, 14rem) * -1)); }
+.molosoc-hero-motion__label--4 { transform: rotate(250deg) translate(0, calc(clamp(9rem, 16vw, 14rem) * -1)); }
+
+.molosoc-hero-motion__baseline {
+  position: absolute;
+  left: var(--section-padding-x);
+  right: var(--section-padding-x);
+  bottom: var(--space-m);
+  height: 1px;
+  background: rgba(12, 17, 21, 0.14);
+  z-index: 2;
+}
+
+@keyframes molosoc-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.molosoc-category-hero__text h1 {
+  animation: molosoc-type-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes molosoc-type-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.04em;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    letter-spacing: normal;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-hero-motion__ring,
+  .molosoc-hero-motion__labels,
+  .molosoc-category-hero__text h1 {
+    animation: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .molosoc-hero-motion,
+  .molosoc-hero-motion__baseline {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .molosoc-category-hero {
+    text-align: center;
+    min-height: 36rem;
+  }
+
+  .molosoc-category-hero__text {
+    max-width: none;
+  }
+
+  .molosoc-category-hero__scrim {
+    background: rgba(248, 247, 244, 0.82);
+  }
+
+  .molosoc-category-hero__text .molosoc-btn {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* ---------- Sequential-text heading + pinned stage (fixed image + text
+   entering one-by-one on scroll) ----------
+   The heading (eyebrow + H2) deliberately lives in its own normal-flow
+   block ABOVE the pinned stage, not inside it — the combined height of a
+   heading + 3 text items + an image was taller than 100vh at realistic
+   viewport heights, and whichever way the overflow got pushed
+   (align-items: center pushed it off the top; flex-start pushed it off
+   the bottom) something ended up clipped by the stage's own
+   overflow:hidden. Pulling the heading out removes enough height that the
+   remaining image+text grid comfortably fits on its own.
+
+   Reusable across any section that needs it — see
+   assets/js/sequential-text-reveal.js (handles every
+   .molosoc-sequential-stage on the page independently, entrance direction
+   set per-instance via [data-slide-direction="left"|"right"]) and
+   docs/skills/Fixed-Image-Sequential-Text-Reveal.md /
+   ~/.claude/skills/fixed-image-text-reveal for the full mechanics. Same
+   pinned-stage convention as .molosoc-who-section__stage. Default/no-JS
+   state is the settled final look (opacity 1, no transform); JS parks each
+   text item off to its stage's own side, invisible, before playing it back
+   on its threshold. The photo is never selected by that script at all —
+   it's plain, static content throughout. */
+
+.molosoc-sequential-heading {
+  background: var(--color-bg);
+  padding: var(--space-xl) var(--section-padding-x) var(--space-m);
+}
+
+/* "Reusable vs. disposable: the real cost" only — a clearer/brighter
+   white instead of the standard warm cream, so this section reads as its
+   own distinct moment rather than blending into the cream sections
+   directly before and after it. */
+.molosoc-sequential-heading--clear {
+  background: var(--color-white);
+}
+
+.molosoc-sequential-heading__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-sequential-stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  /* flex-start, not center: guarantees the top of the image+text grid
+     (rather than an arbitrary middle slice of it) is what shows if this
+     content is ever taller than 100vh on a shorter viewport. */
+  align-items: flex-start;
+  background: var(--color-bg);
+  padding: var(--space-l) var(--section-padding-x);
+}
+
+.molosoc-sequential-stage--clear {
+  background: var(--color-white);
+}
+
+.molosoc-sequential-stage__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.molosoc-sequential-entrance--text {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .molosoc-sequential-stage {
+    height: auto;
+    padding-top: var(--space-l);
+    padding-bottom: var(--space-l);
+  }
+}
+
+/* ---------- Argument rows: one real photo + a stack of H3 points ----------
+   Same idea as the homepage's arc-reveal "story" rows, but named/scoped to
+   this page rather than reusing homepage.css's .molosoc-story (which also
+   drags in that section's specific alternating-width/reveal setup). */
+
+.molosoc-argument {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: var(--space-l) var(--space-xl);
+  margin-top: var(--space-m);
+  align-items: start;
+}
+
+.molosoc-argument--reverse .molosoc-argument__media {
+  order: 2;
+}
+
+/* aspect-ratio has to live on the wrapper (which .molosoc-media img's
+   height:100% sizes against), not the img itself — an img with height:100%
+   inside a parent with no explicit height collapses to zero.
+   max-height caps how tall a wide (1.1fr) column's 4:5 box can get inside
+   a pinned 100vh stage — without this, the image's own aspect-ratio math
+   was taller than the stage's available vertical space (stage padding +
+   the grid's own margin-top), overflowing past the bottom edge. Capping
+   height here (width follows to keep the ratio) guarantees it always
+   fits, regardless of column width or viewport height. */
+.molosoc-argument__media .molosoc-media {
+  aspect-ratio: 4 / 5;
+  max-height: calc(100vh - 11rem);
+  margin-left: auto;
+}
+
+.molosoc-argument__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.molosoc-argument__item h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-argument__item p {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 860px) {
+  .molosoc-argument,
+  .molosoc-argument--reverse {
+    grid-template-columns: 1fr;
+  }
+
+  .molosoc-argument--reverse .molosoc-argument__media {
+    order: 0;
+  }
+}
+
+/* ---------- Cost comparison — reuses .molosoc-pillars/.molosoc-pillar
+   (components.css numbered-fact card) at 3 columns instead of the default
+   4, since this section has exactly 3 points. ---------- */
+
+.molosoc-cost-grid.molosoc-pillars {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 960px) {
+  .molosoc-cost-grid.molosoc-pillars {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Who this is for — editorial feature reveal ----------
+   Pinned single-screen stage (matches homepage's .molosoc-topics__stage
+   convention exactly): Image A (hero_collection_03_relaxing-scaled.jpg)
+   sits static, a clean circular mask opens from the frame's center to
+   reveal Image B (molosoc_pedicure_relaxing.jpg) underneath in the same
+   crop, then the three persona cards emerge from center and travel out to
+   their own tiered positions — see assets/js/who-reveal.js. Progressive
+   enhancement: no-JS/reduced-motion renders Image B as the plain
+   background with every card already at its settled position (below). */
+
+.molosoc-who-section {
+  position: relative;
+}
+
+.molosoc-who-section__stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden; /* hard guarantee: nothing — image or card — paints past this box */
+  isolation: isolate;
+  background: var(--color-cream-deep);
+}
+
+.molosoc-who-section__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-who-section__bg {
+  position: absolute;
+  inset: 0; /* both images share this exact box — identical crop/height */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.molosoc-who-section__bg--a {
+  /* Camera-iris reveal — plain circular mask only, no distortion/blur.
+     --who-hole defaults to a fully-open mask (the no-JS/reduced-motion
+     baseline); who-reveal.js pulls it down to 0 at startup and grows it
+     back on scroll — never the reverse. */
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--who-hole, 200vmax),
+    black calc(var(--who-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--who-hole, 200vmax),
+    black calc(var(--who-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-who-section__bg--a {
+    display: none;
+  }
+}
+
+.molosoc-who-section__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 247, 244, 0.65) 0%,
+    rgba(248, 247, 244, 0.15) 26%,
+    rgba(248, 247, 244, 0.15) 74%,
+    rgba(248, 247, 244, 0.72) 100%
+  );
+}
+
+.molosoc-who-section__heading {
+  position: absolute;
+  inset: var(--space-l) var(--section-padding-x) auto;
+  z-index: 2;
+}
+
+.molosoc-who-cards {
+  position: absolute;
+  inset: 0; /* same 100vh box as the two background layers */
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Same premium/tactile card surface as the homepage's .molosoc-feature-card:
+   pure white, warm hairline border, soft radius, layered shadow. Kept as
+   its own class (not a reuse of homepage.css's version) since this page
+   doesn't load homepage.css. */
+.molosoc-who-card {
+  position: absolute;
+  pointer-events: auto;
+  display: block;
+  background: var(--color-white);
+  border: 1px solid #ece8e2;
+  border-radius: 13px;
+  padding: var(--space-s) var(--space-m);
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    0 8px 20px -12px rgba(12, 17, 21, 0.1),
+    0 24px 48px -28px rgba(12, 17, 21, 0.12);
+  text-decoration: none;
+  color: var(--color-text);
+  /* Only box-shadow transitions here — the hover lift is driven by GSAP
+     (who-reveal.js), not CSS: GSAP writes translate/scale as inline
+     styles on every card it tweens, and inline styles always beat a CSS
+     class rule for the same property, so a `:hover { transform }` here
+     would silently never apply once a card's entrance has run. */
+  transition: box-shadow var(--motion-duration-s) var(--motion-ease);
+  opacity: 1;
+  transform: none;
+}
+
+.molosoc-who-card:hover {
+  box-shadow:
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 14px 28px -14px rgba(12, 17, 21, 0.14),
+    0 32px 64px -32px rgba(12, 17, 21, 0.16);
+}
+
+.molosoc-who-card h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-who-card p {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+/* Tiered, hand-placed composition (not a grid) — two cards on an upper
+   tier, one centered on a bottom tier to resolve the Z-pattern, center of
+   the frame left open so the photo's own subject stays the focal point. */
+.molosoc-who-card--1 {
+  top: 24%;
+  left: 6%;
+  width: clamp(14rem, 22vw, 17rem);
+}
+
+.molosoc-who-card--2 {
+  top: 20%;
+  right: 6%;
+  width: clamp(14rem, 22vw, 17rem);
+}
+
+.molosoc-who-card--3 {
+  bottom: 15px;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: clamp(16rem, 26vw, 20rem);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  /* who-reveal.js skips the pin below this width — plain stacked fallback. */
+  .molosoc-who-section__stage {
+    height: auto;
+  }
+
+  .molosoc-who-section__media {
+    position: relative;
+    height: 100vh;
+  }
+
+  .molosoc-who-section__bg--a {
+    display: none;
+  }
+
+  .molosoc-who-section__heading {
+    position: static;
+    padding: var(--space-l) var(--section-padding-x) 0;
+  }
+
+  .molosoc-who-cards {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    padding: var(--space-l) var(--section-padding-x);
+    pointer-events: auto;
+  }
+
+  .molosoc-who-card,
+  .molosoc-who-card--1,
+  .molosoc-who-card--2,
+  .molosoc-who-card--3 {
+    position: static;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    text-align: left;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- Final CTA banner — real photo background (3d_render_01_front_nobg.png,
+   a transparent-background cutout, so no edge mask/fade is needed — the
+   render's own edges already are the product's edges) with a dark scrim on
+   top for text legibility, same pattern as .molosoc-who-section but
+   inverted (dark, since this section's text is white). ---------- */
+
+.molosoc-category-final-cta {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  color: var(--color-white);
+  background: var(--color-ink);
+}
+
+.molosoc-category-final-cta__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-category-final-cta__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.molosoc-category-final-cta__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.6) 0%,
+    rgba(12, 17, 21, 0.75) 100%
+  );
+}
+
+.molosoc-category-final-cta .molosoc-section__inner {
+  position: relative;
+  z-index: 2;
+}
+
+.molosoc-category-final-cta h2 {
+  color: var(--color-white);
+  max-width: 34rem;
+  margin: 0 auto;
+}
+
+.molosoc-category-final-cta p {
+  color: rgba(255, 255, 255, 0.72);
+  margin: var(--space-m) auto 0;
+  max-width: 30rem;
+}
+
+.molosoc-category-final-cta .molosoc-btn {
+  margin-top: var(--space-l);
+  padding: 1.4em 3em;
+  font-size: 0.875rem;
+  letter-spacing: 0.16em;
+  background: var(--color-white);
+  color: var(--color-ink);
+}
