@@ -137,6 +137,142 @@ function molosoc_category_schema() {
 add_action( 'wp_head', 'molosoc_category_schema' );
 
 /**
+ * Homepage schema markup — Organization/WebSite/WebPage, ported from
+ * homepage-preview.html's own <head> block. front-page.php builds its own
+ * <head> and calls wp_head() directly (see that file's header comment for
+ * why it skips get_header()), so this hooks in the same way the category
+ * page's schema does rather than being printed inline in the template.
+ * Defines the #organization and #website @ids the category (and product)
+ * page schema already reference — those were dangling on the live site
+ * until this existed.
+ * Source: content/molosoc-site/01-homepage/homepage-schema.html.
+ */
+function molosoc_homepage_schema() {
+	if ( ! is_front_page() ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Molosoc helps you finish the foot care routine you already started — reusable, cream-agnostic, and built for real bathroom drawers, not perfect ones.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Organization",
+	      "@id": "https://molosoc.com/#organization",
+	      "name": "Molosoc",
+	      "url": "https://molosoc.com/",
+	      "description": "Molosoc helps you finish the foot care routine you already started — reusable, cream-agnostic, and built for real bathroom drawers, not perfect ones.",
+	      "logo": {
+	        "@type": "ImageObject",
+	        "url": "https://molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png"
+	      },
+	      "sameAs": [
+	        "https://www.facebook.com/molosoc",
+	        "https://www.instagram.com/molosoc_/",
+	        "https://www.tiktok.com/@molosoc",
+	        "https://www.youtube.com/@Molosoc",
+	        "https://www.linkedin.com/in/molosoc/",
+	        "https://x.com/Molosoc_"
+	      ]
+	    },
+	    {
+	      "@type": "WebSite",
+	      "@id": "https://molosoc.com/#website",
+	      "url": "https://molosoc.com/",
+	      "name": "Molosoc",
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "WebPage",
+	      "@id": "https://molosoc.com/#webpage",
+	      "url": "https://molosoc.com/",
+	      "name": "Molosoc® | Foot Care That Actually Sticks",
+	      "description": "Molosoc helps you finish the foot care routine you already started — reusable, cream-agnostic, and built for real bathroom drawers, not perfect ones.",
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "about": { "@id": "https://molosoc.com/#organization" },
+	      "inLanguage": "en"
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_homepage_schema' );
+
+/**
+ * Product page schema markup, ported from product-preview.html's own
+ * <head> block. Gated on is_singular('product') (core WP conditional,
+ * works whether or not WooCommerce's own is_product() is available) since
+ * the live product page at /foot-covers/moisture-lock-foot-cover/ is a
+ * WooCommerce single-product template, not yet product.php in this theme.
+ * Two deltas from the preview's source block, both stale content bugs, not
+ * design choices: "sku" dropped (was a literal "[INSERT: SKU — not yet
+ * assigned]" placeholder — schema.org doesn't require it, and shipping the
+ * placeholder text as the real value is worse than omitting the field),
+ * and "image" swapped from hero_pair_bedroom.jpg (that file's own comment
+ * says it's no longer used on this page, replaced by the molosoc-3d.glb
+ * hero) to 3d_render_01_front_nobg.png, the product render actually in use
+ * elsewhere on the live site today.
+ * Source: content/molosoc-site/03-product/product-schema.html.
+ */
+function molosoc_product_schema() {
+	if ( ! is_singular( 'product' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Product",
+	      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#product",
+	      "name": "Molosoc Foot Cover",
+	      "description": "A reusable, moisture-lock foot cover that seals your favorite cream against the skin — cutting the mess and making your foot care routine actually stick. Works with any cream you already own.",
+	      "brand": { "@id": "https://molosoc.com/#organization" },
+	      "image": "https://staging.molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png",
+	      "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+	      "category": "Foot Care",
+	      "offers": {
+	        "@type": "Offer",
+	        "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+	        "priceCurrency": "USD",
+	        "price": "13.00",
+	        "availability": "https://schema.org/InStock",
+	        "itemCondition": "https://schema.org/NewCondition"
+	      }
+	    },
+	    {
+	      "@type": "WebPage",
+	      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#webpage",
+	      "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+	      "name": "Molosoc Foot Cover — The Cream You Already Own, Finally Working",
+	      "description": "Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.",
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "about": { "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#product" },
+	      "breadcrumb": { "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#breadcrumb" },
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Foot Covers", "item": "https://molosoc.com/foot-covers/" },
+	        { "@type": "ListItem", "position": 3, "name": "Molosoc Foot Cover", "item": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_product_schema' );
+
+/**
  * WordPress doesn't allow .glb uploads by default (not in its core mime
  * whitelist) — needed for the 3D product model in the media library.
  */
