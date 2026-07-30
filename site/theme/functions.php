@@ -88,9 +88,49 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-who-reveal', $theme_uri . '/assets/js/who-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-who-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'cracked-heels' ) ) {
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+
+		// model-viewer renders the always-rotating molosoc-3d.glb model in
+		// the "why moisturizer alone doesn't fix it" section — same web
+		// component the Product page's own hero uses (see
+		// molosoc_product_schema()'s comment for that page's use of the
+		// same model). Needs type="module" (see the script_loader_tag
+		// filter below), not a plain classic script.
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+
+		// Two independent GSAP/ScrollTrigger sequences on this page
+		// (fixed-image-text-reveal for "what causes it", editorial-
+		// feature-reveal for "when it gets serious") plus one plain-
+		// scroll-listener sequence with no GSAP dependency (orbit-scroll-
+		// drawer for "why moisturizer alone doesn't fix it" — see that
+		// file's own header comment for why it skips GSAP). Same real-file
+		// scroll-refresh.js convention as the homepage/category branches
+		// above (WPO Minify silently drops inline scripts on a bundled
+		// handle).
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
+
+/**
+ * model-viewer is an ES module, not a classic script — wp_enqueue_script()
+ * always outputs a plain <script src="...">. Swap in type="module" for
+ * just this one handle rather than switching the whole enqueue API.
+ */
+function molosoc_module_script_tag( $tag, $handle, $src ) {
+	if ( 'molosoc-model-viewer' !== $handle ) {
+		return $tag;
+	}
+	return '<script type="module" src="' . esc_url( $src ) . '"></script>';
+}
+add_filter( 'script_loader_tag', 'molosoc_module_script_tag', 10, 3 );
 
 /**
  * Category page ("Reusable Foot Covers") schema markup.
@@ -273,6 +313,85 @@ function molosoc_product_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_product_schema' );
+
+/**
+ * Pillar 1 — Cracked Heels — schema markup, ported from
+ * content/molosoc-site/04-pillar1-cracked-heels/pillar1-cracked-heels-
+ * schema.html. Same is_page() convention as the category/product schema
+ * functions above (a normal template calling get_header(), which already
+ * calls wp_head(), rather than front-page.php's self-built <head>).
+ * FAQPage answers are kept in sync with this page's own copy (see
+ * page-cracked-heels.php) — content/.../pillar1-cracked-heels-copy.md is
+ * the locked source for both.
+ */
+function molosoc_pillar1_schema() {
+	if ( ! is_page( 'cracked-heels' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Cracked heels aren't just dry skin — here's what's really causing them, what makes them worse, and what actually helps (without the gimmicks).">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/cracked-heels/#article",
+	      "headline": "Cracked Heels: Why They Happen and How to Actually Fix Them",
+	      "description": "Cracked heels aren't just dry skin — here's what's really causing them, what makes them worse, and what actually helps (without the gimmicks).",
+	      "url": "https://molosoc.com/cracked-heels/",
+	      "mainEntityOfPage": "https://molosoc.com/cracked-heels/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-30",
+	      "dateModified": "2026-07-30",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/cracked-heels/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What causes cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Cracked heels form when heel skin dries out and loses the elasticity it needs to stretch under pressure. The heel's outer edge carries the most weight with every step, so dry, inflexible skin in that spot is the first to split. Standing for long stretches, especially in open-back shoes, speeds this up by increasing both pressure and moisture loss."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What are painful deep cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Painful deep cracked heels are cracks that hurt with every step because they've gone past surface dryness into a deeper layer of skin. At this stage, occasional moisturizing isn't enough — the skin needs consistent, sealed-in moisture to actually recover."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What are severe cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Severe cracked heels are cracks that have widened, deepened, and can bleed. This level requires a daily routine that's actually followed through, not an occasional cream application, to give the skin a real chance to rebuild."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/cracked-heels/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Cracked Heels", "item": "https://molosoc.com/cracked-heels/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_pillar1_schema' );
 
 /**
  * WordPress doesn't allow .glb uploads by default (not in its core mime

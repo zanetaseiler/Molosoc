@@ -257,6 +257,17 @@
    directly before and after it. */
 .molosoc-sequential-heading--clear {
   background: var(--color-white);
+  text-align: center;
+  padding-bottom: var(--space-l);
+}
+
+/* base.css caps all <p> tags at --content-max-width for readable line
+   length, but without margin:auto that leaves the eyebrow <p> box flush
+   left inside this centered heading — text-align:center only centers the
+   text within that narrow box, not the box itself. */
+.molosoc-sequential-heading--clear .molosoc-eyebrow {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .molosoc-sequential-heading__inner {
@@ -280,6 +291,22 @@
 
 .molosoc-sequential-stage--clear {
   background: var(--color-white);
+  background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cream_drawers.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.molosoc-sequential-stage--clear::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.75);
+  z-index: 0;
+}
+
+.molosoc-sequential-stage--clear .molosoc-sequential-stage__inner {
+  position: relative;
+  z-index: 1;
 }
 
 .molosoc-sequential-stage__inner {
@@ -435,6 +462,13 @@
     black calc(var(--who-hole, 200vmax) + 1.5px),
     black 100%
   );
+}
+
+.molosoc-who-section__bg--a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 @media (prefers-reduced-motion: reduce) {
