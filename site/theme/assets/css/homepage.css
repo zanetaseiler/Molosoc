@@ -15,8 +15,28 @@
   z-index: 20;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: var(--space-m);
   padding: var(--space-s) var(--section-padding-x);
+}
+
+.molosoc-home-header__nav ul {
+  display: flex;
+  gap: var(--space-m);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-home-header__nav a {
+  text-decoration: none;
+  font-size: var(--text-body);
+  color: var(--color-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.molosoc-home-header__nav a:hover {
+  opacity: 0.8;
 }
 
 .molosoc-home-header__cta {

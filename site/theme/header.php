@@ -22,18 +22,17 @@ defined( 'ABSPATH' ) || exit;
 		<img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
 	</a>
 	<?php
-	// Turned off for now (2026-07-29) — most of the pillar/spoke/product
-	// pages a real nav would link to aren't built yet, so this waits until
-	// there's an actual decision on what should be in it. Re-enable by
-	// uncommenting; the 'primary' menu location and its registration in
-	// functions.php are untouched.
-	/*
+	// Re-enabled (2026-07-30) — Home and Foot Covers are real pages now, so
+	// there's something for a nav to link to. Assign the actual menu items
+	// (Foot Covers, Product once it's ported, etc.) under Appearance > Menus
+	// in wp-admin to the "Primary Menu" location; nothing renders here until
+	// that menu exists (fallback_cb is intentionally false, not a hardcoded
+	// link list).
 	wp_nav_menu( array(
 		'theme_location' => 'primary',
 		'container'      => 'nav',
 		'container_class' => 'molosoc-site-header__nav',
 		'fallback_cb'    => false,
 	) );
-	*/
 	?>
 </header>

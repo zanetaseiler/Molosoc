@@ -25,9 +25,14 @@
  *
  * Deliberately does NOT call get_header(): that renders the site's own nav
  * chrome, and docs/molosoc-design-direction.md says WooCommerce "must
- * disappear visually" on this page — the minimal floating logo below
- * replaces it. wp_head() is still called directly so plugins (SEO,
- * analytics, WooCommerce cart fragments elsewhere) keep working.
+ * disappear visually" on this page. wp_head() is still called directly so
+ * plugins (SEO, analytics, WooCommerce cart fragments elsewhere) keep
+ * working.
+ *
+ * Does render its own minimal nav (2026-07-30) via the same 'primary' menu
+ * location header.php uses — WooCommerce chrome stays hidden, but the page
+ * is no longer a dead end with no way to click to Foot Covers/Product.
+ * Floating over the hero, not boxed like molosoc-site-header.
  *
  * DOES call get_footer() at the bottom, though — the homepage had no
  * footer at all otherwise (no legal links, no copyright), which was never
@@ -51,6 +56,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 <a class="molosoc-skip-link" href="#main"><?php esc_html_e( 'Skip to content', 'molosoc' ); ?></a>
 
 <header class="molosoc-home-header">
+	<?php
+	wp_nav_menu( array(
+		'theme_location'   => 'primary',
+		'container'        => 'nav',
+		'container_class'  => 'molosoc-home-header__nav',
+		'fallback_cb'      => false,
+	) );
+	?>
 	<a class="molosoc-home-header__cta molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
 </header>
 
