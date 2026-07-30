@@ -326,11 +326,16 @@
    was taller than the stage's available vertical space (stage padding +
    the grid's own margin-top), overflowing past the bottom edge. Capping
    height here (width follows to keep the ratio) guarantees it always
-   fits, regardless of column width or viewport height. */
+   fits, regardless of column width or viewport height.
+   border-radius: 0 overrides components.css's shared .molosoc-media
+   corner radius — these two rows are the same "large editorial photo,
+   sharp corners" treatment as the homepage's .molosoc-story__media,
+   not the site's usual softly-rounded card media. */
 .molosoc-argument__media .molosoc-media {
   aspect-ratio: 4 / 5;
   max-height: calc(100vh - 11rem);
   margin-left: auto;
+  border-radius: 0;
 }
 
 .molosoc-argument__text {
