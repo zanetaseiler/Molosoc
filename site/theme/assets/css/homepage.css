@@ -810,9 +810,43 @@
 /* ---------- Beat 9 — Final CTA ---------- */
 
 .molosoc-final-cta {
+  position: relative;
+  overflow: hidden;
   text-align: center;
   color: var(--color-white);
   background: var(--color-ink);
+}
+
+/* Same treatment as .molosoc-category-final-cta in category.css, same
+   image (3d_render_01_front_nobg.png) — a transparent-background cutout,
+   so no edge mask/fade needed, with a dark scrim on top for legibility. */
+.molosoc-final-cta__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-final-cta__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.molosoc-final-cta__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.6) 0%,
+    rgba(12, 17, 21, 0.75) 100%
+  );
+}
+
+.molosoc-final-cta .molosoc-section__inner {
+  position: relative;
+  z-index: 2;
 }
 
 .molosoc-final-cta h2 {
