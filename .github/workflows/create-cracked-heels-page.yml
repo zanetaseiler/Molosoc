@@ -1,0 +1,32 @@
+name: Create Category Page (cracked-heels)
+
+# One-off, manual workflow: ensures the WordPress Page for /cracked-heels/
+# exists as a draft, so site/theme/page-cracked-heels.php (already deployed)
+# has a Page to apply itself to. Safe to re-run — the script checks for an
+# existing Page with this slug first and does nothing if one is found.
+# Always creates as a draft, never publishes — matches content-sync.yml's
+# same safety gate (a human hits Publish in wp-admin).
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  create-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Ensure /cracked-heels/ Page exists (draft)
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: python3 automations/content-sync/create_cracked_heels_page.py
