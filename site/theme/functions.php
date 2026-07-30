@@ -115,6 +115,25 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
+		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
+
+		// model-viewer renders the always-rotating molosoc-3d.glb model in
+		// the hero — same web component page-cracked-heels.php uses for its
+		// "why moisturizer alone doesn't fix it" section. Needs
+		// type="module" (see the script_loader_tag filter below), not a
+		// plain classic script.
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+
+		// One GSAP/ScrollTrigger sequence, reused twice on this page
+		// (sequential-text-reveal for "Make the pedicure last" and "Give it
+		// as a gift"). Same real-file scroll-refresh.js convention as the
+		// other branches above (WPO Minify silently drops inline scripts on
+		// a bundled handle).
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal' ), $theme_version, true );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
