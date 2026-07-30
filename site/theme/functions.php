@@ -135,3 +135,13 @@ function molosoc_category_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_category_schema' );
+
+/**
+ * WordPress doesn't allow .glb uploads by default (not in its core mime
+ * whitelist) — needed for the 3D product model in the media library.
+ */
+function molosoc_allow_glb_uploads( $mimes ) {
+	$mimes['glb'] = 'model/gltf-binary';
+	return $mimes;
+}
+add_filter( 'upload_mimes', 'molosoc_allow_glb_uploads' );

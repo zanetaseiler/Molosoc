@@ -1,0 +1,57 @@
+name: Upload Media to WordPress
+
+# Manual, on-demand upload of a binary file already committed to the repo
+# into the WP media library. Same staging secrets as content-sync.yml /
+# media-sync.yml, so no credential ever needs to leave GitHub. Not a draft
+# state like pages — the file lands in the media library immediately, but
+# stays unattached/invisible on the site until a template references its URL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      file_path:
+        description: "Path (relative to repo root) of the file to upload"
+        required: true
+        default: "site/theme/assets/models/molosoc-3d.glb"
+      alt_text:
+        description: "Optional alt text / description to attach"
+        required: false
+        default: ""
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Upload file to WordPress media library
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          python3 automations/content-sync/upload_media.py "${{ inputs.file_path }}" --alt-text "${{ inputs.alt_text }}"
+
+      - name: Commit updated media-library.csv if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- media-library.csv; then
+            git add media-library.csv
+            git commit -m "Record uploaded media: ${{ inputs.file_path }}"
+            git push origin staging
+          else
+            echo "No changes to media-library.csv"
+          fi
