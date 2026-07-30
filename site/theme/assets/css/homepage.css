@@ -34,6 +34,19 @@
   padding: var(--space-s) var(--section-padding-x);
 }
 
+.molosoc-home-header__logo {
+  display: block;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.molosoc-home-header__logo img {
+  height: 26px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+}
+
 .molosoc-home-header__nav ul {
   display: flex;
   gap: var(--space-m);

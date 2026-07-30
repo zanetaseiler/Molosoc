@@ -56,6 +56,9 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 <a class="molosoc-skip-link" href="#main"><?php esc_html_e( 'Skip to content', 'molosoc' ); ?></a>
 
 <header class="molosoc-home-header">
+	<a class="molosoc-home-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
+		<img src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/images/molosoc-logo-white.png' ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
+	</a>
 	<?php
 	wp_nav_menu( array(
 		'theme_location'   => 'primary',
