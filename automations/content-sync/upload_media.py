@@ -45,19 +45,25 @@ def upload_file(path: str, alt_text: str = ""):
     content_type, _ = mimetypes.guess_type(filename)
     content_type = content_type or "application/octet-stream"
 
-    with open(path, "rb") as f:
-        data = f.read()
+    # Stream the file with an explicit Content-Length rather than reading it
+    # into memory and posting as `data=bytes` — the latter left requests to
+    # pick chunked transfer-encoding, which stalled mid-write against this
+    # host (server likely buffers/inspects the body and doesn't handle
+    # chunked uploads to the media endpoint the same way).
+    file_size = os.path.getsize(path)
 
-    resp = requests.post(
-        f"{WP_URL}/wp-json/wp/v2/media",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Content-Type": content_type,
-        },
-        data=data,
-        auth=wp_auth(),
-        timeout=120,
-    )
+    with open(path, "rb") as f:
+        resp = requests.post(
+            f"{WP_URL}/wp-json/wp/v2/media",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+                "Content-Type": content_type,
+                "Content-Length": str(file_size),
+            },
+            data=f,
+            auth=wp_auth(),
+            timeout=(30, 300),
+        )
 
     if resp.status_code not in (200, 201):
         sys.exit(f"ERROR uploading {path}: {resp.status_code} {resp.text[:300]}")
