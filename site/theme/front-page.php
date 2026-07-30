@@ -64,7 +64,6 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		'fallback_cb'      => false,
 	) );
 	?>
-	<a class="molosoc-home-header__cta molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
 </header>
 
 <main id="main">
