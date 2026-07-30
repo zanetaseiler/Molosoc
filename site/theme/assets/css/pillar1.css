@@ -459,7 +459,11 @@
 .molosoc-mechanism-section {
   position: relative;
   height: 220vh; /* real scroll distance for the fade/blur/slide to play across */
-  background: var(--color-ink-warm);
+  /* --color-ink (cool near-black), not --color-ink-warm — per explicit
+     correction, the warm espresso/brown tone read wrong for this
+     section's own fade/blur transition. Same dark-neutral token the
+     footer and both final-CTA sections already use. */
+  background: var(--color-ink);
 }
 
 .molosoc-mechanism-pin {
@@ -482,6 +486,10 @@
   filter: blur(var(--mech-blur, 0px));
 }
 
+/* Soft silver glow, not the brand's warm peach accent — same swap
+   product.css's own .molosoc-orbit-glow already made for this exact
+   reason (see that file's comment: the peach read as "a beige smudge/
+   stain" at this size/blur rather than a deliberate glow). */
 .molosoc-mechanism-glow {
   position: absolute;
   width: min(70vw, 46rem);
@@ -489,7 +497,7 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--color-accent-peach) 45%, transparent) 0%,
+    color-mix(in srgb, #d8dbde 55%, transparent) 0%,
     transparent 72%
   );
   filter: blur(60px);
@@ -526,7 +534,7 @@
   margin-inline: auto;
   max-width: min(94vw, 66rem);
   border-radius: 22px 22px 0 0;
-  background: color-mix(in srgb, var(--color-ink-warm) 62%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 62%, transparent);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -624,7 +632,7 @@
     position: relative;
     inset: auto;
     border-radius: 0;
-    background: var(--color-ink-warm);
+    background: var(--color-ink);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border: none;

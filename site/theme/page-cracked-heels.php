@@ -200,13 +200,13 @@ get_header();
 	     "Deep-links to" note for Pillar 1. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
+			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
 		<div class="molosoc-section__inner molosoc-reveal">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Time-stamped before/after results, no filters', 'molosoc' ); ?></h2>
+			<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
 			<p><?php esc_html_e( 'Real cracked heels, healed through consistent care — not a one-time application.', 'molosoc' ); ?></p>
 			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
 		</div>
