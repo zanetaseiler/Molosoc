@@ -203,10 +203,12 @@ add_action( 'wp_head', 'molosoc_homepage_schema' );
 
 /**
  * Product page schema markup, ported from product-preview.html's own
- * <head> block. Gated on is_singular('product') (core WP conditional,
- * works whether or not WooCommerce's own is_product() is available) since
- * the live product page at /foot-covers/moisture-lock-foot-cover/ is a
- * WooCommerce single-product template, not yet product.php in this theme.
+ * <head> block. Gated on is_page('moisture-lock-foot-cover') — the live
+ * page at /foot-covers/moisture-lock-foot-cover/ turned out to be a
+ * regular WP Page (page-id-951, page-template-default), not a WooCommerce
+ * 'product' CPT despite the woocommerce-* body classes (WooCommerce is
+ * just active site-wide); is_singular('product') never matched it. Same
+ * is_page() convention as molosoc_category_schema() above.
  * Two deltas from the preview's source block, both stale content bugs, not
  * design choices: "sku" dropped (was a literal "[INSERT: SKU — not yet
  * assigned]" placeholder — schema.org doesn't require it, and shipping the
@@ -218,7 +220,7 @@ add_action( 'wp_head', 'molosoc_homepage_schema' );
  * Source: content/molosoc-site/03-product/product-schema.html.
  */
 function molosoc_product_schema() {
-	if ( ! is_singular( 'product' ) ) {
+	if ( ! is_page( 'moisture-lock-foot-cover' ) ) {
 		return;
 	}
 	?>
