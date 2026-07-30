@@ -1,0 +1,47 @@
+name: Create WP Page (draft)
+
+# Generic, reusable version of create-category-page.yml /
+# create-cracked-heels-page.yml — ensures a WordPress Page exists (as a
+# draft) for whatever slug you pass in, so a site/theme/page-{slug}.php
+# template already deployed to staging has a Page to apply itself to.
+# Safe to re-run for the same slug — the script checks for an existing
+# Page first and does nothing if one is found. Always creates as a draft,
+# never publishes — a human hits Publish in wp-admin.
+#
+# Run from the Actions tab → "Create WP Page (draft)" → Run workflow,
+# fill in slug + title. Pick the branch/ref where the matching
+# page-{slug}.php template already lives (usually staging).
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: "Page slug — must match the page-{slug}.php template filename (e.g. cracked-heels)"
+        required: true
+      title:
+        description: "Page title to show in wp-admin"
+        required: true
+
+jobs:
+  create-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Ensure Page exists (draft)
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          python3 automations/content-sync/create_wp_page.py \
+            --slug "${{ inputs.slug }}" \
+            --title "${{ inputs.title }}"
