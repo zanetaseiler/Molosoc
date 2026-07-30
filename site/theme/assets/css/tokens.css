@@ -19,6 +19,14 @@
   --color-cream-deep: #efeee9;
   --color-accent-peach: #e3c4a8;
 
+  /* Warm dark surface — espresso/walnut brown, not a cold near-black.
+     Use for any dark-background section (final CTAs, pinned heroes,
+     evening-mood moments) per docs/molosoc-design-direction.md's
+     Scandinavian-warmth rule. --color-ink stays for text/foreground ink
+     on light surfaces only — its cooler cast reads fine as small text but
+     flat and unfriendly as a large fill. */
+  --color-ink-warm: #241d17;
+
   /* Semantic aliases */
   --color-bg: var(--color-cream);
   --color-bg-alt: var(--color-cream-deep);

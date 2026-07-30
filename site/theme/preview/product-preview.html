@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Molosoc Foot Cover — The Cream You Already Own, Finally Working</title>
+<meta name="description" content="Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.">
+<!--
+  STATIC PREVIEW ONLY — not the WordPress source of truth.
+  Mirrors the category-preview.html pattern (built static-first, ported to a
+  real WP page template later). Almost entirely static — no GSAP/ScrollTrigger
+  anywhere except the "Make the pedicure last" section, which reuses
+  category-preview.html's fixed-image/sequential-text-reveal pattern (see
+  assets/js/sequential-text-reveal.js and
+  docs/skills/Fixed-Image-Sequential-Text-Reveal.md). An orbit-scroll-drawer
+  scroll-pin/fade/slide sequence (.claude/skills/orbit-scroll-drawer/SKILL.md)
+  was built and then explicitly reverted: the hero's molosoc-3d.glb model
+  still rotates continuously (its own <model-viewer> auto-rotate attribute,
+  independent of scroll/JS — still the one confirmed exception to
+  docs/molosoc-animation-specification.md's "Never spin products" rule, see
+  that doc's "Sanctioned pattern" note under Product Animations), but the
+  "cream you already own" content right below it is now a plain, firm
+  static block in normal document flow — not a glass panel sliding in over
+  the model.
+
+  Content/structure source: docs/site-structure.md §4 "PRODUCT PAGE" —
+  headings and H2/H3 order follow it exactly. Body copy is the locked copy
+  from content/molosoc-site/03-product/product-copy.md, verbatim except
+  where explicit instruction supplied real proof photos/video for "Real
+  results, no filters" (see that section's own comment below).
+
+  Image placement follows assets/molosoc-image-assets.csv row-for-row:
+  persona3_01/02, persona4_01/02 (all "Product page" rows, un-flagged),
+  molosoc_product_only.jpg ("Product page / What's in the box"), and
+  Molosoc-Product-Standing-Compress.png (flexible asset, used here for the
+  same "How it works" section). Every "CHECK LABEL TEXT" flagged candidate
+  (molosoc_pack_gift_v2.jpg, molosoc_pack_env1/2/3.jpg,
+  molosoc_product_with_pack.jpg) is skipped per instruction. Seasonal
+  images (seasonal_01/02/03) are out of scope — the seasonal beats aren't
+  part of the §4 heading structure. hero_pair_bedroom.jpg and
+  molosoc_ritual_vanity_cream-scaled.jpg (formerly the hero and Persona 1
+  photos) are no longer used on this page — both sections are now photo-free,
+  replaced by the orbit-scroll-drawer 3D sequence above. "Real results, no
+  filters" now carries two real proof photos supplied directly by explicit
+  instruction (homepage-results-full.jpg, Compare-Molosoc-Nails.jpg) rather
+  than CSV rows — outside the CSV's own mapping, but sanctioned the same
+  way any direct content instruction is.
+
+  Header/footer below are a hardcoded mirror of the CURRENT header.php/
+  footer.php (nav intentionally omitted — see header.php's own comment:
+  turned off 2026-07-29 until there's a real decision on what belongs in it).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/tokens.css">
+<link rel="stylesheet" href="../assets/css/base.css">
+<link rel="stylesheet" href="../assets/css/components.css">
+<link rel="stylesheet" href="../assets/css/product.css">
+
+<!-- Schema markup — source: content/molosoc-site/03-product/product-schema.html -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Product",
+      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#product",
+      "name": "Molosoc Foot Cover",
+      "description": "A reusable, moisture-lock foot cover that seals your favorite cream against the skin — cutting the mess and making your foot care routine actually stick. Works with any cream you already own.",
+      "brand": { "@id": "https://molosoc.com/#organization" },
+      "image": "https://staging.molosoc.com/wp-content/uploads/2026/07/hero_pair_bedroom.jpg",
+      "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+      "sku": "[INSERT: SKU — not yet assigned]",
+      "category": "Foot Care",
+      "offers": {
+        "@type": "Offer",
+        "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+        "priceCurrency": "USD",
+        "price": "13.00",
+        "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#webpage",
+      "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
+      "name": "Molosoc Foot Cover — The Cream You Already Own, Finally Working",
+      "description": "Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.",
+      "isPartOf": { "@id": "https://molosoc.com/#website" },
+      "about": { "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#product" },
+      "breadcrumb": { "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#breadcrumb" },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/#breadcrumb",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Foot Covers", "item": "https://molosoc.com/foot-covers/" },
+        { "@type": "ListItem", "position": 3, "name": "Molosoc Foot Cover", "item": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/" }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+
+<a class="molosoc-skip-link" href="#main">Skip to content</a>
+
+<!-- Mirrors header.php as it stands today — logo only, nav commented out. -->
+<header class="molosoc-site-header">
+  <a class="molosoc-site-header__logo" href="https://staging.molosoc.com/">
+    <img src="https://staging.molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="Molosoc" loading="eager" decoding="async">
+  </a>
+</header>
+
+<main id="main">
+
+  <!-- Hero: H1 + lede over the always-rotating molosoc-3d.glb model
+       (model-viewer's own auto-rotate — independent of scroll, never
+       paused). The "cream you already own" H2's 3 H3 points sit directly
+       below as static feature cards, in normal document flow — a firm
+       static block under the hero, not a glass drawer sliding in over it
+       (that scroll-pin mechanic was built, then explicitly reverted; see
+       product.css's file-header comment). No JS runs on this section at
+       all. -->
+  <section class="molosoc-orbit-section">
+    <div class="molosoc-orbit-pin">
+
+      <div class="molosoc-orbit-stage" aria-hidden="true">
+        <div class="molosoc-orbit-glow"></div>
+        <model-viewer
+          class="molosoc-orbit-model"
+          src="../assets/models/molosoc-3d.glb"
+          alt=""
+          auto-rotate
+          rotation-per-second="10deg"
+          camera-orbit="0deg 75deg 105%"
+          exposure="0.95"
+          shadow-intensity="0.7"
+          shadow-softness="1"
+          environment-image="neutral"
+          loading="eager">
+        </model-viewer>
+      </div>
+
+      <div class="molosoc-orbit-hero-copy">
+        <h1>Molosoc Foot Cover</h1>
+        <p>Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.</p>
+      </div>
+
+    </div>
+
+    <!-- Sibling of .molosoc-orbit-pin, not nested inside it — this is the
+         firm static block sitting directly under the hero, in normal
+         document flow. (It used to live inside the pin, back when
+         everything needed to overlap for the old scroll-pin mechanic;
+         nesting it there after that was removed caused the pin's flex
+         layout to stretch/overlap it with the hero above — moving it out
+         here is the actual fix, not just a CSS tweak.) -->
+    <div class="molosoc-orbit-drawer">
+      <div class="molosoc-orbit-drawer__top">
+        <div class="molosoc-orbit-drawer__heading">
+          <p class="molosoc-eyebrow">The cream you already own, finally working</p>
+          <h2>The cream you already own, finally working</h2>
+        </div>
+        <div class="molosoc-orbit-drawer__buy">
+          <span class="molosoc-orbit-drawer__price">$13</span>
+          <a class="molosoc-btn" href="#">Order Now</a>
+        </div>
+      </div>
+      <div class="molosoc-orbit-drawer__cards">
+        <article>
+          <h3>Why creams get abandoned halfway through</h3>
+          <p>Almost nobody stops using a foot cream because it didn't work. They stop because there was no structure to keep going — no reason the fifth night was any different from the first, except the mess.</p>
+        </article>
+        <article>
+          <h3>What changes when the mess disappears</h3>
+          <p>Take away the greasy sheets and the sock that won't stay put, and the only thing left is a short session where the cream actually gets to do its job. That's the entire difference between a cream that gets abandoned and one that gets finished.</p>
+        </article>
+        <article>
+          <h3>Works with the cream in your drawer right now</h3>
+          <p>Molosoc isn't a new formula to buy into. It's built to work with whatever's already in your bathroom — the balm you liked enough to buy, the one that's been sitting half-used. This is what finally lets it work.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- H2: Real results, no filters (Persona 2 — Ingrown-Nail/Hardened-Skin
+       Sufferer). Per explicit instruction: three proper cards, each its
+       own image directly paired with its own text — not a shared photo row
+       separated from the text. Card 1: homepage-results-full.jpg (3-month
+       comparison). Card 2: Mom-Feet-cracked-heels-before-using-Molosoc.jpg
+       (new — supplied directly for this exact H3). Card 3:
+       Compare-Molosoc-Nails.jpg + the corrected video link.
+
+       molosoc-product-proof-block wraps the heading + card grid together
+       so 3d_turntable_04_topdown.png can sit as a background image behind
+       the whole block, with a white transparent scrim over it for
+       legibility — same absolute-media + __scrim layering convention as
+       category.css's .molosoc-category-hero. -->
+  <div class="molosoc-product-proof-block">
+    <div class="molosoc-product-proof-block__media" aria-hidden="true">
+      <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_turntable_04_topdown.png"
+        alt="" loading="lazy" decoding="async">
+    </div>
+    <div class="molosoc-product-proof-block__scrim"></div>
+    <div class="molosoc-product-proof-block__content">
+      <div class="molosoc-product-heading">
+        <div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
+          <p class="molosoc-eyebrow">Real results, no filters</p>
+          <h2>Real results, no filters</h2>
+        </div>
+      </div>
+      <section aria-label="Real results, no filters">
+        <div class="molosoc-product-proof">
+          <article class="molosoc-product-proof__card">
+            <div class="molosoc-media molosoc-product-proof__media">
+              <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
+                alt="Real 3-month before/after result, no filters — full unedited comparison"
+                loading="lazy" decoding="async">
+            </div>
+            <h3>3-month before/after</h3>
+            <p>No retouching, no staged lighting — the same feet, photographed the same way, three months apart. Skin that was blackened and hardened around the nails healed visibly over that time, using nothing more than a cream already owned and a cover that kept it working every session.</p>
+          </article>
+          <article class="molosoc-product-proof__card">
+            <div class="molosoc-media molosoc-product-proof__media">
+              <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
+                alt="Mom's cracked heels before using Molosoc"
+                loading="lazy" decoding="async">
+            </div>
+            <h3>What actually happens to cracked heels over time</h3>
+            <p>Cracked heels don't heal because a "better" cream shows up — they heal because the same cream gets a real chance to work, session after session, instead of rubbing off before it's absorbed. In one case, heels that were badly cracked improved by roughly 90% through regular use — not from a different product, but from a routine that finally held.</p>
+          </article>
+          <article class="molosoc-product-proof__card">
+            <div class="molosoc-media molosoc-product-proof__media">
+              <img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+                alt="Nail comparison showing visible improvement, no filters"
+                loading="lazy" decoding="async">
+            </div>
+            <h3>Mom surprised with results</h3>
+            <p>The real moment a mom sees and reacts to her own results after a home pedicure session — caught as it happens, not staged for it. No script, no rehearsed delivery. <a href="https://youtube.com/shorts/ajdjJg0OuYg?si=cXDSn79awbO0JLDy">Watch the reaction &rarr;</a></p>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- H2: Make the pedicure last (Persona 3 — After-Pedicure Maintainer).
+       Images: molosoc_pedicure_01.jpg (primary — editorial landscape shot,
+       sharp corners, see product.css's --editorial override) +
+       persona3_01_painted_nails.jpg (secondary inset, unchanged). Photo pair
+       stays fixed/static; the three points below reveal one at a time on
+       scroll — see assets/js/sequential-text-reveal.js and
+       docs/skills/Fixed-Image-Sequential-Text-Reveal.md. -->
+  <div class="molosoc-product-heading">
+    <div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
+      <p class="molosoc-eyebrow">Make the pedicure last</p>
+      <h2>Make the pedicure last</h2>
+    </div>
+  </div>
+  <section class="molosoc-sequential-stage" data-slide-direction="left" aria-label="Make the pedicure last">
+    <div class="molosoc-argument molosoc-argument--reverse">
+      <div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
+        <div class="molosoc-media molosoc-media--primary molosoc-media--static">
+          <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_01.jpg"
+            alt="Woman in cream loungewear giving herself an at-home pedicure, foot resting in a ceramic basin, minimalist bright hallway"
+            loading="lazy" decoding="async">
+        </div>
+        <div class="molosoc-media molosoc-media--secondary molosoc-media--static">
+          <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/persona3_01_painted_nails.jpg"
+            alt="Freshly painted toenails resting on a spa towel"
+            loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="molosoc-argument__text">
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>Why salon results fade in ~10 days</h3>
+          <p>A fresh pedicure looks its best for about a week to ten days before dryness starts creeping back in. That's not a flaw in the salon treatment — it's just what happens once the intensive care stops.</p>
+        </div>
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>Cost per use vs. another salon visit</h3>
+          <p>A Molosoc cover costs $13 and holds up for at least 10 sessions — working out to about $1.30 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.</p>
+        </div>
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>Home spa, without the salon price</h3>
+          <p>Ten to fifteen minutes with your own cream and a cover gets you most of what a touch-up appointment does, without the drive, the booking, or the bill.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- H2: Give it as a gift (Persona 4 — Gift Buyer). Images:
+       molosoc_pack_gift.jpg (primary — same editorial sharp-corner/tall
+       4:5-frame/centered-crop treatment as "Make the pedicure last", see
+       product.css's --editorial override) + persona4_02_giving_gift.jpg
+       (secondary inset, unchanged). Photo pair stays fixed/static; the
+       three points below reveal one at a time on scroll, same pattern —
+       see assets/js/sequential-text-reveal.js and
+       docs/skills/Fixed-Image-Sequential-Text-Reveal.md. -->
+  <div class="molosoc-product-heading">
+    <div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
+      <p class="molosoc-eyebrow">Give it as a gift</p>
+      <h2>Give it as a gift</h2>
+    </div>
+  </div>
+  <section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="Give it as a gift">
+    <div class="molosoc-argument">
+      <div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
+        <div class="molosoc-media molosoc-media--primary molosoc-media--static">
+          <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pack_gift.jpg"
+            alt="An open gift box with a pair of Molosoc foot covers, lavender oil, and dried lavender sprigs styled around it"
+            loading="lazy" decoding="async">
+        </div>
+        <div class="molosoc-media molosoc-media--secondary molosoc-media--static">
+          <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/persona4_02_giving_gift.jpg"
+            alt="Two pairs of hands — one giving a wrapped gift to another"
+            loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="molosoc-argument__text">
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>For someone always on her feet</h3>
+          <p>For the person who's on her feet all day and never quite gets around to taking care of her own — this is the easiest way to actually give her something she'll use.</p>
+        </div>
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>One before/after photo says it all</h3>
+          <p>No explanation needed. Cracked, hardened skin on one side; soft, cared-for skin on the other. That's the entire pitch.</p>
+        </div>
+        <div class="molosoc-argument__item molosoc-sequential-entrance--text">
+          <h3>How to gift it (simple, low-effort framing)</h3>
+          <p>No assembly, no learning curve — open the box, use the cream you already have, done in one short session. The easiest self-care gift to actually hand someone and have them use.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- H2: How it works. Primary image swapped to molosoc_pack_env3.jpg (a
+       real lifestyle/environment shot — package + covers on a sunny
+       windowsill — so molosoc-media--contain's white-backing treatment for
+       isolated cutouts no longer applies; it now uses the same
+       cover-fit/aspect-ratio-4:5 duo frame as "Make the pedicure last" /
+       "Give it as a gift"). Secondary inset (molosoc_product_only.jpg,
+       CSV-assigned to "Product page / What's in the box") stays as-is.
+       Closes with the page's purchase action, now reading "Order Now" (see
+       CTA copy note below). molosoc-product-how-block wraps the
+       heading+content together so 3d_turntable_01_front.png can sit as a
+       background image behind the whole block — same pattern as
+       molosoc-product-proof-block on "Real results, no filters", just a
+       heavier 75% white scrim per explicit request. -->
+  <div class="molosoc-product-how-block">
+    <div class="molosoc-product-how-block__media" aria-hidden="true">
+      <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_front.png"
+        alt="" loading="lazy" decoding="async">
+    </div>
+    <div class="molosoc-product-how-block__scrim"></div>
+    <div class="molosoc-product-how-block__content">
+      <div class="molosoc-product-heading">
+        <div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
+          <p class="molosoc-eyebrow">How it works</p>
+          <h2>How it works</h2>
+        </div>
+      </div>
+      <section aria-label="How it works">
+        <div class="molosoc-argument molosoc-argument--reverse">
+          <div class="molosoc-argument__media molosoc-argument__media--duo">
+            <div class="molosoc-media molosoc-media--primary">
+              <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pack_env3.jpg"
+                alt="Molosoc foot covers and packaging styled on a sunlit windowsill with a plant and a glass of water"
+                loading="lazy" decoding="async">
+            </div>
+            <div class="molosoc-media molosoc-media--secondary molosoc-media--contain">
+              <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_product_only.jpg"
+                alt="The Molosoc foot cover shown alone with a minimal, plain background"
+                loading="lazy" decoding="async">
+            </div>
+          </div>
+          <div class="molosoc-argument__text">
+            <div class="molosoc-argument__item">
+              <h3>What's in the box</h3>
+              <p>One reusable moisture-lock foot cover, ready to use with any cream you already own — no separate formula included, no separate purchase required to get started.</p>
+            </div>
+            <div class="molosoc-argument__item">
+              <h3>How to use it with any cream</h3>
+              <p>Apply your cream as usual, then slip the cover on and leave it sealed for 30 to 60 minutes. That's the entire routine — no extra steps, no waiting overnight.</p>
+            </div>
+            <div class="molosoc-argument__item">
+              <h3>Reusable — how many uses to expect</h3>
+              <p>Built to hold up for at least 10 uses before it starts to stretch, and often lasts well beyond that with normal care. Rinse it out after each session and let it dry before the next one.</p>
+            </div>
+          </div>
+        </div>
+        <div class="molosoc-product-buy">
+          <a class="molosoc-btn" href="#">Order Now — $13</a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+</main>
+
+<!-- Mirrors footer.php -->
+<footer class="molosoc-site-footer">
+  <div class="molosoc-site-footer__inner">
+    <div class="molosoc-site-footer__brand">
+      <a href="https://staging.molosoc.com/">
+        <img src="../assets/images/molosoc-logo-white.png" alt="Molosoc" height="28" loading="lazy" decoding="async">
+      </a>
+      <ul class="molosoc-social-links">
+        <li><a href="https://www.facebook.com/molosoc" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+        <li><a href="https://www.youtube.com/@Molosoc" target="_blank" rel="noopener noreferrer">YouTube</a></li>
+        <li><a href="https://www.instagram.com/molosoc_/" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+        <li><a href="https://www.tiktok.com/@molosoc" target="_blank" rel="noopener noreferrer">TikTok</a></li>
+        <li><a href="https://x.com/Molosoc_" target="_blank" rel="noopener noreferrer">X</a></li>
+      </ul>
+    </div>
+
+    <div class="molosoc-site-footer__payments">
+      <img src="../assets/images/comgate-payment-methods-dark.png" alt="Accepted payment methods: Comgate, Visa, Mastercard, Google Pay, Apple Pay" height="24" loading="lazy" decoding="async">
+    </div>
+
+    <div class="molosoc-site-footer__legal">
+      <p class="molosoc-site-footer__copyright">Copyright © 2026 Molosoc. All Rights Reserved.</p>
+      <ul class="molosoc-legal-links">
+        <li><a href="https://staging.molosoc.com/legal-disclaimer/">Disclaimer</a></li>
+        <li><a href="https://staging.molosoc.com/privacy-policies/">Privacy policy</a></li>
+        <li><a href="https://staging.molosoc.com/terms-of-services/">Terms of service</a></li>
+        <li><a href="https://staging.molosoc.com/contact-kontakt/">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<!-- Sticky mobile buy bar — see product.css for why this exists only at
+     mobile widths. -->
+<div class="molosoc-sticky-buy">
+  <span class="molosoc-sticky-buy__price">$13</span>
+  <a class="molosoc-btn" href="#">Order Now</a>
+</div>
+
+<!-- model-viewer — renders the real molosoc-3d.glb as the hero's rotating
+     object. Google's web component, loaded the same way GSAP is loaded
+     elsewhere on this site: a single CDN <script>, no bundler. Its own
+     auto-rotate attribute drives the rotation — no page JS involved at
+     all. If this fails to load, the element falls back to empty space in
+     the hero; the rest of the page is unaffected. -->
+<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
+
+<!-- GSAP + ScrollTrigger — for "Make the pedicure last" only (see
+     assets/css/product.css's .molosoc-sequential-stage rules and
+     docs/skills/Fixed-Image-Sequential-Text-Reveal.md). If this CDN fails
+     to load, that section already renders correctly in its static final
+     state. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="../assets/js/sequential-text-reveal.js"></script>
+<!-- Keeps the pin's cached start/end matched to the real, settled DOM once
+     this page's many loading="lazy" images finish loading and grow the
+     page's height. -->
+<script src="../assets/js/scroll-refresh.js"></script>
+
+</body>
+</html>
