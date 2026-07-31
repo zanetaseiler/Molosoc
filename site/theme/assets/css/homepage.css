@@ -796,6 +796,16 @@
     height: 30px;
   }
 
+  /* No object-position was set at all (defaults to center center), so
+     object-fit: cover crops equally from both sides. On a narrow mobile
+     crop that cuts off the feet peeking out from under the blanket — the
+     actual emotional subject of this photo — leaving just curtains/
+     nightstand on one side and an empty corner of bed linens on the
+     other. Shifting the crop right keeps the feet in frame. */
+  .molosoc-hero__media img {
+    object-position: right center;
+  }
+
   /* Nav had zero mobile handling: logo + "space-between" + a fixed
      --space-m (32px) gap between nav links, at full --text-body size —
      on a narrow phone that total routinely exceeds the viewport width,
