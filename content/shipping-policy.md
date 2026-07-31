@@ -4,8 +4,6 @@ slug: shipping-policy
 type: page
 meta_description: "How Molosoc ships orders — processing time, carriers, delivery estimates, and shipping costs."
 ---
-# Shipping Policy
-
 *Last updated: 31.7.2026*
 
 This Shipping Policy explains how MOLOSOC processes and delivers orders placed through www.molosoc.com.

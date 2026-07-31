@@ -4,8 +4,6 @@ slug: refund-policy
 type: page
 meta_description: "Molosoc's refund and return policy — your 14-day EU right of withdrawal, return conditions, and how refunds are processed."
 ---
-# Refund & Return Policy
-
 *Last updated: 31.7.2026*
 
 This Refund & Return Policy explains your right to return products purchased from MOLOSOC and how refunds are handled.
