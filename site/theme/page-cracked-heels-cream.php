@@ -78,14 +78,14 @@ get_header();
 	</section>
 
 	<!-- 3. BEST CREAM FOR CRACKED HEELS — editorial-feature-reveal.
-	     Mom-Feet-cracked-heals-before-using-Molosoc.jpg (Image A) gives
-	     way to molosoc_cream_drawers.jpg (Image B — the cream you already
-	     own) through a circular mask, then the 3 cards emerge. -->
+	     homepage_02_cream_massage.jpg (Image A) gives way to
+	     molosoc_cream_drawers.jpg (Image B — the cream you already own)
+	     through a circular mask, then the 3 cards emerge. -->
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'Best cream for cracked heels', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cream_drawers.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/homepage_02_cream_massage.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
