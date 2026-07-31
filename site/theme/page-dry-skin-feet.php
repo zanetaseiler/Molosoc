@@ -227,7 +227,7 @@ get_header();
 	     (see assets/molosoc-image-assets.csv's updated multi-use note). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
+			<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
