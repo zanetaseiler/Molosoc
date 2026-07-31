@@ -145,6 +145,22 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'foot-cream-that-works' ) ) {
+		// Identical asset stack to the cracked-heels/ingrown-toenails
+		// branches above — page-foot-cream-that-works.php reuses
+		// pillar1.css and its JS as-is (every class/selector in that file
+		// is generic, nothing cracked-heels-specific to duplicate). See
+		// the cracked-heels branch's own comments for why each handle is
+		// here.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
@@ -526,6 +542,92 @@ function molosoc_pillar2_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_pillar2_schema' );
+
+/**
+ * Pillar 5 — Cream That Works — schema markup, ported from
+ * content/molosoc-site/08-pillar5-cream-that-works/pillar5-cream-that-
+ * works-schema.html. Same is_page() convention as molosoc_pillar1_schema()/
+ * molosoc_pillar2_schema() above. FAQPage answers are kept in sync with
+ * this page's own copy (see page-foot-cream-that-works.php) —
+ * content/.../pillar5-cream-that-works-copy.md is the locked source for
+ * both.
+ */
+function molosoc_pillar5_schema() {
+	if ( ! is_page( 'foot-cream-that-works' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Tried every foot cream with no results? The cream probably isn't the problem — here's why it fails and what actually makes it work.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/foot-cream-that-works/#article",
+	      "headline": "Does Foot Cream Actually Work? Why It Fails, and What Fixes It",
+	      "description": "Tried every foot cream with no results? The cream probably isn't the problem — here's why it fails and what actually makes it work.",
+	      "url": "https://molosoc.com/foot-cream-that-works/",
+	      "mainEntityOfPage": "https://molosoc.com/foot-cream-that-works/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/foot-cream-that-works/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "Does foot cream actually work?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Foot cream does work — the reason it often seems like it doesn't is that most of it never gets the chance to fully absorb before it rubs off on socks, sheets, or floors. Given sustained, uninterrupted contact with skin, the same cream tends to perform much better."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How long does foot cream take to absorb?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Most creams need sustained, uninterrupted contact with skin to fully absorb — often longer than the few minutes most routines actually give them before socks or shoes go back on."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "Should you put socks on after foot cream?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Yes — socks after cream help hold moisture against the skin longer than bare feet do, which is part of why the classic combination of cream plus socks works better than cream applied alone."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How do you get soft feet overnight?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "The traditional approach is applying a heavier cream and sealing it under socks overnight, which gives skin hours of uninterrupted contact time to absorb. A shorter, focused session with the cream sealed against the skin can achieve much of that same result without needing to commit to wearing anything all night."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/foot-cream-that-works/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Cream That Works", "item": "https://molosoc.com/foot-cream-that-works/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_pillar5_schema' );
 
 /**
  * Pillar 4 — Dry Skin on Feet — schema markup, ported from
