@@ -552,21 +552,27 @@
 
 /* Tiered, hand-placed composition (not a grid) — two cards on an upper
    tier, one centered on a bottom tier to resolve the Z-pattern, center of
-   the frame left open so the photo's own subject stays the focal point. */
+   the frame left open so the photo's own subject stays the focal point.
+
+   Retuned per explicit "not in line" feedback — cards 1/2 previously sat
+   at 24%/20%, only a 4% stagger, which read as a flat, aligned pair
+   rather than an intentional composition. Now an 18%/30% diagonal
+   stagger (real height difference, not a near-tie) and slightly tighter
+   10-11% side insets for a more considered, editorial placement. */
 .molosoc-who-card--1 {
-  top: 24%;
-  left: 6%;
+  top: 18%;
+  left: 10%;
   width: clamp(14rem, 22vw, 17rem);
 }
 
 .molosoc-who-card--2 {
-  top: 20%;
-  right: 6%;
+  top: 30%;
+  right: 11%;
   width: clamp(14rem, 22vw, 17rem);
 }
 
 .molosoc-who-card--3 {
-  bottom: 12%;
+  bottom: 14%;
   left: 0;
   right: 0;
   margin-left: auto;
