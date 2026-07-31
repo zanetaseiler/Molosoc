@@ -1295,3 +1295,197 @@ function molosoc_allow_glb_uploads( $mimes ) {
 	return $mimes;
 }
 add_filter( 'upload_mimes', 'molosoc_allow_glb_uploads' );
+
+/**
+ * PPL Access Point Widget — checkout pickup-point picker.
+ *
+ * PPL's own integration snippet only documents the loader script, the
+ * <ppl-access-point-widget> element, and its .open() method — it never
+ * says how a selected point gets back out of the widget. That API was
+ * confirmed by downloading and reading PPL's actual compiled widget
+ * bundle (the JS file loader.js fetches at runtime from the same
+ * https://www.ppl.cz/accesspointwidget/ path): the element dispatches
+ * plain DOM CustomEvents on itself (bubbles + composed, so they're
+ * catchable at any ancestor), prefixed "ppl-accesspointwidget-":
+ *   - "ready"  (detail: null)
+ *   - "select" (detail: the chosen AccessPoint object — externalId,
+ *               code, name, address: { street, city, zipCode, gps }, ...)
+ *   - "close"  (detail: null)
+ *   - "error"  (detail: { code, message })
+ * externalId is PPL's own stable point identifier (also the key their
+ * widget uses internally to remember "last selected"), so that's what
+ * gets persisted as order meta below — not just the display label.
+ *
+ * KNOWN GAP: this only adds the pickup-point PICKER UI and makes sure
+ * the selection actually reaches the order. It does not create or
+ * configure an actual WooCommerce shipping method/rate for PPL parcel
+ * shops (e.g. a "PPL Parcel Shop" method under Settings -> Shipping) —
+ * no shipping method of any kind exists yet in this install (see
+ * docs/00-build-playbook.md Phase 1c, still unchecked), so that's a
+ * separate wp-admin configuration step. Until that exists, this widget
+ * shows on every checkout regardless of which shipping method a
+ * customer picks.
+ */
+function molosoc_enqueue_ppl_widget() {
+	if ( ! is_checkout() ) {
+		return;
+	}
+	// Self-bootstrapping loader — it injects its own CSS/JS bundle into
+	// <head> at runtime (document.head.appendChild calls inside
+	// loader.js itself), so this is the only asset that needs enqueuing
+	// here. Version explicitly null so WP doesn't append its own
+	// "?ver=" query string onto a third-party URL.
+	wp_enqueue_script( 'ppl-access-point-widget-loader', 'https://www.ppl.cz/accesspointwidget/loader.js', array(), null, true );
+}
+add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_ppl_widget' );
+
+/**
+ * Renders the widget + open button + hidden fields that carry the
+ * selection into the order, plus the JS that wires the two together.
+ * Hooked onto the main checkout form (billing section) rather than the
+ * AJAX-refreshed order-review table, so it survives shipping-method/
+ * totals refreshes without disappearing mid-checkout.
+ */
+function molosoc_render_ppl_widget() {
+	if ( ! is_checkout() ) {
+		return;
+	}
+	?>
+	<div class="molosoc-ppl-widget" style="margin: 24px 0; padding: var(--space-m); border: 1px solid rgba(12, 17, 21, 0.1); border-radius: var(--radius-m);">
+		<p style="font-weight:700; margin-bottom: var(--space-2xs);"><?php esc_html_e( 'Výdejní místo PPL', 'molosoc' ); ?></p>
+
+		<ppl-access-point-widget
+			id="pplWidget"
+			api-key="ak_b7ea4cead8b84fd68dba53cfeb4b623b"
+		></ppl-access-point-widget>
+
+		<button type="button" id="pplOpenWidget" class="molosoc-btn" style="margin-top: var(--space-2xs);">
+			<?php esc_html_e( 'Vybrat výdejní místo', 'molosoc' ); ?>
+		</button>
+
+		<p id="pplSelectedPoint" style="margin-top: var(--space-2xs); font-size: 0.9em;"></p>
+		<p id="pplSelectedError" style="margin-top: var(--space-2xs); color: #c0392b; display:none;">
+			<?php esc_html_e( 'Prosím vyberte výdejní místo PPL.', 'molosoc' ); ?>
+		</p>
+
+		<input type="hidden" name="ppl_pickup_point_id" id="ppl_pickup_point_id" value="">
+		<input type="hidden" name="ppl_pickup_point_label" id="ppl_pickup_point_label" value="">
+	</div>
+
+	<script>
+	(function () {
+		function init() {
+			var widget = document.getElementById( 'pplWidget' );
+			var openBtn = document.getElementById( 'pplOpenWidget' );
+			var idField = document.getElementById( 'ppl_pickup_point_id' );
+			var labelField = document.getElementById( 'ppl_pickup_point_label' );
+			var selectedEl = document.getElementById( 'pplSelectedPoint' );
+			var errorEl = document.getElementById( 'pplSelectedError' );
+
+			if ( ! widget || ! openBtn ) {
+				return;
+			}
+
+			openBtn.addEventListener( 'click', function () {
+				widget.open();
+			} );
+
+			// Confirmed event name/detail shape — see this function's own
+			// PHP-side comment above for how that was verified.
+			widget.addEventListener( 'ppl-accesspointwidget-select', function ( e ) {
+				var point = e.detail || {};
+				var address = point.address || {};
+				var label = [ point.name, address.street, address.city, address.zipCode ]
+					.filter( Boolean )
+					.join( ', ' );
+
+				idField.value = point.externalId || '';
+				labelField.value = label;
+				selectedEl.textContent = label ? ( '<?php echo esc_js( __( 'Vybráno: ', 'molosoc' ) ); ?>' + label ) : '';
+				if ( errorEl ) {
+					errorEl.style.display = 'none';
+				}
+			} );
+		}
+
+		if ( document.readyState === 'loading' ) {
+			document.addEventListener( 'DOMContentLoaded', init );
+		} else {
+			init();
+		}
+
+		// Blocks checkout submission until a point is chosen — this field
+		// isn't a registered WooCommerce checkout field, so WooCommerce's
+		// own required-field validation never sees it. checkout_place_order
+		// is WooCommerce core's own documented extension point for exactly
+		// this: any handler returning false aborts the place-order AJAX
+		// call (see WooCommerce's assets/js/frontend/checkout.js).
+		jQuery( function ( $ ) {
+			$( document.body ).on( 'checkout_place_order', function () {
+				var idField = document.getElementById( 'ppl_pickup_point_id' );
+				var errorEl = document.getElementById( 'pplSelectedError' );
+				if ( idField && ! idField.value ) {
+					if ( errorEl ) {
+						errorEl.style.display = 'block';
+					}
+					return false;
+				}
+				return true;
+			} );
+		} );
+	})();
+	</script>
+	<?php
+}
+add_action( 'woocommerce_after_checkout_billing_form', 'molosoc_render_ppl_widget' );
+
+/**
+ * Server-side guard mirroring the JS check above — client-side
+ * validation alone can always be bypassed, so this is the real gate.
+ */
+function molosoc_validate_ppl_pickup_point() {
+	if ( empty( $_POST['ppl_pickup_point_id'] ) ) {
+		wc_add_notice( __( 'Prosím vyberte výdejní místo PPL.', 'molosoc' ), 'error' );
+	}
+}
+add_action( 'woocommerce_checkout_process', 'molosoc_validate_ppl_pickup_point' );
+
+/**
+ * Persists the selected pickup point onto the order as meta. Uses the
+ * order object's own update_meta_data() rather than update_post_meta()
+ * directly, so this keeps working whether or not High-Performance Order
+ * Storage (HPOS) is enabled.
+ */
+function molosoc_save_ppl_pickup_point( $order, $data ) {
+	if ( ! empty( $_POST['ppl_pickup_point_id'] ) ) {
+		$order->update_meta_data( '_ppl_pickup_point_id', sanitize_text_field( wp_unslash( $_POST['ppl_pickup_point_id'] ) ) );
+	}
+	if ( ! empty( $_POST['ppl_pickup_point_label'] ) ) {
+		$order->update_meta_data( '_ppl_pickup_point_label', sanitize_text_field( wp_unslash( $_POST['ppl_pickup_point_label'] ) ) );
+	}
+}
+add_action( 'woocommerce_checkout_create_order', 'molosoc_save_ppl_pickup_point', 10, 2 );
+
+/**
+ * Surfaces the selected pickup point in wp-admin's order edit screen,
+ * next to the shipping address, so whoever fulfills the order can see it.
+ */
+function molosoc_admin_show_ppl_pickup_point( $order ) {
+	$point_label = $order->get_meta( '_ppl_pickup_point_label' );
+	if ( $point_label ) {
+		echo '<p><strong>' . esc_html__( 'PPL výdejní místo', 'molosoc' ) . ':</strong> ' . esc_html( $point_label ) . '</p>';
+	}
+}
+add_action( 'woocommerce_admin_order_data_after_shipping_address', 'molosoc_admin_show_ppl_pickup_point' );
+
+/**
+ * Surfaces the same info on the customer-facing order-received/order-
+ * details page and in order emails that reuse this template hook.
+ */
+function molosoc_customer_show_ppl_pickup_point( $order ) {
+	$point_label = $order->get_meta( '_ppl_pickup_point_label' );
+	if ( $point_label ) {
+		echo '<p><strong>' . esc_html__( 'PPL výdejní místo', 'molosoc' ) . ':</strong> ' . esc_html( $point_label ) . '</p>';
+	}
+}
+add_action( 'woocommerce_order_details_after_order_table', 'molosoc_customer_show_ppl_pickup_point' );
