@@ -73,12 +73,12 @@ get_header();
 
 	<!-- 3. WHEN TO SEE A PODIATRIST INSTEAD OF TREATING IT YOURSELF —
 	     editorial-feature-reveal. molosoc_cracked_heels_05.jpg (Image A)
-	     gives way to Mom-Feet-cracked-heals-before-using-Molosoc.jpg
-	     (Image B) through a circular mask, then the 3 cards emerge. -->
+	     gives way to molosoc_walking_07_bedroom_web.jpg (Image B) through
+	     a circular mask, then the 3 cards emerge. -->
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'When to see a podiatrist instead of treating it yourself', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_walking_07_bedroom_web.jpg');"></div>
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_05.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
