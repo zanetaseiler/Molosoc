@@ -130,6 +130,21 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'dry-skin-feet' ) ) {
+		// Identical asset stack to the cracked-heels/ingrown-toenails
+		// branches above — page-dry-skin-feet.php reuses pillar1.css and
+		// its JS as-is (every class/selector in that file is generic,
+		// nothing cracked-heels-specific to duplicate). See the
+		// cracked-heels branch's own comments for why each handle is here.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
@@ -511,6 +526,75 @@ function molosoc_pillar2_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_pillar2_schema' );
+
+/**
+ * Pillar 4 — Dry Skin on Feet — schema markup, ported from
+ * content/molosoc-site/07-pillar4-dry-skin-feet/pillar4-dry-skin-feet-
+ * schema.html. Same is_page() convention as molosoc_pillar1_schema()/
+ * molosoc_pillar2_schema() above. FAQPage answers are kept in sync with
+ * this page's own copy (see page-dry-skin-feet.php) —
+ * content/.../pillar4-dry-skin-feet-copy.md is the locked source for both.
+ */
+function molosoc_pillar4_schema() {
+	if ( ! is_page( 'dry-skin-feet' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Still dry after moisturizing? Here's what actually causes dry skin on feet, why cream alone doesn't fix it, and what actually helps it stop.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/dry-skin-feet/#article",
+	      "headline": "Dry Skin on Feet: Why It Happens and What Actually Helps",
+	      "description": "Still dry after moisturizing? Here's what actually causes dry skin on feet, why cream alone doesn't fix it, and what actually helps it stop.",
+	      "url": "https://molosoc.com/dry-skin-feet/",
+	      "mainEntityOfPage": "https://molosoc.com/dry-skin-feet/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/dry-skin-feet/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What causes dry skin on feet?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Soles have no oil glands the way most of the rest of the skin does, so they rely entirely on external moisture to stay soft. Enclosed feet also lose moisture to socks, shoes, and air circulation throughout the day, and seasonal triggers like indoor heating, cold air, and hot showers strip moisture faster than usual."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "Why are my feet so dry even when I moisturize?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Cream applied and left uncovered gets absorbed by socks or rubbed off on floors within minutes, long before the skin has had a real chance to take it in. The fix isn't a thicker layer or a pricier formula — it's uninterrupted contact time so the cream can actually absorb instead of transferring elsewhere."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/dry-skin-feet/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Dry Skin on Feet", "item": "https://molosoc.com/dry-skin-feet/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_pillar4_schema' );
 
 /**
  * WordPress doesn't allow .glb uploads by default (not in its core mime
