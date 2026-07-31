@@ -74,6 +74,12 @@
   height: min(95vw, 60rem);
   --poster-color: transparent;
   background-color: transparent;
+  /* model-viewer's own default loading progress bar is a plain gray
+     horizontal bar drawn across the canvas while the .glb streams in —
+     visible for a moment on page load, on top of the hero, before the
+     model appears. Same transparent treatment as --poster-color above. */
+  --progress-bar-color: transparent;
+  --progress-bar-height: 0px;
   /* Nudged down from dead-center so the headline above has breathing room
      instead of the model's top edge sitting right under the paragraph. */
   transform: translateY(190px);
