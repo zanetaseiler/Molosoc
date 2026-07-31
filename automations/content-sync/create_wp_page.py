@@ -17,6 +17,14 @@ their own hardcoded markup and never call the_content().
 
 Usage:
     python3 create_wp_page.py --slug cracked-heels --title "Cracked Heels: Why They Happen..."
+
+Pass --parent-slug for a spoke article nested under a pillar (e.g.
+--parent-slug ingrown-toenails for the "treatment" spoke), so the created
+Page's post_parent is set and the permalink nests correctly
+(/ingrown-toenails/treatment/ instead of /treatment/). Looks the parent
+page up by slug via the REST API; if it isn't found, the Page is still
+created flat and a warning is printed — re-run once the parent exists, or
+set it manually in wp-admin.
 """
 
 import argparse
@@ -49,6 +57,12 @@ def main():
         help="Page slug — must match the page-{slug}.php template filename",
     )
     parser.add_argument("--title", required=True, help="Page title shown in wp-admin")
+    parser.add_argument(
+        "--parent-slug",
+        required=False,
+        default=None,
+        help="Parent page slug, for a spoke article nested under a pillar (sets post_parent so the permalink nests correctly)",
+    )
     args = parser.parse_args()
 
     resp = requests.get(
@@ -74,6 +88,25 @@ def main():
         "status": "draft",
         "content": "",
     }
+
+    if args.parent_slug:
+        parent_resp = requests.get(
+            f"{WP_URL}/wp-json/wp/v2/pages",
+            params={"slug": args.parent_slug, "status": "draft,publish,future"},
+            auth=wp_auth(),
+            timeout=30,
+        )
+        parent_resp.raise_for_status()
+        parent_results = parent_resp.json()
+        if parent_results:
+            payload["parent"] = parent_results[0]["id"]
+        else:
+            print(
+                f"  WARNING: parent slug {args.parent_slug!r} not found — creating "
+                f"{args.slug!r} without a parent. Permalink won't nest until this is "
+                f"re-run (safe/idempotent) or the parent is set manually in wp-admin."
+            )
+
     resp = requests.post(
         f"{WP_URL}/wp-json/wp/v2/pages", json=payload, auth=wp_auth(), timeout=30
     )

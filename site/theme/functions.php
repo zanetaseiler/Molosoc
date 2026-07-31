@@ -176,6 +176,80 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'treatment' ) ) {
+		// Spoke 1 — Ingrown Toenails Treatment. Identical asset stack to
+		// the pillar branches above — page-treatment.php reuses
+		// pillar1.css and its JS as-is (every class/selector in that file
+		// is generic). Spokes drop the "Go deeper" static section but
+		// keep all 3 GSAP-driven sections (fixed-image-text-reveal,
+		// editorial-feature-reveal, orbit-scroll-drawer), so the full
+		// pillar1 JS stack is still needed.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'callus-remover' ) ) {
+		// Spoke 2 — Callus Remover. Identical asset stack to every other
+		// spoke/pillar branch above — see the "treatment" branch's own
+		// comment for why the full pillar1 stack is needed.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'prevent' ) ) {
+		// Spoke 3 — How to Prevent Ingrown Toenails. Identical asset stack.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'cracked-heels-cream' ) ) {
+		// Spoke 4 — Cracked Heels Cream. Identical asset stack.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'cracked-heels-treatment' ) ) {
+		// Spoke 5 — Cracked Heels Treatment. Identical asset stack.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'fix-permanently' ) ) {
+		// Spoke 6 — How to Fix Cracked Heels Permanently. Identical asset stack.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
@@ -798,6 +872,419 @@ function molosoc_pillar4_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_pillar4_schema' );
+
+/**
+ * Spoke 1 — Ingrown Toenails Treatment — schema markup, ported from
+ * content/molosoc-site/09-spoke1-ingrown-toenails-treatment/spoke1-
+ * ingrown-toenails-treatment-schema.html. Same is_page() convention as
+ * molosoc_pillar1_schema()/molosoc_pillar2_schema() above. FAQPage answers
+ * are kept in sync with this page's own copy (see page-treatment.php) —
+ * content/.../spoke1-ingrown-toenails-treatment-copy.md is the locked
+ * source for both.
+ */
+function molosoc_spoke1_schema() {
+	if ( ! is_page( 'treatment' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="From home softening to when a doctor needs to get involved — here's what actually treats an ingrown toenail, and what makes it worse.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/ingrown-toenails/treatment/#article",
+	      "headline": "Ingrown Toenails Treatment: What Actually Works",
+	      "description": "From home softening to when a doctor needs to get involved — here's what actually treats an ingrown toenail, and what makes it worse.",
+	      "url": "https://molosoc.com/ingrown-toenails/treatment/",
+	      "mainEntityOfPage": "https://molosoc.com/ingrown-toenails/treatment/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/ingrown-toenails/treatment/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "How do you treat ingrown toenails?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Treating an ingrown toenail starts with softening the skin around the nail, since firm, dry skin is what the nail edge is pushing against. A warm soak helps soften skin and ease discomfort, but the real improvement comes once the underlying pressure point is relieved, giving the nail room to grow out properly instead of into the skin."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How do you get rid of ingrown toenails?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Getting rid of an ingrown toenail for good means combining consistent skin softening with a genuine change to whatever's been causing the pressure — footwear, trim habit, or both — rather than only treating the current episode. Trimming the nail straight across, instead of rounding the corners, also helps prevent the same problem from repeating."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/ingrown-toenails/treatment/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Ingrown Toenails", "item": "https://molosoc.com/ingrown-toenails/" },
+	        { "@type": "ListItem", "position": 3, "name": "Ingrown Toenails Treatment", "item": "https://molosoc.com/ingrown-toenails/treatment/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke1_schema' );
+
+/**
+ * Spoke 2 — Callus Remover — schema markup, ported from content/molosoc-
+ * site/10-spoke2-callus-remover/spoke2-callus-remover-schema.html.
+ */
+function molosoc_spoke2_schema() {
+	if ( ! is_page( 'callus-remover' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Files, creams, pumice stones — here's an honest look at what actually removes hard skin, and why it keeps coming back no matter which one you use.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/callus-remover/#article",
+	      "headline": "Callus Remover: What Actually Works (And Why It Doesn't Last)",
+	      "description": "Files, creams, pumice stones — here's an honest look at what actually removes hard skin, and why it keeps coming back no matter which one you use.",
+	      "url": "https://molosoc.com/hardened-skin-calluses/callus-remover/",
+	      "mainEntityOfPage": "https://molosoc.com/hardened-skin-calluses/callus-remover/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/callus-remover/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What is the best callus remover?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "There's no single tool or product that removes a callus permanently. Filing and pumice stones physically wear down thickened skin, while acid-based removers soften it chemically — both work on the skin that's already there, but neither changes the pressure point that caused it, which is why hardened skin tends to build back up in the same spot."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How do you remove thick dead skin from feet at home?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Soak feet first to soften thickened skin, then file gradually in short sessions rather than one aggressive pass, to avoid over-thinning the skin underneath. After removal, consistent moisture is what keeps the results from resetting quickly."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How do you get rid of hard skin on feet permanently?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Permanent improvement requires more than one-time removal — the pressure point that caused the hardened skin, such as footwear or gait, is usually still there afterward. Consistent moisture between removal sessions keeps skin more flexible under pressure, which slows how quickly it thickens back up."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/callus-remover/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Hardened Skin & Calluses", "item": "https://molosoc.com/hardened-skin-calluses/" },
+	        { "@type": "ListItem", "position": 3, "name": "Callus Remover", "item": "https://molosoc.com/hardened-skin-calluses/callus-remover/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke2_schema' );
+
+/**
+ * Spoke 3 — How to Prevent Ingrown Toenails — schema markup, ported from
+ * content/molosoc-site/11-spoke3-prevent-ingrown-toenails/spoke3-prevent-
+ * ingrown-toenails-schema.html.
+ */
+function molosoc_spoke3_schema() {
+	if ( ! is_page( 'prevent' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="If this isn't your first ingrown toenail, the fix isn't just treating this one — it's changing what keeps causing them. Here's what actually prevents it.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/ingrown-toenails/prevent/#article",
+	      "headline": "How to Prevent Ingrown Toenails (For Good)",
+	      "description": "If this isn't your first ingrown toenail, the fix isn't just treating this one — it's changing what keeps causing them. Here's what actually prevents it.",
+	      "url": "https://molosoc.com/ingrown-toenails/prevent/",
+	      "mainEntityOfPage": "https://molosoc.com/ingrown-toenails/prevent/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/ingrown-toenails/prevent/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "Why do I keep getting ingrown toenails?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Repeat ingrown toenails usually come from the same nail-cutting habit or footwear recreating the same pressure point every time. Resolving one episode deals with the symptom in front of you — it doesn't change the trim habit or shoe fit that caused it, so the same conditions are still in place for next time."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "How do you stop ingrown toenails?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Trim the nail straight across, leaving the corners slightly longer than the center, so the nail has a straighter path to grow along. Choose shoes with enough room at the toe box to remove the pressure that pushes the nail edge into skin, and keep the surrounding skin consistently soft as an ongoing habit rather than only after a problem starts."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/ingrown-toenails/prevent/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Ingrown Toenails", "item": "https://molosoc.com/ingrown-toenails/" },
+	        { "@type": "ListItem", "position": 3, "name": "How to Prevent Ingrown Toenails", "item": "https://molosoc.com/ingrown-toenails/prevent/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke3_schema' );
+
+/**
+ * Spoke 4 — Cracked Heels Cream — schema markup, ported from
+ * content/molosoc-site/12-spoke4-cracked-heels-cream/spoke4-cracked-
+ * heels-cream-schema.html.
+ */
+function molosoc_spoke4_schema() {
+	if ( ! is_page( 'cracked-heels-cream' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Not all cracked-heel creams work the same way. Here's what actually matters — the ingredients, the timing, and why even a good cream can fail without the right routine.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-cream/#article",
+	      "headline": "Cracked Heels Cream: What Actually Makes One Work",
+	      "description": "Not all cracked-heel creams work the same way. Here's what actually matters — the ingredients, the timing, and why even a good cream can fail without the right routine.",
+	      "url": "https://molosoc.com/cracked-heels/cracked-heels-cream/",
+	      "mainEntityOfPage": "https://molosoc.com/cracked-heels/cracked-heels-cream/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-cream/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What should you look for in a cracked heels cream?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Look for urea or similar humectants, which draw moisture into skin and help soften thickened areas. Thicker balms suit more severe cracking since they sit on skin longer, while lighter lotions work well for everyday maintenance. Ingredients matter less than how consistently the cream is used with enough contact time to actually absorb."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What is the best cream for cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "The best cream for cracked heels depends far more on how severe the cracking is than on brand or price — plenty of inexpensive formulas contain the same core humectants as premium ones. In most cases, a cream already owned is capable of doing the job; the missing piece is usually consistency and contact time, not a better product."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-cream/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Cracked Heels", "item": "https://molosoc.com/cracked-heels/" },
+	        { "@type": "ListItem", "position": 3, "name": "Cracked Heels Cream", "item": "https://molosoc.com/cracked-heels/cracked-heels-cream/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke4_schema' );
+
+/**
+ * Spoke 5 — Cracked Heels Treatment — schema markup, ported from
+ * content/molosoc-site/13-spoke5-cracked-heels-treatment/spoke5-cracked-
+ * heels-treatment-schema.html.
+ */
+function molosoc_spoke5_schema() {
+	if ( ! is_page( 'cracked-heels-treatment' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Cream alone rarely fixes cracked heels. Here's the full picture — exfoliation, moisture, and the one step most routines skip.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-treatment/#article",
+	      "headline": "Cracked Heels Treatment: What Actually Works, Step by Step",
+	      "description": "Cream alone rarely fixes cracked heels. Here's the full picture — exfoliation, moisture, and the one step most routines skip.",
+	      "url": "https://molosoc.com/cracked-heels/cracked-heels-treatment/",
+	      "mainEntityOfPage": "https://molosoc.com/cracked-heels/cracked-heels-treatment/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-treatment/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What is the actual treatment for cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Effective cracked heel treatment requires three things together: removing built-up dead skin first, getting moisture into the skin rather than just on the surface, and sealing that moisture in for a real session. Cream applied alone, without removal or sealing, typically underperforms."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What are painful deep cracked heels, and when should you see a podiatrist?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Painful deep cracked heels are cracks that hurt with every step because they've gone past surface dryness into deeper skin. Sharp pain, a crack that doesn't respond to a week or two of consistent care, or any bleeding or signs of infection are reasons to see a podiatrist rather than continuing to self-treat."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/cracked-heels/cracked-heels-treatment/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Cracked Heels", "item": "https://molosoc.com/cracked-heels/" },
+	        { "@type": "ListItem", "position": 3, "name": "Cracked Heels Treatment", "item": "https://molosoc.com/cracked-heels/cracked-heels-treatment/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke5_schema' );
+
+/**
+ * Spoke 6 — How to Fix Cracked Heels Permanently — schema markup, ported
+ * from content/molosoc-site/14-spoke6-fix-cracked-heels-permanently/
+ * spoke6-fix-cracked-heels-permanently-schema.html.
+ */
+function molosoc_spoke6_schema() {
+	if ( ! is_page( 'fix-permanently' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Cracked heels keep coming back for a reason — treatment fixes them once, but doesn't stop them from returning. Here's what actually makes it stick.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/cracked-heels/fix-permanently/#article",
+	      "headline": "How to Fix Cracked Heels Permanently (Not Just Temporarily)",
+	      "description": "Cracked heels keep coming back for a reason — treatment fixes them once, but doesn't stop them from returning. Here's what actually makes it stick.",
+	      "url": "https://molosoc.com/cracked-heels/fix-permanently/",
+	      "mainEntityOfPage": "https://molosoc.com/cracked-heels/fix-permanently/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/cracked-heels/fix-permanently/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "How do you fix cracked heels permanently?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Fixing cracked heels permanently requires consistency, not a stronger product. Treating one crack resolves what's visible but doesn't change the dryness and pressure that caused it, so the same spot stays vulnerable unless care becomes an ongoing habit rather than a one-time fix."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What are severe cracked heels?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Severe cracked heels are cracks that reopen repeatedly or reappear in the same spot every few months, rather than resolving as a one-off. Left unaddressed, each episode tends to be a little worse than the last — but once care becomes consistent rather than reactive, that cycle slows."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/cracked-heels/fix-permanently/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Cracked Heels", "item": "https://molosoc.com/cracked-heels/" },
+	        { "@type": "ListItem", "position": 3, "name": "How to Fix Cracked Heels Permanently", "item": "https://molosoc.com/cracked-heels/fix-permanently/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_spoke6_schema' );
 
 /**
  * WordPress doesn't allow .glb uploads by default (not in its core mime
