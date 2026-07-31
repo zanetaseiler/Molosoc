@@ -78,6 +78,17 @@ a {
   box-sizing: border-box;
 }
 
+/* h1/h2/h3 site-wide (above) are sized for hero-scale marketing pages —
+   --text-display-xl on an h1 is ~88px, which is correct for a pillar
+   hero but wildly oversized for a plain WooCommerce product title or a
+   blog post heading sitting in normal content flow. Scale down inside
+   this same fallback container only; bespoke page-*.php templates never
+   use a bare <h1> this way, so they're unaffected. */
+#primary.content-area h1,
+.molosoc-main h1 {
+  font-size: var(--text-display-m);
+}
+
 .molosoc-eyebrow {
   font-family: var(--font-body);
   font-size: var(--text-label);
