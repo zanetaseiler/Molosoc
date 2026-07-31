@@ -57,6 +57,13 @@
 .molosoc-hero {
   position: relative;
   width: 100%;
+  /* Fallback for engines without svh support — without this, an
+     unsupported 100svh value is simply invalid and dropped, leaving no
+     height at all on this position:relative container. Its absolutely-
+     positioned media child sizes to THIS box (inset: 0), so a collapsed
+     container was what could make the hero photo render into a near-zero
+     box (only a small cropped corner visible) instead of full-bleed. */
+  min-height: 100vh;
   min-height: 100svh;
   display: flex;
   align-items: flex-end;
@@ -789,6 +796,27 @@
     height: 30px;
   }
 
+  /* Nav had zero mobile handling: logo + "space-between" + a fixed
+     --space-m (32px) gap between nav links, at full --text-body size —
+     on a narrow phone that total routinely exceeds the viewport width,
+     pushing "Contact/Kontakt" straight off the right edge. Shrinking the
+     gap/font is usually enough on its own; flex-wrap is a safety net so
+     a genuinely tight viewport wraps to a second line instead of
+     clipping off-screen. */
+  .molosoc-home-header {
+    flex-wrap: wrap;
+    row-gap: var(--space-3xs);
+  }
+
+  .molosoc-home-header__nav ul {
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+  }
+
+  .molosoc-home-header__nav a {
+    font-size: var(--text-small);
+  }
+
   /* merge-transition.js now skips its pin below this width (matching
      every other pinned sequence), so the two tiles sit in their static
      resting state — which only reconstructs as one undistorted photo if
@@ -804,25 +832,49 @@
     aspect-ratio: 2560 / 1429;
   }
 
-  /* topics-portal.js skips the pin below this width — plain stacked
-     fallback: the photo sits at the top at its normal 100vh crop, cards
-     stack below it in normal document flow. */
+  /* topics-portal.js skips the pin below this width (we can't run its
+     centered-portal entrance on a cramped viewport) — but the previous
+     fallback pushed the photo to its own full 100vh crop FIRST, with all
+     five cards stacked below it in normal document flow. That read as
+     "photo, then a long disconnected scroll of separate cards", and put
+     the cards visually under the image instead of over it. This fallback
+     instead keeps photo + cards in the one bounded stage/frame — the
+     photo fills the frame (centered, cover-cropped, no distortion), and
+     the cards sit stacked on top of it as a scrim-backed group anchored
+     to the bottom, so the whole thing reads as one connected screen
+     instead of a photo followed by a separate list. */
   .molosoc-topics__stage {
     height: auto;
+    min-height: 100svh;
+    display: flex;
+    align-items: flex-end;
   }
 
   .molosoc-topics__media {
-    position: relative;
-    height: 100vh;
+    position: absolute;
+    inset: 0;
+    height: 100%;
   }
 
   .molosoc-topics__cards {
-    position: static;
+    position: relative;
+    inset: auto;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-m);
-    padding: var(--space-l) var(--space-s);
+    gap: var(--space-s);
+    width: 100%;
+    padding: var(--space-xl) var(--space-s) var(--space-m);
     pointer-events: auto;
+    /* Scrim behind the card stack, not behind the whole photo — keeps the
+       top of the image clean/visible while guaranteeing the cards read
+       clearly regardless of what's directly behind them. */
+    background: linear-gradient(
+      180deg,
+      rgba(12, 17, 21, 0) 0%,
+      rgba(12, 17, 21, 0.5) 35%,
+      rgba(12, 17, 21, 0.72) 100%
+    );
   }
 
   .molosoc-feature-card,
