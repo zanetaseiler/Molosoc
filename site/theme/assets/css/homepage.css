@@ -7,20 +7,6 @@
   written section, and the two beats (3, 6) that don't have 1:1 copy.
 */
 
-/* Homepage-only heading override — DM Serif Display (base.css's site-wide
-   --font-display) only ships one weight, and that weight reads as a heavy,
-   assertive display face at hero size. Georgia is lighter/thinner at the
-   same weight and is what the browser briefly shows anyway during the
-   DM Serif Display FOUC — this makes that the deliberate homepage look
-   instead of a loading accident, without changing the token other
-   templates (category/product) still build on. */
-.molosoc-front-page h1,
-.molosoc-front-page h2,
-.molosoc-front-page h3 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
-}
-
 .molosoc-home-header {
   position: fixed;
   top: 0;
