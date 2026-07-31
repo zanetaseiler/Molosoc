@@ -83,7 +83,7 @@ get_header();
 				</div>
 				<div class="molosoc-orbit-drawer__buy">
 					<span class="molosoc-orbit-drawer__price">$13</span>
-					<a class="molosoc-btn" href="#"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
+					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
 				</div>
 			</div>
 			<div class="molosoc-orbit-drawer__cards">
@@ -289,7 +289,7 @@ get_header();
 					</div>
 				</div>
 				<div class="molosoc-product-buy">
-					<a class="molosoc-btn" href="#"><?php esc_html_e( 'Order Now — $13', 'molosoc' ); ?></a>
+					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now — $13', 'molosoc' ); ?></a>
 				</div>
 			</section>
 		</div>
@@ -301,7 +301,7 @@ get_header();
      mobile widths. -->
 <div class="molosoc-sticky-buy">
 	<span class="molosoc-sticky-buy__price">$13</span>
-	<a class="molosoc-btn" href="#"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
+	<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Order Now', 'molosoc' ); ?></a>
 </div>
 
 <?php get_footer(); ?>
