@@ -144,12 +144,13 @@ get_header();
 
 	<!-- 4. SOCKS, TIGHTS, AND THE DRYNESS NOBODY TALKS ABOUT —
 	     editorial-feature-reveal. seasonal_03_winter.jpg (Image A) gives
-	     way to pillar4_02_dry_skin.jpg (Image B) through a circular mask,
-	     then the 3 cards emerge from center to their tiered positions. -->
+	     way to molosoc_spa_treatment_02.jpg (Image B) through a circular
+	     mask, then the 3 cards emerge from center to their tiered
+	     positions. -->
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'Socks, tights, and the dryness nobody talks about', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar4_02_dry_skin.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg');"></div>
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/seasonal_03_winter.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
