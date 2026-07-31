@@ -726,42 +726,48 @@
    each hold one card per side with the center left open so the hallway's
    own perspective stays the focal point, and a single card centers the
    bottom tier to resolve the composition. Left/right columns keep a
-   consistent inset per tier (slight stagger tier-to-tier — 5% upper vs
-   9%/8% middle — reads as intentional placement, not a repeated grid).
-   Three even ~11-12% gaps between tiers give consistent spacing
-   throughout; sizes/typography/colors/animations are all unchanged from
-   before, only these positions moved. */
+   consistent inset per tier (slight stagger tier-to-tier — 12% upper vs
+   14%/15% middle — reads as intentional placement, not a repeated grid).
+
+   Retuned per explicit "too separated" feedback — the previous values
+   (tiers at 6-8% / 40-42% / bottom:15px, insets at 5-9%) clustered all
+   three tiers near the top and bottom edges with huge dead gaps between
+   them, and pushed each pair out to the far corners with a big empty
+   middle. Now four roughly-even ~13-14% gaps (top edge → tier 1 → tier
+   2 → tier 3 → bottom edge) and tighter 12-15% side insets, so the five
+   cards read as one composed group instead of five scattered points.
+   Sizes/typography/colors/animations unchanged, only positions moved. */
 .molosoc-feature-card--1 {
-  top: 8%;
-  left: 5%;
+  top: 14%;
+  left: 12%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--2 {
-  top: 6%;
-  right: 5%;
+  top: 12%;
+  right: 12%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--3 {
-  top: 40%;
-  left: 9%;
+  top: 43%;
+  left: 15%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--4 {
-  top: 42%;
-  right: 8%;
+  top: 45%;
+  right: 14%;
   width: clamp(15rem, 24vw, 18.5rem);
 }
 
 .molosoc-feature-card--5 {
-  /* Anchored to the stage's own bottom edge with a fixed 15px gap —
-     guarantees real clearance regardless of viewport height or this
-     card's own (content-driven) height, unlike a % top value which was
-     letting it sit flush against/clip on the frame's bottom edge on
-     shorter viewports. */
-  bottom: 15px;
+  /* % rather than the previous fixed 15px — 13% of even a short 100vh
+     viewport still clears far more than 15px ever did, so this is
+     strictly safer, not riskier, while finally giving this tier a real,
+     even gap from tier 2 above instead of sitting jammed on the frame's
+     bottom edge. */
+  bottom: 13%;
   left: 0;
   right: 0;
   margin-left: auto;
