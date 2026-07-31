@@ -56,6 +56,28 @@ a {
   color: inherit;
 }
 
+/* Container fallback for anything NOT using a bespoke page-*.php
+   template's own .molosoc-section/.molosoc-section__inner pattern —
+   WooCommerce's default single-product/shop/cart/checkout markup
+   (#primary.content-area) and this theme's own generic fallback
+   template for blog posts/search/404 (index.php's .molosoc-main) never
+   had any container styling at all, so they rendered completely
+   edge-to-edge at full viewport width (confirmed: max-width:none,
+   zero padding, on a live product page) instead of the same centered,
+   gutter-padded column every other page on the site uses. Same
+   max-width token + centering as .molosoc-section__inner
+   (components.css), with the horizontal padding folded in directly
+   since these wrappers have no separate outer .molosoc-section to
+   supply it. */
+#primary.content-area,
+.molosoc-main {
+  max-width: var(--content-max-width-wide);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-l) var(--section-padding-x);
+  box-sizing: border-box;
+}
+
 .molosoc-eyebrow {
   font-family: var(--font-body);
   font-size: var(--text-label);
