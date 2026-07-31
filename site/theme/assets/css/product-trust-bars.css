@@ -36,8 +36,7 @@
 }
 
 .molosoc-trust-bar--bottom .molosoc-trust-bar__inner {
-  justify-content: center;
-  gap: var(--space-xl);
+  justify-content: space-between;
 }
 
 .molosoc-trust-bar__item {
