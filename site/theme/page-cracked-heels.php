@@ -180,14 +180,26 @@ get_header();
 			<h2><?php esc_html_e( 'Go deeper', 'molosoc' ); ?></h2>
 			<div class="molosoc-topic-grid">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/cracked-heels-cream/' ) ); ?>">
+					<div class="molosoc-topic-card__media molosoc-media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_05.jpg"
+							alt="" loading="lazy" decoding="async">
+					</div>
 					<h3><?php esc_html_e( 'Cracked heels cream', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'What actually matters in a cracked-heel cream, and why even a good one fails without the right routine.', 'molosoc' ); ?></p>
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/fix-permanently/' ) ); ?>">
+					<div class="molosoc-topic-card__media molosoc-media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_03.jpg"
+							alt="" loading="lazy" decoding="async">
+					</div>
 					<h3><?php esc_html_e( 'How to fix cracked heels permanently', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'Why cracked heels come back after healing once, and what stops the cycle.', 'molosoc' ); ?></p>
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/cracked-heels-treatment/' ) ); ?>">
+					<div class="molosoc-topic-card__media molosoc-media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc-6a6c3e786c068.png"
+							alt="" loading="lazy" decoding="async">
+					</div>
 					<h3><?php esc_html_e( 'Cracked heels treatment', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'The full picture beyond cream alone — what real treatment requires, step by step.', 'molosoc' ); ?></p>
 				</a>

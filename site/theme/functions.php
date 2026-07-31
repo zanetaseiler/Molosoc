@@ -115,6 +115,21 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'ingrown-toenails' ) ) {
+		// Identical asset stack to the cracked-heels branch above —
+		// page-ingrown-toenails.php reuses pillar1.css and its JS as-is
+		// (every class/selector in that file is generic, nothing
+		// cracked-heels-specific to duplicate). See that branch's own
+		// comments for why each handle is here.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
@@ -411,6 +426,91 @@ function molosoc_pillar1_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_pillar1_schema' );
+
+/**
+ * Pillar 2 — Ingrown Toenails — schema markup, ported from
+ * content/molosoc-site/05-pillar2-ingrown-toenails/pillar2-ingrown-
+ * toenails-schema.html. Same is_page() convention as molosoc_pillar1_schema()
+ * above. FAQPage answers are kept in sync with this page's own copy (see
+ * page-ingrown-toenails.php) — content/.../pillar2-ingrown-toenails-copy.md
+ * is the locked source for both.
+ */
+function molosoc_pillar2_schema() {
+	if ( ! is_page( 'ingrown-toenails' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="An ingrown toenail can go from mildly annoying to genuinely painful fast. Here's what causes it, what actually helps at home, and when it's more than a nail problem.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/ingrown-toenails/#article",
+	      "headline": "Ingrown Toenails: Why They Happen and What Actually Helps",
+	      "description": "An ingrown toenail can go from mildly annoying to genuinely painful fast. Here's what causes it, what actually helps at home, and when it's more than a nail problem.",
+	      "url": "https://molosoc.com/ingrown-toenails/",
+	      "mainEntityOfPage": "https://molosoc.com/ingrown-toenails/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-30",
+	      "dateModified": "2026-07-30",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/ingrown-toenails/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What causes ingrown toenails?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Ingrown toenails happen when the nail's edge grows down into the surrounding skin instead of straight across. Tight-fitting shoes press skin against the nail edge, and nails trimmed too short or rounded give that edge room to dig in as it grows back. Without a change to nail shape or footwear, the same pressure point tends to recreate the problem repeatedly."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "Do ingrown toenails go away on their own?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "A mild ingrown toenail can resolve on its own once the pressure causing it — tight shoes, a too-short trim — is removed and the skin has room to heal. Increasing redness, swelling, or pain that doesn't ease up after a few days means it isn't resolving on its own and needs more attention."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "Why does my big toenail hurt?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Pain concentrated at the big toenail is almost always pressure-related, coming from the nail edge, tight footwear, or both at once."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What causes an ingrown big toe?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "The big toe is the most common site for an ingrown nail because it takes the most pressure with every step, making it the spot most likely to develop a nail edge that grows into skin."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/ingrown-toenails/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Ingrown Toenails", "item": "https://molosoc.com/ingrown-toenails/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_pillar2_schema' );
 
 /**
  * WordPress doesn't allow .glb uploads by default (not in its core mime

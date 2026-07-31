@@ -212,13 +212,21 @@
   display: block;
   text-decoration: none;
   color: var(--color-text);
-  padding: var(--space-m) 0;
-  border-top: 1px solid rgba(12, 17, 21, 0.12);
   transition: opacity var(--motion-duration-s) var(--motion-ease);
 }
 
 .molosoc-topic-card:hover {
-  opacity: 0.6;
+  opacity: 0.85;
+}
+
+/* Thumbnail — reuses .molosoc-media (same rounded-corner, hover-zoom
+   image wrapper as .molosoc-argument__media elsewhere on these pages),
+   just with its own aspect-ratio and spacing to the text below. Optional:
+   .molosoc-topic-card works with or without one, so older/text-only
+   instances of this component keep rendering correctly. */
+.molosoc-topic-card__media {
+  aspect-ratio: 4 / 3;
+  margin-bottom: var(--space-s);
 }
 
 .molosoc-topic-card h3 {
