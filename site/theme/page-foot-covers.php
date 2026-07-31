@@ -85,8 +85,8 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media molosoc-media--static">
-						<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.png' ); ?>"
-							alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Disposable-Foot-masks-versus-reusable-Molosoc.png"
+							alt="<?php esc_attr_e( 'Side-by-side comparison of a disposable single-use foot mask versus the reusable Molosoc foot cover', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
 				</div>
