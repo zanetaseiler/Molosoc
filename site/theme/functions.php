@@ -32,6 +32,30 @@ function molosoc_setup() {
 }
 add_action( 'after_setup_theme', 'molosoc_setup' );
 
+/**
+ * This theme has no sidebar concept anywhere — every page (homepage,
+ * category, product, all pillars/spokes) is full-width by design, and
+ * the theme ships no sidebar.php of any kind. WooCommerce's own
+ * single-product/archive templates still fire the woocommerce_sidebar
+ * action regardless (hooked by default to woocommerce_get_sidebar(),
+ * which calls get_sidebar('shop')). With no sidebar-shop.php/sidebar.php
+ * in the theme to catch that, WordPress core falls through to its own
+ * built-in theme-compat fallback sidebar — a raw, completely unstyled
+ * search form + full site-wide wp_list_pages() dump — which is exactly
+ * the "looks like coding links" block that was appearing below the
+ * product description on /product/molosoc-product-moisture-lock-foot-
+ * cover/ (and would appear on any native WooCommerce shop/product page).
+ * Removing the hook is WooCommerce's own documented way to disable the
+ * shop sidebar outright, rather than adding an empty sidebar.php just to
+ * intercept it. Hooked on init (not called directly here) since that's
+ * safely after WooCommerce registers woocommerce_get_sidebar() on its
+ * own init-time hook setup.
+ */
+function molosoc_remove_woocommerce_sidebar() {
+	remove_action( 'woocommerce_sidebar', 'woocommerce_get_sidebar' );
+}
+add_action( 'init', 'molosoc_remove_woocommerce_sidebar' );
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
