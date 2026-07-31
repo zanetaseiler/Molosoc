@@ -820,16 +820,70 @@
   /* merge-transition.js now skips its pin below this width (matching
      every other pinned sequence), so the two tiles sit in their static
      resting state — which only reconstructs as one undistorted photo if
-     the container's own aspect ratio matches the source image's. The
-     desktop min-height: 100svh breaks that on a narrow, tall mobile
-     viewport (a far more extreme ratio than any lifestyle photo), which
-     is what was visibly stretching/deforming the image. Locking this
-     section to the actual photo's own aspect ratio (2560x1429, same
-     source used for all 3 merge-tile-style images on this page) fixes
-     the math regardless of animation/JS state. */
+     the CONTAINER'S OWN aspect ratio matches the source image's, since
+     .molosoc-merge__group is position:absolute;inset:0 and stretches to
+     fill exactly whatever box it's given.
+
+     A previous fix locked .molosoc-merge-section itself (min-height:0 +
+     aspect-ratio: 2560/1429) to fix that — which works for a section that
+     ONLY contains the photo, but this section also contains the "How it
+     helps" copy (eyebrow, heading, 4 pillars) overlaid on top of it. That
+     copy's real content height is far taller than the photo's own
+     landscape aspect ratio allows, so the section's actual rendered
+     height ballooned to fit all of it — and .molosoc-merge__group (inset:
+     0) stretched right along with it, badly distorting the photo across
+     several screens of scroll, with no visible connection between the
+     photo and the copy below it.
+
+     Fix: give the ASPECT RATIO to the photo layer only
+     (.molosoc-merge__group), not the whole section, and let the copy flow
+     in normal document flow below it instead of overlaid — same "no
+     overlay/pin tricks on mobile, just correctly-cropped stacked content"
+     fallback pattern used elsewhere on this page (arc-reveal, topics
+     section). Since the copy is no longer sitting on top of a darkened
+     photo, it also needs to switch back to the page's normal ink-on-cream
+     colors instead of white-on-photo. */
   .molosoc-merge-section {
     min-height: 0;
+    height: auto;
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge__group {
+    position: relative;
+    inset: auto;
     aspect-ratio: 2560 / 1429;
+    height: auto;
+  }
+
+  .molosoc-merge-section .molosoc-section__scrim {
+    display: none;
+  }
+
+  .molosoc-merge-section .molosoc-section__inner {
+    position: relative;
+    padding: var(--space-l) var(--section-padding-x);
+  }
+
+  .molosoc-merge-section .molosoc-eyebrow,
+  .molosoc-merge-section h2 {
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge-section .molosoc-pillar {
+    border-top-color: rgba(12, 17, 21, 0.14);
+  }
+
+  .molosoc-merge-section .molosoc-pillar::before {
+    color: var(--color-text-muted);
+  }
+
+  .molosoc-merge-section .molosoc-pillar h3 {
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge-section .molosoc-pillar p {
+    color: var(--color-text-muted);
   }
 
   /* topics-portal.js skips the pin below this width (we can't run its
