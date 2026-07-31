@@ -781,6 +781,29 @@
 }
 
 @media (max-width: 760px) {
+  /* Homepage's own header logo (26px) is already smaller than every
+     other page's (.molosoc-site-header__logo img, 30px), and had no
+     mobile scaling at all — reading thin/tiny on a narrow screen.
+     Bumped to match the sitewide 30px standard. */
+  .molosoc-home-header__logo img {
+    height: 30px;
+  }
+
+  /* merge-transition.js now skips its pin below this width (matching
+     every other pinned sequence), so the two tiles sit in their static
+     resting state — which only reconstructs as one undistorted photo if
+     the container's own aspect ratio matches the source image's. The
+     desktop min-height: 100svh breaks that on a narrow, tall mobile
+     viewport (a far more extreme ratio than any lifestyle photo), which
+     is what was visibly stretching/deforming the image. Locking this
+     section to the actual photo's own aspect ratio (2560x1429, same
+     source used for all 3 merge-tile-style images on this page) fixes
+     the math regardless of animation/JS state. */
+  .molosoc-merge-section {
+    min-height: 0;
+    aspect-ratio: 2560 / 1429;
+  }
+
   /* topics-portal.js skips the pin below this width — plain stacked
      fallback: the photo sits at the top at its normal 100vh crop, cards
      stack below it in normal document flow. */

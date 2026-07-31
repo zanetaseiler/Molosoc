@@ -74,7 +74,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<!-- Beat 1+2 — Hero / emotional opening -->
 	<section class="molosoc-hero">
 		<div class="molosoc-hero__media">
-			<img src="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.png' ); ?>"
+			<img src="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.jpg' ); ?>"
 				alt="<?php esc_attr_e( 'Bare feet peeking out from under a clean white blanket in a bright, airy bedroom', 'molosoc' ); ?>"
 				loading="eager" fetchpriority="high" decoding="async">
 		</div>
@@ -96,7 +96,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		<div class="molosoc-arc-reveal__rows">
 			<div class="molosoc-story molosoc-story--left" style="--story-w: 74%;">
 				<div class="molosoc-story__media molosoc-reveal molosoc-reveal--fade-only molosoc-reveal--delay">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.png' ); ?>"
+					<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.jpg' ); ?>"
 						alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel, bright white bedroom', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -108,7 +108,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 52%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.png' ); ?>"
+					<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
 						alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -120,7 +120,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--left" style="--story-w: 68%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.png' ); ?>"
+					<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.jpg' ); ?>"
 						alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -132,7 +132,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.png' ); ?>"
+					<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
 						alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -150,8 +150,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	     as one flush photo with all text visible (see homepage.css). -->
 	<section class="molosoc-section molosoc-section--photo-bg molosoc-merge-section">
 		<div class="molosoc-merge__group">
-			<div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.png' ); ?>');" role="img" aria-label="<?php esc_attr_e( 'A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench', 'molosoc' ); ?>"></div>
-			<div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.png' ); ?>');"></div>
+			<div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>');" role="img" aria-label="<?php esc_attr_e( 'A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench', 'molosoc' ); ?>"></div>
+			<div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>');"></div>
 		</div>
 		<div class="molosoc-section__scrim"></div>
 		<div class="molosoc-section__inner">
