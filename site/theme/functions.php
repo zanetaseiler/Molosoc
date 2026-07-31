@@ -130,6 +130,21 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
+	} elseif ( is_page( 'hardened-skin-calluses' ) ) {
+		// Identical asset stack to the cracked-heels/ingrown-toenails
+		// branches above — page-hardened-skin-calluses.php reuses
+		// pillar1.css and its JS as-is (every class/selector in that file
+		// is generic, nothing cracked-heels-specific to duplicate). See
+		// that branch's own comments for why each handle is here.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
+		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
 	} elseif ( is_page( 'dry-skin-feet' ) ) {
 		// Identical asset stack to the cracked-heels/ingrown-toenails
 		// branches above — page-dry-skin-feet.php reuses pillar1.css and
@@ -628,6 +643,92 @@ function molosoc_pillar5_schema() {
 	<?php
 }
 add_action( 'wp_head', 'molosoc_pillar5_schema' );
+
+/**
+ * Pillar 3 — Hardened Skin & Calluses — schema markup, ported from
+ * content/molosoc-site/06-pillar3-hardened-skin-calluses/pillar3-hardened-
+ * skin-calluses-schema.html. Same is_page() convention as
+ * molosoc_pillar1_schema()/molosoc_pillar2_schema() above. FAQPage answers
+ * are kept in sync with this page's own copy (see
+ * page-hardened-skin-calluses.php) — content/.../pillar3-hardened-skin-
+ * calluses-copy.md is the locked source for both.
+ */
+function molosoc_pillar3_schema() {
+	if ( ! is_page( 'hardened-skin-calluses' ) ) {
+		return;
+	}
+	?>
+	<meta name="description" content="Thick, hardened skin on your feet doesn't happen overnight — and it doesn't have to stay that way. Here's why calluses form and what actually softens them.">
+	<script type="application/ld+json">
+	{
+	  "@context": "https://schema.org",
+	  "@graph": [
+	    {
+	      "@type": "Article",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/#article",
+	      "headline": "Hardened Skin & Calluses on Feet: Why They Form and What Softens Them",
+	      "description": "Thick, hardened skin on your feet doesn't happen overnight — and it doesn't have to stay that way. Here's why calluses form and what actually softens them.",
+	      "url": "https://molosoc.com/hardened-skin-calluses/",
+	      "mainEntityOfPage": "https://molosoc.com/hardened-skin-calluses/",
+	      "author": { "@id": "https://molosoc.com/#organization" },
+	      "publisher": { "@id": "https://molosoc.com/#organization" },
+	      "isPartOf": { "@id": "https://molosoc.com/#website" },
+	      "datePublished": "2026-07-31",
+	      "dateModified": "2026-07-31",
+	      "inLanguage": "en"
+	    },
+	    {
+	      "@type": "FAQPage",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/#faq",
+	      "mainEntity": [
+	        {
+	          "@type": "Question",
+	          "name": "What is a foot callus?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "A foot callus is an area of thickened, hardened skin that forms where pressure and friction repeat in the same spot, most often the ball of the foot or the heel."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What's the difference between corns and calluses?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Corns are smaller, more concentrated areas of hardened skin, usually on or between toes. Calluses cover broader, flatter areas. Both form for the same reason — repeated pressure and friction — just in different places."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What is the cure for a foot corn?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "There's no single cure that removes a foot corn permanently in one step — effective treatment softens the thickened skin gradually with consistent moisture, rather than removing it all at once."
+	          }
+	        },
+	        {
+	          "@type": "Question",
+	          "name": "What is the best callus treatment?",
+	          "acceptedAnswer": {
+	            "@type": "Answer",
+	            "text": "Effective callus treatment focuses on consistent softening rather than one-time removal — moisture needs to reach the thickened skin regularly for the softening to actually last between sessions."
+	          }
+	        }
+	      ]
+	    },
+	    {
+	      "@type": "BreadcrumbList",
+	      "@id": "https://molosoc.com/hardened-skin-calluses/#breadcrumb",
+	      "itemListElement": [
+	        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://molosoc.com/" },
+	        { "@type": "ListItem", "position": 2, "name": "Hardened Skin & Calluses", "item": "https://molosoc.com/hardened-skin-calluses/" }
+	      ]
+	    }
+	  ]
+	}
+	</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_pillar3_schema' );
 
 /**
  * Pillar 4 — Dry Skin on Feet — schema markup, ported from
