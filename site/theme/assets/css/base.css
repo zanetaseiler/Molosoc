@@ -74,7 +74,7 @@ a {
   max-width: var(--content-max-width-wide);
   width: 100%;
   margin: 0 auto;
-  padding: var(--space-l) var(--section-padding-x);
+  padding: var(--space-m) var(--section-padding-x);
   box-sizing: border-box;
 }
 
