@@ -65,7 +65,7 @@ get_header();
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'The reusable alternative', 'molosoc' ); ?></p>
 			<h1><?php esc_html_e( 'Reusable foot covers that lock moisture in — not just once', 'molosoc' ); ?></h1>
 			<p class="molosoc-section__lede"><?php esc_html_e( "Most foot masks on the shelf are built for one wear. Molosoc's cover is built for hundreds.", 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></a>
+			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></a>
 		</div>
 	</section>
 
@@ -196,15 +196,15 @@ get_header();
 			</div>
 
 			<div class="molosoc-who-cards">
-				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>">
 					<h3><?php esc_html_e( 'Already have a cream you love', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( "If there's already a cream in your routine that you trust, this is how you make it actually work the way it was supposed to.", 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-who-card molosoc-who-card--2" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--2" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>">
 					<h3><?php esc_html_e( 'Just had a pedicure and want it to last', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( 'A fresh pedicure starts fading almost immediately. A reusable cover is how you stretch that result without booking another appointment.', 'molosoc' ); ?></p>
 				</a>
-				<a class="molosoc-who-card molosoc-who-card--3" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--3" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>">
 					<h3><?php esc_html_e( 'Buying this for someone else', 'molosoc' ); ?></h3>
 					<p><?php esc_html_e( "For someone who's always on her feet, or who never quite gets around to taking care of her own — this is the easiest way to give her a routine that actually sticks.", 'molosoc' ); ?></p>
 				</a>
@@ -223,7 +223,7 @@ get_header();
 			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php esc_html_e( 'Molosoc Foot Cover', 'molosoc' ); ?></p>
 			<h2><?php esc_html_e( 'See the reusable cover for yourself', 'molosoc' ); ?></h2>
 			<p><?php esc_html_e( "Real before/after results, the full mechanism, and what's actually in the box.", 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/molosoc-product-moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></a>
+			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></a>
 		</div>
 	</section>
 
