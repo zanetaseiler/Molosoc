@@ -89,6 +89,48 @@ a {
   font-size: var(--text-display-m);
 }
 
+/* the_content() output (index.php's fallback template — legal pages,
+   blog posts, anything without a bespoke page-*.php) had zero styling
+   anywhere: no paragraph/heading spacing, no list markers, no readable
+   line length. Every bespoke template hardcodes its own markup instead
+   of calling the_content(), so this never surfaced until real Page
+   content (legal/shipping/refund policies) needed to render here. */
+.molosoc-entry-content {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-entry-content h2 {
+  font-size: var(--text-display-m);
+  margin-top: var(--space-l);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-entry-content h3 {
+  margin-top: var(--space-m);
+  margin-bottom: var(--space-3xs);
+}
+
+.molosoc-entry-content p {
+  max-width: none;
+  margin-bottom: var(--space-s);
+}
+
+.molosoc-entry-content ul,
+.molosoc-entry-content ol {
+  margin: 0 0 var(--space-s);
+  padding-left: 1.25em;
+}
+
+.molosoc-entry-content li {
+  margin-bottom: var(--space-3xs);
+}
+
+.molosoc-entry-content a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .molosoc-eyebrow {
   font-family: var(--font-body);
   font-size: var(--text-label);

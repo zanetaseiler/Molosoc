@@ -21,6 +21,8 @@ $molosoc_legal_links = array(
 	__( 'Disclaimer', 'molosoc' )     => home_url( '/legal-disclaimer/' ),
 	__( 'Privacy policy', 'molosoc' ) => home_url( '/privacy-policies/' ),
 	__( 'Terms of service', 'molosoc' ) => home_url( '/terms-of-services/' ),
+	__( 'Shipping policy', 'molosoc' ) => home_url( '/shipping-policy/' ),
+	__( 'Refund & returns', 'molosoc' ) => home_url( '/refund-policy/' ),
 	__( 'Contact', 'molosoc' )        => home_url( '/contact-kontakt/' ),
 );
 ?>
