@@ -1468,13 +1468,19 @@ function molosoc_dequeue_unused_homepage_assets() {
 		'woocommerce-general',
 		'woocommerce-layout',
 		'woocommerce-smallscreen',
+		'wc-blocks-style',
+		'wc-blocks-vendors-style',
 		'select2',
 		'photoswipe',
 		'photoswipe-default-skin',
 		'cr-frontend-css',
 		'ppl-label-position',
+		'ppl-label-position-css',
 		'pplcz_map_css',
 		'pplcz-map',
+		'wf-woo-comgate',
+		'comgate',
+		'comgate-woocommerce',
 	);
 	foreach ( $styles as $handle ) {
 		wp_dequeue_style( $handle );
@@ -1489,9 +1495,15 @@ function molosoc_dequeue_unused_homepage_assets() {
 		'photoswipe-init',
 		'wc-add-to-cart',
 		'wc-cart-fragments',
+		'wc-blocks-vendors',
+		'wc-blocks-middleware',
+		'wc-blocks-registry',
 		'cr-frontend-js',
 		'ppl-label-position',
 		'pplcz-map',
+		'wf-woo-comgate',
+		'comgate',
+		'comgate-woocommerce',
 	);
 	foreach ( $scripts as $handle ) {
 		wp_dequeue_script( $handle );
