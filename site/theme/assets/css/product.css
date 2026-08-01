@@ -212,6 +212,17 @@
        the two were overlapping, not just close). Overriding the offset
        below is the real fix; this stays as a hard clip regardless. */
     overflow: hidden;
+    /* On desktop the stage comes first in markup and the model
+       deliberately paints over the copy (z-index: 5, see the base rule's
+       comment) — an intentional overlap that only works with room to
+       spare on a big canvas. On mobile there's no overlap anymore (see
+       above), so DOM order alone put the model ABOVE the headline in the
+       stacked, single-column layout — per explicit request, the reading
+       order should be headline → sub-headline → rotating object.
+       .molosoc-orbit-pin is already flex-direction: column here, so a
+       plain order swap (no markup change) is enough; the stage is
+       aria-hidden anyway so this doesn't affect screen-reader order. */
+    order: 2;
   }
 
   .molosoc-orbit-model {
@@ -232,6 +243,7 @@
     max-width: none;
     padding: 0 var(--section-padding-x) var(--space-l);
     text-align: center;
+    order: 1;
   }
 
   .molosoc-orbit-hero-copy p {
