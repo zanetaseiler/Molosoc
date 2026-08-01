@@ -202,7 +202,18 @@
   .molosoc-orbit-pin {
     min-height: auto;
     flex-direction: column;
-    padding: var(--space-xl) 0;
+    /* padding: var(--space-xl) 0 (120px top AND bottom) used to stack with
+       .molosoc-orbit-stage's own margin-bottom (50px, added per explicit
+       request) plus .molosoc-orbit-drawer's own 72px top padding plus
+       .molosoc-orbit-drawer__heading's 30px margin-top below — 272px of
+       combined gap in testing, not the ~80px actually intended, and
+       pushed the heading down far enough to visually collide with the
+       fixed .molosoc-sticky-buy bar at the bottom of the screen (read as
+       "overlapping" — confirmed via an actual mobile screenshot). Keeping
+       the top padding (space between the section start and the H1) but
+       dropping the bottom one — the space below the stage is now
+       entirely owned by the stage's own margin-bottom instead. */
+    padding: var(--space-xl) 0 0;
   }
 
   .molosoc-orbit-stage {
@@ -261,7 +272,12 @@
   }
 
   .molosoc-orbit-drawer {
-    padding: var(--space-l) var(--section-padding-x);
+    /* Top padding (var(--space-l), 72px) dropped — same reasoning as
+       .molosoc-orbit-pin above: it was stacking with the stage's
+       margin-bottom and the heading's own margin-top into far more gap
+       than intended. The heading's 30px margin-top is now the only
+       spacing above it. */
+    padding: 0 var(--section-padding-x) var(--space-l);
   }
 
   .molosoc-orbit-drawer__top {
