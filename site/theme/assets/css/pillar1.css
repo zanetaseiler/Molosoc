@@ -405,18 +405,33 @@
     display: none;
   }
 
+  /* .molosoc-severity-section__scrim is position: absolute; inset: 0 —
+     on desktop that only ever covers the 100vh stage/photo it's meant to
+     darken for legible overlaid white text. On mobile the heading/cards
+     drop out of that overlay into normal static flow below the photo, so
+     the section (and the scrim stretching to match it via inset: 0)
+     grows much taller — painting the scrim's dark gradient behind the
+     stacked heading/cards too, where it was never meant to reach. Hidden
+     here since it's redundant anyway once the heading isn't sitting on
+     top of the photo. */
+  .molosoc-severity-section__scrim {
+    display: none;
+  }
+
   .molosoc-severity-section__heading {
     position: static;
     padding: var(--space-l) var(--section-padding-x) 0;
   }
 
-  .molosoc-severity-section__heading h2 {
-    color: var(--color-text);
-  }
-
-  .molosoc-severity-section__heading .molosoc-eyebrow {
-    color: var(--color-text-muted);
-  }
+  /* .molosoc-severity-section__stage keeps its own dark
+     background: var(--color-ink-warm) at every width (no override
+     above) — it's not just the photo's backdrop, it's the section's
+     actual color. The heading/eyebrow were switched to dark ink here,
+     apparently assuming they'd land on a plain light background once
+     static — they don't; they sit on that same dark stage color, same
+     as desktop, so dark-on-dark was nearly unreadable (confirmed via an
+     actual mobile screenshot). Simplest correct fix: keep them white,
+     matching the stage they actually sit on — not a background change. */
 
   .molosoc-severity-cards {
     position: static;
