@@ -51,4 +51,35 @@
   header.querySelectorAll(".molosoc-nav-toggle ~ nav a").forEach(function (link) {
     link.addEventListener("click", closeNav);
   });
+
+  // Submenu arrows (e.g. "Foot Cover" > "Molosoc Foot Cover") — WordPress
+  // marks any parent item as .menu-item-has-children and nests the child
+  // list as ul.sub-menu; neither has any show/hide behavior by default, so
+  // we inject a dedicated arrow button here rather than via a custom PHP
+  // nav walker. The parent link still navigates normally — only the arrow
+  // toggles the child list open/closed, inline (not a separate drawer).
+  header.querySelectorAll(".menu-item-has-children").forEach(function (item) {
+    var link = item.querySelector(":scope > a");
+    var submenu = item.querySelector(":scope > .sub-menu");
+    if (!link || !submenu) return;
+
+    var toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "molosoc-submenu-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Show " + link.textContent.trim() + " submenu");
+    toggle.innerHTML =
+      '<svg viewBox="0 0 12 8" fill="none" aria-hidden="true"><path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    link.insertAdjacentElement("afterend", toggle);
+
+    toggle.addEventListener("click", function () {
+      var isOpen = item.classList.toggle("is-submenu-open");
+      toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      toggle.setAttribute(
+        "aria-label",
+        (isOpen ? "Hide " : "Show ") + link.textContent.trim() + " submenu"
+      );
+    });
+  });
 })();

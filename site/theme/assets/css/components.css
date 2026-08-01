@@ -285,7 +285,7 @@
   display: block;
 }
 
-.molosoc-site-header__nav ul {
+.molosoc-site-header__nav > ul {
   display: flex;
   gap: var(--space-m);
   list-style: none;
@@ -297,6 +297,76 @@
   text-decoration: none;
   font-size: var(--text-body);
   color: var(--color-text);
+}
+
+/* ---------- Submenu arrow (e.g. "Foot Cover" > "Molosoc Foot Cover") ----------
+   Any top-level menu item with children (WordPress adds
+   .menu-item-has-children automatically) gets an arrow button injected by
+   assets/js/nav-toggle.js right after its link. Clicking the arrow reveals
+   the child list inline — an accordion, not a separate drawer/panel — the
+   parent link itself still navigates normally. Closed by default; opens via
+   the .is-submenu-open class the JS toggles on the <li>. */
+.molosoc-site-header__nav .menu-item-has-children {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3xs);
+  position: relative;
+}
+
+.molosoc-submenu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: currentColor;
+  cursor: pointer;
+}
+
+.molosoc-submenu-toggle svg {
+  width: 10px;
+  height: 10px;
+  transition: transform var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-submenu-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.molosoc-site-header__nav .sub-menu {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-site-header__nav .menu-item-has-children.is-submenu-open > .sub-menu {
+  max-height: 12rem;
+}
+
+@media (min-width: 761px) {
+  .molosoc-site-header__nav .sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-soft);
+    z-index: 30;
+  }
+
+  .molosoc-site-header__nav .sub-menu a {
+    display: block;
+    padding: var(--space-2xs) var(--space-xs);
+    white-space: nowrap;
+  }
 }
 
 .molosoc-site-header__nav a:hover {
@@ -370,13 +440,21 @@
     max-height: 16rem;
   }
 
-  .molosoc-site-header__nav ul {
+  .molosoc-site-header__nav > ul {
     flex-direction: column;
     gap: 0;
     padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
   }
 
   .molosoc-site-header__nav li {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+  }
+
+  .molosoc-site-header__nav .sub-menu {
+    padding-left: var(--space-s);
+  }
+
+  .molosoc-site-header__nav .sub-menu li {
     border-top: 1px solid rgba(12, 17, 21, 0.08);
   }
 

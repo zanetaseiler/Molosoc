@@ -33,7 +33,7 @@
   filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
 }
 
-.molosoc-home-header__nav ul {
+.molosoc-home-header__nav > ul {
   display: flex;
   gap: var(--space-m);
   list-style: none;
@@ -50,6 +50,73 @@
 
 .molosoc-home-header__nav a:hover {
   opacity: 0.8;
+}
+
+/* ---------- Submenu arrow — same pattern/JS as .molosoc-site-header, see
+   components.css for the full explanation, mirrored here for the white
+   hero-header colorway. ---------- */
+.molosoc-home-header__nav .menu-item-has-children {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3xs);
+  position: relative;
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-white);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+  cursor: pointer;
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle svg {
+  width: 10px;
+  height: 10px;
+  transition: transform var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.molosoc-home-header__nav .sub-menu {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-home-header__nav .menu-item-has-children.is-submenu-open > .sub-menu {
+  max-height: 12rem;
+}
+
+@media (min-width: 761px) {
+  .molosoc-home-header__nav .sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background: var(--color-ink);
+    z-index: 30;
+  }
+
+  .molosoc-home-header__nav .sub-menu a {
+    display: block;
+    padding: var(--space-2xs) var(--space-xs);
+    white-space: nowrap;
+    text-shadow: none;
+  }
 }
 
 /* ---------- Beat 1 — Hero / emotional opening ---------- */
@@ -829,7 +896,7 @@
     max-height: 16rem;
   }
 
-  .molosoc-home-header__nav ul {
+  .molosoc-home-header__nav > ul {
     flex-direction: column;
     gap: 0;
     padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
@@ -842,6 +909,14 @@
   .molosoc-home-header__nav a {
     display: block;
     padding: var(--space-xs) 0;
+  }
+
+  .molosoc-home-header__nav .sub-menu {
+    padding-left: var(--space-s);
+  }
+
+  .molosoc-home-header__nav .sub-menu a {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   }
 
   .molosoc-home-header .molosoc-nav-toggle {
