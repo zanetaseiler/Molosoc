@@ -59,10 +59,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<a class="molosoc-home-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 		<img src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/images/molosoc-logo-white.png' ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
 	</a>
+	<button type="button" class="molosoc-nav-toggle" aria-expanded="false" aria-controls="molosoc-home-nav" aria-label="<?php esc_attr_e( 'Menu', 'molosoc' ); ?>">
+		<span></span><span></span><span></span>
+	</button>
 	<?php
 	wp_nav_menu( array(
 		'theme_location'   => 'primary',
 		'container'        => 'nav',
+		'container_id'     => 'molosoc-home-nav',
 		'container_class'  => 'molosoc-home-header__nav',
 		'fallback_cb'      => false,
 	) );

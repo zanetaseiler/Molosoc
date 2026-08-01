@@ -546,7 +546,10 @@
   font-size: var(--text-body-l);
   font-family: var(--font-body);
   font-weight: 700;
-  margin-top: var(--space-m);
+  /* Heading now sits above its photo, not below (was margin-top, spacing
+     it from an image above it; markup reordered per explicit request —
+     "the heading is under the foot [photo], it should be up"). */
+  margin-bottom: var(--space-xs);
   text-align: center;
 }
 

@@ -809,22 +809,44 @@
   /* Nav had zero mobile handling: logo + "space-between" + a fixed
      --space-m (32px) gap between nav links, at full --text-body size —
      on a narrow phone that total routinely exceeds the viewport width,
-     pushing "Contact/Kontakt" straight off the right edge. Shrinking the
-     gap/font is usually enough on its own; flex-wrap is a safety net so
-     a genuinely tight viewport wraps to a second line instead of
-     clipping off-screen. */
-  .molosoc-home-header {
-    flex-wrap: wrap;
-    row-gap: var(--space-3xs);
+     pushing links straight off the right edge (worse now with 3 items —
+     Foot Cover, Blog, Contact/Kontakt — instead of 2). A shrink-and-wrap
+     fix was tried first but a real hamburger toggle (shared pattern +
+     JS with .molosoc-site-header, see components.css) is the actual
+     fix, per explicit request. */
+  .molosoc-home-header__nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-ink);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--motion-duration-s) var(--motion-ease);
+  }
+
+  .molosoc-home-header.is-nav-open .molosoc-home-header__nav {
+    max-height: 16rem;
   }
 
   .molosoc-home-header__nav ul {
-    gap: var(--space-xs);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0;
+    padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  .molosoc-home-header__nav li {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
   }
 
   .molosoc-home-header__nav a {
-    font-size: var(--text-small);
+    display: block;
+    padding: var(--space-xs) 0;
+  }
+
+  .molosoc-home-header .molosoc-nav-toggle {
+    color: var(--color-white);
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
   }
 
   /* merge-transition.js now skips its pin below this width (matching

@@ -73,6 +73,12 @@ function molosoc_enqueue_assets() {
 	wp_enqueue_style( 'molosoc-base', $theme_uri . '/assets/css/base.css', array( 'molosoc-tokens' ), $theme_version );
 	wp_enqueue_style( 'molosoc-components', $theme_uri . '/assets/css/components.css', array( 'molosoc-base' ), $theme_version );
 
+	// Mobile hamburger toggle — every page has exactly one header
+	// (.molosoc-site-header everywhere except the homepage, which has its
+	// own .molosoc-home-header), so this is unconditional rather than
+	// living in one of the per-page branches below.
+	wp_enqueue_script( 'molosoc-nav-toggle', $theme_uri . '/assets/js/nav-toggle.js', array(), $theme_version, true );
+
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );

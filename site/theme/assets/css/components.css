@@ -263,6 +263,7 @@
 /* ---------- Site header/nav (every template except front-page.php) ---------- */
 
 .molosoc-site-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -300,6 +301,89 @@
 
 .molosoc-site-header__nav a:hover {
   color: var(--color-text-muted);
+}
+
+/* ---------- Hamburger nav toggle (mobile) ----------
+   Shared between .molosoc-site-header (every page, this file) and
+   .molosoc-home-header (front-page.php, homepage.css) — same markup
+   pattern (a button.molosoc-nav-toggle with 3 spans, right next to the
+   wp_nav_menu() output), same JS (assets/js/nav-toggle.js), just a
+   different color per header. Hidden above the mobile breakpoint; each
+   header's own mobile media query (below, and homepage.css's) makes it
+   visible and collapses the nav into a toggled dropdown panel. */
+.molosoc-nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.molosoc-nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform var(--motion-duration-s) var(--motion-ease),
+              opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 760px) {
+  .molosoc-nav-toggle {
+    display: inline-flex;
+  }
+
+  .molosoc-site-header__nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-soft);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--motion-duration-s) var(--motion-ease);
+  }
+
+  .molosoc-site-header.is-nav-open .molosoc-site-header__nav {
+    max-height: 16rem;
+  }
+
+  .molosoc-site-header__nav ul {
+    flex-direction: column;
+    gap: 0;
+    padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  .molosoc-site-header__nav li {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+  }
+
+  .molosoc-site-header__nav a {
+    display: block;
+    padding: var(--space-xs) 0;
+  }
 }
 
 /* ---------- Site footer (every template except front-page.php) ---------- */

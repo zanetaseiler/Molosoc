@@ -125,30 +125,30 @@ get_header();
 			<section aria-label="<?php esc_attr_e( 'Real results, no filters', 'molosoc' ); ?>">
 				<div class="molosoc-product-proof">
 					<article class="molosoc-product-proof__card">
+						<h3><?php esc_html_e( '3-month before/after', 'molosoc' ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
 								alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
-						<h3><?php esc_html_e( '3-month before/after', 'molosoc' ); ?></h3>
 						<p><?php esc_html_e( 'No retouching, no staged lighting — the same feet, photographed the same way, three months apart. Skin that was blackened and hardened around the nails healed visibly over that time, using nothing more than a cream already owned and a cover that kept it working every session.', 'molosoc' ); ?></p>
 					</article>
 					<article class="molosoc-product-proof__card">
+						<h3><?php esc_html_e( 'What actually happens to cracked heels over time', 'molosoc' ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
 								alt="<?php esc_attr_e( "Mom's cracked heels before using Molosoc", 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
-						<h3><?php esc_html_e( 'What actually happens to cracked heels over time', 'molosoc' ); ?></h3>
 						<p><?php esc_html_e( 'Cracked heels don\'t heal because a "better" cream shows up — they heal because the same cream gets a real chance to work, session after session, instead of rubbing off before it\'s absorbed. In one case, heels that were badly cracked improved by roughly 90% through regular use — not from a different product, but from a routine that finally held.', 'molosoc' ); ?></p>
 					</article>
 					<article class="molosoc-product-proof__card">
+						<h3><?php esc_html_e( 'Mom surprised with results', 'molosoc' ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 								alt="<?php esc_attr_e( 'Nail comparison showing visible improvement, no filters', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
-						<h3><?php esc_html_e( 'Mom surprised with results', 'molosoc' ); ?></h3>
 						<p>
 							<?php esc_html_e( 'The real moment a mom sees and reacts to her own results after a home pedicure session — caught as it happens, not staged for it. No script, no rehearsed delivery.', 'molosoc' ); ?>
 							<a href="https://youtube.com/shorts/ajdjJg0OuYg?si=cXDSn79awbO0JLDy" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Watch the reaction →', 'molosoc' ); ?></a>
