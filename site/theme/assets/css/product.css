@@ -228,6 +228,9 @@
        plain order swap (no markup change) is enough; the stage is
        aria-hidden anyway so this doesn't affect screen-reader order. */
     order: 2;
+    /* Breathing room before .molosoc-orbit-drawer (sibling of
+       .molosoc-orbit-pin, starts right after it) — per explicit request. */
+    margin-bottom: 50px;
   }
 
   .molosoc-orbit-model {
@@ -265,6 +268,15 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+  }
+
+  /* margin-top: 80px (base rule, unscoped) is a desktop value, sized for
+     the large bleed gap the model's 190px translateY leaves above this
+     block. Mobile's own translateY(24px) + the margin-bottom just added
+     to .molosoc-orbit-stage already provide that spacing, so this on top
+     of it was excessive — per explicit request, shrunk to 30px. */
+  .molosoc-orbit-drawer__heading {
+    margin-top: 30px;
   }
 
   .molosoc-orbit-drawer__heading h2 {
