@@ -44,8 +44,13 @@
   /* Sent to the front layer, per explicit request — the model is tall
      enough that its bottom edge bleeds past the hero into the block
      below; this makes the rotating object paint on top of that content
-     where they overlap, instead of the block's text painting over it. */
-  z-index: 5;
+     where they overlap, instead of the block's text painting over it.
+     Bumped from 5 to 50 (still below base.css's .molosoc-skip-link at
+     100, the one thing that must always outrank it) per a follow-up
+     explicit request to make sure it's the topmost layer on this page —
+     higher than product.css's own .molosoc-sticky-buy bar (z-index: 30,
+     mobile only) and everything else here. */
+  z-index: 50;
 }
 
 /* Soft ambient light behind the model. Originally the brand's warm peach
