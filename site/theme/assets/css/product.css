@@ -245,14 +245,28 @@
   }
 
   .molosoc-orbit-model {
-    width: min(95vw, 44rem);
-    height: min(95vw, 44rem);
-    /* Small mobile-appropriate nudge instead of the desktop 190px. */
-    transform: translateY(24px);
+    /* Was min(95vw, 44rem) — at a typical 390px-wide phone that's a
+       370px box inside the 352px-tall (22rem) stage, already filling it
+       edge to edge with only ~15-30px of clip margin top/bottom. The
+       model keeps auto-rotating continuously (by design, never paused),
+       and its silhouette within that fixed-size canvas shifts as it
+       spins — with that little headroom, at some rotation angles it
+       visually crowded right up against the stage's own clip line, just
+       above the "cream you already own" heading (per explicit
+       follow-up: it's the shoe's own spin, not the phone's orientation).
+       overflow: hidden on the stage means it can never actually bleed
+       into the heading, but shrunk it further so there's real margin on
+       every side regardless of rotation angle, not just a few px. */
+    width: min(78vw, 32rem);
+    height: min(78vw, 32rem);
+    /* Smaller nudge to match the smaller box — enough to keep the model
+       feeling grounded/centered without pushing it back toward the
+       stage's bottom edge. */
+    transform: translateY(8px);
   }
 
   .molosoc-orbit-glow {
-    transform: translateY(24px);
+    transform: translateY(8px);
   }
 
   .molosoc-orbit-hero-copy {
