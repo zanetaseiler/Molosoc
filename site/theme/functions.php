@@ -298,10 +298,14 @@ function molosoc_enqueue_assets() {
 		// (see page-blog.php's own header comment for why).
 		wp_enqueue_style( 'molosoc-blog', $theme_uri . '/assets/css/blog.css', array( 'molosoc-components' ), $theme_version );
 	} elseif ( is_product() ) {
-		// Native WooCommerce single-product page — trust-badge bars only
-		// (molosoc_product_trust_bar_top/bottom() below); everything else
-		// on this page is plain WooCommerce/base.css, no page-specific JS.
+		// Native WooCommerce single-product page — trust-badge bars
+		// (molosoc_product_trust_bar_top/bottom() below) plus the
+		// variation-select/add-to-cart form styling (product-form.css,
+		// restyling WooCommerce's own default blue select / purple
+		// button to the theme's ink/cream palette); everything else on
+		// this page is plain WooCommerce/base.css, no page-specific JS.
 		wp_enqueue_style( 'molosoc-product-trust-bars', $theme_uri . '/assets/css/product-trust-bars.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_style( 'molosoc-product-form', $theme_uri . '/assets/css/product-form.css', array( 'molosoc-components' ), $theme_version );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
@@ -1427,3 +1431,12 @@ function molosoc_product_trust_bar_bottom() {
 	<?php
 }
 add_action( 'woocommerce_after_single_product', 'molosoc_product_trust_bar_bottom' );
+
+/**
+ * Hides the "SKU: N/A" line on the native product page — no SKUs are set
+ * up for this product, so it only ever showed WooCommerce's own "N/A"
+ * fallback text (see templates/single-product/meta.php), never a real
+ * value. This is the documented WooCommerce toggle for the whole
+ * SKU row, not a CSS hide — cleaner than leaving an empty element behind.
+ */
+add_filter( 'wc_product_sku_enabled', '__return_false' );

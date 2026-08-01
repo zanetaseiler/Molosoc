@@ -203,11 +203,26 @@
   .molosoc-orbit-stage {
     position: relative;
     height: 22rem;
+    /* Hard safety net: .molosoc-orbit-model/.molosoc-orbit-glow both carry
+       a translateY(190px) nudge tuned for the desktop stage's 92vh box —
+       against this much shorter mobile box that pushed the (still
+       z-index: 5, paints-on-top) model down far enough to bleed into
+       .molosoc-orbit-hero-copy below, visually smearing the model over
+       the H1/paragraph text (confirmed via an actual mobile screenshot —
+       the two were overlapping, not just close). Overriding the offset
+       below is the real fix; this stays as a hard clip regardless. */
+    overflow: hidden;
   }
 
   .molosoc-orbit-model {
     width: min(95vw, 44rem);
     height: min(95vw, 44rem);
+    /* Small mobile-appropriate nudge instead of the desktop 190px. */
+    transform: translateY(24px);
+  }
+
+  .molosoc-orbit-glow {
+    transform: translateY(24px);
   }
 
   .molosoc-orbit-hero-copy {

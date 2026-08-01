@@ -1,0 +1,67 @@
+/*
+  Molosoc — native WooCommerce product page: variation form + add-to-cart.
+
+  Scoped to is_product() only, same as product-trust-bars.css. Nothing
+  here had ever been touched, so the variation "Size" select and the "Add
+  to cart" button were still rendering in WooCommerce/browser defaults
+  (blue-outlined select, purple button) instead of the theme's own
+  ink/cream palette and typography — this brings both in line with
+  .molosoc-btn (components.css) without touching WooCommerce's own
+  markup/templates.
+*/
+
+.woocommerce div.product form.cart .variations select {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  background-color: var(--color-white);
+  border: 1px solid rgba(12, 17, 21, 0.25);
+  border-radius: var(--radius-s);
+  padding: 0.6em 2em 0.6em 0.9em;
+  outline: none;
+}
+
+.woocommerce div.product form.cart .variations select:focus {
+  border-color: var(--color-ink);
+  box-shadow: none;
+}
+
+.woocommerce div.product form.cart .quantity .qty {
+  font-family: var(--font-body);
+  color: var(--color-text);
+  border: 1px solid rgba(12, 17, 21, 0.25);
+  border-radius: var(--radius-s);
+}
+
+.woocommerce div.product form.cart .button,
+.woocommerce div.product form.cart .single_add_to_cart_button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1.1em 2.2em;
+  border: none;
+  border-radius: var(--radius-s);
+  transition: transform var(--motion-duration-s) var(--motion-ease),
+              opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.woocommerce div.product form.cart .button:hover,
+.woocommerce div.product form.cart .single_add_to_cart_button:hover {
+  transform: translateY(-2px);
+  background: var(--color-cta-bg);
+}
+
+.woocommerce div.product form.cart .button.disabled,
+.woocommerce div.product form.cart .single_add_to_cart_button.disabled,
+.woocommerce div.product form.cart .single_add_to_cart_button:disabled {
+  opacity: 0.5;
+  transform: none;
+  cursor: not-allowed;
+}
