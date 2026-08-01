@@ -57,7 +57,10 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 <header class="molosoc-home-header">
 	<a class="molosoc-home-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-		<img src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/images/molosoc-logo-white.png' ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
+		<picture>
+			<source srcset="<?php echo esc_url( $molosoc_img . 'molosoc-logo-white.webp' ); ?>" type="image/webp">
+			<img src="<?php echo esc_url( $molosoc_img . 'molosoc-logo-white.png' ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async" width="1567" height="230">
+		</picture>
 	</a>
 	<button type="button" class="molosoc-nav-toggle" aria-expanded="false" aria-controls="molosoc-home-nav" aria-label="<?php esc_attr_e( 'Menu', 'molosoc' ); ?>">
 		<span></span><span></span><span></span>
@@ -78,9 +81,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<!-- Beat 1+2 — Hero / emotional opening -->
 	<section class="molosoc-hero">
 		<div class="molosoc-hero__media">
-			<img src="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.jpg' ); ?>"
-				alt="<?php esc_attr_e( 'Bare feet peeking out from under a clean white blanket in a bright, airy bedroom', 'molosoc' ); ?>"
-				loading="eager" fetchpriority="high" decoding="async">
+			<picture>
+				<source type="image/webp"
+					srcset="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded-mobile.webp' ); ?> 900w, <?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.webp' ); ?> 2200w"
+					sizes="100vw">
+				<img src="<?php echo esc_url( $molosoc_img . 'homepage-hero-preview-graded.jpg' ); ?>"
+					alt="<?php esc_attr_e( 'Bare feet peeking out from under a clean white blanket in a bright, airy bedroom', 'molosoc' ); ?>"
+					loading="eager" fetchpriority="high" decoding="async" width="2560" height="1429">
+			</picture>
 		</div>
 		<div class="molosoc-hero__scrim"></div>
 		<div class="molosoc-hero__content">
@@ -100,9 +108,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		<div class="molosoc-arc-reveal__rows">
 			<div class="molosoc-story molosoc-story--left" style="--story-w: 74%;">
 				<div class="molosoc-story__media molosoc-reveal molosoc-reveal--fade-only molosoc-reveal--delay">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel, bright white bedroom', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+					<picture>
+						<source type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.webp' ); ?> 1143w"
+							sizes="(max-width: 720px) 100vw, 852px">
+						<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.jpg' ); ?>"
+							alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel, bright white bedroom', 'molosoc' ); ?>"
+							loading="lazy" decoding="async" width="1143" height="1429">
+					</picture>
 				</div>
 				<div class="molosoc-story__text">
 					<h3><?php esc_html_e( 'Feet deserve real care, not just intent', 'molosoc' ); ?></h3>
@@ -112,9 +125,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 52%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+					<picture>
+						<source type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.webp' ); ?> 1143w"
+							sizes="(max-width: 720px) 100vw, 599px">
+						<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
+							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
+							loading="lazy" decoding="async" width="1143" height="1429">
+					</picture>
 				</div>
 				<div class="molosoc-story__text">
 					<h3><?php esc_html_e( 'Care should be simple enough to actually stick', 'molosoc' ); ?></h3>
@@ -124,9 +142,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--left" style="--story-w: 68%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+					<picture>
+						<source type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.webp' ); ?> 1434w"
+							sizes="(max-width: 720px) 100vw, 783px">
+						<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.jpg' ); ?>"
+							alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
+							loading="lazy" decoding="async" width="1434" height="1792">
+					</picture>
 				</div>
 				<div class="molosoc-story__text">
 					<h3><?php esc_html_e( "You don't need new products — you need the right ritual", 'molosoc' ); ?></h3>
@@ -136,9 +159,14 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
 				<div class="molosoc-story__media">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+					<picture>
+						<source type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.webp' ); ?> 1143w"
+							sizes="(max-width: 720px) 100vw, 852px">
+						<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
+							alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
+							loading="lazy" decoding="async" width="1143" height="1429">
+					</picture>
 				</div>
 				<div class="molosoc-story__text">
 					<h3><?php esc_html_e( 'Foot care is self-care, not vanity', 'molosoc' ); ?></h3>
@@ -154,8 +182,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	     as one flush photo with all text visible (see homepage.css). -->
 	<section class="molosoc-section molosoc-section--photo-bg molosoc-merge-section">
 		<div class="molosoc-merge__group">
-			<div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>');" role="img" aria-label="<?php esc_attr_e( 'A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench', 'molosoc' ); ?>"></div>
-			<div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>');"></div>
+			<div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>'); background-image: image-set(url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.webp' ); ?>') type('image/webp'), url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>') type('image/jpeg'));" role="img" aria-label="<?php esc_attr_e( 'A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench', 'molosoc' ); ?>"></div>
+			<div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>'); background-image: image-set(url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.webp' ); ?>') type('image/webp'), url('<?php echo esc_url( $molosoc_img . 'homepage-bathroom-bench-graded.jpg' ); ?>') type('image/jpeg'));"></div>
 		</div>
 		<div class="molosoc-section__scrim"></div>
 		<div class="molosoc-section__inner">
@@ -193,9 +221,12 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 					<h2><?php esc_html_e( 'Three months in, no filters', 'molosoc' ); ?></h2>
 				</div>
 				<div class="molosoc-media molosoc-proof__media molosoc-proof__media--scale">
-					<img src="<?php echo esc_url( $molosoc_img . 'homepage-results-full.jpg' ); ?>"
-						alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
-						loading="lazy" decoding="async">
+					<picture>
+						<source srcset="<?php echo esc_url( $molosoc_img . 'homepage-results-full.webp' ); ?>" type="image/webp">
+						<img src="<?php echo esc_url( $molosoc_img . 'homepage-results-full.jpg' ); ?>"
+							alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
+							loading="lazy" decoding="async" width="760" height="1362">
+					</picture>
 				</div>
 			</div>
 		</div>
@@ -220,7 +251,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<section class="molosoc-topics" id="topics-section" aria-label="<?php esc_attr_e( 'Foot care, topic by topic', 'molosoc' ); ?>">
 		<div class="molosoc-topics__stage">
 			<div class="molosoc-topics__media" aria-hidden="true">
-				<div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>');"></div>
+				<div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>'); background-image: image-set(url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.webp' ); ?>') type('image/webp'), url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>') type('image/jpeg'));"></div>
 			</div>
 
 			<div class="molosoc-topics__cards">

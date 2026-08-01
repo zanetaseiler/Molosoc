@@ -1446,3 +1446,56 @@ add_action( 'woocommerce_after_single_product', 'molosoc_product_trust_bar_botto
  * SKU row, not a CSS hide — cleaner than leaving an empty element behind.
  */
 add_filter( 'wc_product_sku_enabled', '__return_false' );
+
+/**
+ * The homepage isn't a WooCommerce page (front-page.php doesn't even call
+ * get_header()), but WooCommerce and several shipping/review plugins
+ * enqueue their CSS/JS on every single page by default, not just their own.
+ * A PageSpeed Insights audit against the homepage showed woocommerce-layout,
+ * select2, photoswipe, PPL CZ (Packeta shipping), and Customer Reviews all
+ * render-blocking there for no reason — none of their markup exists on this
+ * page. Dequeuing/deregistering on priority 100 (after everything has had a
+ * chance to register) removes them from this page only; every other
+ * template is untouched. Handles that don't exist are a silent no-op, so
+ * this list errs generous rather than risk missing one.
+ */
+function molosoc_dequeue_unused_homepage_assets() {
+	if ( ! is_front_page() ) {
+		return;
+	}
+
+	$styles = array(
+		'woocommerce-general',
+		'woocommerce-layout',
+		'woocommerce-smallscreen',
+		'select2',
+		'photoswipe',
+		'photoswipe-default-skin',
+		'cr-frontend-css',
+		'ppl-label-position',
+		'pplcz_map_css',
+		'pplcz-map',
+	);
+	foreach ( $styles as $handle ) {
+		wp_dequeue_style( $handle );
+		wp_deregister_style( $handle );
+	}
+
+	$scripts = array(
+		'jquery-migrate',
+		'select2',
+		'photoswipe',
+		'photoswipe-ui-default',
+		'photoswipe-init',
+		'wc-add-to-cart',
+		'wc-cart-fragments',
+		'cr-frontend-js',
+		'ppl-label-position',
+		'pplcz-map',
+	);
+	foreach ( $scripts as $handle ) {
+		wp_dequeue_script( $handle );
+		wp_deregister_script( $handle );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'molosoc_dequeue_unused_homepage_assets', 100 );
