@@ -44,9 +44,6 @@ defined( 'ABSPATH' ) || exit;
 
 $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
-// Czech copy only exists for a subset of sections (see i18n/cz/cz-homepage-copy.md);
-// sections without a Czech source (the 4 "cream you own" pillars, the proof-section
-// heading) intentionally stay in English rather than being machine-translated here.
 $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
@@ -133,7 +130,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 				</div>
 			</div>
 
-			<div class="molosoc-story molosoc-story--right" style="--story-w: 52%;">
+			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
 				<div class="molosoc-story__media">
 					<picture>
 						<source type="image/webp"
@@ -141,7 +138,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							sizes="(max-width: 720px) 100vw, 599px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
-							loading="lazy" decoding="async" width="1143" height="1429">
+							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: left bottom;">
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
@@ -175,7 +172,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							sizes="(max-width: 720px) 100vw, 852px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
-							loading="lazy" decoding="async" width="1143" height="1429">
+							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: bottom;">
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
@@ -197,25 +194,25 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 		</div>
 		<div class="molosoc-section__scrim"></div>
 		<div class="molosoc-section__inner">
-			<p class="molosoc-eyebrow molosoc-merge__text"><?php esc_html_e( 'How it helps', 'molosoc' ); ?></p>
-			<h2 class="molosoc-merge__text" style="max-width: 30rem; margin-top: var(--space-s);"><?php esc_html_e( 'The cream you own, finally finished', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow molosoc-merge__text"><?php echo esc_html( $molosoc_is_cz ? 'Jak vám to pomůže' : __( 'How it helps', 'molosoc' ) ); ?></p>
+			<h2 class="molosoc-merge__text" style="max-width: 30rem; margin-top: var(--space-s);"><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už máte, konečně funguje' : __( 'The cream you own, finally finished', 'molosoc' ) ); ?></h2>
 
 			<div class="molosoc-pillars">
 				<div class="molosoc-pillar molosoc-merge__text">
-					<h3><?php esc_html_e( 'Locks in moisture', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Seals cream against skin for the length of the session.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Uzamyká vlhkost' : __( 'Locks in moisture', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Zapečetí krém na kůži po celou dobu použití.' : __( 'Seals cream against skin for the length of the session.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-pillar molosoc-merge__text">
-					<h3><?php esc_html_e( 'Reduces mess and slipping', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'No greasy floors, no ruined sheets, no reason to stop early.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Omezuje nepořádek a klouzání' : __( 'Reduces mess and slipping', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Žádné mastné podlahy, zničené povlečení ani důvod přestat předčasně.' : __( 'No greasy floors, no ruined sheets, no reason to stop early.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-pillar molosoc-merge__text">
-					<h3><?php esc_html_e( 'Works with your favorite cream', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Cream-agnostic by design — use whatever you already trust.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Funguje s vaším oblíbeným krémem' : __( 'Works with your favorite cream', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Funguje s jakýmkoli krémem, záměrně — použijte to, čemu už důvěřujete.' : __( 'Cream-agnostic by design — use whatever you already trust.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-pillar molosoc-merge__text">
-					<h3><?php esc_html_e( 'Easy self-care ritual', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Soft, cared-for feet from ten quiet minutes, not a new habit to learn.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Jednoduchý rituál péče o sebe' : __( 'Easy self-care ritual', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Jemné, ošetřené nohy za deset tichých minut — žádný nový návyk k učení.' : __( 'Soft, cared-for feet from ten quiet minutes, not a new habit to learn.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -227,8 +224,8 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 		<div class="molosoc-section__inner">
 			<div class="molosoc-proof">
 				<div class="molosoc-proof__intro molosoc-reveal">
-					<p class="molosoc-eyebrow"><?php esc_html_e( 'Real results', 'molosoc' ); ?></p>
-					<h2><?php esc_html_e( 'Three months in, no filters', 'molosoc' ); ?></h2>
+					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky' : __( 'Real results', 'molosoc' ) ); ?></p>
+					<h2><?php echo esc_html( $molosoc_is_cz ? 'Tři měsíce, žádné filtry' : __( 'Three months in, no filters', 'molosoc' ) ); ?></h2>
 				</div>
 				<div class="molosoc-media molosoc-proof__media molosoc-proof__media--scale">
 					<picture>
@@ -265,16 +262,16 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 			</div>
 
 			<?php if ( $molosoc_is_cz ) : ?>
-				<div class="molosoc-topics__cards">
-					<a class="molosoc-feature-card molosoc-feature-card--1" href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">
+				<div class="molosoc-topics__cards molosoc-topics__cards--cz">
+					<a class="molosoc-feature-card molosoc-feature-card--cz-1" href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">
 						<h3>Popraskané paty a suchá kůže</h3>
 						<p>Popraskané paty nevznikají přes noc — a nezmizí přes noc ani po nasazení jedné masti. Zjistěte, co za nimi skutečně stojí.</p>
 					</a>
-					<a class="molosoc-feature-card molosoc-feature-card--2" href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">
+					<a class="molosoc-feature-card molosoc-feature-card--cz-2" href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">
 						<h3>Zarostlý nehet</h3>
 						<p>Zarostlý nehet obvykle začíná u okraje nehtu, ne u kůže kolem něj — těsné boty a krátké stříhání jsou nejčastější příčinou.</p>
 					</a>
-					<a class="molosoc-feature-card molosoc-feature-card--3" href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">
+					<a class="molosoc-feature-card molosoc-feature-card--cz-3" href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">
 						<h3>Kuří oko a mozoly</h3>
 						<p>Kuří oko vzniká postupně, tlakem a třením na stále stejném místě — a stejně postupně se dá i změkčit.</p>
 					</a>

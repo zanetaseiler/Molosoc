@@ -854,6 +854,32 @@
   text-align: center;
 }
 
+/* Czech homepage shows only 3 of the 5 topics (see front-page.php) — a
+   single centered row instead of the 5-card magazine grid above, so the
+   trio reads as one composed, centered group rather than two cards from
+   a layout designed around five. */
+.molosoc-feature-card--cz-1 {
+  top: 42%;
+  left: 12%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
+.molosoc-feature-card--cz-2 {
+  top: 42%;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: clamp(13rem, 21vw, 16.5rem);
+  text-align: center;
+}
+
+.molosoc-feature-card--cz-3 {
+  top: 42%;
+  right: 12%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
 @media (max-width: 760px) {
   /* Homepage's own header logo (26px) is already smaller than every
      other page's (.molosoc-site-header__logo img, 30px), and had no
@@ -1043,7 +1069,10 @@
   .molosoc-feature-card--2,
   .molosoc-feature-card--3,
   .molosoc-feature-card--4,
-  .molosoc-feature-card--5 {
+  .molosoc-feature-card--5,
+  .molosoc-feature-card--cz-1,
+  .molosoc-feature-card--cz-2,
+  .molosoc-feature-card--cz-3 {
     position: static;
     top: auto;
     bottom: auto;
