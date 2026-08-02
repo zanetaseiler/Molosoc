@@ -23,14 +23,30 @@ content...
 
 import os
 import sys
+import time
 import argparse
 import requests
 import frontmatter
 import markdown as md
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
 WP_USER = os.environ.get("WP_USER", "")
 WP_APP_PASSWORD = os.environ.get("WP_APP_PASSWORD", "")
+
+# The host has been observed rate-limiting/blocking bursts of rapid REST calls
+# (each page push makes several lookups in quick succession). Retry with
+# backoff on connection failures and 429/5xx before giving up.
+_session = requests.Session()
+_retry = Retry(
+    total=5,
+    backoff_factor=2,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET", "POST"],
+)
+_session.mount("https://", HTTPAdapter(max_retries=_retry))
+_session.mount("http://", HTTPAdapter(max_retries=_retry))
 
 
 def wp_auth():
@@ -48,7 +64,7 @@ def find_existing(post_type: str, slug: str, lang: str = None):
     params = {"slug": slug, "status": "draft,publish,future"}
     if lang:
         params["lang"] = lang
-    resp = requests.get(
+    resp = _session.get(
         endpoint,
         params=params,
         auth=wp_auth(),
@@ -109,10 +125,10 @@ def push_file(path: str, force_status: str = "draft"):
     lang_params = {"lang": lang} if lang else {}
 
     if existing_id:
-        resp = requests.post(f"{endpoint}/{existing_id}", json=payload, params=lang_params, auth=wp_auth(), timeout=30)
+        resp = _session.post(f"{endpoint}/{existing_id}", json=payload, params=lang_params, auth=wp_auth(), timeout=30)
         action = "UPDATED"
     else:
-        resp = requests.post(endpoint, json=payload, params=lang_params, auth=wp_auth(), timeout=30)
+        resp = _session.post(endpoint, json=payload, params=lang_params, auth=wp_auth(), timeout=30)
         action = "CREATED"
 
     if resp.status_code in (200, 201):
