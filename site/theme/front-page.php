@@ -43,6 +43,11 @@
 defined( 'ABSPATH' ) || exit;
 
 $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
+
+// Czech copy only exists for a subset of sections (see i18n/cz/cz-homepage-copy.md);
+// sections without a Czech source (the 4 "cream you own" pillars, the proof-section
+// heading) intentionally stay in English rather than being machine-translated here.
+$molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -93,8 +98,13 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		<div class="molosoc-hero__scrim"></div>
 		<div class="molosoc-hero__content">
 			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.75);"><?php bloginfo( 'name' ); ?></p>
-			<h1><?php esc_html_e( "Foot care you'll actually stick with", 'molosoc' ); ?></h1>
-			<p><?php esc_html_e( 'Molosoc is a foot care brand built around one idea: most people already own a cream that works — they just never finish the routine around it. The cream is already in your drawer. Molosoc is the missing piece that helps it finish the job, one short session at a time.', 'molosoc' ); ?></p>
+			<?php if ( $molosoc_is_cz ) : ?>
+				<h1>Péče o nohy, u které vydržíte</h1>
+				<p>Molosoc je značka péče o nohy postavená na jedné myšlence: krém, který už máte doma, obvykle funguje — jen se u něj většina lidí nedostane až k pravidelnému používání. Krém už na vás čeká v koupelně. Molosoc je ten chybějící krok, který mu pomůže konečně odvést svou práci.</p>
+			<?php else : ?>
+				<h1><?php esc_html_e( "Foot care you'll actually stick with", 'molosoc' ); ?></h1>
+				<p><?php esc_html_e( 'Molosoc is a foot care brand built around one idea: most people already own a cream that works — they just never finish the routine around it. The cream is already in your drawer. Molosoc is the missing piece that helps it finish the job, one short session at a time.', 'molosoc' ); ?></p>
+			<?php endif; ?>
 		</div>
 		<a class="molosoc-hero__scroll-cue" href="#story-start"><?php esc_html_e( 'Scroll', 'molosoc' ); ?></a>
 	</section>
@@ -103,7 +113,7 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	     story sequence (see homepage.css "Beat 2 — Why foot care never
 	     sticks" for the section this markup drives). -->
 	<section id="story-start" class="molosoc-arc-reveal-section">
-		<h2 class="molosoc-arc-reveal__heading molosoc-reveal molosoc-reveal--flat"><?php esc_html_e( 'Why foot care never sticks', 'molosoc' ); ?></h2>
+		<h2 class="molosoc-arc-reveal__heading molosoc-reveal molosoc-reveal--flat"><?php echo esc_html( $molosoc_is_cz ? 'Proč péče o nohy nikdy nevydrží' : __( 'Why foot care never sticks', 'molosoc' ) ); ?></h2>
 
 		<div class="molosoc-arc-reveal__rows">
 			<div class="molosoc-story molosoc-story--left" style="--story-w: 74%;">
@@ -118,8 +128,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Feet deserve real care, not just intent', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Buying the cream was never the hard part. Finishing the routine is. Molosoc is for what comes after the good intention.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Nohy si zaslouží skutečnou péči, ne jen dobrý úmysl' : __( 'Feet deserve real care, not just intent', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Koupit krém nikdy nebyl ten těžký krok — většina lidí, kteří ho vlastní, už ví, že na nohou záleží. Chybí až to, co přijde potom.' : __( 'Buying the cream was never the hard part. Finishing the routine is. Molosoc is for what comes after the good intention.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 
@@ -135,8 +145,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Care should be simple enough to actually stick', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Routines survive on less friction, not more willpower. That's the design brief here.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Péče by měla být tak jednoduchá, že u ní vydržíte' : __( 'Care should be simple enough to actually stick', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Rutina, která vyžaduje sílu vůle každý večer, nepřežije jediný nabitý týden. Přežívají ty, které mají méně překážek, ne ty, co chtějí víc úsilí.' : __( "Routines survive on less friction, not more willpower. That's the design brief here.", 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 
@@ -152,8 +162,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( "You don't need new products — you need the right ritual", 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Not another cream. The accessory that makes the one you own actually work.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Nepotřebujete nový produkt — potřebujete správný rituál' : __( "You don't need new products — you need the right ritual", 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Není to další krém na plnou poličku. Molosoc nenahrazuje to, co už máte — je to doplněk, díky kterému to konečně funguje.' : __( 'Not another cream. The accessory that makes the one you own actually work.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 
@@ -169,8 +179,8 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
-					<h3><?php esc_html_e( 'Foot care is self-care, not vanity', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Ten quiet minutes, just for you — not for anyone watching.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Péče o nohy je péče o sebe, ne marnivost' : __( 'Foot care is self-care, not vanity', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Pečovat o nohy neznamená, jak vypadají pro ostatní. Je to pár tichých minut jen pro vás.' : __( 'Ten quiet minutes, just for you — not for anyone watching.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -235,10 +245,10 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	<!-- Beat 7 — Product moment -->
 	<section class="molosoc-section molosoc-section--bg-deep">
 		<div class="molosoc-section__inner molosoc-product-cta molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'How Molosoc helps right now', 'molosoc' ); ?></p>
-			<h2 style="margin-top: var(--space-s);"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></h2>
-			<p class="molosoc-section__lede" style="margin-left:auto; margin-right:auto;"><?php esc_html_e( 'This is where Molosoc shows up today.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'Meet the Foot Cover', 'molosoc' ); ?></a>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Jak Molosoc pomáhá právě teď' : __( 'How Molosoc helps right now', 'molosoc' ) ); ?></p>
+			<h2 style="margin-top: var(--space-s);"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></h2>
+			<p class="molosoc-section__lede" style="margin-left:auto; margin-right:auto;"><?php echo esc_html( $molosoc_is_cz ? 'Takhle Molosoc pomáhá už dnes.' : __( 'This is where Molosoc shows up today.', 'molosoc' ) ); ?></p>
+			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 
@@ -248,34 +258,51 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 	     Single static photo (no circle-reveal, no second image) — the five
 	     feature cards emerge from center over it, see homepage.css /
 	     topics-portal.js. -->
-	<section class="molosoc-topics" id="topics-section" aria-label="<?php esc_attr_e( 'Foot care, topic by topic', 'molosoc' ); ?>">
+	<section class="molosoc-topics" id="topics-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Péče o nohy, téma po tématu' : __( 'Foot care, topic by topic', 'molosoc' ) ); ?>">
 		<div class="molosoc-topics__stage">
 			<div class="molosoc-topics__media" aria-hidden="true">
 				<div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>'); background-image: image-set(url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.webp' ); ?>') type('image/webp'), url('<?php echo esc_url( $molosoc_img . 'molosoc_ritual_hallway_walk-scaled.jpg' ); ?>') type('image/jpeg'));"></div>
 			</div>
 
-			<div class="molosoc-topics__cards">
-				<a class="molosoc-feature-card molosoc-feature-card--1" href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">
-					<h3><?php esc_html_e( 'Cracked heels & dry skin', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Cracked heels form when dry skin loses elasticity and splits under pressure — they heal with consistent moisture, not overnight fixes.', 'molosoc' ); ?></p>
-				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--2" href="<?php echo esc_url( home_url( '/ingrown-toenails/' ) ); ?>">
-					<h3><?php esc_html_e( 'Ingrown toenails', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'An ingrown toenail starts at the nail edge, not the skin around it — tight shoes and short trims are usually the real cause.', 'molosoc' ); ?></p>
-				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--3" href="<?php echo esc_url( home_url( '/hardened-skin-calluses/' ) ); ?>">
-					<h3><?php esc_html_e( 'Hardened skin & calluses', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Hardened skin builds up gradually from pressure and friction — it softens with consistent care, not a one-time filing session.', 'molosoc' ); ?></p>
-				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--4" href="<?php echo esc_url( home_url( '/dry-skin-feet/' ) ); ?>">
-					<h3><?php esc_html_e( 'Dry skin on feet', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Feet dry out differently than the rest of the body — socks, showers, and season all play a part, and moisturizing alone doesn't always fix it.", 'molosoc' ); ?></p>
-				</a>
-				<a class="molosoc-feature-card molosoc-feature-card--5" href="<?php echo esc_url( home_url( '/foot-cream-that-works/' ) ); ?>">
-					<h3><?php esc_html_e( 'Making the cream you already own actually work', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Most foot creams fail from inconsistent use, not a bad formula — the fix is finishing the routine, not switching products.', 'molosoc' ); ?></p>
-				</a>
-			</div>
+			<?php if ( $molosoc_is_cz ) : ?>
+				<div class="molosoc-topics__cards">
+					<a class="molosoc-feature-card molosoc-feature-card--1" href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">
+						<h3>Popraskané paty a suchá kůže</h3>
+						<p>Popraskané paty nevznikají přes noc — a nezmizí přes noc ani po nasazení jedné masti. Zjistěte, co za nimi skutečně stojí.</p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--2" href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">
+						<h3>Zarostlý nehet</h3>
+						<p>Zarostlý nehet obvykle začíná u okraje nehtu, ne u kůže kolem něj — těsné boty a krátké stříhání jsou nejčastější příčinou.</p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--3" href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">
+						<h3>Kuří oko a mozoly</h3>
+						<p>Kuří oko vzniká postupně, tlakem a třením na stále stejném místě — a stejně postupně se dá i změkčit.</p>
+					</a>
+				</div>
+			<?php else : ?>
+				<div class="molosoc-topics__cards">
+					<a class="molosoc-feature-card molosoc-feature-card--1" href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">
+						<h3><?php esc_html_e( 'Cracked heels & dry skin', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Cracked heels form when dry skin loses elasticity and splits under pressure — they heal with consistent moisture, not overnight fixes.', 'molosoc' ); ?></p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--2" href="<?php echo esc_url( home_url( '/ingrown-toenails/' ) ); ?>">
+						<h3><?php esc_html_e( 'Ingrown toenails', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'An ingrown toenail starts at the nail edge, not the skin around it — tight shoes and short trims are usually the real cause.', 'molosoc' ); ?></p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--3" href="<?php echo esc_url( home_url( '/hardened-skin-calluses/' ) ); ?>">
+						<h3><?php esc_html_e( 'Hardened skin & calluses', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Hardened skin builds up gradually from pressure and friction — it softens with consistent care, not a one-time filing session.', 'molosoc' ); ?></p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--4" href="<?php echo esc_url( home_url( '/dry-skin-feet/' ) ); ?>">
+						<h3><?php esc_html_e( 'Dry skin on feet', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( "Feet dry out differently than the rest of the body — socks, showers, and season all play a part, and moisturizing alone doesn't always fix it.", 'molosoc' ); ?></p>
+					</a>
+					<a class="molosoc-feature-card molosoc-feature-card--5" href="<?php echo esc_url( home_url( '/foot-cream-that-works/' ) ); ?>">
+						<h3><?php esc_html_e( 'Making the cream you already own actually work', 'molosoc' ); ?></h3>
+						<p><?php esc_html_e( 'Most foot creams fail from inconsistent use, not a bad formula — the fix is finishing the routine, not switching products.', 'molosoc' ); ?></p>
+					</a>
+				</div>
+			<?php endif; ?>
 		</div>
 	</section>
 
@@ -286,10 +313,10 @@ $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 		</div>
 		<div class="molosoc-final-cta__scrim"></div>
 		<div class="molosoc-section__inner molosoc-reveal" style="text-align:center;">
-			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php esc_html_e( 'The reusable alternative', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'What is a moisture-lock foot cover?', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( "Not every foot mask works the same way. Here's the one Molosoc believes in.", 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/' ) ); ?>"><?php esc_html_e( 'See how it works', 'molosoc' ); ?></a>
+			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa, kterou můžete používat pořád dokola' : __( 'The reusable alternative', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Co je hydratační návlek na nohy?' : __( 'What is a moisture-lock foot cover?', 'molosoc' ) ); ?></h2>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Ne každá maska na nohy funguje stejně. Tady je ta, které Molosoc věří.' : __( "Not every foot mask works the same way. Here's the one Molosoc believes in.", 'molosoc' ) ); ?></p>
+			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/' ) : home_url( '/foot-covers/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Zjistit jak to funguje' : __( 'See how it works', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 
