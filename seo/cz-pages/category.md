@@ -3,7 +3,7 @@ title: "Návleky na nohy | Hydratační návlek na nohy — Molosoc"
 slug: navleky-na-nohy
 type: page
 meta_description: "Přeskočte jednorázové ponožkové masky. Hydratační návlek na nohy od Molosoc funguje s jakýmkoli krémem, který už máte — méně nepořádku, žádná návštěva salonu, stejně jemné výsledky."
-lang: cs
+lang: cz
 parent_slug: null
 translation_of_en_slug: foot-covers
 ---
