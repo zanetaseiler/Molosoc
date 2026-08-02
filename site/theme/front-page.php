@@ -138,7 +138,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							sizes="(max-width: 720px) 100vw, 599px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
-							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: right bottom;">
+							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: 65% 75%;">
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
@@ -172,7 +172,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							sizes="(max-width: 720px) 100vw, 852px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
-							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: right bottom;">
+							loading="lazy" decoding="async" width="1143" height="1429" style="object-position: 60% 85%;">
 					</picture>
 				</div>
 				<div class="molosoc-story__text">
