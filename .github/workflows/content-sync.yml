@@ -11,6 +11,7 @@ on:
     paths:
       - "seo/pillars/**.md"
       - "seo/spokes/**.md"
+      - "seo/cz-pages/**.md"
       - "content/**.md"
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
       - name: Find changed markdown files
         id: changed
         run: |
-          FILES=$(git diff --name-only HEAD^ HEAD -- 'seo/pillars/*.md' 'seo/spokes/*.md' 'content/*.md' | tr '\n' ' ')
+          FILES=$(git diff --name-only HEAD^ HEAD -- 'seo/pillars/*.md' 'seo/spokes/*.md' 'seo/cz-pages/*.md' 'content/*.md' | tr '\n' ' ')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
       - name: Push changed drafts to WordPress
