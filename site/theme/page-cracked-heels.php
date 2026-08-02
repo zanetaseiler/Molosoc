@@ -25,6 +25,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+$molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 
 get_header();
 ?>
@@ -41,9 +42,9 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
 		<div class="molosoc-pillar-hero__text">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'Cracked heels', 'molosoc' ); ?></p>
-			<h1><?php esc_html_e( "Cracked heels: what's really going on, and what helps", 'molosoc' ); ?></h1>
-			<p><?php esc_html_e( 'Cracked heels happen when skin loses the elasticity to stretch under pressure — not from bad luck, and not from "just dry skin." The fix is straightforward once it\'s consistent, not occasional.', 'molosoc' ); ?></p>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty' : __( 'Cracked heels', 'molosoc' ) ); ?></p>
+			<h1><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty: co se skutečně děje a co pomáhá' : __( "Cracked heels: what's really going on, and what helps", 'molosoc' ) ); ?></h1>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty vznikají, když kůže ztratí schopnost se natahovat pod tlakem — nejde o smůlu ani jen o "suchou kůži." Náprava je jednoduchá, pokud je pravidelná, ne příležitostná.' : __( 'Cracked heels happen when skin loses the elasticity to stretch under pressure — not from bad luck, and not from "just dry skin." The fix is straightforward once it\'s consistent, not occasional.', 'molosoc' ) ); ?></p>
 		</div>
 	</section>
 
@@ -52,11 +53,11 @@ get_header();
 	     slide in from the right, one per scroll step. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'The causes', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'What causes cracked heels', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Příčiny' : __( 'The causes', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty příčina' : __( 'What causes cracked heels', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php esc_attr_e( 'What causes cracked heels', 'molosoc' ); ?>">
+	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Popraskané paty příčina' : __( 'What causes cracked heels', 'molosoc' ) ); ?>">
 		<div class="molosoc-sequential-stage__inner">
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
@@ -68,16 +69,16 @@ get_header();
 				</div>
 				<div class="molosoc-argument__text">
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( "Dry skin losing its ability to stretch", 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Heel skin cracks when it dries out and loses the elasticity it needs to stretch under pressure.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Suchá kůže ztrácí schopnost se natahovat' : __( "Dry skin losing its ability to stretch", 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Kůže na patě praská, když vyschne a ztratí pružnost potřebnou k natahování pod tlakem.' : __( 'Heel skin cracks when it dries out and loses the elasticity it needs to stretch under pressure.', 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Pressure and weight-bearing on the heel edge', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( "The heel's outer edge carries the most weight with every step — dry, inflexible skin can't take that pressure without splitting.", 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Tlak a zátěž na okraji paty' : __( 'Pressure and weight-bearing on the heel edge', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Vnější okraj paty nese při každém kroku nejvíc váhy — suchá, nepružná kůže na tomto místě praská jako první.' : __( "The heel's outer edge carries the most weight with every step — dry, inflexible skin can't take that pressure without splitting.", 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Standing all day, especially in open-back shoes', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Standing for long stretches in open-back shoes speeds up both problems at once: more pressure, more moisture loss.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Celodenní stání, hlavně v otevřené obuvi' : __( 'Standing all day, especially in open-back shoes', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Dlouhé celodenní stání a boty s otevřenou patou zrychlují oba problémy najednou: víc tlaku, víc ztráty vlhkosti.' : __( 'Standing for long stretches in open-back shoes speeds up both problems at once: more pressure, more moisture loss.', 'molosoc' ) ); ?></p>
 					</div>
 				</div>
 			</div>
@@ -88,7 +89,7 @@ get_header();
 	     reveal. pillar1_03_sandals.jpg (Image A) gives way to
 	     pillar3_03_texture.jpg (Image B) through a circular mask, then the
 	     3 severity cards emerge from center to their tiered positions. -->
-	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'When cracked heels go from dry to painful', 'molosoc' ); ?>">
+	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Kdy popraskané paty přejdou ze suchých v bolestivé' : __( 'When cracked heels go from dry to painful', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar3_03_texture.jpg');"></div>
@@ -97,22 +98,22 @@ get_header();
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
 			<div class="molosoc-severity-section__heading">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'When it gets serious', 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( 'When cracked heels go from dry to painful', 'molosoc' ); ?></h2>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Když se to zhorší' : __( 'When it gets serious', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Kdy popraskané paty přejdou ze suchých v bolestivé' : __( 'When cracked heels go from dry to painful', 'molosoc' ) ); ?></h2>
 			</div>
 
 			<div class="molosoc-severity-cards">
 				<div class="molosoc-severity-card molosoc-severity-card--1">
-					<h3><?php esc_html_e( 'Painful deep cracked heels', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "A crack that hurts with every step has gone past surface dryness into a deeper layer of skin.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Bolestivé hluboké praskliny na patách' : __( 'Painful deep cracked heels', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Prasklina, která bolí při každém kroku, už překonala povrchové sucho a zasahuje hlubší vrstvu kůže.' : __( "A crack that hurts with every step has gone past surface dryness into a deeper layer of skin.", 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--2">
-					<h3><?php esc_html_e( 'Severe cracked heels', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Severe cracked heels widen, deepen, and can bleed — an occasional cream application isn't enough at this stage.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Vážně popraskané paty' : __( 'Severe cracked heels', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Vážně popraskané paty se rozšiřují, prohlubují a mohou krvácet — příležitostné mazání krémem v této fázi nestačí.' : __( "Severe cracked heels widen, deepen, and can bleed — an occasional cream application isn't enough at this stage.", 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--3">
-					<h3><?php esc_html_e( 'Why "just moisturizing more" stops working at this stage', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Cream that isn't sealed against skin rubs off before it's absorbed — more product doesn't fix that, more contact time does.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč "jen víc mazat" v této fázi přestává fungovat' : __( 'Why "just moisturizing more" stops working at this stage', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Krém, který není zapečetěný na kůži, se otře dřív, než se vstřebá — víc produktu to nevyřeší, potřeba je delší kontakt.' : __( "Cream that isn't sealed against skin rubs off before it's absorbed — more product doesn't fix that, more contact time does.", 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -124,7 +125,7 @@ get_header();
 	     exception to "never spin products" as the Product page's own hero
 	     model (docs/molosoc-animation-specification.md) — model-viewer's
 	     own auto-rotate, independent of scroll/JS. -->
-	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( "Why moisturizer alone doesn't fix it", 'molosoc' ); ?>">
+	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč samotné mastění problém nevyřeší' : __( "Why moisturizer alone doesn't fix it", 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
 			<div class="molosoc-mechanism-stage" aria-hidden="true">
@@ -145,25 +146,25 @@ get_header();
 			</div>
 
 			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 			</div>
 
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( "Why moisturizer alone doesn't fix it", 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( "Why moisturizer alone doesn't fix it", 'molosoc' ); ?></h2>
-				<p><?php esc_html_e( 'Most people already own a foot cream and already apply it — the routine itself was never the problem.', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné mastění problém nevyřeší' : __( "Why moisturizer alone doesn't fix it", 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné mastění problém nevyřeší' : __( "Why moisturizer alone doesn't fix it", 'molosoc' ) ); ?></h2>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Většina lidí už mast na paty vlastní a pravidelně ji nanáší — samotná rutina není to, co chybí.' : __( 'Most people already own a foot cream and already apply it — the routine itself was never the problem.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">
 					<article>
-						<h3><?php esc_html_e( 'The routine most people already try', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Most people already own a foot cream and already apply it — the routine itself was never the problem.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Rutina, kterou už většina lidí zkouší' : __( 'The routine most people already try', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Většina lidí už mast na paty vlastní a pravidelně ji nanáší — samotná rutina není to, co chybí.' : __( 'Most people already own a foot cream and already apply it — the routine itself was never the problem.', 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'Where that routine breaks down', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Cream rubs off onto socks or sheets within minutes, so most of it never gets absorbed.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Kde se rutina rozpadá' : __( 'Where that routine breaks down', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Mast se otře na ponožky nebo podlahu během pár minut, takže se většina z ní nikdy nestihne vstřebat.' : __( 'Cream rubs off onto socks or sheets within minutes, so most of it never gets absorbed.', 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'What actually needs to happen for cream to work', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Cream needs uninterrupted contact with skin to work — not a bigger dose, just enough sealed time to actually absorb.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je skutečně potřeba, aby mast/krém fungovaly' : __( 'What actually needs to happen for cream to work', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Mast potřebuje nepřerušovaný kontakt s kůží, aby fungovala — ne silnější vrstvu, jen dost času zapečetěného na kůži, aby se skutečně vstřebala.' : __( 'Cream needs uninterrupted contact with skin to work — not a bigger dose, just enough sealed time to actually absorb.', 'molosoc' ) ); ?></p>
 					</article>
 				</div>
 			</div>
@@ -174,6 +175,7 @@ get_header();
 	     .molosoc-topic-card ("educational content beat"). Spoke articles
 	     nested under this pillar (docs/site-structure.md §7/§8) — links
 	     resolve once each spoke page is built. -->
+	<?php if ( ! $molosoc_is_cz ) : ?>
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-go-deeper" aria-label="<?php esc_attr_e( 'Go deeper', 'molosoc' ); ?>">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Go deeper', 'molosoc' ); ?></p>
@@ -206,6 +208,7 @@ get_header();
 			</div>
 		</div>
 	</section>
+	<?php endif; ?>
 
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2), per docs/site-structure.md §7's own
@@ -217,10 +220,10 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
 		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( 'Real cracked heels, healed through consistent care — not a one-time application.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné popraskané paty, zahojené díky pravidelné péči — ne jednorázovému nanesení.' : __( 'Real cracked heels, healed through consistent care — not a one-time application.', 'molosoc' ) ); ?></p>
+			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 

@@ -27,6 +27,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+$molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 
 get_header();
 ?>
@@ -43,9 +44,9 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
 		<div class="molosoc-pillar-hero__text">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'Hardened skin & calluses', 'molosoc' ); ?></p>
-			<h1><?php esc_html_e( 'Hardened skin and calluses: why they form, and what softens them', 'molosoc' ); ?></h1>
-			<p><?php esc_html_e( "Hardened skin builds up gradually as skin's response to repeated pressure and friction — and it softens the same way it formed: gradually, with consistent care.", 'molosoc' ); ?></p>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko a mozoly' : __( 'Hardened skin & calluses', 'molosoc' ) ); ?></p>
+			<h1><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko a mozoly: proč vznikají a co je změkčí' : __( 'Hardened skin and calluses: why they form, and what softens them', 'molosoc' ) ); ?></h1>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko vzniká postupně, jako reakce kůže na opakovaný tlak a tření — a stejně postupně, s pravidelnou péčí, se dá i změkčit.' : __( "Hardened skin builds up gradually as skin's response to repeated pressure and friction — and it softens the same way it formed: gradually, with consistent care.", 'molosoc' ) ); ?></p>
 		</div>
 	</section>
 
@@ -54,11 +55,11 @@ get_header();
 	     per scroll step. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'The causes', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Calluses on feet', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Příčiny' : __( 'The causes', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko' : __( 'Calluses on feet', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php esc_attr_e( 'Calluses on feet', 'molosoc' ); ?>">
+	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Kuří oko' : __( 'Calluses on feet', 'molosoc' ) ); ?>">
 		<div class="molosoc-sequential-stage__inner">
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
@@ -70,16 +71,16 @@ get_header();
 				</div>
 				<div class="molosoc-argument__text">
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Foot callus', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'A foot callus is an area of thickened, hardened skin that forms where pressure and friction repeat in the same spot, most often the ball of the foot or the heel.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak tlak a tření mění kůži v tvrdý bod' : __( 'Foot callus', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Opakovaný tlak a tření na stále stejném místě mění kůži v malý, tvrdý, soustředěný bod — to je kuří oko.' : __( 'A foot callus is an area of thickened, hardened skin that forms where pressure and friction repeat in the same spot, most often the ball of the foot or the heel.', 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Corns and calluses', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Corns are smaller, more concentrated areas of hardened skin, usually on or between toes; calluses cover broader, flatter areas — both form for the same reason, just in different places.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Nejčastější místa — chodidlo, prsty, paty' : __( 'Corns and calluses', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko se nejčastěji objevuje na chodidle, mezi prsty nebo na patě — tedy přesně tam, kde se tlak při chůzi soustředí nejvíc.' : __( 'Corns are smaller, more concentrated areas of hardened skin, usually on or between toes; calluses cover broader, flatter areas — both form for the same reason, just in different places.', 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Why it builds up gradually, not overnight', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Skin thickens in layers over weeks of repeated pressure, which is why it never appears suddenly and why softening it also takes sustained time, not a single treatment.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč to nevzniká přes noc' : __( 'Why it builds up gradually, not overnight', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Kůže tloustne postupně, v průběhu týdnů opakovaného tlaku — proto se kuří oko nikdy neobjeví najednou a stejně tak postupně se dá i změkčit.' : __( 'Skin thickens in layers over weeks of repeated pressure, which is why it never appears suddenly and why softening it also takes sustained time, not a single treatment.', 'molosoc' ) ); ?></p>
 					</div>
 				</div>
 			</div>
@@ -90,7 +91,7 @@ get_header();
 	     molosoc_ritual_reading_nook-scaled.jpg (Image A) gives way to
 	     pillar3_03_texture.jpg (Image B) through a circular mask, then the
 	     3 severity cards emerge from center to their tiered positions. -->
-	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'Foot corn cure', 'molosoc' ); ?>">
+	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Mozoly na nohou' : __( 'Foot corn cure', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar3_03_texture.jpg');"></div>
@@ -99,22 +100,22 @@ get_header();
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
 			<div class="molosoc-severity-section__heading">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'When it gets serious', 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( 'Foot corn cure', 'molosoc' ); ?></h2>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Když se to zhorší' : __( 'When it gets serious', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Mozoly na nohou' : __( 'Foot corn cure', 'molosoc' ) ); ?></h2>
 			</div>
 
 			<div class="molosoc-severity-cards">
 				<div class="molosoc-severity-card molosoc-severity-card--1">
-					<h3><?php esc_html_e( 'Callus treatment', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Effective callus treatment softens the thickened skin gradually with consistent moisture, rather than removing it all at once.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Rozdíl mezi kuřím okem a mozolem' : __( 'Callus treatment', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Kuří oko je menší a soustředěné do jednoho bodu, zatímco mozol pokrývá širší, plošší oblast — oba vznikají ze stejného důvodu, jen na jiném místě.' : __( 'Effective callus treatment softens the thickened skin gradually with consistent moisture, rather than removing it all at once.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--2">
-					<h3><?php esc_html_e( 'When thick skin starts affecting how you walk', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Once hardened skin gets thick enough, it changes how weight distributes across the foot with each step, which is a sign it's past the point of ignoring.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Mozol na noze — kdy začíná bolet' : __( 'When thick skin starts affecting how you walk', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Jakmile ztvrdlá kůže dosáhne určité tloušťky, začíná měnit rozložení váhy při každém kroku, což je signál, že už nejde přehlížet.' : __( "Once hardened skin gets thick enough, it changes how weight distributes across the foot with each step, which is a sign it's past the point of ignoring.", 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--3">
-					<h3><?php esc_html_e( 'Why picking or cutting it off yourself is risky', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'Cutting or picking at hardened skin can go deeper than intended and leave skin exposed and vulnerable — softening it is a safer route to the same result.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč odloupnutí samo o sobě nestačí' : __( 'Why picking or cutting it off yourself is risky', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Odloupnutí řeší jen kůži, která už je ztvrdlá — nemění tlak, který ji způsobil, takže se stejné místo znovu ztvrdne.' : __( 'Cutting or picking at hardened skin can go deeper than intended and leave skin exposed and vulnerable — softening it is a safer route to the same result.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -127,7 +128,7 @@ get_header();
 	     Product page's own hero model
 	     (docs/molosoc-animation-specification.md) — model-viewer's own
 	     auto-rotate, independent of scroll/JS. -->
-	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( "Why soaking and filing alone don't keep it away", 'molosoc' ); ?>">
+	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
 			<div class="molosoc-mechanism-stage" aria-hidden="true">
@@ -148,25 +149,25 @@ get_header();
 			</div>
 
 			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 			</div>
 
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( "Why soaking and filing alone don't keep it away", 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( "Why soaking and filing alone don't keep it away", 'molosoc' ); ?></h2>
-				<p><?php esc_html_e( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?></h2>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Namáčení a pilování ztvrdlé kůže je rutina, kterou už většina lidí zná a zkouší.' : __( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">
 					<article>
-						<h3><?php esc_html_e( 'The routine most people already try', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Rutina, kterou už většina lidí zkouší' : __( 'The routine most people already try', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Namáčení a pilování ztvrdlé kůže je rutina, kterou už většina lidí zná a zkouší.' : __( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'Why hard skin comes back within weeks', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( "Filing removes the surface layer but doesn't stop the same pressure point from thickening again, so the callus returns on its own timeline.", 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč se tvrdá kůže vrací během pár týdnů' : __( 'Why hard skin comes back within weeks', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Pilování odstraní jen povrchovou vrstvu, ale nezastaví tlak, který ztvrdlou kůži způsobuje — proto se kuří oko vrátí na stejném místě znovu.' : __( "Filing removes the surface layer but doesn't stop the same pressure point from thickening again, so the callus returns on its own timeline.", 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'What actually needs to change for softening to last', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Moisture needs to reach the thickened skin consistently, not just after a soak, for softening to actually hold between sessions.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je potřeba, aby změkčení vydrželo' : __( 'What actually needs to change for softening to last', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Vlhkost musí ke ztvrdlé kůži pronikat pravidelně, ne jen po namočení, aby změkčení skutečně vydrželo mezi jednotlivými ošetřeními.' : __( 'Moisture needs to reach the thickened skin consistently, not just after a soak, for softening to actually hold between sessions.', 'molosoc' ) ); ?></p>
 					</article>
 				</div>
 			</div>
@@ -183,10 +184,30 @@ get_header();
 	     (assets/molosoc-image-assets.csv), plus the still-unused
 	     toenail-filing lifestyle shot — sourced to give these cards
 	     distinct images instead of repeating the page hero. -->
-	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-go-deeper" aria-label="<?php esc_attr_e( 'Go deeper', 'molosoc' ); ?>">
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-go-deeper" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Jít dál' : __( 'Go deeper', 'molosoc' ) ); ?>">
 		<div class="molosoc-section__inner">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'Go deeper', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Go deeper', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Jít dál' : __( 'Go deeper', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Jít dál' : __( 'Go deeper', 'molosoc' ) ); ?></h2>
+			<?php if ( $molosoc_is_cz ) : ?>
+			<div class="molosoc-topic-grid">
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cz/kurici-oko/jak-odstranit/' ) ); ?>">
+					<div class="molosoc-topic-card__media molosoc-media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_04.jpg"
+							alt="" loading="lazy" decoding="async">
+					</div>
+					<h3>Jak odstranit kuří oko</h3>
+					<p>Poctivý pohled na to, co kuří oko skutečně odstraní, a proč se stejně vrací.</p>
+				</a>
+				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cz/kurici-oko/na-chodidle/' ) ); ?>">
+					<div class="molosoc-topic-card__media molosoc-media">
+						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_05.jpg"
+							alt="" loading="lazy" decoding="async">
+					</div>
+					<h3>Kuří oko na chodidle</h3>
+					<p>Proč se kuří oko pod chodidlem chová jinak a co s ním skutečně pomáhá.</p>
+				</a>
+			</div>
+			<?php else : ?>
 			<div class="molosoc-topic-grid">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/hardened-skin-calluses/callus-remover/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
@@ -213,6 +234,7 @@ get_header();
 					<p><?php esc_html_e( "Why one-time removal isn't the same as prevention, and what actually slows regrowth.", 'molosoc' ); ?></p>
 				</a>
 			</div>
+			<?php endif; ?>
 		</div>
 	</section>
 
@@ -225,10 +247,10 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
 		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( 'Real hardened skin, softened through consistent care — not a one-time fix.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Časově doložené srovnání před/po z reálné, pravidelné péče.' : __( 'Real hardened skin, softened through consistent care — not a one-time fix.', 'molosoc' ) ); ?></p>
+			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 

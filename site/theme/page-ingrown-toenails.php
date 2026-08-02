@@ -26,6 +26,7 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+$molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 
 get_header();
 ?>
@@ -42,9 +43,9 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
 		<div class="molosoc-pillar-hero__text">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'Ingrown toenails', 'molosoc' ); ?></p>
-			<h1><?php esc_html_e( "Ingrown toenails: what's happening, and what actually helps", 'molosoc' ); ?></h1>
-			<p><?php esc_html_e( "An ingrown toenail happens when the nail edge grows into the surrounding skin instead of over it — and it's rarely a one-time event without a reason behind it.", 'molosoc' ); ?></p>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Zarostlý nehet' : __( 'Ingrown toenails', 'molosoc' ) ); ?></p>
+			<h1><?php echo esc_html( $molosoc_is_cz ? 'Zarostlý nehet: co se děje a co skutečně pomáhá' : __( "Ingrown toenails: what's happening, and what actually helps", 'molosoc' ) ); ?></h1>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Zarostlý nehet vzniká, když okraj nehtu roste do okolní kůže místo přes ni — a málokdy jde o jednorázovou náhodu bez příčiny.' : __( "An ingrown toenail happens when the nail edge grows into the surrounding skin instead of over it — and it's rarely a one-time event without a reason behind it.", 'molosoc' ) ); ?></p>
 		</div>
 	</section>
 
@@ -53,11 +54,11 @@ get_header();
 	     in from the right, one per scroll step. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'The causes', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'What causes ingrown toenails', 'molosoc' ); ?></h2>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Příčiny' : __( 'The causes', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Zarostlý nehet' : __( 'What causes ingrown toenails', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php esc_attr_e( 'What causes ingrown toenails', 'molosoc' ); ?>">
+	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Zarostlý nehet' : __( 'What causes ingrown toenails', 'molosoc' ) ); ?>">
 		<div class="molosoc-sequential-stage__inner">
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
@@ -69,16 +70,16 @@ get_header();
 				</div>
 				<div class="molosoc-argument__text">
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'How the nail edge starts growing into skin', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( "An ingrown toenail starts when the nail's edge curves or grows down into the skin beside it instead of straight across.", 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak okraj nehtu začíná růst do kůže' : __( 'How the nail edge starts growing into skin', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Zarostlý nehet začíná ve chvíli, kdy se okraj nehtu prohne nebo roste dolů do kůže vedle sebe, místo aby rostl rovně přes ni.' : __( "An ingrown toenail starts when the nail's edge curves or grows down into the skin beside it instead of straight across.", 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Tight shoes and cutting nails too short', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Tight-fitting shoes press the skin against the nail edge, and nails trimmed too short or rounded give that edge room to dig in as it grows back.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Těsné boty a příliš krátké stříhání nehtů' : __( 'Tight shoes and cutting nails too short', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Těsná obuv tlačí kůži proti okraji nehtu a příliš krátké nebo zaoblené stříhání dává tomuto okraji prostor zarůst při dalším růstu.' : __( 'Tight-fitting shoes press the skin against the nail edge, and nails trimmed too short or rounded give that edge room to dig in as it grows back.', 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php esc_html_e( 'Why some people get them again and again', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'The same nail shape and the same shoe habits keep recreating the same pressure point — so without a change to either, it tends to repeat.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč se to některým lidem vrací pořád dokola' : __( 'Why some people get them again and again', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Stejný tvar nehtu a stejné návyky s obuví znovu vytvářejí stejné místo tlaku — bez změny v jednom nebo druhém se problém typicky opakuje.' : __( 'The same nail shape and the same shoe habits keep recreating the same pressure point — so without a change to either, it tends to repeat.', 'molosoc' ) ); ?></p>
 					</div>
 				</div>
 			</div>
@@ -89,7 +90,7 @@ get_header();
 	     pillar2_03_elevated.jpg (Image A) gives way to
 	     molosoc_ingrown_toenail.jpg (Image B) through a circular mask, then
 	     the 3 severity cards emerge from center to their tiered positions. -->
-	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'Do ingrown toenails go away', 'molosoc' ); ?>">
+	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Zmizí zarostlý nehet sám?' : __( 'Do ingrown toenails go away', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ingrown_toenail.jpg');"></div>
@@ -98,22 +99,22 @@ get_header();
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
 			<div class="molosoc-severity-section__heading">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'When it gets serious', 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( 'Do ingrown toenails go away', 'molosoc' ); ?></h2>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Když se to zhorší' : __( 'When it gets serious', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Zmizí zarostlý nehet sám?' : __( 'Do ingrown toenails go away', 'molosoc' ) ); ?></h2>
 			</div>
 
 			<div class="molosoc-severity-cards">
 				<div class="molosoc-severity-card molosoc-severity-card--1">
-					<h3><?php esc_html_e( 'When it resolves without intervention', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'A mild ingrown toenail can resolve on its own once the pressure causing it — tight shoes, a too-short trim — is removed and the skin has room to heal.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Kdy odezní bez zásahu' : __( 'When it resolves without intervention', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Mírně zarostlý nehet může odeznít sám, jakmile zmizí tlak, který ho způsobil — těsné boty, příliš krátké stříhání — a kůže dostane prostor se zahojit.' : __( 'A mild ingrown toenail can resolve on its own once the pressure causing it — tight shoes, a too-short trim — is removed and the skin has room to heal.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--2">
-					<h3><?php esc_html_e( "When it doesn't — signs it's getting worse", 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( "Increasing redness, swelling, or pain that doesn't ease up after a few days means it isn't resolving on its own.", 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Kdy neodezní — příznaky zhoršení' : __( "When it doesn't — signs it's getting worse", 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Zesilující zarudnutí, otok nebo bolest, která po pár dnech neustupuje, znamenají, že už nejde jen o běžný tlak.' : __( "Increasing redness, swelling, or pain that doesn't ease up after a few days means it isn't resolving on its own.", 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-severity-card molosoc-severity-card--3">
-					<h3><?php esc_html_e( 'Why waiting too long makes it harder to treat', 'molosoc' ); ?></h3>
-					<p><?php esc_html_e( 'The longer skin stays irritated and under pressure, the more inflamed and sensitive it gets — which makes it harder for anything applied to it to actually help.', 'molosoc' ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč čekání dělá léčbu těžší' : __( 'Why waiting too long makes it harder to treat', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Čím déle zůstává podrážděná kůže pod tlakem, tím je zanícenější a citlivější — a tím hůř na ni cokoliv naneseného skutečně zabere.' : __( 'The longer skin stays irritated and under pressure, the more inflamed and sensitive it gets — which makes it harder for anything applied to it to actually help.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -122,7 +123,7 @@ get_header();
 	<!-- 4. WHY CUTTING IT YOURSELF OFTEN BACKFIRES — orbit-scroll-drawer.
 	     The always-rotating molosoc-3d.glb model fades/blurs as a glass
 	     drawer carrying the 3 H3 points slides up over it. -->
-	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( 'Why cutting it yourself often backfires', 'molosoc' ); ?>">
+	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
 			<div class="molosoc-mechanism-stage" aria-hidden="true">
@@ -143,25 +144,25 @@ get_header();
 			</div>
 
 			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 			</div>
 
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Why cutting it yourself often backfires', 'molosoc' ); ?></p>
-				<h2><?php esc_html_e( 'Why cutting it yourself often backfires', 'molosoc' ); ?></h2>
-				<p><?php esc_html_e( 'Pain concentrated at the big toenail is almost always pressure-related — from the nail edge, from footwear, or both at once.', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?></h2>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Vlastní zásah do zarostlého nehtu je obvykle první věc, kterou lidé zkouší, ještě před vyzkoušením čehokoliv jiného.' : __( 'Pain concentrated at the big toenail is almost always pressure-related — from the nail edge, from footwear, or both at once.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">
 					<article>
-						<h3><?php esc_html_e( 'Big toenail hurts', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Pain concentrated at the big toenail is almost always pressure-related — from the nail edge, from footwear, or both at once.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Přístup s nůžkami a pinzetou, který lidé zkouší jako první' : __( 'Big toenail hurts', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Vlastní zásah do zarostlého nehtu je obvykle první věc, kterou lidé zkouší, ještě před vyzkoušením čehokoliv jiného.' : __( 'Pain concentrated at the big toenail is almost always pressure-related — from the nail edge, from footwear, or both at once.', 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'Ingrown big toe', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'The big toe is the most common site for an ingrown nail simply because it takes the most pressure with every step.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč tím okraj obvykle zaroste ještě víc' : __( 'Ingrown big toe', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Zásah do místa, které je už podrážděné, ho může zhoršit a nechat kůži víc nechráněnou vůči dalšímu růstu nehtu do ní.' : __( 'The big toe is the most common site for an ingrown nail simply because it takes the most pressure with every step.', 'molosoc' ) ); ?></p>
 					</article>
 					<article>
-						<h3><?php esc_html_e( 'What softening the surrounding skin actually changes', 'molosoc' ); ?></h3>
-						<p><?php esc_html_e( 'Softer, healthier skin around the nail gives the nail edge room to grow past it instead of into it — which is the actual mechanism behind fewer repeat episodes.', 'molosoc' ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co skutečně změní změkčení okolní kůže' : __( 'What softening the surrounding skin actually changes', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Měkčí kůže kolem nehtu snižuje odpor, proti kterému nehet roste, a dává mu prostor růst správným směrem.' : __( 'Softer, healthier skin around the nail gives the nail edge room to grow past it instead of into it — which is the actual mechanism behind fewer repeat episodes.', 'molosoc' ) ); ?></p>
 					</article>
 				</div>
 			</div>
@@ -176,6 +177,7 @@ get_header();
 	     treatment shoot (assets/molosoc-image-assets.csv) sourced
 	     specifically to give these cards distinct images instead of
 	     repeating the page hero. -->
+	<?php if ( ! $molosoc_is_cz ) : ?>
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-go-deeper" aria-label="<?php esc_attr_e( 'Go deeper', 'molosoc' ); ?>">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Go deeper', 'molosoc' ); ?></p>
@@ -208,6 +210,7 @@ get_header();
 			</div>
 		</div>
 	</section>
+	<?php endif; ?>
 
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2 — Ingrown-Nail/Hardened-Skin, this pillar's
@@ -219,10 +222,10 @@ get_header();
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
 		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( 'Real ingrown toenails, treated through consistent care — not a one-time fix.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
+			<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné zarostlé nehty, zahojené díky pravidelné péči — ne jednorázovému zásahu.' : __( 'Real ingrown toenails, treated through consistent care — not a one-time fix.', 'molosoc' ) ); ?></p>
+			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 
