@@ -104,7 +104,11 @@ function molosoc_enqueue_assets() {
 		// correctly at rest with no JS, so leaving it off doesn't change how
 		// it looks:
 		// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-	} elseif ( is_page( 'foot-covers' ) ) {
+	} elseif ( is_page( array( 'foot-covers', 'navleky-na-nohy' ) ) ) {
+		// 'navleky-na-nohy' is the Czech translation of 'foot-covers' —
+		// is_page() only auto-matches the theme_template by exact English
+		// slug, so the Czech page needs to be listed here explicitly or
+		// this whole stylesheet/script stack silently never loads on it.
 		wp_enqueue_style( 'molosoc-category', $theme_uri . '/assets/css/category.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
 
@@ -118,7 +122,10 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-who-reveal', $theme_uri . '/assets/js/who-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-who-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'cracked-heels' ) ) {
+	} elseif ( is_page( array( 'cracked-heels', 'popraskane-paty' ) ) ) {
+		// 'popraskane-paty' is the Czech translation of 'cracked-heels' —
+		// see the 'navleky-na-nohy' branch above for why the Czech slug
+		// has to be listed explicitly.
 		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
 
@@ -145,7 +152,10 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'ingrown-toenails' ) ) {
+	} elseif ( is_page( array( 'ingrown-toenails', 'zarostly-nehet' ) ) ) {
+		// 'zarostly-nehet' is the Czech translation of 'ingrown-toenails' —
+		// see the 'navleky-na-nohy' branch above for why the Czech slug
+		// has to be listed explicitly.
 		// Identical asset stack to the cracked-heels branch above —
 		// page-ingrown-toenails.php reuses pillar1.css and its JS as-is
 		// (every class/selector in that file is generic, nothing
@@ -160,7 +170,10 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'hardened-skin-calluses' ) ) {
+	} elseif ( is_page( array( 'hardened-skin-calluses', 'kurici-oko' ) ) ) {
+		// 'kurici-oko' is the Czech translation of 'hardened-skin-calluses'
+		// — see the 'navleky-na-nohy' branch above for why the Czech slug
+		// has to be listed explicitly.
 		// Identical asset stack to the cracked-heels/ingrown-toenails
 		// branches above — page-hardened-skin-calluses.php reuses
 		// pillar1.css and its JS as-is (every class/selector in that file
@@ -223,7 +236,10 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'callus-remover' ) ) {
+	} elseif ( is_page( array( 'callus-remover', 'jak-odstranit' ) ) ) {
+		// 'jak-odstranit' is the Czech translation of 'callus-remover' —
+		// see the 'navleky-na-nohy' branch above for why the Czech slug
+		// has to be listed explicitly.
 		// Spoke 2 — Callus Remover. Identical asset stack to every other
 		// spoke/pillar branch above — see the "treatment" branch's own
 		// comment for why the full pillar1 stack is needed.
@@ -280,7 +296,10 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'molosoc-severity-reveal', $theme_uri . '/assets/js/severity-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-mechanism-drawer', $theme_uri . '/assets/js/mechanism-drawer.js', array(), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-severity-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'moisture-lock-foot-cover' ) ) {
+	} elseif ( is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) ) ) {
+		// 'hydratacni-navlek-na-nohy' is the Czech translation of
+		// 'moisture-lock-foot-cover' — see the 'navleky-na-nohy' branch
+		// above for why the Czech slug has to be listed explicitly.
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
 		// model-viewer renders the always-rotating molosoc-3d.glb model in
