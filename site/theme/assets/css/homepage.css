@@ -465,6 +465,21 @@
   object-fit: cover;
 }
 
+/* Desktop crop for these two — confirmed correct against the desktop
+   source photos (see git history: "Fix story-photo #2/#4 crop to
+   actually show the feet, not knees"). The mobile <source> in
+   front-page.php swaps in a differently-framed crop of each photo
+   below 720px, so the same object-position no longer lands on the
+   feet there — overridden in the mobile media query below instead of
+   sharing one value across both breakpoints. */
+.molosoc-story-photo--living-room {
+  object-position: 65% 75%;
+}
+
+.molosoc-story-photo--bedside-rug {
+  object-position: 60% 85%;
+}
+
 .molosoc-story__text {
   margin-top: var(--space-xs);
   width: var(--story-w, 60%);
@@ -556,6 +571,18 @@
   }
   .molosoc-story__media {
     aspect-ratio: 4 / 3;
+  }
+  /* The mobile crop of each photo (see the <source> in front-page.php)
+     frames the subject differently than the desktop one — the desktop
+     object-position pushes the visible window up into the knees/pants
+     instead of the feet once it's applied to this narrower crop. Both
+     source photos have their feet in the lower part of the frame with
+     more leg above than below, so anchoring to the very bottom edge is
+     as close as object-position can get to keeping the feet in frame
+     over the knees. */
+  .molosoc-story-photo--living-room,
+  .molosoc-story-photo--bedside-rug {
+    object-position: 50% 100%;
   }
   /* Smaller, mobile-appropriate version of the desktop gap between the
      heading and the first row below it. */
