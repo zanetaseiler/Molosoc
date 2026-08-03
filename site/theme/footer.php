@@ -20,13 +20,8 @@ $molosoc_social_links = array(
 
 $molosoc_legal_links = array(
 	__( 'Disclaimer', 'molosoc' )     => home_url( '/legal-disclaimer/' ),
-	// Privacy policy and Terms of service have no English translation yet
-	// (both pages currently hold Czech-only legal text on staging AND on
-	// live molosoc.com — a pre-existing gap, not something introduced
-	// here). Left unbranched/pointing at the same page for both languages
-	// until real English copy exists to pair against.
-	__( 'Privacy policy', 'molosoc' ) => home_url( '/privacy-policies/' ),
-	__( 'Terms of service', 'molosoc' ) => home_url( '/terms-of-services/' ),
+	( $molosoc_is_cz ? 'Zásady ochrany osobních údajů' : __( 'Privacy policy', 'molosoc' ) ) => home_url( $molosoc_is_cz ? '/zasady-ochrany-osobnich-udaju/' : '/privacy-policies/' ),
+	( $molosoc_is_cz ? 'Obchodní podmínky' : __( 'Terms of service', 'molosoc' ) ) => home_url( $molosoc_is_cz ? '/obchodni-podminky/' : '/terms-of-services/' ),
 	( $molosoc_is_cz ? 'Zásady dopravy' : __( 'Shipping policy', 'molosoc' ) ) => home_url( $molosoc_is_cz ? '/zasady-dopravy/' : '/shipping-policy/' ),
 	( $molosoc_is_cz ? 'Zásady vrácení a refundace' : __( 'Refund & returns', 'molosoc' ) ) => home_url( $molosoc_is_cz ? '/vraceni-a-refundace/' : '/refund-policy/' ),
 	__( 'Contact', 'molosoc' )        => home_url( '/contact-kontakt/' ),
