@@ -373,6 +373,54 @@
   color: var(--color-text-muted);
 }
 
+/* ---------- Language switcher (En / Cz) ----------
+   Polylang injects two <li class="lang-item"> (the second one carrying
+   .current-lang on whichever language is active) at the end of
+   wp_nav_menu()'s output. Styled here as a small bordered toggle pushed
+   to the far right of the nav — via margin-left: auto on the first item
+   — instead of just reading as two more plain nav links. See the mobile
+   media query below for how this same pair collapses into one shared
+   row instead of two more stacked full-width rows. */
+.molosoc-site-header__nav .lang-item {
+  display: flex;
+}
+
+.molosoc-site-header__nav .lang-item-first {
+  margin-left: auto;
+}
+
+.molosoc-site-header__nav .lang-item a {
+  padding: var(--space-3xs) var(--space-2xs);
+  font-size: var(--text-label);
+  line-height: 1;
+  color: var(--color-text-muted);
+  border: 1px solid rgba(12, 17, 21, 0.15);
+}
+
+.molosoc-site-header__nav .lang-item-first a {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.molosoc-site-header__nav .lang-item:not(.lang-item-first) a {
+  border-left: none;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.molosoc-site-header__nav .lang-item.current-lang a {
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  border-color: var(--color-cta-bg);
+}
+
+.molosoc-site-header__nav .lang-item a:hover {
+  color: var(--color-text);
+}
+
+.molosoc-site-header__nav .lang-item.current-lang a:hover {
+  opacity: 0.85;
+  color: var(--color-cta-text);
+}
+
 /* ---------- Hamburger nav toggle (mobile) ----------
    Shared between .molosoc-site-header (every page, this file) and
    .molosoc-home-header (front-page.php, homepage.css) — same markup
@@ -437,13 +485,28 @@
   }
 
   .molosoc-site-header.is-nav-open .molosoc-site-header__nav {
-    max-height: 16rem;
+    /* Was a flat 16rem — fine for the original 3-item menu, but too
+       short once the language switcher's own row is added on top, so
+       Cz was getting clipped by the overflow:hidden below it instead of
+       ever becoming reachable. Scales with content instead of guessing
+       a fixed value, and scrolls internally on very tall menus. */
+    max-height: min(80vh, 28rem);
+    overflow-y: auto;
   }
 
   .molosoc-site-header__nav > ul {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 0;
     padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  /* Every regular item still reads as its own full-width row; only the
+     .lang-item pair below is deliberately left at one grid column each,
+     so the two of them land side by side in the same row instead of
+     stacking as two more rows. */
+  .molosoc-site-header__nav > ul > li:not(.lang-item) {
+    grid-column: 1 / -1;
   }
 
   .molosoc-site-header__nav li {
@@ -461,6 +524,35 @@
   .molosoc-site-header__nav a {
     display: block;
     padding: var(--space-xs) 0;
+  }
+
+  /* Language switcher row — shares one line (see the grid rule above)
+     instead of two more stacked, bordered menu rows, and keeps its
+     desktop button-chip look instead of the full-width block link every
+     other item gets from the ".molosoc-site-header__nav a" rule above. */
+  .molosoc-site-header__nav .lang-item {
+    border-top: none;
+    display: flex;
+    align-items: center;
+    padding-top: var(--space-2xs);
+    padding-bottom: var(--space-2xs);
+  }
+
+  .molosoc-site-header__nav .lang-item-first {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+    padding-top: var(--space-s);
+    justify-content: flex-end;
+  }
+
+  .molosoc-site-header__nav .lang-item:not(.lang-item-first) {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+    padding-top: var(--space-s);
+    justify-content: flex-start;
+  }
+
+  .molosoc-site-header__nav .lang-item a {
+    display: inline-block;
+    padding: var(--space-3xs) var(--space-xs);
   }
 }
 

@@ -52,6 +52,47 @@
   opacity: 0.8;
 }
 
+/* ---------- Language switcher (En / Cz) — same reasoning/markup as
+   .molosoc-site-header__nav's own copy of this block in components.css
+   (Polylang's two <li class="lang-item">, pushed right via margin-left:
+   auto on the first one), just recolored for this header's white-on-
+   photo colorway instead of the sitewide ink-on-cream one. ---------- */
+.molosoc-home-header__nav .lang-item {
+  display: flex;
+}
+
+.molosoc-home-header__nav .lang-item-first {
+  margin-left: auto;
+}
+
+.molosoc-home-header__nav .lang-item a {
+  padding: var(--space-3xs) var(--space-2xs);
+  font-size: var(--text-label);
+  line-height: 1;
+  text-shadow: none;
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.molosoc-home-header__nav .lang-item-first a {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.molosoc-home-header__nav .lang-item:not(.lang-item-first) a {
+  border-left: none;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.molosoc-home-header__nav .lang-item.current-lang a {
+  background: var(--color-white);
+  color: var(--color-ink);
+  border-color: var(--color-white);
+}
+
+.molosoc-home-header__nav .lang-item a:hover {
+  opacity: 0.8;
+}
+
 /* ---------- Submenu arrow — same pattern/JS as .molosoc-site-header, see
    components.css for the full explanation, mirrored here for the white
    hero-header colorway. ---------- */
@@ -919,13 +960,27 @@
   }
 
   .molosoc-home-header.is-nav-open .molosoc-home-header__nav {
-    max-height: 16rem;
+    /* Same fix as .molosoc-site-header__nav in components.css — a flat
+       16rem was too short once the language switcher's own row got
+       added on top of the existing items, clipping Cz before it was
+       ever reachable. */
+    max-height: min(80vh, 28rem);
+    overflow-y: auto;
   }
 
   .molosoc-home-header__nav > ul {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 0;
     padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  /* Same grid trick as components.css: every regular item spans the
+     full row, only the .lang-item pair is left at one column each so
+     they land side by side in a single shared row instead of stacking
+     as two more full-width rows. */
+  .molosoc-home-header__nav > ul > li:not(.lang-item) {
+    grid-column: 1 / -1;
   }
 
   .molosoc-home-header__nav li {
@@ -943,6 +998,33 @@
 
   .molosoc-home-header__nav .sub-menu a {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Language switcher row — keeps its desktop button-chip look instead
+     of the full-width block link every other item gets above. */
+  .molosoc-home-header__nav .lang-item {
+    border-top: none;
+    display: flex;
+    align-items: center;
+    padding-top: var(--space-2xs);
+    padding-bottom: var(--space-2xs);
+  }
+
+  .molosoc-home-header__nav .lang-item-first {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: var(--space-s);
+    justify-content: flex-end;
+  }
+
+  .molosoc-home-header__nav .lang-item:not(.lang-item-first) {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: var(--space-s);
+    justify-content: flex-start;
+  }
+
+  .molosoc-home-header__nav .lang-item a {
+    display: inline-block;
+    padding: var(--space-3xs) var(--space-xs);
   }
 
   .molosoc-home-header .molosoc-nav-toggle {
