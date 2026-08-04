@@ -133,9 +133,19 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
 				<div class="molosoc-story__media">
 					<picture>
+						<!-- Two <source>s gated on media (viewport width), not a single
+						     srcset with w-descriptors — these two crops are different
+						     compositions (not just different resolutions of the same
+						     shot), so letting the browser pick by DPR math instead of
+						     viewport was landing on the desktop crop for any 2x/3x-DPR
+						     phone, with the mobile object-position applied to the wrong
+						     photo (git history: "Fix mobile-only crop on two homepage
+						     story photos showing knees, not feet" — that fix was
+						     CSS-correct but this is why it kept resurfacing). -->
+						<source media="(max-width: 720px)" type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded-mobile.webp' ); ?>">
 						<source type="image/webp"
-							srcset="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.webp' ); ?> 1143w"
-							sizes="(max-width: 720px) 100vw, 599px">
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.webp' ); ?>">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-livingroom-graded.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet up on a wooden side table in a calm minimalist living room', 'molosoc' ); ?>"
 							class="molosoc-story-photo--living-room"
@@ -168,9 +178,12 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 			<div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
 				<div class="molosoc-story__media">
 					<picture>
+						<!-- Same media-gated art-direction fix as the living-room
+						     photo above — see its comment for why. -->
+						<source media="(max-width: 720px)" type="image/webp"
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped-mobile.webp' ); ?>">
 						<source type="image/webp"
-							srcset="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.webp' ); ?> 1143w"
-							sizes="(max-width: 720px) 100vw, 852px">
+							srcset="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.webp' ); ?>">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-bedside-rug-cropped.jpg' ); ?>"
 							alt="<?php esc_attr_e( 'Bare feet stepping onto a soft cream wool rug beside the bed', 'molosoc' ); ?>"
 							class="molosoc-story-photo--bedside-rug"
