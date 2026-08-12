@@ -117,6 +117,22 @@ Use existing Molosoc branding. Colors should feel:
 
 Never use highly saturated colors. Never create visual chaos. Whitespace is part of the design.
 
+**Headers and heroes stay light — warm cream/white, never dark.** Per
+explicit correction: no hero, header, or other primary-content area on
+this site gets a dark background, full stop. Use `--color-cream`/
+`--color-white` there, dark ink text on top, same as every other section.
+
+**Dark sections, where they exist at all, must still stay warm.** This is
+narrower than it sounds: dark backgrounds are reserved for genuine
+closing "final CTA" bands only (the pattern already live on the homepage
+and category page) — not heroes, not headers, not primary content. Where
+one of those closing bands is used, it uses `--color-ink-warm` (a warm
+espresso/walnut brown, see tokens.css) — never `--color-ink` or any other
+cold near-black; a stark black background reads as generic tech/SaaS, not
+the warm Scandinavian wellness feeling this brand is built on. `--color-ink`
+stays reserved for text/foreground ink on light surfaces, where its
+cooler tone doesn't register the same way a large background fill does.
+
 ---
 
 ## Photography

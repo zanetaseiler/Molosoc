@@ -85,6 +85,25 @@ The product deserves premium attention. Use:
 
 Never spin products. Never rotate continuously. Never exaggerate.
 
+**Sanctioned exception — product hero auto-rotate:** the Product page's
+hero (`site/theme/preview/product-preview.html`, `.molosoc-orbit-*`) runs
+the real `molosoc-3d.glb` model on continuous auto-rotate via
+`<model-viewer>`'s own attribute, independent of scroll/JS. This was
+requested and confirmed explicitly, knowing it contradicts the rule above.
+Reserve it for this kind of static hero moment (a rotating product as the
+page's visual anchor), not for casual "spin the product to see it" demos
+elsewhere, which the rule above still forbids.
+
+An earlier version of this hero also ran a scroll-pinned "glass drawer
+slides up over the fading/blurring model" sequence, per
+`.claude/skills/orbit-scroll-drawer/SKILL.md` / `docs/skills/Orbit-Scroll-Drawer.md`.
+That scroll mechanic was built, tested, and then explicitly reverted — the
+skill stays installed and available for future use elsewhere on the site,
+but this page no longer uses it. The content that was going to be the
+"drawer" (the cream-you-already-own section) is now a plain, firm static
+block in normal document flow directly under the hero — only the model's
+own rotation remains as motion on this page.
+
 ---
 
 ## Hover Effects

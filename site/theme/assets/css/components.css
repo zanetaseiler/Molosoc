@@ -144,6 +144,59 @@
   transform: scale(1.03);
 }
 
+/* ---------- Numbered fact card ("pillars"): reused by the homepage's
+   merge section (benefits grid) and the category page's cost-comparison
+   grid. Defaults to 4 columns collapsing to 2 then 1; pages needing a
+   different column count override grid-template-columns on their own
+   modifier class (see category.css's .molosoc-cost-grid). ---------- */
+
+.molosoc-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+  counter-reset: pillar;
+}
+
+@media (max-width: 960px) {
+  .molosoc-pillars {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .molosoc-pillars {
+    grid-template-columns: 1fr;
+  }
+}
+
+.molosoc-pillar {
+  padding-top: var(--space-m);
+  border-top: 1px solid rgba(12, 17, 21, 0.14);
+}
+
+.molosoc-pillar::before {
+  counter-increment: pillar;
+  content: counter(pillar, decimal-leading-zero);
+  display: block;
+  font-family: var(--font-accent);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.molosoc-pillar p {
+  margin-top: var(--space-3xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
 /* ---------- Topic / pillar link card (educational-content beat) ---------- */
 
 .molosoc-topic-grid {
@@ -159,13 +212,21 @@
   display: block;
   text-decoration: none;
   color: var(--color-text);
-  padding: var(--space-m) 0;
-  border-top: 1px solid rgba(12, 17, 21, 0.12);
   transition: opacity var(--motion-duration-s) var(--motion-ease);
 }
 
 .molosoc-topic-card:hover {
-  opacity: 0.6;
+  opacity: 0.85;
+}
+
+/* Thumbnail — reuses .molosoc-media (same rounded-corner, hover-zoom
+   image wrapper as .molosoc-argument__media elsewhere on these pages),
+   just with its own aspect-ratio and spacing to the text below. Optional:
+   .molosoc-topic-card works with or without one, so older/text-only
+   instances of this component keep rendering correctly. */
+.molosoc-topic-card__media {
+  aspect-ratio: 4 / 3;
+  margin-bottom: var(--space-s);
 }
 
 .molosoc-topic-card h3 {
@@ -197,4 +258,396 @@
   font-size: var(--text-small);
   color: var(--color-text-muted);
   max-width: 26rem;
+}
+
+/* ---------- Site header/nav (every template except front-page.php) ---------- */
+
+.molosoc-site-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  padding: var(--space-s) var(--section-padding-x);
+  background: var(--color-bg);
+}
+
+.molosoc-site-header__logo {
+  display: block;
+  line-height: 0;
+  text-decoration: none;
+  color: var(--color-text);
+}
+
+.molosoc-site-header__logo img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
+.molosoc-site-header__nav > ul {
+  display: flex;
+  gap: var(--space-m);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-site-header__nav a {
+  text-decoration: none;
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+/* ---------- Submenu arrow (e.g. "Foot Cover" > "Molosoc Foot Cover") ----------
+   Any top-level menu item with children (WordPress adds
+   .menu-item-has-children automatically) gets an arrow button injected by
+   assets/js/nav-toggle.js right after its link. Clicking the arrow reveals
+   the child list inline — an accordion, not a separate drawer/panel — the
+   parent link itself still navigates normally. Closed by default; opens via
+   the .is-submenu-open class the JS toggles on the <li>. */
+.molosoc-site-header__nav .menu-item-has-children {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3xs);
+  position: relative;
+}
+
+.molosoc-submenu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: currentColor;
+  cursor: pointer;
+}
+
+.molosoc-submenu-toggle svg {
+  width: 10px;
+  height: 10px;
+  transition: transform var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-submenu-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.molosoc-site-header__nav .sub-menu {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-site-header__nav .menu-item-has-children.is-submenu-open > .sub-menu {
+  max-height: 12rem;
+}
+
+@media (min-width: 761px) {
+  .molosoc-site-header__nav .sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-soft);
+    z-index: 30;
+  }
+
+  .molosoc-site-header__nav .sub-menu a {
+    display: block;
+    padding: var(--space-2xs) var(--space-xs);
+    white-space: nowrap;
+  }
+}
+
+.molosoc-site-header__nav a:hover {
+  color: var(--color-text-muted);
+}
+
+/* ---------- Language switcher (En / Cz) ----------
+   Polylang injects two <li class="lang-item"> (the second one carrying
+   .current-lang on whichever language is active) at the end of
+   wp_nav_menu()'s output. Styled here as a small bordered toggle pushed
+   to the far right of the nav — via margin-left: auto on the first item
+   — instead of just reading as two more plain nav links. See the mobile
+   media query below for how this same pair collapses into one shared
+   row instead of two more stacked full-width rows. */
+.molosoc-site-header__nav .lang-item {
+  display: flex;
+}
+
+.molosoc-site-header__nav .lang-item-first {
+  margin-left: auto;
+}
+
+.molosoc-site-header__nav .lang-item a {
+  padding: var(--space-3xs) var(--space-2xs);
+  font-size: var(--text-label);
+  line-height: 1;
+  color: var(--color-text-muted);
+  border: 1px solid rgba(12, 17, 21, 0.15);
+}
+
+.molosoc-site-header__nav .lang-item-first a {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.molosoc-site-header__nav .lang-item:not(.lang-item-first) a {
+  border-left: none;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.molosoc-site-header__nav .lang-item.current-lang a {
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  border-color: var(--color-cta-bg);
+}
+
+.molosoc-site-header__nav .lang-item a:hover {
+  color: var(--color-text);
+}
+
+.molosoc-site-header__nav .lang-item.current-lang a:hover {
+  opacity: 0.85;
+  color: var(--color-cta-text);
+}
+
+/* ---------- Hamburger nav toggle (mobile) ----------
+   Shared between .molosoc-site-header (every page, this file) and
+   .molosoc-home-header (front-page.php, homepage.css) — same markup
+   pattern (a button.molosoc-nav-toggle with 3 spans, right next to the
+   wp_nav_menu() output), same JS (assets/js/nav-toggle.js), just a
+   different color per header. Hidden above the mobile breakpoint; each
+   header's own mobile media query (below, and homepage.css's) makes it
+   visible and collapses the nav into a toggled dropdown panel. */
+.molosoc-nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.molosoc-nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform var(--motion-duration-s) var(--motion-ease),
+              opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.molosoc-nav-toggle[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 760px) {
+  .molosoc-nav-toggle {
+    display: inline-flex;
+  }
+
+  .molosoc-site-header__nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: var(--color-bg);
+    box-shadow: var(--shadow-soft);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--motion-duration-s) var(--motion-ease);
+  }
+
+  .molosoc-site-header.is-nav-open .molosoc-site-header__nav {
+    /* Was a flat 16rem — fine for the original 3-item menu, but too
+       short once the language switcher's own row is added on top, so
+       Cz was getting clipped by the overflow:hidden below it instead of
+       ever becoming reachable. Scales with content instead of guessing
+       a fixed value, and scrolls internally on very tall menus. */
+    max-height: min(80vh, 28rem);
+    overflow-y: auto;
+  }
+
+  .molosoc-site-header__nav > ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  /* Every regular item still reads as its own full-width row; only the
+     .lang-item pair below is deliberately left at one grid column each,
+     so the two of them land side by side in the same row instead of
+     stacking as two more rows. */
+  .molosoc-site-header__nav > ul > li:not(.lang-item) {
+    grid-column: 1 / -1;
+  }
+
+  .molosoc-site-header__nav li {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+  }
+
+  .molosoc-site-header__nav .sub-menu {
+    padding-left: var(--space-s);
+  }
+
+  .molosoc-site-header__nav .sub-menu li {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+  }
+
+  .molosoc-site-header__nav a {
+    display: block;
+    padding: var(--space-xs) 0;
+  }
+
+  /* Language switcher row — shares one line (see the grid rule above)
+     instead of two more stacked, bordered menu rows, and keeps its
+     desktop button-chip look instead of the full-width block link every
+     other item gets from the ".molosoc-site-header__nav a" rule above. */
+  .molosoc-site-header__nav .lang-item {
+    border-top: none;
+    display: flex;
+    align-items: center;
+    padding-top: var(--space-2xs);
+    padding-bottom: var(--space-2xs);
+  }
+
+  .molosoc-site-header__nav .lang-item-first {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+    padding-top: var(--space-s);
+    justify-content: flex-end;
+  }
+
+  .molosoc-site-header__nav .lang-item:not(.lang-item-first) {
+    border-top: 1px solid rgba(12, 17, 21, 0.08);
+    padding-top: var(--space-s);
+    justify-content: flex-start;
+  }
+
+  .molosoc-site-header__nav .lang-item a {
+    display: inline-block;
+    padding: var(--space-3xs) var(--space-xs);
+  }
+}
+
+/* ---------- Site footer (every template except front-page.php) ---------- */
+
+.molosoc-site-footer {
+  background: var(--color-ink);
+  color: var(--color-white);
+  padding: var(--space-l) var(--section-padding-x) var(--space-m);
+}
+
+.molosoc-site-footer a {
+  color: var(--color-white);
+}
+
+.molosoc-site-footer__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-l);
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-site-footer__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+.molosoc-site-footer__brand > a {
+  display: block;
+  line-height: 0;
+}
+
+.molosoc-site-footer__brand > a img {
+  height: 28px;
+  width: auto;
+}
+
+.molosoc-site-footer__payments img {
+  height: 24px;
+  width: auto;
+}
+
+.molosoc-social-links {
+  display: flex;
+  gap: var(--space-s);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-social-links a {
+  font-size: var(--text-small);
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.molosoc-social-links a:hover {
+  opacity: 1;
+}
+
+.molosoc-site-footer__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-s);
+  padding-top: var(--space-m);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.molosoc-site-footer__copyright {
+  font-size: var(--text-small);
+  opacity: 0.8;
+  margin: 0;
+}
+
+.molosoc-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-s);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-small);
+}
+
+.molosoc-legal-links a {
+  text-decoration: none;
+  opacity: 0.8;
+}
+
+.molosoc-legal-links a:hover {
+  opacity: 1;
 }

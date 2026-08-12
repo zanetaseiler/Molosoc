@@ -1,51 +1,32 @@
 /*
   Molosoc — "Foot care, topic by topic": one pinned, single-screen sequence.
 
-  Per explicit request, the whole beat happens in this exact order, inside
-  one fixed 100vh stage (.molosoc-topics__stage), not down a tall page:
-    1. Image 1 (person sleeping) shows first, static.
-    2. A scroll later, a circular opening (mask-image, center-out) reveals
-       Image 2 underneath — scale/position of both images untouched, no
-       zoom/parallax/fade, just the mask's radius growing.
-    3. Image 2 completely replaces Image 1 (removed outright, not just
-       faded) once the opening is far enough along.
-    4. Image 2 is cropped to the exact same box as Image 1 (see
-       .molosoc-topics__bg in homepage.css: both are inset:0 inside the
-       same 100vh stage) — never its own, taller, full height.
-    5. Once the portal is roughly 35-45% open, cards start emerging —
-       each begins very small, centered on the portal's own center, and
-       travels smoothly out to its final position, arriving one at a time
-       with a slight stagger, then holding still.
-
-  GSAP ScrollTrigger pins the stage for two extra viewport-heights of
-  scroll and scrubs a single progress value (0-1) across that whole
-  range — this part is completely unchanged: the portal reveal's own
-  pacing (PORTAL_END, HIDE_AT, MAX_RADIUS_VMAX, the pin distance itself)
-  is identical to before. Only CARD_START/CARD_END moved earlier, so the
-  cards' own entrances now begin overlapping the portal's still-open
-  circle instead of waiting for it to finish.
+  A single static photo fills the 100vh stage (.molosoc-topics__stage) — no
+  second image, no circle/portal reveal. GSAP ScrollTrigger pins the stage
+  for extra scroll and scrubs a single progress value (0-1) across that
+  range, staggering the five feature cards in one at a time (thresholded,
+  not looping): each begins very small, centered on the stage's own center,
+  and travels smoothly out to its final position (homepage.css positions
+  every card at its actual final resting spot; this script measures that
+  position once at start-up, before any transform is applied, then works
+  out how far "the stage's center" is from it).
 
   Each card's entrance is a real GSAP tween (eased, time-based — not a
   linear scroll-scrub), so it can travel smoothly from a computed
-  "starting point" back to wherever it already sits in the layout
-  (homepage.css positions every card at its actual final resting spot;
-  this script measures that position once at start-up, before any
-  transform is applied, then works out how far "the stage's center" is
-  from it). ScrollTrigger's progress crossing each card's own threshold
-  just plays/reverses that tween — the motion itself is GSAP's own easing,
+  "starting point" back to wherever it already sits in the layout.
+  ScrollTrigger's progress crossing each card's own threshold just
+  plays/reverses that tween — the motion itself is GSAP's own easing,
   which is what makes it read as "smooth arrival" rather than tied 1:1 to
   scroll speed. Reversible on scroll-up, matching every other scroll-
   linked effect on this site; settles and stays once played forward.
 
-  Progressive enhancement: CSS default for --portal-hole is already a
-  fully-open radius, .molosoc-topics__bg--one is hidden outright and every
-  card already sits at its final, untransformed position under
-  prefers-reduced-motion (see homepage.css) — so no-JS/reduced-motion
-  always renders the finished, static state, still confined to the one
-  100vh stage. Below the site's 760px card-stacking breakpoint this script
-  steps aside entirely and homepage.css's own mobile fallback (plain
-  stacked cards under a static Image 2) takes over instead of pinning a
-  cramped viewport.
+  Progressive enhancement: every card already sits at its final,
+  untransformed position under prefers-reduced-motion (see homepage.css) —
+  so no-JS/reduced-motion always renders the finished, static state,
+  confined to the one 100vh stage. Below the site's 760px card-stacking
+  breakpoint this script steps aside entirely and homepage.css's own
+  mobile fallback (plain stacked cards under the static photo) takes over
+  instead of pinning a cramped viewport.
 */
 (function () {
   "use strict";
@@ -62,34 +43,14 @@
   if (window.innerWidth <= 760) return;
 
   var stage = document.querySelector(".molosoc-topics__stage");
-  var imageOne = stage && stage.querySelector(".molosoc-topics__bg--one");
   var cards = stage
     ? Array.prototype.slice.call(
         stage.querySelectorAll(".molosoc-feature-card")
       )
     : [];
-  if (!stage || !imageOne || !cards.length) return;
+  if (!stage || !cards.length) return;
 
   gsap.registerPlugin(ScrollTrigger);
-
-  // --- Portal reveal — unchanged from before ---------------------------
-  // A circle only needs to reach roughly half the viewport's diagonal
-  // (~50-58vmax for most real aspect ratios) to cover every corner from
-  // dead center — 70vmax gives that a safe margin while still growing
-  // visibly across the whole portal segment below.
-  var MAX_RADIUS_VMAX = 70;
-
-  // The pinned scroll range splits in half: first half is the portal
-  // reveal (0 -> PORTAL_END). HIDE_AT is measured against the portal's
-  // OWN local progress (0-1 within its half), matching the original
-  // "~90% through the reveal" cutoff — by then --portal-hole already
-  // exceeds any real viewport's diagonal, so removing Image 1 is
-  // invisible in practice.
-  var PORTAL_END = 0.5;
-  var HIDE_AT = 0.9;
-  var hidden = false;
-
-  gsap.set(imageOne, { "--portal-hole": "0vmax" });
 
   // --- Card entrances: measure once, before any transform is applied ---
   // Each card's CSS already places it at its real, final resting spot
@@ -145,10 +106,8 @@
     });
   });
 
-  // Cards start emerging once the portal is ~35-45% open (portalProgress
-  // ~0.4), well before Image 1 finishes revealing Image 2 — then stagger
-  // in one at a time, evenly, up to CARD_END.
-  var CARD_START = PORTAL_END * 0.4; // portalProgress 0.4
+  // Cards stagger in one at a time, evenly, across the pinned scroll range.
+  var CARD_START = 0.1;
   var CARD_END = 0.85;
   var triggered = cards.map(function () {
     return false;
@@ -163,25 +122,10 @@
   ScrollTrigger.create({
     trigger: stage,
     start: "top top",
-    end: "+=" + window.innerHeight * 2,
+    end: "+=" + window.innerHeight * 1.5,
     pin: true,
     scrub: true,
     onUpdate: function (self) {
-      var portalProgress = Math.min(self.progress / PORTAL_END, 1);
-
-      imageOne.style.setProperty(
-        "--portal-hole",
-        portalProgress * MAX_RADIUS_VMAX + "vmax"
-      );
-
-      if (portalProgress >= HIDE_AT && !hidden) {
-        imageOne.style.display = "none";
-        hidden = true;
-      } else if (portalProgress < HIDE_AT && hidden) {
-        imageOne.style.display = "";
-        hidden = false;
-      }
-
       entrances.forEach(function (tl, i) {
         var shouldShow = self.progress >= cardThresholds[i];
         if (shouldShow && !triggered[i]) {

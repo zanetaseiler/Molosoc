@@ -1,0 +1,118 @@
+/*
+  Molosoc — Blog / Journal index (page-blog.php).
+  Editorial photo-tile grid: big images, a short heading overlaid, nothing
+  else. Static by design — no motion.js/GSAP, see page-blog.php's own
+  header comment.
+*/
+
+.molosoc-blog-intro {
+  padding-bottom: var(--space-m);
+  text-align: center;
+}
+
+.molosoc-blog-intro .molosoc-eyebrow,
+.molosoc-blog-intro .molosoc-section__lede {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.molosoc-blog-grid-section {
+  padding-top: 0;
+}
+
+.molosoc-blog-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: row dense;
+  gap: var(--space-m);
+}
+
+.molosoc-blog-tile {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--radius-m);
+  text-decoration: none;
+  color: var(--color-white);
+}
+
+.molosoc-blog-tile--featured {
+  grid-column: span 2;
+  aspect-ratio: 16 / 10;
+}
+
+.molosoc-blog-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--motion-duration-l) var(--motion-ease);
+}
+
+.molosoc-blog-tile:hover img {
+  transform: scale(1.045);
+}
+
+.molosoc-blog-tile__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 17, 21, 0.72) 0%, rgba(12, 17, 21, 0.12) 45%, rgba(12, 17, 21, 0) 70%);
+  transition: opacity var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-blog-tile:hover .molosoc-blog-tile__scrim {
+  opacity: 0.85;
+}
+
+.molosoc-blog-tile__text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: var(--space-m);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+}
+
+.molosoc-blog-tile__eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.molosoc-blog-tile__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  color: var(--color-white);
+}
+
+.molosoc-blog-tile--featured .molosoc-blog-tile__heading {
+  font-size: var(--text-display-l);
+}
+
+@media (max-width: 960px) {
+  .molosoc-blog-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .molosoc-blog-tile--featured {
+    grid-column: span 2;
+    aspect-ratio: 16 / 11;
+  }
+}
+
+@media (max-width: 640px) {
+  .molosoc-blog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .molosoc-blog-tile--featured {
+    grid-column: span 1;
+    aspect-ratio: 4 / 3;
+  }
+}

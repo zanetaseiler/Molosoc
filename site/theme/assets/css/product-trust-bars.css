@@ -1,0 +1,93 @@
+/*
+  Molosoc — product-page trust-badge bars.
+
+  Recreates the two trust-badge bands the old theme showed on the
+  product page (molosoc.com/product/molosoc-hydratacni-navleky-na-nohy/,
+  built with Thrive Architect) — a 3-icon bar between the header and the
+  breadcrumb, and a 4-badge bar between the description tabs and the
+  footer. Nothing equivalent existed anywhere in this theme, so this is
+  new, not a port of existing CSS.
+
+  Both bars are full-bleed bands (own background, full viewport width),
+  matching production's own layout — hooked in via functions.php at
+  woocommerce_before_main_content (priority 5, before WooCommerce's own
+  breadcrumb at priority 20) and woocommerce_after_single_product, both
+  of which fire outside #primary.content-area, not inside the
+  constrained content column the container fix (base.css) applies to.
+  Scoped to is_product() only — this is a product-page-specific request,
+  not a sitewide component.
+*/
+
+.molosoc-trust-bar {
+  background: var(--color-bg);
+}
+
+.molosoc-trust-bar__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  padding: var(--space-m) var(--section-padding-x);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-m);
+}
+
+.molosoc-trust-bar--top .molosoc-trust-bar__inner {
+  justify-content: space-between;
+}
+
+.molosoc-trust-bar--bottom .molosoc-trust-bar__inner {
+  justify-content: space-between;
+}
+
+.molosoc-trust-bar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.molosoc-trust-bar__icon {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  color: var(--color-ink);
+}
+
+.molosoc-trust-bar__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.molosoc-trust-bar__label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.molosoc-trust-bar--top .molosoc-trust-bar__label {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--text-label);
+}
+
+.molosoc-trust-bar__sub {
+  margin: 0;
+  font-size: var(--text-label);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 760px) {
+  .molosoc-trust-bar--top .molosoc-trust-bar__inner {
+    justify-content: flex-start;
+  }
+
+  .molosoc-trust-bar--bottom .molosoc-trust-bar__inner {
+    gap: var(--space-m);
+  }
+}

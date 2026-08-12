@@ -1,0 +1,743 @@
+/*
+  Molosoc — Product page ("Molosoc Foot Cover") layout.
+  STATIC PASS — no keyframe animation, no scroll-pinning, no GSAP/
+  ScrollTrigger hooks anywhere on this page. This page's job
+  (docs/site-structure.md §4): carry the four buyer personas (cream-graveyard
+  owner, proof-seeker, pedicure-maintainer, gift-buyer) plus the mechanism
+  explainer, and close on the purchase action.
+
+  Warm-cream-throughout, no exceptions. Every surface, header included,
+  stays on the brand's warm white/beige (--color-cream) family, dark ink
+  text on top of it, same as every other page.
+*/
+
+/* ---------- Hero — rotating 3D model, static layout ----------
+   The molosoc-3d.glb model still rotates continuously via <model-viewer>'s
+   own auto-rotate attribute — that's independent of scroll/JS and stays.
+   What's gone: the orbit-scroll-drawer scroll-pin/fade/blur/slide mechanic
+   this section used to run (.claude/skills/orbit-scroll-drawer/SKILL.md).
+   Per explicit correction, that whole idea is reverted — the "cream you
+   already own" content (.molosoc-orbit-drawer below) is now a plain, firm
+   static block sitting in normal document flow directly under the hero,
+   not a glass panel sliding up over it. No scroll listener runs on this
+   page at all anymore (assets/js/orbit-scroll-drawer.js is no longer
+   loaded here — see product-preview.html). */
+
+.molosoc-orbit-section {
+  position: relative;
+  background: var(--color-cream);
+}
+
+.molosoc-orbit-pin {
+  position: relative;
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.molosoc-orbit-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* Sent to the front layer, per explicit request — the model is tall
+     enough that its bottom edge bleeds past the hero into the block
+     below; this makes the rotating object paint on top of that content
+     where they overlap, instead of the block's text painting over it.
+     Bumped from 5 to 50 (still below base.css's .molosoc-skip-link at
+     100, the one thing that must always outrank it) per a follow-up
+     explicit request to make sure it's the topmost layer on this page —
+     higher than product.css's own .molosoc-sticky-buy bar (z-index: 30,
+     mobile only) and everything else here. */
+  z-index: 50;
+}
+
+/* Soft ambient light behind the model. Originally the brand's warm peach
+   accent, but at this size/blur it read as a beige smudge/stain behind the
+   product rather than a deliberate glow — swapped for a soft silver per
+   explicit correction, which also just matches the product's own
+   silicone/silver material better than a warm accent color would. */
+.molosoc-orbit-glow {
+  position: absolute;
+  width: min(90vw, 64rem);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, #d8dbde 55%, transparent) 0%,
+    transparent 72%
+  );
+  filter: blur(50px);
+  /* Nudged down with the model below, so the glow stays centered behind it. */
+  transform: translateY(190px);
+}
+
+.molosoc-orbit-model {
+  position: relative;
+  width: min(95vw, 60rem);
+  height: min(95vw, 60rem);
+  --poster-color: transparent;
+  background-color: transparent;
+  /* model-viewer's own default loading progress bar is a plain gray
+     horizontal bar drawn across the canvas while the .glb streams in —
+     visible for a moment on page load, on top of the hero, before the
+     model appears. Same transparent treatment as --poster-color above. */
+  --progress-bar-color: transparent;
+  --progress-bar-height: 0px;
+  /* Nudged down from dead-center so the headline above has breathing room
+     instead of the model's top edge sitting right under the paragraph. */
+  transform: translateY(190px);
+}
+
+/* Centered above the model, not left-aligned — with the model doubled in
+   size and staying centered in the stage, a left-hugging text block plus
+   the top-left logo read as unbalanced against the now-dominant centered
+   object. Centering the headline on the same axis as the model (and
+   giving it its own band above it) rebalances the composition instead.
+   (A right-corner variant was tried and reverted per explicit feedback —
+   centered is the confirmed direction.) */
+.molosoc-orbit-hero-copy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 7vh;
+  margin: 0 auto;
+  max-width: 34rem;
+  text-align: center;
+  color: var(--color-text);
+}
+
+.molosoc-orbit-hero-copy h1 {
+  color: var(--color-text);
+}
+
+.molosoc-orbit-hero-copy p {
+  color: var(--color-text-muted);
+  margin: var(--space-m) auto 0;
+  font-size: var(--text-body-l);
+}
+
+/* ---------- The second block — "The cream you already own, finally
+   working" — a firm, static section sitting in normal document flow
+   directly under the hero, per explicit correction. Every earlier version
+   of this (glass panel, sliding up from below the viewport, translucent
+   over the model) is gone: no position:absolute, no transform, no
+   backdrop-filter, no scroll dependency of any kind. Just plain content on
+   the page background, same as every other section here. ---------- */
+
+.molosoc-orbit-drawer {
+  position: relative;
+  margin-inline: auto;
+  max-width: min(96vw, 84rem);
+  padding: var(--space-xl) var(--space-l) var(--space-l);
+}
+
+.molosoc-orbit-drawer__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+}
+
+.molosoc-orbit-drawer__heading {
+  margin-top: 80px;
+}
+
+.molosoc-orbit-drawer__heading h2 {
+  color: var(--color-text);
+  font-size: var(--text-display-m);
+  margin-top: var(--space-2xs);
+  max-width: 26rem;
+}
+
+.molosoc-orbit-drawer__buy {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  flex-shrink: 0;
+}
+
+.molosoc-orbit-drawer__price {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  color: var(--color-text);
+}
+
+.molosoc-orbit-drawer__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+}
+
+.molosoc-orbit-drawer__cards article {
+  background: var(--color-white);
+  border: 1px solid #ece8e2;
+  border-radius: var(--radius-m);
+  padding: var(--space-m);
+  box-shadow: var(--shadow-soft);
+}
+
+.molosoc-orbit-drawer__cards h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-orbit-drawer__cards p {
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  max-width: none;
+}
+
+/* ---------- Mobile — smaller model, hero copy in normal flow below it,
+   cards stack full-width. Purely responsive sizing now — no pin/scroll
+   overrides needed since the base rules are already static. ---------- */
+
+@media (max-width: 760px) {
+  .molosoc-orbit-pin {
+    min-height: auto;
+    flex-direction: column;
+    /* padding: var(--space-xl) 0 (120px top AND bottom) used to stack with
+       .molosoc-orbit-stage's own margin-bottom (50px, added per explicit
+       request) plus .molosoc-orbit-drawer's own 72px top padding plus
+       .molosoc-orbit-drawer__heading's 30px margin-top below — 272px of
+       combined gap in testing, not the ~80px actually intended, and
+       pushed the heading down far enough to visually collide with the
+       fixed .molosoc-sticky-buy bar at the bottom of the screen (read as
+       "overlapping" — confirmed via an actual mobile screenshot). Keeping
+       the top padding (space between the section start and the H1) but
+       dropping the bottom one — the space below the stage is now
+       entirely owned by the stage's own margin-bottom instead. */
+    padding: var(--space-xl) 0 0;
+  }
+
+  .molosoc-orbit-stage {
+    position: relative;
+    height: 22rem;
+    /* Hard safety net: .molosoc-orbit-model/.molosoc-orbit-glow both carry
+       a translateY(190px) nudge tuned for the desktop stage's 92vh box —
+       against this much shorter mobile box that pushed the (still
+       z-index: 5, paints-on-top) model down far enough to bleed into
+       .molosoc-orbit-hero-copy below, visually smearing the model over
+       the H1/paragraph text (confirmed via an actual mobile screenshot —
+       the two were overlapping, not just close). Overriding the offset
+       below is the real fix; this stays as a hard clip regardless. */
+    overflow: hidden;
+    /* On desktop the stage comes first in markup and the model
+       deliberately paints over the copy (z-index: 5, see the base rule's
+       comment) — an intentional overlap that only works with room to
+       spare on a big canvas. On mobile there's no overlap anymore (see
+       above), so DOM order alone put the model ABOVE the headline in the
+       stacked, single-column layout — per explicit request, the reading
+       order should be headline → sub-headline → rotating object.
+       .molosoc-orbit-pin is already flex-direction: column here, so a
+       plain order swap (no markup change) is enough; the stage is
+       aria-hidden anyway so this doesn't affect screen-reader order. */
+    order: 2;
+    /* Breathing room before .molosoc-orbit-drawer (sibling of
+       .molosoc-orbit-pin, starts right after it) — per explicit request. */
+    margin-bottom: 50px;
+  }
+
+  .molosoc-orbit-model {
+    /* Was min(95vw, 44rem) — at a typical 390px-wide phone that's a
+       370px box inside the 352px-tall (22rem) stage, already filling it
+       edge to edge with only ~15-30px of clip margin top/bottom. The
+       model keeps auto-rotating continuously (by design, never paused),
+       and its silhouette within that fixed-size canvas shifts as it
+       spins — with that little headroom, at some rotation angles it
+       visually crowded right up against the stage's own clip line, just
+       above the "cream you already own" heading (per explicit
+       follow-up: it's the shoe's own spin, not the phone's orientation).
+       overflow: hidden on the stage means it can never actually bleed
+       into the heading, but shrunk it further so there's real margin on
+       every side regardless of rotation angle, not just a few px. */
+    width: min(78vw, 32rem);
+    height: min(78vw, 32rem);
+    /* Smaller nudge to match the smaller box — enough to keep the model
+       feeling grounded/centered without pushing it back toward the
+       stage's bottom edge. */
+    transform: translateY(8px);
+  }
+
+  .molosoc-orbit-glow {
+    transform: translateY(8px);
+  }
+
+  .molosoc-orbit-hero-copy {
+    position: relative;
+    left: auto;
+    top: auto;
+    max-width: none;
+    padding: 0 var(--section-padding-x) var(--space-l);
+    text-align: center;
+    order: 1;
+  }
+
+  .molosoc-orbit-hero-copy p {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 30rem;
+  }
+
+  .molosoc-orbit-drawer {
+    /* Top padding (var(--space-l), 72px) dropped — same reasoning as
+       .molosoc-orbit-pin above: it was stacking with the stage's
+       margin-bottom and the heading's own margin-top into far more gap
+       than intended. The heading's 30px margin-top is now the only
+       spacing above it. */
+    padding: 0 var(--section-padding-x) var(--space-l);
+  }
+
+  .molosoc-orbit-drawer__top {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* margin-top: 80px (base rule, unscoped) is a desktop value, sized for
+     the large bleed gap the model's 190px translateY leaves above this
+     block. Mobile's own translateY(24px) + the margin-bottom just added
+     to .molosoc-orbit-stage already provide that spacing, so this on top
+     of it was excessive — per explicit request, shrunk to 30px. */
+  .molosoc-orbit-drawer__heading {
+    margin-top: 30px;
+  }
+
+  .molosoc-orbit-drawer__heading h2 {
+    max-width: none;
+  }
+
+  .molosoc-orbit-drawer__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Persona section heading block — eyebrow + H2, own normal-flow
+   block above each argument row (same reasoning as category.css's
+   .molosoc-sequential-heading: keeps the heading from fighting the media
+   row for vertical space, and reads cleanly with no pinning at all here). ---------- */
+
+.molosoc-product-heading {
+  padding: var(--space-xl) var(--section-padding-x) 0;
+}
+
+.molosoc-product-heading__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+/* Centered section headings (Real results, Make the pedicure last, Give
+   it as a gift, How it works). text-align:center alone isn't enough here:
+   the eyebrow is a <p>, and base.css caps every <p> at max-width: 36rem
+   with no margin:auto — so its own block box sits flush left inside this
+   (up to 72rem-wide) container, and text-align only centers the eyebrow's
+   short text *within that already-off-center narrow box*, not against the
+   H2 below it (which has no such width cap, so it centers correctly).
+   Explicit margin-inline:auto on the eyebrow fixes the actual box
+   position, not just the text inside it. */
+.molosoc-product-heading__inner--center {
+  text-align: center;
+}
+
+.molosoc-product-heading__inner--center .molosoc-eyebrow {
+  margin-inline: auto;
+}
+
+/* ---------- Argument rows: one photo (or photo pair) + a stack of H3
+   points. Same shape as category.css's .molosoc-argument, redefined here
+   (not shared via an import) since this preview file only loads
+   tokens/base/components, matching the repo's existing per-page-CSS
+   convention. ---------- */
+
+.molosoc-argument {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: var(--space-l) var(--space-xl);
+  max-width: var(--content-max-width-wide);
+  margin: var(--space-m) auto 0;
+  padding: var(--space-l) var(--section-padding-x);
+  align-items: start;
+}
+
+.molosoc-argument--reverse .molosoc-argument__media {
+  order: 2;
+}
+
+.molosoc-argument__media {
+  position: relative;
+}
+
+.molosoc-argument__media .molosoc-media {
+  aspect-ratio: 4 / 5;
+  margin-left: auto;
+}
+
+/* Isolated product cutouts (Molosoc-Product-Standing-Compress.png,
+   molosoc_product_only.jpg) — contain, not cover, so the product is never
+   cropped; a plain white backing fills the letterboxed space instead of
+   showing a transparent checkerboard. */
+.molosoc-media--contain {
+  background: var(--color-white);
+}
+
+.molosoc-media--contain img {
+  object-fit: contain;
+  padding: var(--space-m);
+}
+
+/* Two-photo editorial collage: a primary portrait frame with a smaller
+   square inset overlapping its outer corner. Used for the two persona
+   sections that carry two assigned photos each (Make the pedicure last;
+   Give it as a gift) instead of forcing a second unrelated section. */
+.molosoc-argument__media--duo {
+  position: relative;
+}
+
+.molosoc-argument__media--duo .molosoc-media--secondary {
+  position: absolute;
+  width: 48%;
+  aspect-ratio: 1 / 1;
+  right: -8%;
+  bottom: -10%;
+  border: 6px solid var(--color-bg);
+  box-shadow: var(--shadow-lift);
+}
+
+.molosoc-argument--reverse .molosoc-argument__media--duo .molosoc-media--secondary {
+  right: auto;
+  left: -8%;
+}
+
+.molosoc-argument__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.molosoc-argument__item h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-argument__item p {
+  color: var(--color-text-muted);
+}
+
+.molosoc-argument__item p a {
+  color: var(--color-text);
+  text-decoration-color: rgba(12, 17, 21, 0.35);
+  text-underline-offset: 3px;
+}
+
+.molosoc-argument__item p a:hover {
+  text-decoration-color: currentColor;
+}
+
+@media (max-width: 860px) {
+  .molosoc-argument,
+  .molosoc-argument--reverse {
+    grid-template-columns: 1fr;
+  }
+
+  .molosoc-argument--reverse .molosoc-argument__media {
+    order: 0;
+  }
+}
+
+/* Mobile-specific collage treatment — NOT a shrunk version of the desktop
+   overlap. Absolute-positioned overlap reads as cramped/fragile at narrow
+   widths, so on mobile the pair becomes a deliberate two-up row sitting
+   above the text stack instead. */
+@media (max-width: 760px) {
+  .molosoc-argument__media--duo {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: var(--space-xs);
+  }
+
+  .molosoc-argument__media--duo .molosoc-media {
+    margin-left: 0;
+  }
+
+  .molosoc-argument__media--duo .molosoc-media--secondary {
+    position: static;
+    width: auto;
+    aspect-ratio: 1 / 1;
+    border: none;
+    box-shadow: none;
+    align-self: end;
+  }
+}
+
+/* ---------- "Make the pedicure last" — fixed-image, sequential text
+   reveal (same pattern as category-preview.html's two argument rows). The
+   photo pair stays completely static; the three H3/paragraph points reveal
+   one at a time, gated to scroll progress. See
+   assets/js/sequential-text-reveal.js and
+   docs/skills/Fixed-Image-Sequential-Text-Reveal.md. Reused as-is from
+   category.css rather than imported, matching this file's existing
+   per-page-CSS convention. `.molosoc-argument` itself keeps handling its
+   own max-width/padding/centering, so the stage wrapper only needs to
+   provide the pin/overflow box — no nested `__inner`. ---------- */
+
+.molosoc-sequential-stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+@media (max-width: 760px) {
+  .molosoc-sequential-stage {
+    height: auto;
+  }
+}
+
+.molosoc-sequential-entrance--text {
+  opacity: 1;
+  transform: none;
+}
+
+/* Overrides components.css's shared .molosoc-media:hover img zoom — a
+   fixed/static photo inside a pinned sequential stage shouldn't also carry
+   its own independent hover motion. */
+.molosoc-media--static:hover img {
+  transform: none;
+}
+
+/* Editorial sharp-corner treatment for this section's photo pair —
+   overrides components.css's default rounded .molosoc-media corners with
+   the magazine/editorial sharp-corner convention (no border-radius; see
+   the luxury-wellness-editorial-system skill) for this specific duo,
+   without touching "Give it as a gift"'s rounded duo elsewhere on the
+   page. */
+.molosoc-argument__media--editorial .molosoc-media {
+  border-radius: 0;
+}
+
+/* Keep the duo's original tall 4:5 portrait frame (per explicit request —
+   molosoc_pedicure_01.jpg is landscape, 1376x768, but fits into the same
+   frame shape as the rest of the site's duo photos rather than reshaping
+   the frame around it) with a plain centered crop. max-height matches
+   category.css's own fix for a photo's aspect-ratio math running taller
+   than a pinned 100vh stage's remaining budget. */
+.molosoc-argument__media--editorial .molosoc-media--primary {
+  max-height: calc(100vh - 11rem);
+}
+
+.molosoc-argument__media--editorial .molosoc-media--primary img {
+  object-position: center;
+}
+
+/* ---------- "Real results, no filters" background — 3d_turntable_04_topdown.png
+   behind the whole heading+card block, with a white transparent scrim over
+   it for legibility. Same absolute-media + __scrim layering as
+   category.css's .molosoc-category-hero. object-fit:cover fills the full
+   block edge to edge (a contain/letterboxed variant was tried and reverted
+   — didn't read well). The render itself is a near-white
+   product-on-white-backdrop shot, so the scrim sits noticeably lighter
+   than .molosoc-category-hero's (~0.45 vs. ~0.9) — at that section's
+   opacity the product all but disappears; this keeps its silhouette
+   visible as a soft background element instead of washing it out
+   completely. ---------- */
+
+.molosoc-product-proof-block {
+  position: relative;
+  overflow: hidden;
+}
+
+.molosoc-product-proof-block__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-product-proof-block__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.molosoc-product-proof-block__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.molosoc-product-proof-block__content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ---------- "Real results, no filters" — three proof cards, each its own
+   image directly paired with its own H3/paragraph (per explicit
+   correction: not a shared photo row separated from a separate text
+   list). Left-aligned within each card, same convention as the drawer
+   cards / molosoc-pillar / molosoc-who-card elsewhere on this site —
+   only the section heading above stays centered. ---------- */
+
+.molosoc-product-proof {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  padding: var(--space-l) var(--section-padding-x);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-l);
+}
+
+.molosoc-product-proof__card p {
+  max-width: none;
+  margin-top: var(--space-xs);
+  color: var(--color-text-muted);
+}
+
+.molosoc-product-proof__card h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  /* Heading now sits above its photo, not below (was margin-top, spacing
+     it from an image above it; markup reordered per explicit request —
+     "the heading is under the foot [photo], it should be up"). */
+  margin-bottom: var(--space-xs);
+  text-align: center;
+}
+
+/* Consistent 4:5 frame across all three cards so the grid reads as one
+   set, not three randomly proportioned photos. */
+.molosoc-product-proof__media {
+  aspect-ratio: 4 / 5;
+}
+
+/* Hero breathing zoom (.claude/skills/hero-breathing-zoom/SKILL.md) — a
+   slow, continuous ambient scale. Running animations override a plain
+   :hover transform rule for the same property regardless of specificity,
+   so this also quietly supersedes components.css's shared
+   .molosoc-media:hover zoom — no separate override needed. No JS gating
+   needed either: these cards sit below the fold on load, so there's no
+   risk of the animation starting mid-transition before the user ever
+   sees it. Scale pushed to 1.12 (vs. the skill's canonical 1.06) per
+   explicit request for a more visible zoom on these three photos
+   specifically — not a change to the skill's own default. */
+.molosoc-product-proof__media img {
+  animation: molosoc-hero-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes molosoc-hero-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-product-proof__media img {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .molosoc-product-proof {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Larger tap target for the video link on mobile, without turning it into
+   a heavier button — restraint over decoration. */
+@media (max-width: 760px) {
+  .molosoc-product-proof__card p a {
+    display: inline-block;
+    padding: var(--space-2xs) 0;
+  }
+}
+
+/* ---------- How-it-works closing CTA ---------- */
+
+.molosoc-product-buy {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-l);
+  padding-bottom: var(--space-l);
+}
+
+/* ---------- "How it works" background — 3d_turntable_01_front.png behind
+   the whole heading+content block, same wrapping pattern as
+   molosoc-product-proof-block on "Real results, no filters", just a
+   heavier scrim (0.75 vs. 0.45) per explicit request for this block. ---------- */
+
+.molosoc-product-how-block {
+  position: relative;
+  overflow: hidden;
+}
+
+.molosoc-product-how-block__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-product-how-block__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.molosoc-product-how-block__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.molosoc-product-how-block__content {
+  position: relative;
+  z-index: 2;
+}
+
+/* ---------- Sticky mobile buy bar — a deliberately mobile-only pattern
+   (design-direction.md: "design specifically for touch interaction," not a
+   shrunk desktop layout). Desktop relies on the hero's own price+CTA row;
+   mobile keeps the purchase action reachable at all times without a fixed
+   header competing for the same space. Static/CSS-only, always present at
+   this width (no scroll-triggered show/hide in this no-animation pass). ---------- */
+
+.molosoc-sticky-buy {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .molosoc-sticky-buy {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-s);
+    background: var(--color-white);
+    border-top: 1px solid rgba(12, 17, 21, 0.12);
+    padding: var(--space-xs) var(--space-m);
+    padding-bottom: calc(var(--space-xs) + env(safe-area-inset-bottom, 0px));
+    box-shadow: var(--shadow-lift);
+  }
+
+  .molosoc-sticky-buy__price {
+    font-family: var(--font-display);
+    font-size: var(--text-display-m);
+    color: var(--color-text);
+  }
+
+  .molosoc-sticky-buy .molosoc-btn {
+    padding: 0.9em 1.6em;
+  }
+}

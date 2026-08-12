@@ -72,16 +72,33 @@
 }
 </script>
 </head>
-<body>
+<body class="molosoc-front-page">
 
 <a class="molosoc-skip-link" href="#main">Skip to content</a>
+
+<!-- Mirrors front-page.php's floating home-header — nav added 2026-07-30,
+     linking to the sibling preview files so the 3 built pages can be
+     clicked between locally. Order Now CTA removed the same day — plain
+     nav, no button, per direct instruction. Logo added same day too, so
+     the header matches the other two pages: logo left, nav right. -->
+<header class="molosoc-home-header">
+  <a class="molosoc-home-header__logo" href="homepage-preview.html">
+    <img src="../assets/images/molosoc-logo-white.png" alt="Molosoc" loading="eager" decoding="async">
+  </a>
+  <nav class="molosoc-home-header__nav">
+    <ul>
+      <li><a href="category-preview.html">Foot Covers</a></li>
+      <li><a href="product-preview.html">Product</a></li>
+    </ul>
+  </nav>
+</header>
 
 <main id="main">
 
   <!-- Beat 1+2 — Hero / emotional opening -->
   <section class="molosoc-hero">
     <div class="molosoc-hero__media">
-      <img src="../assets/images/homepage-hero-preview-graded.png" alt="Bare feet peeking out from under a clean white blanket in a bright, airy bedroom" loading="eager" fetchpriority="high" decoding="async">
+      <img src="../assets/images/homepage-hero-preview-graded.jpg" alt="Bare feet peeking out from under a clean white blanket in a bright, airy bedroom" loading="eager" fetchpriority="high" decoding="async">
     </div>
     <div class="molosoc-hero__scrim"></div>
     <div class="molosoc-hero__content">
@@ -116,7 +133,7 @@
            after the heading rather than at the same instant. -->
       <div class="molosoc-story molosoc-story--left" style="--story-w: 74%;">
         <div class="molosoc-story__media molosoc-reveal molosoc-reveal--fade-only molosoc-reveal--delay">
-          <img src="../assets/images/homepage-cream-collection-cropped.png" alt="Close-up of hands massaging cream into a heel, bright white bedroom" loading="lazy" decoding="async">
+          <img src="../assets/images/homepage-cream-collection-cropped.jpg" alt="Close-up of hands massaging cream into a heel, bright white bedroom" loading="lazy" decoding="async">
         </div>
         <div class="molosoc-story__text">
           <h3>Feet deserve real care, not just intent</h3>
@@ -127,7 +144,7 @@
       <!-- Story 2 — medium, right, heading directly beneath. -->
       <div class="molosoc-story molosoc-story--right" style="--story-w: 52%;">
         <div class="molosoc-story__media">
-          <img src="../assets/images/homepage-livingroom-graded.png" alt="Bare feet up on a wooden side table in a calm minimalist living room" loading="lazy" decoding="async">
+          <img src="../assets/images/homepage-livingroom-graded.jpg" alt="Bare feet up on a wooden side table in a calm minimalist living room" loading="lazy" decoding="async">
         </div>
         <div class="molosoc-story__text">
           <h3>Care should be simple enough to actually stick</h3>
@@ -138,7 +155,7 @@
       <!-- Story 3 — large, left, heading directly beneath. -->
       <div class="molosoc-story molosoc-story--left" style="--story-w: 68%;">
         <div class="molosoc-story__media">
-          <img src="../assets/images/homepage-pillar5-drawer-graded.png" alt="A half-open bathroom drawer crowded with half-used cream tubes and bottles" loading="lazy" decoding="async">
+          <img src="../assets/images/homepage-pillar5-drawer-graded.jpg" alt="A half-open bathroom drawer crowded with half-used cream tubes and bottles" loading="lazy" decoding="async">
         </div>
         <div class="molosoc-story__text">
           <h3>You don't need new products — you need the right ritual</h3>
@@ -150,7 +167,7 @@
            left/right/left/right alternating rhythm rather than centering. -->
       <div class="molosoc-story molosoc-story--right" style="--story-w: 74%;">
         <div class="molosoc-story__media">
-          <img src="../assets/images/homepage-bedside-rug-cropped.png" alt="Bare feet stepping onto a soft cream wool rug beside the bed" loading="lazy" decoding="async">
+          <img src="../assets/images/homepage-bedside-rug-cropped.jpg" alt="Bare feet stepping onto a soft cream wool rug beside the bed" loading="lazy" decoding="async">
         </div>
         <div class="molosoc-story__text">
           <h3>Foot care is self-care, not vanity</h3>
@@ -167,8 +184,8 @@
        GSAP ScrollTrigger progressively enhances it into the pinned merge sequence. -->
   <section class="molosoc-section molosoc-section--photo-bg molosoc-merge-section">
     <div class="molosoc-merge__group">
-      <div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('../assets/images/homepage-bathroom-bench-graded.png');" role="img" aria-label="A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench"></div>
-      <div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('../assets/images/homepage-bathroom-bench-graded.png');"></div>
+      <div class="molosoc-merge__tile molosoc-merge__tile--left" style="background-image: url('../assets/images/homepage-bathroom-bench-graded.jpg');" role="img" aria-label="A sunlit minimalist bathroom hallway with sheer curtains, wood beams, and bare feet resting on a linen bench"></div>
+      <div class="molosoc-merge__tile molosoc-merge__tile--right" style="background-image: url('../assets/images/homepage-bathroom-bench-graded.jpg');"></div>
     </div>
     <div class="molosoc-section__scrim"></div>
     <div class="molosoc-section__inner">
@@ -228,30 +245,21 @@
   </section>
 
   <!-- Beat 8 — Educational content: one pinned, single-screen sequence.
-       .molosoc-topics__stage is exactly 100vh — GSAP ScrollTrigger (see
-       topics-portal.js) pins it for two extra viewport-heights of scroll,
-       driving everything as one continuous, scrubbed timeline instead of a
-       tall scrolling canvas:
-         0%-50%  — Image 1 (static, on top) gets a circular opening that
-                   grows from center (mask-image only — no zoom/parallax/
-                   position change on either image), revealing Image 2
-                   underneath. At ~90% through that reveal, Image 1 is
-                   removed outright — Image 2 was already the exact same
-                   100vh box (identical inset:0 crop, same visible height
-                   as Image 1), so nothing shifts.
-         50%-100% — the five feature cards toggle on one at a time
-                   (thresholded, not looping) over Image 2, arranged in two
-                   rows entirely inside this same 100vh stage — generous
-                   gaps, no overlap, never extending past the image.
+       .molosoc-topics__stage is exactly 100vh — a single static photo, no
+       second image and no circle reveal. GSAP ScrollTrigger (see
+       topics-portal.js) pins the stage for extra scroll and scrubs the
+       five feature cards on one at a time (thresholded, not looping),
+       each starting small and centered on the stage and traveling out to
+       its final resting position, arranged in two rows entirely inside
+       this same 100vh stage — generous gaps, no overlap, never extending
+       past the image.
        Progressive enhancement: no-JS/reduced-motion (see homepage.css)
-       never pins anything — Image 1 is hidden outright and every card
-       already sits at its final visible state, all still inside the one
-       100vh stage. -->
+       never pins anything — every card already sits at its final visible
+       state, all still inside the one 100vh stage. -->
   <section class="molosoc-topics" id="topics-section" aria-label="Foot care, topic by topic">
     <div class="molosoc-topics__stage">
       <div class="molosoc-topics__media" aria-hidden="true">
         <div class="molosoc-topics__bg molosoc-topics__bg--two" style="background-image: url('../assets/images/molosoc_ritual_hallway_walk-scaled.jpg');"></div>
-        <div class="molosoc-topics__bg molosoc-topics__bg--one" style="background-image: url('../assets/images/molosoc_ritual_platform_bed_blanket-scaled.jpg');"></div>
       </div>
 
       <div class="molosoc-topics__cards">
@@ -281,6 +289,10 @@
 
   <!-- Beat 9 — Final CTA -->
   <section class="molosoc-section molosoc-final-cta">
+    <div class="molosoc-final-cta__media" aria-hidden="true">
+      <img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png" alt="" loading="lazy" decoding="async">
+    </div>
+    <div class="molosoc-final-cta__scrim"></div>
     <div class="molosoc-section__inner molosoc-reveal" style="text-align:center;">
       <p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);">The reusable alternative</p>
       <h2>What is a moisture-lock foot cover?</h2>
@@ -302,15 +314,9 @@
 <script src="../assets/js/merge-transition.js"></script>
 <script src="../assets/js/proof-scale.js"></script>
 <script src="../assets/js/topics-portal.js"></script>
-<!-- ...but images loading asynchronously after either script runs can grow the
-     page height again post-hoc (large hero/section photos, in particular), so
-     this refresh — once, after full page load — is the real fix: it forces
-     every ScrollTrigger on the page to recalculate against final, settled DOM
-     geometry regardless of script order or image load timing. -->
-<script>
-  window.addEventListener("load", function () {
-    if (window.ScrollTrigger) ScrollTrigger.refresh();
-  });
-</script>
+<!-- Shared with front-page.php — see scroll-refresh.js for why this keeps
+     every ScrollTrigger pin matched to the real, settled DOM regardless of
+     lazy-loaded images changing page height after a pin is already set up. -->
+<script src="../assets/js/scroll-refresh.js"></script>
 </body>
 </html>

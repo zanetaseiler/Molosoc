@@ -16,14 +16,148 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-m);
   padding: var(--space-s) var(--section-padding-x);
-  mix-blend-mode: difference;
 }
 
-.molosoc-home-header img {
-  height: 22px;
+.molosoc-home-header__logo {
+  display: block;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.molosoc-home-header__logo img {
+  height: 26px;
   width: auto;
-  filter: invert(1);
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+}
+
+.molosoc-home-header__nav > ul {
+  display: flex;
+  gap: var(--space-m);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-home-header__nav a {
+  text-decoration: none;
+  font-size: var(--text-body);
+  color: var(--color-white);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.molosoc-home-header__nav a:hover {
+  opacity: 0.8;
+}
+
+/* ---------- Language switcher (En / Cz) — same reasoning/markup as
+   .molosoc-site-header__nav's own copy of this block in components.css
+   (Polylang's two <li class="lang-item">, pushed right via margin-left:
+   auto on the first one), just recolored for this header's white-on-
+   photo colorway instead of the sitewide ink-on-cream one. ---------- */
+.molosoc-home-header__nav .lang-item {
+  display: flex;
+}
+
+.molosoc-home-header__nav .lang-item-first {
+  margin-left: auto;
+}
+
+.molosoc-home-header__nav .lang-item a {
+  padding: var(--space-3xs) var(--space-2xs);
+  font-size: var(--text-label);
+  line-height: 1;
+  text-shadow: none;
+  color: var(--color-white);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.molosoc-home-header__nav .lang-item-first a {
+  border-radius: var(--radius-s) 0 0 var(--radius-s);
+}
+
+.molosoc-home-header__nav .lang-item:not(.lang-item-first) a {
+  border-left: none;
+  border-radius: 0 var(--radius-s) var(--radius-s) 0;
+}
+
+.molosoc-home-header__nav .lang-item.current-lang a {
+  background: var(--color-white);
+  color: var(--color-ink);
+  border-color: var(--color-white);
+}
+
+.molosoc-home-header__nav .lang-item a:hover {
+  opacity: 0.8;
+}
+
+/* ---------- Submenu arrow — same pattern/JS as .molosoc-site-header, see
+   components.css for the full explanation, mirrored here for the white
+   hero-header colorway. ---------- */
+.molosoc-home-header__nav .menu-item-has-children {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3xs);
+  position: relative;
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-white);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+  cursor: pointer;
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle svg {
+  width: 10px;
+  height: 10px;
+  transition: transform var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-home-header__nav .molosoc-submenu-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.molosoc-home-header__nav .sub-menu {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-home-header__nav .menu-item-has-children.is-submenu-open > .sub-menu {
+  max-height: 12rem;
+}
+
+@media (min-width: 761px) {
+  .molosoc-home-header__nav .sub-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 12rem;
+    background: var(--color-ink);
+    z-index: 30;
+  }
+
+  .molosoc-home-header__nav .sub-menu a {
+    display: block;
+    padding: var(--space-2xs) var(--space-xs);
+    white-space: nowrap;
+    text-shadow: none;
+  }
 }
 
 /* ---------- Beat 1 — Hero / emotional opening ---------- */
@@ -31,6 +165,13 @@
 .molosoc-hero {
   position: relative;
   width: 100%;
+  /* Fallback for engines without svh support — without this, an
+     unsupported 100svh value is simply invalid and dropped, leaving no
+     height at all on this position:relative container. Its absolutely-
+     positioned media child sizes to THIS box (inset: 0), so a collapsed
+     container was what could make the hero photo render into a near-zero
+     box (only a small cropped corner visible) instead of full-bleed. */
+  min-height: 100vh;
   min-height: 100svh;
   display: flex;
   align-items: flex-end;
@@ -324,6 +465,21 @@
   object-fit: cover;
 }
 
+/* Desktop crop for these two — confirmed correct against the desktop
+   source photos (see git history: "Fix story-photo #2/#4 crop to
+   actually show the feet, not knees"). The mobile <source> in
+   front-page.php swaps in a differently-framed crop of each photo
+   below 720px, so the same object-position no longer lands on the
+   feet there — overridden in the mobile media query below instead of
+   sharing one value across both breakpoints. */
+.molosoc-story-photo--living-room {
+  object-position: 65% 75%;
+}
+
+.molosoc-story-photo--bedside-rug {
+  object-position: 60% 85%;
+}
+
 .molosoc-story__text {
   margin-top: var(--space-xs);
   width: var(--story-w, 60%);
@@ -415,6 +571,18 @@
   }
   .molosoc-story__media {
     aspect-ratio: 4 / 3;
+  }
+  /* The mobile crop of each photo (see the <source> in front-page.php)
+     frames the subject differently than the desktop one — the desktop
+     object-position pushes the visible window up into the knees/pants
+     instead of the feet once it's applied to this narrower crop. Both
+     source photos have their feet in the lower part of the frame with
+     more leg above than below, so anchoring to the very bottom edge is
+     as close as object-position can get to keeping the feet in frame
+     over the knees. */
+  .molosoc-story-photo--living-room,
+  .molosoc-story-photo--bedside-rug {
+    object-position: 50% 100%;
   }
   /* Smaller, mobile-appropriate version of the desktop gap between the
      heading and the first row below it. */
@@ -522,52 +690,10 @@
   }
 }
 
-.molosoc-pillars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-m);
-  margin-top: var(--space-l);
-  counter-reset: pillar;
-}
-
-@media (max-width: 960px) {
-  .molosoc-pillars {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 560px) {
-  .molosoc-pillars {
-    grid-template-columns: 1fr;
-  }
-}
-
-.molosoc-pillar {
-  padding-top: var(--space-m);
-  border-top: 1px solid rgba(12, 17, 21, 0.14);
-}
-
-.molosoc-pillar::before {
-  counter-increment: pillar;
-  content: counter(pillar, decimal-leading-zero);
-  display: block;
-  font-family: var(--font-accent);
-  font-size: var(--text-small);
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-xs);
-}
-
-.molosoc-pillar h3 {
-  font-size: var(--text-body-l);
-  font-family: var(--font-body);
-  font-weight: 700;
-}
-
-.molosoc-pillar p {
-  margin-top: var(--space-3xs);
-  color: var(--color-text-muted);
-  font-size: var(--text-body);
-}
+/* .molosoc-pillars/.molosoc-pillar base styles moved to components.css —
+   generic numbered-fact-card component, reused by the category page's cost
+   comparison too, not homepage-specific. The --photo-bg override just below
+   stays here since it's tied to this section's specific photo background. */
 
 /* ---------- Beat 6 — Social proof ---------- */
 
@@ -578,7 +704,15 @@
 .molosoc-proof__media {
   width: 100%;
   max-width: 34rem;
-  aspect-ratio: auto;
+  /* Matches homepage-results-full.jpg's real intrinsic size (760x1362) so
+     the browser reserves this image's height immediately, before it loads
+     — this image is lazy and was the one consistently causing a real,
+     asynchronous page-height jump (~975px) once it finally decoded,
+     which left every ScrollTrigger pin below it (and, transiently, ones
+     actively pinned elsewhere at that moment) with stale cached geometry.
+     Reserving the real space up front removes that shift at the source,
+     rather than trying to out-refresh it after the fact. */
+  aspect-ratio: 760 / 1362;
   box-shadow: var(--shadow-soft);
 }
 
@@ -616,28 +750,14 @@
    front-page.php keeps its own plain .molosoc-topic-grid/.molosoc-topic-card,
    in components.css, deliberately untouched).
 
-   Per explicit request, the ENTIRE sequence — Image 1, the portal reveal,
-   Image 2, and all five cards — lives inside .molosoc-topics__stage, a
-   single fixed 100vh box. topics-portal.js pins that stage (GSAP
-   ScrollTrigger) for two extra viewport-heights of scroll and scrubs
-   everything off that one progress value instead of laying the content
-   out down a tall page:
-     - Image 1 and Image 2 are both position:absolute; inset:0 inside the
-       SAME 100vh stage — identical crop/height, per explicit request
-       ("both images occupy the identical viewport area"). Image 1 sits on
-       top, masked with a circular opening that grows from center
-       (--portal-hole); neither image ever moves, scales, or fades.
-     - Once that reveal crosses ~90% of its own progress, Image 1 is
-       removed outright (topics-portal.js) — Image 2 was already sitting
-       there, same box, so nothing shifts.
-     - The five feature cards are positioned in two short rows entirely
-       within that same 100vh box (never taller than the image) and
-       toggle visible one at a time, thresholded against the second half
-       of the pinned scroll, staying visible afterward.
+   Single static photo (no circle-reveal, no second image) fills
+   .molosoc-topics__stage, a fixed 100vh box. topics-portal.js pins that
+   stage (GSAP ScrollTrigger) for extra scroll and scrubs the five feature
+   cards in, one at a time with a stagger, each starting small and centered
+   on the stage and growing/traveling out to its final resting position.
    Progressive enhancement: no-JS/reduced-motion never pins anything —
-   Image 1 is hidden outright and every card already sits at its settled,
-   visible state (see the reduced-motion blocks below), all still confined
-   to the one 100vh stage. */
+   every card already sits at its settled, visible position (see the
+   reduced-motion blocks below), still confined to the one 100vh stage. */
 
 .molosoc-topics {
   position: relative;
@@ -660,43 +780,10 @@
 
 .molosoc-topics__bg {
   position: absolute;
-  inset: 0; /* both images share this exact box — identical crop/height */
+  inset: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-.molosoc-topics__bg--one {
-  /* Camera-iris reveal: a plain circular mask only. Same --portal-hole
-     value, same JS, same growth/timing/final size as before — the
-     transparent->black transition band is a fixed 1.5px (not vmax, so it
-     never grows on larger viewports), giving a crisp, clean edge with no
-     visible feather. No filter, no displacement, no distortion of any
-     kind — Image 1 itself is never touched, only how much of it the mask
-     reveals through. */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--portal-hole, 200vmax),
-    black calc(var(--portal-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--portal-hole, 200vmax),
-    black calc(var(--portal-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* CSS default --portal-hole (200vmax) already masks Image 1 fully open;
-     display:none is belt-and-suspenders so no-JS/reduced-motion never
-     paints it at all, even for a first frame. */
-  .molosoc-topics__bg--one {
-    display: none;
-  }
 }
 
 .molosoc-topics__cards {
@@ -781,42 +868,48 @@
    each hold one card per side with the center left open so the hallway's
    own perspective stays the focal point, and a single card centers the
    bottom tier to resolve the composition. Left/right columns keep a
-   consistent inset per tier (slight stagger tier-to-tier — 5% upper vs
-   9%/8% middle — reads as intentional placement, not a repeated grid).
-   Three even ~11-12% gaps between tiers give consistent spacing
-   throughout; sizes/typography/colors/animations are all unchanged from
-   before, only these positions moved. */
+   consistent inset per tier (slight stagger tier-to-tier — 12% upper vs
+   14%/15% middle — reads as intentional placement, not a repeated grid).
+
+   Retuned per explicit "too separated" feedback — the previous values
+   (tiers at 6-8% / 40-42% / bottom:15px, insets at 5-9%) clustered all
+   three tiers near the top and bottom edges with huge dead gaps between
+   them, and pushed each pair out to the far corners with a big empty
+   middle. Now four roughly-even ~13-14% gaps (top edge → tier 1 → tier
+   2 → tier 3 → bottom edge) and tighter 12-15% side insets, so the five
+   cards read as one composed group instead of five scattered points.
+   Sizes/typography/colors/animations unchanged, only positions moved. */
 .molosoc-feature-card--1 {
-  top: 8%;
-  left: 5%;
+  top: 14%;
+  left: 12%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--2 {
-  top: 6%;
-  right: 5%;
+  top: 12%;
+  right: 12%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--3 {
-  top: 40%;
-  left: 9%;
+  top: 43%;
+  left: 15%;
   width: clamp(13rem, 21vw, 16.5rem);
 }
 
 .molosoc-feature-card--4 {
-  top: 42%;
-  right: 8%;
+  top: 45%;
+  right: 14%;
   width: clamp(15rem, 24vw, 18.5rem);
 }
 
 .molosoc-feature-card--5 {
-  /* Anchored to the stage's own bottom edge with a fixed 15px gap —
-     guarantees real clearance regardless of viewport height or this
-     card's own (content-driven) height, unlike a % top value which was
-     letting it sit flush against/clip on the frame's bottom edge on
-     shorter viewports. */
-  bottom: 15px;
+  /* % rather than the previous fixed 15px — 13% of even a short 100vh
+     viewport still clears far more than 15px ever did, so this is
+     strictly safer, not riskier, while finally giving this tier a real,
+     even gap from tier 2 above instead of sitting jammed on the frame's
+     bottom edge. */
+  bottom: 13%;
   left: 0;
   right: 0;
   margin-left: auto;
@@ -829,30 +922,255 @@
   text-align: center;
 }
 
+/* Czech homepage shows only 3 of the 5 topics (see front-page.php) — a
+   single centered row instead of the 5-card magazine grid above, so the
+   trio reads as one composed, centered group rather than two cards from
+   a layout designed around five. */
+.molosoc-feature-card--cz-1 {
+  top: 42%;
+  left: 12%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
+.molosoc-feature-card--cz-2 {
+  top: 42%;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: clamp(13rem, 21vw, 16.5rem);
+  text-align: center;
+}
+
+.molosoc-feature-card--cz-3 {
+  top: 42%;
+  right: 12%;
+  width: clamp(13rem, 21vw, 16.5rem);
+}
+
 @media (max-width: 760px) {
-  /* topics-portal.js skips the pin below this width — plain stacked
-     fallback: Image 1 never shown, Image 2 sits at the top at its normal
-     100vh crop, cards stack below it in normal document flow. */
-  .molosoc-topics__stage {
+  /* Homepage's own header logo (26px) is already smaller than every
+     other page's (.molosoc-site-header__logo img, 30px), and had no
+     mobile scaling at all — reading thin/tiny on a narrow screen.
+     Bumped to match the sitewide 30px standard. */
+  .molosoc-home-header__logo img {
+    height: 30px;
+  }
+
+  /* No object-position was set at all (defaults to center center), so
+     object-fit: cover crops equally from both sides. On a narrow mobile
+     crop that cuts off the feet peeking out from under the blanket — the
+     actual emotional subject of this photo — leaving just curtains/
+     nightstand on one side and an empty corner of bed linens on the
+     other. Shifting the crop right keeps the feet in frame. */
+  .molosoc-hero__media img {
+    object-position: right center;
+  }
+
+  /* Nav had zero mobile handling: logo + "space-between" + a fixed
+     --space-m (32px) gap between nav links, at full --text-body size —
+     on a narrow phone that total routinely exceeds the viewport width,
+     pushing links straight off the right edge (worse now with 3 items —
+     Foot Cover, Blog, Contact/Kontakt — instead of 2). A shrink-and-wrap
+     fix was tried first but a real hamburger toggle (shared pattern +
+     JS with .molosoc-site-header, see components.css) is the actual
+     fix, per explicit request. */
+  .molosoc-home-header__nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--color-ink);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height var(--motion-duration-s) var(--motion-ease);
+  }
+
+  .molosoc-home-header.is-nav-open .molosoc-home-header__nav {
+    /* Same fix as .molosoc-site-header__nav in components.css — a flat
+       16rem was too short once the language switcher's own row got
+       added on top of the existing items, clipping Cz before it was
+       ever reachable. */
+    max-height: min(80vh, 28rem);
+    overflow-y: auto;
+  }
+
+  .molosoc-home-header__nav > ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: var(--space-2xs) var(--section-padding-x) var(--space-s);
+  }
+
+  /* Same grid trick as components.css: every regular item spans the
+     full row, only the .lang-item pair is left at one column each so
+     they land side by side in a single shared row instead of stacking
+     as two more full-width rows. */
+  .molosoc-home-header__nav > ul > li:not(.lang-item) {
+    grid-column: 1 / -1;
+  }
+
+  .molosoc-home-header__nav li {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .molosoc-home-header__nav a {
+    display: block;
+    padding: var(--space-xs) 0;
+  }
+
+  .molosoc-home-header__nav .sub-menu {
+    padding-left: var(--space-s);
+  }
+
+  .molosoc-home-header__nav .sub-menu a {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Language switcher row — keeps its desktop button-chip look instead
+     of the full-width block link every other item gets above. */
+  .molosoc-home-header__nav .lang-item {
+    border-top: none;
+    display: flex;
+    align-items: center;
+    padding-top: var(--space-2xs);
+    padding-bottom: var(--space-2xs);
+  }
+
+  .molosoc-home-header__nav .lang-item-first {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: var(--space-s);
+    justify-content: flex-end;
+  }
+
+  .molosoc-home-header__nav .lang-item:not(.lang-item-first) {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: var(--space-s);
+    justify-content: flex-start;
+  }
+
+  .molosoc-home-header__nav .lang-item a {
+    display: inline-block;
+    padding: var(--space-3xs) var(--space-xs);
+  }
+
+  .molosoc-home-header .molosoc-nav-toggle {
+    color: var(--color-white);
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+  }
+
+  /* merge-transition.js now skips its pin below this width (matching
+     every other pinned sequence), so the two tiles sit in their static
+     resting state — which only reconstructs as one undistorted photo if
+     the CONTAINER'S OWN aspect ratio matches the source image's, since
+     .molosoc-merge__group is position:absolute;inset:0 and stretches to
+     fill exactly whatever box it's given.
+
+     A previous fix locked .molosoc-merge-section itself (min-height:0 +
+     aspect-ratio: 2560/1429) to fix that — which works for a section that
+     ONLY contains the photo, but this section also contains the "How it
+     helps" copy (eyebrow, heading, 4 pillars) overlaid on top of it. That
+     copy's real content height is far taller than the photo's own
+     landscape aspect ratio allows, so the section's actual rendered
+     height ballooned to fit all of it — and .molosoc-merge__group (inset:
+     0) stretched right along with it, badly distorting the photo across
+     several screens of scroll, with no visible connection between the
+     photo and the copy below it.
+
+     Fix: give the ASPECT RATIO to the photo layer only
+     (.molosoc-merge__group), not the whole section, and let the copy flow
+     in normal document flow below it instead of overlaid — same "no
+     overlay/pin tricks on mobile, just correctly-cropped stacked content"
+     fallback pattern used elsewhere on this page (arc-reveal, topics
+     section). Since the copy is no longer sitting on top of a darkened
+     photo, it also needs to switch back to the page's normal ink-on-cream
+     colors instead of white-on-photo. */
+  .molosoc-merge-section {
+    min-height: 0;
+    height: auto;
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge__group {
+    position: relative;
+    inset: auto;
+    aspect-ratio: 2560 / 1429;
     height: auto;
   }
 
-  .molosoc-topics__media {
-    position: relative;
-    height: 100vh;
-  }
-
-  .molosoc-topics__bg--one {
+  .molosoc-merge-section .molosoc-section__scrim {
     display: none;
   }
 
+  .molosoc-merge-section .molosoc-section__inner {
+    position: relative;
+    padding: var(--space-l) var(--section-padding-x);
+  }
+
+  .molosoc-merge-section .molosoc-eyebrow,
+  .molosoc-merge-section h2 {
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge-section .molosoc-pillar {
+    border-top-color: rgba(12, 17, 21, 0.14);
+  }
+
+  .molosoc-merge-section .molosoc-pillar::before {
+    color: var(--color-text-muted);
+  }
+
+  .molosoc-merge-section .molosoc-pillar h3 {
+    color: var(--color-ink);
+  }
+
+  .molosoc-merge-section .molosoc-pillar p {
+    color: var(--color-text-muted);
+  }
+
+  /* topics-portal.js skips the pin below this width (we can't run its
+     centered-portal entrance on a cramped viewport) — but the previous
+     fallback pushed the photo to its own full 100vh crop FIRST, with all
+     five cards stacked below it in normal document flow. That read as
+     "photo, then a long disconnected scroll of separate cards", and put
+     the cards visually under the image instead of over it. This fallback
+     instead keeps photo + cards in the one bounded stage/frame — the
+     photo fills the frame (centered, cover-cropped, no distortion), and
+     the cards sit stacked on top of it as a scrim-backed group anchored
+     to the bottom, so the whole thing reads as one connected screen
+     instead of a photo followed by a separate list. */
+  .molosoc-topics__stage {
+    height: auto;
+    min-height: 100svh;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .molosoc-topics__media {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+  }
+
   .molosoc-topics__cards {
-    position: static;
+    position: relative;
+    inset: auto;
+    z-index: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-m);
-    padding: var(--space-l) var(--space-s);
+    gap: var(--space-s);
+    width: 100%;
+    padding: var(--space-xl) var(--space-s) var(--space-m);
     pointer-events: auto;
+    /* Scrim behind the card stack, not behind the whole photo — keeps the
+       top of the image clean/visible while guaranteeing the cards read
+       clearly regardless of what's directly behind them. */
+    background: linear-gradient(
+      180deg,
+      rgba(12, 17, 21, 0) 0%,
+      rgba(12, 17, 21, 0.5) 35%,
+      rgba(12, 17, 21, 0.72) 100%
+    );
   }
 
   .molosoc-feature-card,
@@ -860,7 +1178,10 @@
   .molosoc-feature-card--2,
   .molosoc-feature-card--3,
   .molosoc-feature-card--4,
-  .molosoc-feature-card--5 {
+  .molosoc-feature-card--5,
+  .molosoc-feature-card--cz-1,
+  .molosoc-feature-card--cz-2,
+  .molosoc-feature-card--cz-3 {
     position: static;
     top: auto;
     bottom: auto;
@@ -878,9 +1199,43 @@
 /* ---------- Beat 9 — Final CTA ---------- */
 
 .molosoc-final-cta {
+  position: relative;
+  overflow: hidden;
   text-align: center;
   color: var(--color-white);
   background: var(--color-ink);
+}
+
+/* Same treatment as .molosoc-category-final-cta in category.css, same
+   image (3d_render_01_front_nobg.png) — a transparent-background cutout,
+   so no edge mask/fade needed, with a dark scrim on top for legibility. */
+.molosoc-final-cta__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-final-cta__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.6;
+}
+
+.molosoc-final-cta__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.6) 0%,
+    rgba(12, 17, 21, 0.75) 100%
+  );
+}
+
+.molosoc-final-cta .molosoc-section__inner {
+  position: relative;
+  z-index: 2;
 }
 
 .molosoc-final-cta h2 {

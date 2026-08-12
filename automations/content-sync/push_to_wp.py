@@ -23,14 +23,30 @@ content...
 
 import os
 import sys
+import time
 import argparse
 import requests
 import frontmatter
 import markdown as md
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
 WP_USER = os.environ.get("WP_USER", "")
 WP_APP_PASSWORD = os.environ.get("WP_APP_PASSWORD", "")
+
+# The host has been observed rate-limiting/blocking bursts of rapid REST calls
+# (each page push makes several lookups in quick succession). Retry with
+# backoff on connection failures and 429/5xx before giving up.
+_session = requests.Session()
+_retry = Retry(
+    total=5,
+    backoff_factor=2,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET", "POST"],
+)
+_session.mount("https://", HTTPAdapter(max_retries=_retry))
+_session.mount("http://", HTTPAdapter(max_retries=_retry))
 
 
 def wp_auth():
@@ -42,12 +58,15 @@ def wp_auth():
     return (WP_USER, WP_APP_PASSWORD)
 
 
-def find_existing(post_type: str, slug: str):
-    """Look up an existing page/post by slug. Returns its ID or None."""
+def find_existing(post_type: str, slug: str, lang: str = None):
+    """Look up an existing page/post by slug, optionally filtered to a Polylang lang. Returns its ID or None."""
     endpoint = f"{WP_URL}/wp-json/wp/v2/{post_type}s"
-    resp = requests.get(
+    params = {"slug": slug, "status": "draft,publish,future"}
+    if lang:
+        params["lang"] = lang
+    resp = _session.get(
         endpoint,
-        params={"slug": slug, "status": "draft,publish,future"},
+        params=params,
         auth=wp_auth(),
         timeout=30,
     )
@@ -64,6 +83,9 @@ def push_file(path: str, force_status: str = "draft"):
     slug = meta.get("slug")
     post_type = meta.get("type", "page")
     meta_description = meta.get("meta_description", "")
+    lang = meta.get("lang")
+    parent_slug = meta.get("parent_slug")
+    translation_of_en_slug = meta.get("translation_of_en_slug")
 
     if not title or not slug:
         print(f"  SKIP {path}: frontmatter must include 'title' and 'slug'")
@@ -84,14 +106,29 @@ def push_file(path: str, force_status: str = "draft"):
     if meta_description:
         payload["meta"] = {"_yoast_wpseo_metadesc": meta_description}
 
-    existing_id = find_existing(post_type, slug)
+    if parent_slug:
+        parent_id = find_existing(post_type, parent_slug, lang=lang)
+        if parent_id:
+            payload["parent"] = parent_id
+        else:
+            print(f"  WARN {path}: parent_slug '{parent_slug}' (lang={lang}) not found yet — push it first")
+
+    if translation_of_en_slug:
+        en_id = find_existing(post_type, translation_of_en_slug)
+        if en_id:
+            payload["translations"] = {"en": en_id}
+        else:
+            print(f"  WARN {path}: translation_of_en_slug '{translation_of_en_slug}' not found — translation link skipped")
+
+    existing_id = find_existing(post_type, slug, lang=lang)
     endpoint = f"{WP_URL}/wp-json/wp/v2/{post_type}s"
+    lang_params = {"lang": lang} if lang else {}
 
     if existing_id:
-        resp = requests.post(f"{endpoint}/{existing_id}", json=payload, auth=wp_auth(), timeout=30)
+        resp = _session.post(f"{endpoint}/{existing_id}", json=payload, params=lang_params, auth=wp_auth(), timeout=30)
         action = "UPDATED"
     else:
-        resp = requests.post(endpoint, json=payload, auth=wp_auth(), timeout=30)
+        resp = _session.post(endpoint, json=payload, params=lang_params, auth=wp_auth(), timeout=30)
         action = "CREATED"
 
     if resp.status_code in (200, 201):

@@ -7,6 +7,13 @@ writes one row per attachment: id, filename, source_url, media_type,
 mime_type, alt_text, date.
 
 Read-only — never modifies anything in WordPress.
+
+alt_text is merged with whatever the output CSV already has, not
+overwritten: this sheet is where descriptions actually get curated by hand
+(WP's own alt_text field is usually left blank on upload), so if the API
+returns an empty alt_text for an id already present in the existing CSV, the
+existing description is kept. Only ids the API reports as genuinely
+non-empty override what's on disk.
 """
 
 import csv
@@ -57,9 +64,17 @@ def fetch_all_media():
     return items
 
 
+def load_existing_alt_text(path):
+    if not os.path.exists(path):
+        return {}
+    with open(path, newline="") as f:
+        return {row["id"]: row["alt_text"] for row in csv.DictReader(f) if row.get("alt_text")}
+
+
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "media-library.csv"
 
+    existing_alt_text = load_existing_alt_text(out_path)
     items = fetch_all_media()
     print(f"Found {len(items)} media item(s) at {WP_URL}")
 
@@ -67,13 +82,15 @@ def main():
         writer = csv.writer(f)
         writer.writerow(["id", "filename", "source_url", "media_type", "mime_type", "alt_text", "date"])
         for item in items:
+            item_id = str(item.get("id"))
+            alt_text = item.get("alt_text") or existing_alt_text.get(item_id, "")
             writer.writerow([
-                item.get("id"),
+                item_id,
                 os.path.basename(item.get("source_url", "")),
                 item.get("source_url", ""),
                 item.get("media_type", ""),
                 item.get("mime_type", ""),
-                item.get("alt_text", ""),
+                alt_text,
                 item.get("date", ""),
             ])
 

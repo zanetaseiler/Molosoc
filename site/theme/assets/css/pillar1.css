@@ -1,0 +1,745 @@
+/*
+  Molosoc — Pillar 1 ("Cracked Heels", molosoc.com/cracked-heels/) layout.
+  Content/structure source: content/molosoc-site/04-pillar1-cracked-heels/
+  pillar1-cracked-heels-copy.md — headings/H2/H3 order and copy are locked,
+  see docs/site-structure.md §7 "Pillar 1 — Cracked Heels".
+
+  Five sections, each carrying one of the site's five documented animation
+  skills so the page reads as varied rather than one effect repeated down
+  the page:
+    1. Hero                              → hero-breathing-zoom
+    2. What causes cracked heels         → fixed-image-text-reveal
+    3. When it goes from dry to painful  → editorial-feature-reveal
+    4. Why moisturizer alone doesn't fix it → orbit-scroll-drawer
+    5. Go deeper / final CTA             → luxury-wellness-editorial-system
+       (static, restrained — "deliberately un-animated content is a valid
+       choice" per that skill's §12; this is the page's own closing beat,
+       not a place to force a sixth effect)
+
+  Page-specific layout only — this page doesn't load category.css or
+  product.css, so any generic mechanic it reuses (fixed-image-text-reveal's
+  .molosoc-sequential-stage, the topic-grid cards) is either duplicated here
+  under the same class names the shared JS expects, or pulled from
+  components.css, which this page does load (see functions.php enqueue).
+*/
+
+/* ============================================================= */
+/* 1. HERO — hero-breathing-zoom                                  */
+/* .claude/skills/hero-breathing-zoom — full-bleed photo, bottom- */
+/* aligned content, gradient scrim, continuous 100%->106% breathe. */
+/* ============================================================= */
+
+.molosoc-pillar-hero {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.molosoc-pillar-hero__media {
+  position: absolute;
+  inset: 0;
+}
+
+.molosoc-pillar-hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 70%;
+  transform: scale(1);
+}
+
+/* 9s/leg, symmetric ease-in-out, alternate — calibrated values from the
+   homepage's own .molosoc-hero-breathe (see homepage.css). A front-loaded
+   reveal easing visibly finishes early and sits motionless for the rest of
+   a duration this long; a plain symmetric curve spreads the motion evenly
+   across each leg so every reversal decelerates smoothly into it. */
+@keyframes molosoc-pillar-hero-breathe {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+
+/* 4.5s/leg — faster than the homepage's calibrated 9s/leg baseline, per
+   explicit request for this hero specifically. Still the same symmetric
+   ease-in-out/alternate pairing (see the comment above) so it stays a
+   smooth breathe rather than a snap, just a quicker one. */
+.molosoc-pillar-hero.is-visible .molosoc-pillar-hero__media img {
+  animation: molosoc-pillar-hero-breathe 4.5s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-pillar-hero__media img {
+    animation: none;
+    transform: none;
+  }
+}
+
+.molosoc-pillar-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.05) 0%,
+    rgba(12, 17, 21, 0.12) 40%,
+    rgba(12, 17, 21, 0.4) 68%,
+    rgba(12, 17, 21, 0.6) 100%
+  );
+}
+
+/* Padded directly off the viewport edge (no max-width/auto-margin
+   centering wrapper) — same convention as category.css's
+   .molosoc-category-hero__text and the site header. The earlier
+   max-width:72rem + margin:0 auto version double-inset the text on wide
+   viewports (centering the 72rem box, THEN padding inside it), landing it
+   noticeably right of where the header logo and every other section's
+   left edge sits — this fixes it back to the same left edge. */
+.molosoc-pillar-hero__text {
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--section-padding-x) var(--space-2xl);
+  color: var(--color-white);
+}
+
+.molosoc-pillar-hero__text .molosoc-eyebrow {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.molosoc-pillar-hero__text h1 {
+  color: var(--color-white);
+  max-width: 44rem;
+  margin-top: var(--space-2xs);
+}
+
+.molosoc-pillar-hero__text p {
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 34rem;
+  margin-top: var(--space-m);
+  font-size: var(--text-body-l);
+}
+
+/* ============================================================= */
+/* 2. WHAT CAUSES CRACKED HEELS — fixed-image-text-reveal          */
+/* ~/.claude/skills/fixed-image-text-reveal — photo stays          */
+/* completely static; 3 H3 causes slide in one per scroll step.    */
+/* Same class names assets/js/sequential-text-reveal.js already    */
+/* looks for (that script is page-agnostic — it just needs these   */
+/* classes to exist on the page), duplicated here rather than      */
+/* shared via category.css since this page doesn't load that file. */
+/* ============================================================= */
+
+.molosoc-sequential-heading {
+  background: var(--color-bg);
+  padding: var(--space-xl) var(--section-padding-x) var(--space-m);
+}
+
+.molosoc-sequential-heading__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-sequential-stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-start;
+  background: var(--color-bg);
+  padding: var(--space-l) var(--section-padding-x);
+}
+
+.molosoc-sequential-stage__inner {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.molosoc-sequential-entrance--text {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .molosoc-sequential-stage {
+    height: auto;
+    padding-top: var(--space-l);
+    padding-bottom: var(--space-l);
+  }
+}
+
+.molosoc-argument {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: var(--space-l) var(--space-xl);
+  margin-top: var(--space-m);
+  align-items: start;
+}
+
+.molosoc-argument__media .molosoc-media {
+  aspect-ratio: 4 / 5;
+  max-height: calc(100vh - 11rem);
+  margin-left: auto;
+  border-radius: 0;
+}
+
+/* This photo is never given its own scale/fade entrance — see the skill's
+   §4/§9: an animated image on a rounded/overflow-hidden wrapper produces a
+   visible edge-clipping artifact mid-transition. Sharp corners (above) sidestep
+   the artifact entirely, and no reveal class is ever added to this element. */
+.molosoc-argument__media .molosoc-media:hover img {
+  transform: none;
+}
+
+.molosoc-argument__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.molosoc-argument__item h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-argument__item p {
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 860px) {
+  .molosoc-argument {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================= */
+/* 3. WHEN CRACKED HEELS GO FROM DRY TO PAINFUL — editorial-feature-reveal */
+/* ~/.claude/skills/editorial-feature-reveal — Image A holds static,       */
+/* a clean circular mask opens to Image B in the same crop, then 3 cards   */
+/* emerge from center to their own tiered positions. Adapted from          */
+/* category.css's .molosoc-who-section — same mechanics, new selector      */
+/* names (assets/js/severity-reveal.js) since this is a different stage.   */
+/* ============================================================= */
+
+.molosoc-severity-section {
+  position: relative;
+}
+
+.molosoc-severity-section__stage {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--color-ink-warm);
+}
+
+.molosoc-severity-section__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-severity-section__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.molosoc-severity-section__bg--a {
+  /* Camera-iris reveal only — plain circular mask, no distortion/blur (see
+     the skill's §3: an organic/displaced edge was tried elsewhere on a
+     sibling pattern and explicitly reverted for reading as "smeared," not
+     premium). --severity-hole defaults to a fully-open mask — the no-JS/
+     reduced-motion baseline; severity-reveal.js pulls it to 0 at startup
+     and grows it back on scroll, never the reverse. */
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--severity-hole, 200vmax),
+    black calc(var(--severity-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+  mask-image: radial-gradient(
+    circle at 50% 50%,
+    transparent 0,
+    transparent var(--severity-hole, 200vmax),
+    black calc(var(--severity-hole, 200vmax) + 1.5px),
+    black 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-severity-section__bg--a {
+    display: none;
+  }
+}
+
+.molosoc-severity-section__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(36, 29, 23, 0.7) 0%,
+    rgba(36, 29, 23, 0.25) 30%,
+    rgba(36, 29, 23, 0.25) 72%,
+    rgba(36, 29, 23, 0.78) 100%
+  );
+}
+
+.molosoc-severity-section__heading {
+  position: absolute;
+  inset: var(--space-l) var(--section-padding-x) auto;
+  z-index: 2;
+}
+
+.molosoc-severity-section__heading .molosoc-eyebrow {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.molosoc-severity-section__heading h2 {
+  color: var(--color-white);
+  max-width: 34rem;
+}
+
+.molosoc-severity-cards {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Premium/tactile card surface — pure white, warm hairline border, soft
+   radius, layered shadow (skill §6). Kept as its own class rather than
+   reusing category.css's .molosoc-who-card, since this page doesn't load
+   that file. */
+.molosoc-severity-card {
+  position: absolute;
+  pointer-events: auto;
+  display: block;
+  background: var(--color-white);
+  border: 1px solid #ece8e2;
+  border-radius: 13px;
+  padding: var(--space-s) var(--space-m);
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    0 8px 20px -12px rgba(12, 17, 21, 0.1),
+    0 24px 48px -28px rgba(12, 17, 21, 0.12);
+  text-decoration: none;
+  color: var(--color-text);
+  /* Hover lift is GSAP-driven (severity-reveal.js), not CSS — GSAP writes
+     translate/scale as inline styles once a card's entrance has run, and
+     an inline style always beats a class rule for the same property. Only
+     box-shadow transitions through plain CSS here. */
+  transition: box-shadow var(--motion-duration-s) var(--motion-ease);
+  opacity: 1;
+  transform: none;
+}
+
+.molosoc-severity-card:hover {
+  box-shadow:
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 14px 28px -14px rgba(12, 17, 21, 0.14),
+    0 32px 64px -32px rgba(12, 17, 21, 0.16);
+}
+
+.molosoc-severity-card h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-severity-card p {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+/* Tiered, hand-placed composition (not a grid) — two cards on an upper-
+   middle tier, one centered on a bottom tier resolving the Z-pattern,
+   center of the frame left open so the photo keeps its own focal point.
+   Tier pushed down from an earlier 18-22% pass — the heading block (H2 +
+   eyebrow, top-anchored, up to 3 lines at this width) runs to roughly 35%
+   of the stage height, and at 18-22% these two cards were landing right on
+   top of it instead of below it. */
+.molosoc-severity-card--1 {
+  top: 44%;
+  left: 6%;
+  width: clamp(14rem, 22vw, 17rem);
+}
+
+.molosoc-severity-card--2 {
+  top: 40%;
+  right: 6%;
+  width: clamp(14rem, 22vw, 17rem);
+}
+
+.molosoc-severity-card--3 {
+  bottom: 12%;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  width: clamp(16rem, 26vw, 20rem);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  /* severity-reveal.js skips the pin below this width — plain stacked
+     fallback, same convention as category.css's .molosoc-who-section. */
+  .molosoc-severity-section__stage {
+    height: auto;
+  }
+
+  .molosoc-severity-section__media {
+    position: relative;
+    height: 70vh;
+  }
+
+  .molosoc-severity-section__bg--a {
+    display: none;
+  }
+
+  /* .molosoc-severity-section__scrim is position: absolute; inset: 0 —
+     on desktop that only ever covers the 100vh stage/photo it's meant to
+     darken for legible overlaid white text. On mobile the heading/cards
+     drop out of that overlay into normal static flow below the photo, so
+     the section (and the scrim stretching to match it via inset: 0)
+     grows much taller — painting the scrim's dark gradient behind the
+     stacked heading/cards too, where it was never meant to reach. Hidden
+     here since it's redundant anyway once the heading isn't sitting on
+     top of the photo. */
+  .molosoc-severity-section__scrim {
+    display: none;
+  }
+
+  .molosoc-severity-section__heading {
+    position: static;
+    padding: var(--space-l) var(--section-padding-x) 0;
+  }
+
+  /* .molosoc-severity-section__stage keeps its own dark
+     background: var(--color-ink-warm) at every width (no override
+     above) — it's not just the photo's backdrop, it's the section's
+     actual color. The heading/eyebrow were switched to dark ink here,
+     apparently assuming they'd land on a plain light background once
+     static — they don't; they sit on that same dark stage color, same
+     as desktop, so dark-on-dark was nearly unreadable (confirmed via an
+     actual mobile screenshot). Simplest correct fix: keep them white,
+     matching the stage they actually sit on — not a background change. */
+
+  .molosoc-severity-cards {
+    position: static;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    padding: var(--space-l) var(--section-padding-x);
+    pointer-events: auto;
+  }
+
+  .molosoc-severity-card,
+  .molosoc-severity-card--1,
+  .molosoc-severity-card--2,
+  .molosoc-severity-card--3 {
+    position: static;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    text-align: left;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============================================================= */
+/* 4. WHY MOISTURIZER ALONE DOESN'T FIX IT — orbit-scroll-drawer  */
+/* .claude/skills/orbit-scroll-drawer — the molosoc-3d.glb model  */
+/* keeps rotating (its own auto-rotate, untouched by this script) */
+/* while it fades/blurs and a glass drawer carrying the 3 H3s      */
+/* slides up over it. Framed as the page's "here's the actual      */
+/* mechanism" bridge into the product, not as a hero — this exact  */
+/* glass-over-model treatment was tried and reverted for the        */
+/* PRODUCT page's own hero (see product.css's file-header comment); */
+/* using it here, mid-article, as a distinct transitional beat is   */
+/* a different placement, not a re-litigation of that call.         */
+/* ============================================================= */
+
+.molosoc-mechanism-section {
+  position: relative;
+  height: 220vh; /* real scroll distance for the fade/blur/slide to play across */
+  /* Reversed per explicit request — white background, black letters,
+     same fade/blur/slide animation untouched. Was var(--color-ink). */
+  background: var(--color-white);
+}
+
+.molosoc-mechanism-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  width: 100%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.molosoc-mechanism-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  opacity: var(--mech-opacity, 1);
+  filter: blur(var(--mech-blur, 0px));
+}
+
+/* Soft ink-toned shadow, not the silver glow this replaced — a light
+   glow disappears against the white background below, so this reads
+   as a gentle ambient shadow under the model instead. */
+.molosoc-mechanism-glow {
+  position: absolute;
+  width: min(70vw, 46rem);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-ink-muted) 16%, transparent) 0%,
+    transparent 72%
+  );
+  filter: blur(60px);
+}
+
+.molosoc-mechanism-model {
+  position: relative;
+  width: min(72vw, 34rem);
+  height: min(72vw, 34rem);
+  --poster-color: transparent;
+  background-color: transparent;
+  /* model-viewer's own default loading progress bar is a plain gray
+     horizontal bar drawn across the canvas while the .glb streams in —
+     visible for a moment on page load, on top of the section, before
+     the model appears. Same transparent treatment as --poster-color. */
+  --progress-bar-color: transparent;
+  --progress-bar-height: 0px;
+}
+
+.molosoc-mechanism-intro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9vh;
+  margin: 0 auto;
+  max-width: 30rem;
+  text-align: center;
+  z-index: 1;
+  color: var(--color-ink);
+}
+
+.molosoc-mechanism-intro .molosoc-eyebrow {
+  color: color-mix(in srgb, var(--color-ink) 65%, transparent);
+}
+
+.molosoc-mechanism-drawer {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  margin-inline: auto;
+  max-width: min(94vw, 66rem);
+  border-radius: 22px 22px 0 0;
+  background: color-mix(in srgb, var(--color-white) 78%, transparent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+  border-bottom: none;
+  padding: var(--space-l) var(--space-l) var(--space-m);
+  color: var(--color-ink);
+  /* Defaults (--drawer-opacity:1, --drawer-offset:0) are the settled,
+     fully-visible state — the no-JS/reduced-motion baseline. JS pulls it
+     down off-screen at scroll-progress 0 and eases it back on scroll. */
+  transform: translateY(var(--drawer-offset, 0px));
+  opacity: var(--drawer-opacity, 1);
+}
+
+.molosoc-mechanism-drawer h2 {
+  color: var(--color-ink);
+  max-width: 30rem;
+}
+
+.molosoc-mechanism-drawer > p {
+  color: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  margin-top: var(--space-xs);
+  max-width: 34rem;
+}
+
+.molosoc-mechanism-drawer__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+}
+
+.molosoc-mechanism-drawer__cards article {
+  background: color-mix(in srgb, var(--color-ink) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+  border-radius: var(--radius-m);
+  padding: var(--space-m);
+}
+
+.molosoc-mechanism-drawer__cards h3 {
+  font-size: var(--text-body-l);
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-mechanism-drawer__cards p {
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+  font-size: var(--text-body);
+  max-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-mechanism-stage {
+    opacity: 1;
+    filter: none;
+  }
+}
+
+/* Mobile — skip the pin/scroll-drive entirely (skill §6): plain static
+   stack, model still auto-rotating (cheap CSS-free — model-viewer's own
+   attribute) behind a non-glass, non-blurred content block in normal flow. */
+@media (max-width: 760px) {
+  .molosoc-mechanism-section {
+    height: auto;
+    padding: var(--space-xl) 0 0;
+  }
+
+  .molosoc-mechanism-pin {
+    position: relative;
+    height: auto;
+    flex-direction: column;
+    padding-top: var(--space-l);
+  }
+
+  .molosoc-mechanism-stage {
+    position: relative;
+    height: 20rem;
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  .molosoc-mechanism-model {
+    width: min(80vw, 22rem);
+    height: min(80vw, 22rem);
+  }
+
+  .molosoc-mechanism-intro {
+    position: relative;
+    top: auto;
+    padding: 0 var(--section-padding-x);
+  }
+
+  .molosoc-mechanism-drawer {
+    position: relative;
+    inset: auto;
+    border-radius: 0;
+    background: var(--color-white);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    transform: none !important;
+    opacity: 1 !important;
+    padding: var(--space-l) var(--section-padding-x);
+  }
+
+  .molosoc-mechanism-drawer__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================= */
+/* 5. GO DEEPER — static, luxury-wellness-editorial-system         */
+/* Reuses components.css's .molosoc-topic-grid/.molosoc-topic-card */
+/* (already the site's "educational content beat" component) —     */
+/* deliberately un-animated: per that skill's §12, a slow, already- */
+/* spaced editorial list right after an elaborate scroll sequence   */
+/* reads better fully static than with an added reveal competing    */
+/* with what just happened. ---------- */
+/* ============================================================= */
+
+.molosoc-pillar-go-deeper {
+  background: var(--color-bg);
+}
+
+/* ============================================================= */
+/* FINAL CTA — deep-links to the Product page's Persona 2 proof    */
+/* section (per docs/site-structure.md §7's "Deep-links to" note). */
+/* Same dark-photo-background + scrim convention as category.css's */
+/* .molosoc-category-final-cta, kept static (molosoc-reveal only)  */
+/* rather than reusing hero-breathing-zoom a second time — one      */
+/* ambient-motion moment per page reads as considered, two reads as */
+/* a mannerism. ---------- */
+/* ============================================================= */
+
+.molosoc-pillar-final-cta {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  color: var(--color-white);
+  background: var(--color-ink);
+}
+
+.molosoc-pillar-final-cta__media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.molosoc-pillar-final-cta__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+}
+
+.molosoc-pillar-final-cta__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(12, 17, 21, 0.55) 0%,
+    rgba(12, 17, 21, 0.8) 100%
+  );
+}
+
+.molosoc-pillar-final-cta .molosoc-section__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 34rem;
+}
+
+.molosoc-pillar-final-cta .molosoc-eyebrow {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.molosoc-pillar-final-cta h2 {
+  color: var(--color-white);
+}
+
+.molosoc-pillar-final-cta p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: var(--space-m) auto 0;
+  max-width: 30rem;
+}
+
+.molosoc-pillar-final-cta .molosoc-btn {
+  margin-top: var(--space-l);
+}

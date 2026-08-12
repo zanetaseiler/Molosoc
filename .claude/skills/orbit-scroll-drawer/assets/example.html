@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Orbit Scroll Drawer — reference example</title>
+<style>
+  :root {
+    --bg: #150c22;
+    --surface: #1f1430;
+    --ink: #f3edff;
+    --muted: #b9a9d6;
+    --accent: #b98cff;
+    --serif: 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: ui-monospace, 'SF Mono', 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); }
+
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 32px; font-family: var(--mono); font-size: 13px;
+    color: var(--muted); pointer-events: none;
+  }
+  .topnav .brand { color: var(--ink); letter-spacing: 0.02em; }
+
+  /* ---------- pinned hero/orbit section ---------- */
+  .orbit-section {
+    position: relative;
+    height: 220vh; /* extra scroll distance for the transition to play against */
+  }
+  .orbit-pin {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .orbit-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: var(--orbit-opacity, 1);
+    filter: blur(var(--orbit-blur, 0px));
+    will-change: opacity, filter;
+  }
+  .orbit-rings { width: min(64vw, 620px); height: auto; }
+  .ring {
+    fill: none;
+    stroke: color-mix(in srgb, var(--accent) 65%, white);
+    stroke-width: 1.4;
+    opacity: 0.55;
+    transform-origin: 300px 300px;
+  }
+  .ring--1 { animation: orbit-spin 40s linear infinite; }
+  .ring--2 { animation: orbit-spin 26s linear infinite reverse; }
+  .ring--3 { animation: orbit-spin 60s linear infinite; }
+  .orbit-core { animation: orbit-pulse 5s ease-in-out infinite; }
+  @keyframes orbit-spin { to { transform: rotate(360deg); } }
+  @keyframes orbit-pulse {
+    0%, 100% { filter: drop-shadow(0 0 16px var(--accent)); }
+    50%      { filter: drop-shadow(0 0 32px var(--accent)); }
+  }
+
+  .orbit-hero-copy {
+    position: absolute;
+    left: 6vw;
+    top: 22vh;
+    max-width: 480px;
+    opacity: var(--hero-copy-opacity, 1);
+    transition: opacity 0.1s linear;
+  }
+  .orbit-hero-copy h1 {
+    font-family: var(--serif);
+    font-size: clamp(34px, 5vw, 56px);
+    line-height: 1.05;
+    margin: 0 0 12px;
+  }
+  .orbit-hero-copy p { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* ---------- drawer ---------- */
+  .orbit-drawer {
+    position: absolute;
+    inset: auto 0 6vh 0;
+    margin-inline: auto;
+    width: min(90vw, 980px);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+    backdrop-filter: blur(26px);
+    -webkit-backdrop-filter: blur(26px);
+    border: 1px solid color-mix(in srgb, white 12%, transparent);
+    padding: 40px;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.6);
+    transform: translateY(var(--drawer-offset, 60px));
+    opacity: var(--drawer-opacity, 0);
+    will-change: transform, opacity;
+  }
+  .orbit-drawer h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 26px;
+    margin: 0 0 14px;
+  }
+  .drawer-top { display: flex; justify-content: space-between; gap: 40px; flex-wrap: wrap; }
+  .drawer-top p { color: var(--muted); font-size: 13.5px; line-height: 1.6; max-width: 380px; margin: 0 0 16px; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--ink); color: var(--bg);
+    font-size: 13px; font-weight: 600;
+    padding: 10px 18px; border-radius: 999px;
+    text-decoration: none;
+  }
+  .drawer-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .drawer-cards article {
+    background: color-mix(in srgb, white 6%, transparent);
+    border: 1px solid color-mix(in srgb, white 10%, transparent);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .drawer-cards .idx { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .drawer-cards h3 { font-size: 15px; margin: 8px 0 8px; }
+  .drawer-cards p { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+
+  @media (max-width: 760px) {
+    .drawer-cards { grid-template-columns: 1fr; }
+    .orbit-hero-copy { left: 5vw; right: 5vw; max-width: none; }
+  }
+
+  /* ---------- next section, just to give scroll somewhere to go ---------- */
+  .next-section {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 10vh 8vw;
+    background: var(--bg);
+  }
+  .next-section h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(28px, 4.5vw, 46px);
+    max-width: 820px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .next-section h2 span { color: var(--ink); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring, .orbit-core { animation: none !important; }
+    .orbit-stage { opacity: 0.3 !important; filter: none !important; }
+    .orbit-drawer { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topnav">
+    <span class="brand">DE&lt;/HELPERS</span>
+    <span>About · Our cases · Services · Prices</span>
+  </div>
+
+  <section class="orbit-section" id="orbit-section">
+    <div class="orbit-pin">
+      <div class="orbit-stage" id="orbitStage">
+        <svg class="orbit-rings" viewBox="0 0 600 600" aria-hidden="true">
+          <defs>
+            <radialGradient id="orbit-core-gradient" cx="35%" cy="35%">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="45%" stop-color="var(--accent)" />
+              <stop offset="100%" stop-color="color-mix(in srgb, var(--accent) 40%, black)" />
+            </radialGradient>
+          </defs>
+          <circle class="ring ring--1" cx="300" cy="300" r="220" />
+          <circle class="ring ring--2" cx="300" cy="300" r="170" />
+          <circle class="ring ring--3" cx="300" cy="300" r="120" />
+          <circle class="orbit-core" cx="300" cy="300" r="42" fill="url(#orbit-core-gradient)" />
+        </svg>
+      </div>
+
+      <div class="orbit-hero-copy" id="heroCopy">
+        <h1>Outsourced<br />development<br />team</h1>
+        <p>Built off-site. Feels in-house.</p>
+      </div>
+
+      <div class="orbit-drawer" id="orbitDrawer">
+        <div class="drawer-top">
+          <h2>About our team</h2>
+          <div>
+            <p>We're a remote-first dev team that speaks the language of both startups and enterprise. From rapid prototyping to scalable architecture — we translate your vision into clean, elegant code.</p>
+            <a class="cta" href="#">Work with us →</a>
+          </div>
+        </div>
+        <div class="drawer-cards">
+          <article>
+            <div class="idx">01</div>
+            <h3>Smart development</h3>
+            <p>We're not just coders — we solve problems. Fast, scalable, future-proof solutions tailored to your needs.</p>
+          </article>
+          <article>
+            <div class="idx">02</div>
+            <h3>Super-fast delivery</h3>
+            <p>We deliver MVPs in weeks, not months. Agile workflows and zero overhead mean you move faster than your competitors.</p>
+          </article>
+          <article>
+            <div class="idx">03</div>
+            <h3>Global &amp; synced</h3>
+            <p>Remote doesn't mean distant. Our team works across time zones with seamless communication and reliable updates.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="next-section">
+    <h2>You don't need to see us <span>to know we're working.</span></h2>
+  </section>
+
+  <script>
+    (function () {
+      var prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) return; // CSS above already renders the finished state
+
+      if (window.innerWidth <= 760) return; // mobile: plain static stack, no scroll-driven effect
+
+      var section = document.getElementById("orbit-section");
+      var stage = document.getElementById("orbitStage");
+      var drawer = document.getElementById("orbitDrawer");
+      var heroCopy = document.getElementById("heroCopy");
+
+      function clamp01(n) { return Math.max(0, Math.min(1, n)); }
+
+      function getProgress() {
+        var rect = section.getBoundingClientRect();
+        var total = section.offsetHeight - window.innerHeight;
+        if (total <= 0) return 1;
+        return clamp01(-rect.top / total);
+      }
+
+      var ticking = false;
+      function update() {
+        ticking = false;
+        var p = getProgress();
+
+        // Orbit fades toward ~25% opacity and blurs, but is never fully invisible
+        // or paused — it keeps spinning behind the glass drawer the whole time.
+        stage.style.setProperty("--orbit-opacity", (1 - p * 0.75).toFixed(3));
+        stage.style.setProperty("--orbit-blur", (p * 10).toFixed(2) + "px");
+
+        // Hero copy recedes as the drawer takes over.
+        heroCopy.style.setProperty("--hero-copy-opacity", (1 - p * 1.4).toFixed(3));
+
+        // Drawer slides up and fades in over the same progress.
+        drawer.style.setProperty("--drawer-opacity", p.toFixed(3));
+        drawer.style.setProperty("--drawer-offset", (60 - p * 60).toFixed(1) + "px");
+      }
+
+      function onScroll() {
+        if (!ticking) {
+          requestAnimationFrame(update);
+          ticking = true;
+        }
+      }
+
+      window.addEventListener("scroll", onScroll, { passive: true });
+      update();
+    })();
+  </script>
+</body>
+</html>

@@ -11,7 +11,14 @@ on:
     paths:
       - "seo/pillars/**.md"
       - "seo/spokes/**.md"
+      - "seo/cz-pages/**.md"
       - "content/**.md"
+  workflow_dispatch:
+    inputs:
+      files:
+        description: "Space-separated markdown file paths to push (for manual retries without a new commit)"
+        required: true
+        type: string
 
 jobs:
   push-drafts:
@@ -31,15 +38,25 @@ jobs:
 
       - name: Find changed markdown files
         id: changed
+        if: github.event_name == 'push'
         run: |
-          FILES=$(git diff --name-only HEAD^ HEAD -- 'seo/pillars/*.md' 'seo/spokes/*.md' 'content/*.md' | tr '\n' ' ')
+          FILES=$(git diff --name-only HEAD^ HEAD -- 'seo/pillars/*.md' 'seo/spokes/*.md' 'seo/cz-pages/*.md' 'content/*.md' | tr '\n' ' ')
           echo "files=$FILES" >> "$GITHUB_OUTPUT"
 
       - name: Push changed drafts to WordPress
-        if: steps.changed.outputs.files != ''
+        if: github.event_name == 'push' && steps.changed.outputs.files != ''
         env:
           WP_URL: ${{ secrets.WP_URL }}
           WP_USER: ${{ secrets.WP_USER }}
           WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
         run: |
           python3 automations/content-sync/push_to_wp.py ${{ steps.changed.outputs.files }} --status draft
+
+      - name: Push manually specified drafts to WordPress
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          python3 automations/content-sync/push_to_wp.py ${{ inputs.files }} --status draft

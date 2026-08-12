@@ -1,14 +1,15 @@
 name: Deploy Theme to Staging
 
-# Auto-deploys the WP child theme to staging on every push to `staging`.
-# Only syncs site/theme/ — never the whole WordPress install, so uploads,
-# order data, and plugin files on the server are untouched.
+# Auto-deploys the Molosoc standalone theme to staging on every push to
+# `staging`. Only syncs site/theme/ — never the whole WordPress install, so
+# uploads, order data, and plugin files on the server are untouched.
 
 on:
   push:
     branches: [staging]
     paths:
       - "site/theme/**"
+  workflow_dispatch: {}
 
 jobs:
   deploy:

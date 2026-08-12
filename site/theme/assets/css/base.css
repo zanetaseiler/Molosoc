@@ -6,14 +6,16 @@
   box-sizing: border-box;
 }
 
+/* Deliberately not scroll-behavior: smooth — this page's GSAP ScrollTrigger
+   pins (merge-transition.js, topics-portal.js) call refresh() to stay in
+   sync with async layout changes (lazy images, etc.), and refresh() does
+   its own internal scroll measurements; smooth-scroll animates those
+   instead of landing instantly, so ScrollTrigger samples an in-flight
+   scroll position and caches badly-drifted start/end values for every
+   pin on the page — confirmed as the cause of pinned sections rendering
+   at the wrong scroll offset or going blank. */
 html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+  scroll-behavior: auto;
 }
 
 body {
@@ -52,6 +54,81 @@ p {
 
 a {
   color: inherit;
+}
+
+/* Container fallback for anything NOT using a bespoke page-*.php
+   template's own .molosoc-section/.molosoc-section__inner pattern —
+   WooCommerce's default single-product/shop/cart/checkout markup
+   (#primary.content-area) and this theme's own generic fallback
+   template for blog posts/search/404 (index.php's .molosoc-main) never
+   had any container styling at all, so they rendered completely
+   edge-to-edge at full viewport width (confirmed: max-width:none,
+   zero padding, on a live product page) instead of the same centered,
+   gutter-padded column every other page on the site uses. Same
+   max-width token + centering as .molosoc-section__inner
+   (components.css), with the horizontal padding folded in directly
+   since these wrappers have no separate outer .molosoc-section to
+   supply it. */
+#primary.content-area,
+.molosoc-main {
+  max-width: var(--content-max-width-wide);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-m) var(--section-padding-x);
+  box-sizing: border-box;
+}
+
+/* h1/h2/h3 site-wide (above) are sized for hero-scale marketing pages —
+   --text-display-xl on an h1 is ~88px, which is correct for a pillar
+   hero but wildly oversized for a plain WooCommerce product title or a
+   blog post heading sitting in normal content flow. Scale down inside
+   this same fallback container only; bespoke page-*.php templates never
+   use a bare <h1> this way, so they're unaffected. */
+#primary.content-area h1,
+.molosoc-main h1 {
+  font-size: var(--text-display-m);
+}
+
+/* the_content() output (index.php's fallback template — legal pages,
+   blog posts, anything without a bespoke page-*.php) had zero styling
+   anywhere: no paragraph/heading spacing, no list markers, no readable
+   line length. Every bespoke template hardcodes its own markup instead
+   of calling the_content(), so this never surfaced until real Page
+   content (legal/shipping/refund policies) needed to render here. */
+.molosoc-entry-content {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+}
+
+.molosoc-entry-content h2 {
+  font-size: var(--text-display-m);
+  margin-top: var(--space-l);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-entry-content h3 {
+  margin-top: var(--space-m);
+  margin-bottom: var(--space-3xs);
+}
+
+.molosoc-entry-content p {
+  max-width: none;
+  margin-bottom: var(--space-s);
+}
+
+.molosoc-entry-content ul,
+.molosoc-entry-content ol {
+  margin: 0 0 var(--space-s);
+  padding-left: 1.25em;
+}
+
+.molosoc-entry-content li {
+  margin-bottom: var(--space-3xs);
+}
+
+.molosoc-entry-content a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .molosoc-eyebrow {

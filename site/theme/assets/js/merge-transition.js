@@ -28,6 +28,18 @@
     return;
   }
 
+  // Same mobile cutoff as every other pinned sequence on this site
+  // (sequential-text-reveal.js, who-reveal.js, topics-portal.js) — this
+  // was the one script missing it. Below this width the tiles' own
+  // background-size: 200% 100% (built for the pull-apart/merge motion)
+  // stretches the source photo to fill min-height: 100svh, which on a
+  // narrow, tall mobile viewport is a far more extreme aspect ratio than
+  // the photo itself, causing visible distortion for the whole scroll —
+  // skipping the pin here leaves the section in its static, correctly-
+  // reconstructed resting state instead (see homepage.css's own
+  // mobile override for the matching CSS half of this fix).
+  if (window.innerWidth <= 760) return;
+
   var section = document.querySelector(".molosoc-merge-section");
   if (!section) return;
 

@@ -21,6 +21,10 @@ on:
       title:
         description: "Page title to show in wp-admin"
         required: true
+      parent_slug:
+        description: "Parent page slug, for a spoke article nested under a pillar (e.g. ingrown-toenails). Leave blank for a top-level pillar."
+        required: false
+        default: ""
 
 jobs:
   create-page:
@@ -44,4 +48,5 @@ jobs:
         run: |
           python3 automations/content-sync/create_wp_page.py \
             --slug "${{ inputs.slug }}" \
-            --title "${{ inputs.title }}"
+            --title "${{ inputs.title }}" \
+            ${{ inputs.parent_slug != '' && format('--parent-slug "{0}"', inputs.parent_slug) || '' }}
