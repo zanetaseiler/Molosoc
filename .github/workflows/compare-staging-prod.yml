@@ -1,0 +1,112 @@
+name: Compare Staging vs Production (read-only)
+
+# Temporary, strictly read-only comparison of the WordPress content layer
+# (pages, posts, menus, media counts) between staging and production.
+# Makes zero writes to either environment. Safe to delete once the
+# migration plan is decided.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Staging — pages (all statuses)
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          echo "=== STAGING pages (status=any) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/pages?status=any&per_page=100&context=edit&_fields=id,slug,title,status,template,parent,menu_order,modified,meta" \
+            | python3 -m json.tool
+
+      - name: Staging — posts (all statuses)
+        if: always()
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          echo "=== STAGING posts (status=any) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/posts?status=any&per_page=100&context=edit&_fields=id,slug,title,status,modified" \
+            | python3 -m json.tool
+
+      - name: Staging — menus / menu-items / menu-locations
+        if: always()
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          echo "=== STAGING menus ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menus?context=edit" | python3 -m json.tool
+          echo "=== STAGING menu-locations ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menu-locations?context=edit" | python3 -m json.tool
+          echo "=== STAGING menu-items (all) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menu-items?per_page=100&context=edit&_fields=id,title,url,menus,menu_order,parent,object,object_id" | python3 -m json.tool
+
+      - name: Staging — media count + reading settings
+        if: always()
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          echo "=== STAGING media total (X-WP-Total header) ==="
+          curl -s -D - -o /dev/null -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/media?per_page=1" | grep -i "x-wp-total"
+          echo "=== STAGING reading settings (page_on_front etc) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/settings" | python3 -m json.tool
+
+      - name: Production — pages (all statuses)
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== PRODUCTION pages (status=any) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/pages?status=any&per_page=100&context=edit&_fields=id,slug,title,status,template,parent,menu_order,modified,meta" \
+            | python3 -m json.tool
+
+      - name: Production — posts (all statuses)
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== PRODUCTION posts (status=any) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/posts?status=any&per_page=100&context=edit&_fields=id,slug,title,status,modified" \
+            | python3 -m json.tool
+
+      - name: Production — menus / menu-items / menu-locations
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== PRODUCTION menus ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menus?context=edit" | python3 -m json.tool
+          echo "=== PRODUCTION menu-locations ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menu-locations?context=edit" | python3 -m json.tool
+          echo "=== PRODUCTION menu-items (all) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/menu-items?per_page=100&context=edit&_fields=id,title,url,menus,menu_order,parent,object,object_id" | python3 -m json.tool
+
+      - name: Production — media count + reading settings
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== PRODUCTION media total (X-WP-Total header) ==="
+          curl -s -D - -o /dev/null -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/media?per_page=1" | grep -i "x-wp-total"
+          echo "=== PRODUCTION reading settings (page_on_front etc) ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/settings" | python3 -m json.tool
