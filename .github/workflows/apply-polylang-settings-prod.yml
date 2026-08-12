@@ -5,6 +5,11 @@ name: Apply Polylang settings to Production (Step A)
 # _thumbnail_id] on production Polylang, matching staging. This is the
 # ONLY write this workflow performs. It prints the full settings object
 # before and after the change for the audit trail.
+#
+# Some runners are intermittently blocked by the host's firewall, so we
+# probe connectivity with retries FIRST and only write once a read
+# succeeds. If the runner never gets through, the job fails with no
+# write performed — just re-dispatch to get a different runner.
 
 on:
   workflow_dispatch: {}
@@ -23,18 +28,44 @@ jobs:
           BASE="${WP_URL%/}"
           AUTH="$WP_USER:$WP_APP_PASSWORD"
 
+          echo "=== PROBE: waiting for a working connection (read-only) ==="
+          BEFORE=""
+          for i in 1 2 3 4 5 6; do
+            BEFORE=$(curl -s -m 20 -u "$AUTH" "$BASE/wp-json/pll/v1/settings" || true)
+            if printf '%s' "$BEFORE" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if 'force_lang' in d else 1)" 2>/dev/null; then
+              echo "probe attempt $i: OK"
+              break
+            fi
+            echo "probe attempt $i: blocked/empty, retrying in 15s"
+            BEFORE=""
+            sleep 15
+          done
+          if [ -z "$BEFORE" ]; then
+            echo "::error::Runner cannot reach production (firewall block). NO WRITE was performed. Re-dispatch this workflow."
+            exit 1
+          fi
+
           echo "=== BEFORE: production pll/v1/settings ==="
-          curl -s -u "$AUTH" "$BASE/wp-json/pll/v1/settings" | python3 -m json.tool
+          printf '%s' "$BEFORE" | python3 -m json.tool
 
           echo "=== WRITE: POST pll/v1/settings ==="
-          curl -s -u "$AUTH" -X POST "$BASE/wp-json/pll/v1/settings" \
+          HTTP=$(curl -s -m 30 -u "$AUTH" -X POST "$BASE/wp-json/pll/v1/settings" \
             -H "Content-Type: application/json" \
             -d '{"browser": true, "sync": ["_wp_page_template", "_thumbnail_id"]}' \
-            -w "\nHTTP status: %{http_code}\n" | python3 -c "
-          import sys
-          body = sys.stdin.read()
-          print(body)
-          " || true
+            -o /tmp/write-response.json -w "%{http_code}")
+          echo "HTTP status: $HTTP"
+          python3 -m json.tool /tmp/write-response.json || cat /tmp/write-response.json
+          if [ "$HTTP" != "200" ]; then
+            echo "::error::Write returned HTTP $HTTP"
+            exit 1
+          fi
 
           echo "=== AFTER: production pll/v1/settings ==="
-          curl -s -u "$AUTH" "$BASE/wp-json/pll/v1/settings" | python3 -m json.tool
+          for i in 1 2 3; do
+            AFTER=$(curl -s -m 20 -u "$AUTH" "$BASE/wp-json/pll/v1/settings" || true)
+            if printf '%s' "$AFTER" | python3 -m json.tool 2>/dev/null; then
+              break
+            fi
+            echo "after-read attempt $i blocked, retrying in 15s"
+            sleep 15
+          done
