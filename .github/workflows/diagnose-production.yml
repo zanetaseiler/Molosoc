@@ -53,7 +53,7 @@ jobs:
           python3 -m json.tool < /tmp/wp_me.json || true
 
       - name: Create ONE draft test page (minimal end-to-end write test)
-        if: always()
+        if: false # skipped for this run — deleting the test page only, per request
         env:
           WP_URL: ${{ secrets.PROD_WP_URL }}
           WP_USER: ${{ secrets.PROD_WP_USER }}
@@ -81,3 +81,36 @@ jobs:
 
           echo "--- pretty (if valid JSON) ---"
           python3 -m json.tool < /tmp/wp_page_response.json || true
+
+      - name: Delete ONE specific test page (id 865 only)
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== DELETE /wp-json/wp/v2/pages/865?force=true ==="
+          HTTP_STATUS=$(curl -s -o /tmp/wp_delete_response.json -w "%{http_code}" \
+            -u "$WP_USER:$WP_APP_PASSWORD" \
+            -X DELETE \
+            "${WP_URL%/}/wp-json/wp/v2/pages/865?force=true")
+
+          echo "HTTP status: $HTTP_STATUS"
+          echo "--- raw body ---"
+          cat /tmp/wp_delete_response.json
+          echo ""
+
+          if [ "$HTTP_STATUS" = "403" ] && grep -qi "imunify" /tmp/wp_delete_response.json; then
+            echo "STOPPED: 403 from Imunify360 bot-protection. Not retrying."
+            exit 0
+          fi
+
+          echo "--- pretty (if valid JSON) ---"
+          python3 -m json.tool < /tmp/wp_delete_response.json || true
+
+          echo "=== Confirm page 865 no longer exists (GET, expect 404) ==="
+          CONFIRM_STATUS=$(curl -s -o /tmp/wp_confirm_response.json -w "%{http_code}" \
+            -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/pages/865?context=edit")
+          echo "Confirm GET HTTP status: $CONFIRM_STATUS"
+          cat /tmp/wp_confirm_response.json
