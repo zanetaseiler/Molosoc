@@ -1,0 +1,44 @@
+name: Diagnose Production (read-only)
+
+# Temporary, read-only diagnostic. Does NOT deploy, write, or modify
+# anything on the server or in WordPress. Two checks only:
+#   1. Dry-run reverse mirror (lftp --dry-run) comparing local site/theme/
+#      against the live /wp-content/themes/molosoc/ over SFTP, to report
+#      any file differences without transferring anything.
+#   2. GET (read-only) the WP REST API for the currently active theme.
+# Safe to delete once the mismatch is diagnosed.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare local theme files vs. live server (dry-run, no changes)
+        env:
+          SFTP_HOST: ${{ secrets.PROD_SFTP_HOST }}
+          SFTP_USER: ${{ secrets.PROD_SFTP_USER }}
+          SFTP_PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          echo "=== Dry-run diff: local site/theme/ vs remote /wp-content/themes/molosoc/ ==="
+          lftp -u "$SFTP_USER,$SFTP_PASS" -e "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            mirror --dry-run --reverse --verbose site/theme/ /wp-content/themes/molosoc/;
+            bye
+          " "$SFTP_HOST"
+
+      - name: Check active WordPress theme (read-only API call)
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== Active theme per WP REST API ==="
+          curl -s -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/wp/v2/themes?status=active" \
+            | python3 -m json.tool
