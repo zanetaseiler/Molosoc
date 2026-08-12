@@ -1,0 +1,23 @@
+{
+  "_comment": "Staging EN<->CZ translation pairs, derived read-only from staging front-end hreflang tags on 2026-08-12. Keys are staging page IDs. Legacy pages 20/22 already exist on production with the same IDs; all other pages must be created there first, then linked using the production IDs.",
+  "pairs": [
+    { "en": 953,  "cz": 1032, "en_slug": "blank-homepage",           "cz_slug": "molosoc-home-cestina" },
+    { "en": 949,  "cz": 1035, "en_slug": "foot-covers",              "cz_slug": "navleky-na-nohy" },
+    { "en": 951,  "cz": 1039, "en_slug": "moisture-lock-foot-cover", "cz_slug": "hydratacni-navlek-na-nohy" },
+    { "en": 982,  "cz": 1037, "en_slug": "cracked-heels",            "cz_slug": "popraskane-paty" },
+    { "en": 993,  "cz": 1038, "en_slug": "ingrown-toenails",         "cz_slug": "zarostly-nehet" },
+    { "en": 1001, "cz": 1036, "en_slug": "hardened-skin-calluses",   "cz_slug": "kurici-oko" },
+    { "en": 1011, "cz": 1040, "en_slug": "callus-remover",           "cz_slug": "jak-odstranit" },
+    { "en": 1025, "cz": 1061, "en_slug": "refund-policy",            "cz_slug": "vraceni-a-refundace" },
+    { "en": 1026, "cz": 1062, "en_slug": "shipping-policy",          "cz_slug": "zasady-dopravy" },
+    { "en": 22,   "cz": 1066, "en_slug": "privacy-policies",         "cz_slug": "zasady-ochrany-osobnich-udaju" },
+    { "en": 20,   "cz": 1067, "en_slug": "terms-of-services",        "cz_slug": "obchodni-podminky" }
+  ],
+  "cz_only": [
+    { "cz": 1041, "cz_slug": "na-chodidle", "note": "child of kurici-oko; no EN counterpart on staging" }
+  ],
+  "en_only_new_pages": [995, 1000, 1009, 1010, 1012, 1013, 1014, 1021],
+  "prod_rename_required": [
+    { "prod_id": 24, "from_slug": "blog", "to_slug": "blog-legacy-2018", "reason": "staging renamed it; frees slug 'blog' for new Blog page (staging 1021)" }
+  ]
+}

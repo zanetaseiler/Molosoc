@@ -1,0 +1,66 @@
+name: Export staging content for migration (read-only)
+
+# Strictly read-only export of the 29 new staging pages (full raw
+# content, meta, template, hierarchy) plus the complete staging media
+# metadata list. Uploads everything as a workflow artifact for the
+# staging->production migration. Makes zero writes to either site.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Export pages and media metadata from staging
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+          mkdir -p export
+
+          echo "=== connectivity probe (retries for intermittent firewall blocks) ==="
+          OK=""
+          for i in 1 2 3 4 5 6; do
+            if curl -s -m 20 -u "$AUTH" "$BASE/wp-json/wp/v2/pages?per_page=1" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+              OK=1; echo "probe attempt $i: OK"; break
+            fi
+            echo "probe attempt $i: blocked, retrying in 15s"; sleep 15
+          done
+          [ -n "$OK" ] || { echo "::error::Runner blocked, re-dispatch"; exit 1; }
+
+          echo "=== export pages ==="
+          for id in 949 951 953 982 993 995 1000 1001 1009 1010 1011 1012 1013 1014 1021 1025 1026 1032 1035 1036 1037 1038 1039 1040 1041 1061 1062 1066 1067; do
+            curl -s -m 60 -u "$AUTH" "$BASE/wp-json/wp/v2/pages/$id?context=edit" -o "export/page-$id.json"
+            python3 -c "import json; d=json.load(open('export/page-$id.json')); assert 'id' in d, d" \
+              || { echo "::error::page $id export invalid"; exit 1; }
+            echo "page $id exported"
+          done
+
+          echo "=== export media metadata (all, paged) ==="
+          page=1
+          while :; do
+            curl -s -m 60 -u "$AUTH" "$BASE/wp-json/wp/v2/media?per_page=100&page=$page&_fields=id,slug,source_url,mime_type,title,alt_text,media_details.file,media_details.width,media_details.height" -o "export/media-p$page.json"
+            COUNT=$(python3 -c "import json; d=json.load(open('export/media-p$page.json')); print(len(d) if isinstance(d,list) else -1)")
+            echo "media page $page: $COUNT items"
+            [ "$COUNT" = "-1" ] && { echo "::error::media export invalid"; exit 1; }
+            [ "$COUNT" -lt 100 ] && break
+            page=$((page+1))
+          done
+
+          echo "=== export menus and menu items ==="
+          curl -s -m 60 -u "$AUTH" "$BASE/wp-json/wp/v2/menus?context=edit" -o export/menus.json
+          curl -s -m 60 -u "$AUTH" "$BASE/wp-json/wp/v2/menu-items?per_page=100&context=edit" -o export/menu-items.json
+
+          ls -la export/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-export
+          path: export/
+          retention-days: 7
