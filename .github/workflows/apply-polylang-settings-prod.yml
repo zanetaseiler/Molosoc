@@ -1,0 +1,40 @@
+name: Apply Polylang settings to Production (Step A)
+
+# Approved Step A of the staging->production migration:
+# sets browser language detection ON and sync = [_wp_page_template,
+# _thumbnail_id] on production Polylang, matching staging. This is the
+# ONLY write this workflow performs. It prints the full settings object
+# before and after the change for the audit trail.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply browser + sync settings via pll/v1/settings
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+
+          echo "=== BEFORE: production pll/v1/settings ==="
+          curl -s -u "$AUTH" "$BASE/wp-json/pll/v1/settings" | python3 -m json.tool
+
+          echo "=== WRITE: POST pll/v1/settings ==="
+          curl -s -u "$AUTH" -X POST "$BASE/wp-json/pll/v1/settings" \
+            -H "Content-Type: application/json" \
+            -d '{"browser": true, "sync": ["_wp_page_template", "_thumbnail_id"]}' \
+            -w "\nHTTP status: %{http_code}\n" | python3 -c "
+          import sys
+          body = sys.stdin.read()
+          print(body)
+          " || true
+
+          echo "=== AFTER: production pll/v1/settings ==="
+          curl -s -u "$AUTH" "$BASE/wp-json/pll/v1/settings" | python3 -m json.tool
