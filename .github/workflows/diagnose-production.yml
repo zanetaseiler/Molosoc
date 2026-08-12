@@ -44,7 +44,7 @@ jobs:
           WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
         run: |
           echo "=== Authenticated identity per WP REST API (/users/me) ==="
-          HTTP_STATUS=$(curl -s -o /tmp/wp_me.json -w "%{http_code}" -H "Accept: application/json" -H "Cache-Control: no-cache" -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/users/me?context=edit&_=$(date +%s)")
+          HTTP_STATUS=$(curl -s -o /tmp/wp_me.json -w "%{http_code}" -u "$WP_USER:$WP_APP_PASSWORD" "${WP_URL%/}/wp-json/wp/v2/users/me?context=edit")
           echo "HTTP status: $HTTP_STATUS"
           echo "--- raw body ---"
           cat /tmp/wp_me.json
