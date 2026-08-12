@@ -37,7 +37,7 @@ jobs:
           "
 
       - name: WP REST auth test (read-only, /users/me)
-        if: always()
+        if: false # skipped for this run — end-to-end create test only, per request
         env:
           WP_URL: ${{ secrets.PROD_WP_URL }}
           WP_USER: ${{ secrets.PROD_WP_USER }}
@@ -51,3 +51,33 @@ jobs:
           echo ""
           echo "--- pretty (if valid JSON) ---"
           python3 -m json.tool < /tmp/wp_me.json || true
+
+      - name: Create ONE draft test page (minimal end-to-end write test)
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          echo "=== POST /wp-json/wp/v2/pages (status=draft) ==="
+          PAYLOAD='{"title":"REST API Test - Delete Me","status":"draft","content":"Production REST API connection test."}'
+
+          HTTP_STATUS=$(curl -s -o /tmp/wp_page_response.json -w "%{http_code}" \
+            -u "$WP_USER:$WP_APP_PASSWORD" \
+            -H "Content-Type: application/json" \
+            -X POST \
+            --data-raw "$PAYLOAD" \
+            "${WP_URL%/}/wp-json/wp/v2/pages")
+
+          echo "HTTP status: $HTTP_STATUS"
+          echo "--- raw body ---"
+          cat /tmp/wp_page_response.json
+          echo ""
+
+          if [ "$HTTP_STATUS" = "403" ] && grep -qi "imunify" /tmp/wp_page_response.json; then
+            echo "STOPPED: 403 from Imunify360 bot-protection. Not retrying."
+            exit 0
+          fi
+
+          echo "--- pretty (if valid JSON) ---"
+          python3 -m json.tool < /tmp/wp_page_response.json || true
