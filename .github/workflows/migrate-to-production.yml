@@ -1,0 +1,98 @@
+name: Migrate content to Production (phased)
+
+# Phased staging->production migration. Each dispatch runs exactly one
+# phase; phases are idempotent (pages matched by slug on every run).
+#
+#   deploy-helper  upload temporary mu-plugin enabling Polylang REST ops
+#   pages-en       rename prod 24, create/update 17 EN pages, lang=en
+#   pages-cz       create/update 12 CZ pages, lang=cz
+#   link           link EN<->CZ translation pairs
+#   menus          create menus + items, assign primary location per lang
+#   frontpage      point page_on_front at the new homepage
+#   verify         read-only verification
+#   remove-helper  delete the temporary mu-plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: "Migration phase to run"
+        required: true
+        type: choice
+        options:
+          - deploy-helper
+          - pages-en
+          - pages-cz
+          - link
+          - menus
+          - frontpage
+          - verify
+          - remove-helper
+
+jobs:
+  helper:
+    if: inputs.phase == 'deploy-helper'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload migration helper mu-plugin via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: ftps
+          local-dir: automations/migration/mu-plugins/
+          server-dir: /wp-content/mu-plugins/
+          state-name: .molosoc-migration-helper-state.json
+      - name: Verify helper responds
+        env:
+          PROD_WP_URL: ${{ secrets.PROD_WP_URL }}
+          PROD_WP_USER: ${{ secrets.PROD_WP_USER }}
+          PROD_WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          for i in 1 2 3 4 5 6; do
+            CODE=$(curl -s -m 20 -o /tmp/h.json -w "%{http_code}" \
+              -u "$PROD_WP_USER:$PROD_WP_APP_PASSWORD" \
+              "${PROD_WP_URL%/}/wp-json/molosoc-migrate/v1/status/24") || CODE=000
+            echo "attempt $i: HTTP $CODE"
+            [ "$CODE" = "200" ] && { cat /tmp/h.json; exit 0; }
+            sleep 15
+          done
+          echo "::error::helper endpoint not responding"
+          exit 1
+
+  remove-helper:
+    if: inputs.phase == 'remove-helper'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete migration helper mu-plugin via FTPS
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          sudo apt-get update -q && sudo apt-get install -yq lftp
+          lftp -u "$USER,$PASS" "ftps://$HOST" -e "
+            set ftp:ssl-force true;
+            rm -f /wp-content/mu-plugins/molosoc-migration-helper.php;
+            rm -f /wp-content/mu-plugins/.molosoc-migration-helper-state.json;
+            bye"
+          echo "helper removed"
+
+  migrate:
+    if: contains(fromJSON('["pages-en","pages-cz","link","menus","frontpage","verify"]'), inputs.phase)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run migration phase ${{ inputs.phase }}
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          PROD_WP_URL: ${{ secrets.PROD_WP_URL }}
+          PROD_WP_USER: ${{ secrets.PROD_WP_USER }}
+          PROD_WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          pip install -q requests
+          python3 automations/migration/migrate.py "${{ inputs.phase }}"
