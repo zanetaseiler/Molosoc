@@ -25,14 +25,18 @@ jobs:
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp
           echo "=== Dry-run diff: local site/theme/ vs remote /wp-content/themes/molosoc/ ==="
-          lftp -u "$SFTP_USER,$SFTP_PASS" -e "
+          lftp -e "
             set ftp:ssl-force true;
             set ssl:verify-certificate no;
+            set net:timeout 20;
+            set net:max-retries 2;
+            open -u \"$SFTP_USER,$SFTP_PASS\" \"$SFTP_HOST\";
             mirror --dry-run --reverse --verbose site/theme/ /wp-content/themes/molosoc/;
             bye
-          " "$SFTP_HOST"
+          "
 
       - name: Check active WordPress theme (read-only API call)
+        if: always()
         env:
           WP_URL: ${{ secrets.PROD_WP_URL }}
           WP_USER: ${{ secrets.PROD_WP_USER }}
