@@ -1,0 +1,28 @@
+name: Deploy Theme to Production
+
+# Auto-deploys the Molosoc standalone theme to production on every push to
+# `main`. Only syncs site/theme/ — never the whole WordPress install, so
+# uploads, order data, and plugin files on the server are untouched.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/theme/**"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: ftps
+          local-dir: site/theme/
+          server-dir: /wp-content/themes/molosoc/
