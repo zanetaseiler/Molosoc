@@ -74,12 +74,16 @@ jobs:
           USER: ${{ secrets.PROD_SFTP_USER }}
           PASS: ${{ secrets.PROD_SFTP_PASS }}
         run: |
-          sudo apt-get update -q && sudo apt-get install -yq lftp
-          lftp -u "$USER,$PASS" "ftps://$HOST" -e "
-            set ftp:ssl-force true;
-            rm -f /wp-content/mu-plugins/molosoc-migration-helper.php;
-            rm -f /wp-content/mu-plugins/.molosoc-migration-helper-state.json;
-            bye"
+          # curl -Q issues DELE on the FTPS control connection only — no
+          # data channel to hang on. || true on the second file: the state
+          # file may not exist and that's fine.
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE /wp-content/mu-plugins/molosoc-migration-helper.php" \
+            "ftp://$HOST/" -o /dev/null
+          echo "helper file deleted"
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE /wp-content/mu-plugins/.molosoc-migration-helper-state.json" \
+            "ftp://$HOST/" -o /dev/null || echo "(state file already absent)"
           echo "helper removed"
 
   migrate:
