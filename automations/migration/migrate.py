@@ -255,20 +255,13 @@ def phase_rename_langs():
         if cur["name"] == new_name:
             print(f"{slug}: name already {new_name!r}")
             continue
-        r = req("POST", PROD, P_AUTH, f"pll/v1/languages/{slug}",
-                json={"name": new_name})
-        if r.status_code != 200:
-            # some Polylang builds want the full object on update
-            r = req("POST", PROD, P_AUTH, f"pll/v1/languages/{slug}",
-                    json={"name": new_name, "locale": cur["locale"],
-                          "slug": slug, "rtl": cur["is_rtl"],
-                          "term_group": cur["term_group"]})
-        if r.status_code != 200:
-            sys.exit(f"FATAL rename {slug}: HTTP {r.status_code} {r.text[:300]}")
-        got = r.json()
-        print(f"{slug}: name {cur['name']!r} -> {got['name']!r} "
-              f"(locale {got['locale']}, slug {got['slug']}, "
-              f"default={got['is_default']})")
+        got = helper("rename-language", {"slug": slug, "name": new_name})
+        print(f"{slug}: name {cur['name']!r} -> {got['name']!r}")
+    fresh = {l["slug"]: l for l in jget(PROD, P_AUTH, "pll/v1/languages")}
+    for slug in want:
+        l = fresh[slug]
+        print(f"confirm {slug}: name={l['name']!r} locale={l['locale']} "
+              f"default={l['is_default']}")
 
 
 def phase_frontpage():

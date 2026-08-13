@@ -112,6 +112,34 @@ add_action('rest_api_init', function () {
         },
     ]);
 
+    register_rest_route('molosoc-migrate/v1', '/rename-language', [
+        'methods'             => 'POST',
+        'permission_callback' => $perm,
+        'callback'            => function (WP_REST_Request $req) {
+            // Changes ONLY the language display name (the 'language'
+            // taxonomy term name). Locale, slug, URLs, default language
+            // are untouched.
+            $slug = sanitize_key($req['slug']);
+            $name = sanitize_text_field($req['name']);
+            if (!$slug || !$name) {
+                return new WP_Error('bad_request', 'slug and name required', ['status' => 400]);
+            }
+            $term = get_term_by('slug', $slug, 'language');
+            if (!$term) {
+                return new WP_Error('no_lang', "Language $slug not found", ['status' => 404]);
+            }
+            $res = wp_update_term($term->term_id, 'language', ['name' => $name]);
+            if (is_wp_error($res)) {
+                return $res;
+            }
+            if (function_exists('PLL') && PLL()->model) {
+                PLL()->model->clean_languages_cache();
+            }
+            $fresh = get_term($term->term_id, 'language');
+            return ['slug' => $slug, 'name' => $fresh->name];
+        },
+    ]);
+
     register_rest_route('molosoc-migrate/v1', '/set-nav-menus', [
         'methods'             => 'POST',
         'permission_callback' => $perm,
