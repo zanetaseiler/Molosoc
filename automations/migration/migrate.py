@@ -245,6 +245,32 @@ def phase_fix_switcher():
     print(f"switcher meta set on items {ids}: {json.dumps(res['updated'])}")
 
 
+def phase_rename_langs():
+    """Display-name parity with staging: English->En, Cestina->Cz.
+    Touches only the language 'name'; locale, slug, URLs, default stay put."""
+    want = {"en": "En", "cz": "Cz"}
+    langs = {l["slug"]: l for l in jget(PROD, P_AUTH, "pll/v1/languages")}
+    for slug, new_name in want.items():
+        cur = langs[slug]
+        if cur["name"] == new_name:
+            print(f"{slug}: name already {new_name!r}")
+            continue
+        r = req("POST", PROD, P_AUTH, f"pll/v1/languages/{slug}",
+                json={"name": new_name})
+        if r.status_code != 200:
+            # some Polylang builds want the full object on update
+            r = req("POST", PROD, P_AUTH, f"pll/v1/languages/{slug}",
+                    json={"name": new_name, "locale": cur["locale"],
+                          "slug": slug, "rtl": cur["is_rtl"],
+                          "term_group": cur["term_group"]})
+        if r.status_code != 200:
+            sys.exit(f"FATAL rename {slug}: HTTP {r.status_code} {r.text[:300]}")
+        got = r.json()
+        print(f"{slug}: name {cur['name']!r} -> {got['name']!r} "
+              f"(locale {got['locale']}, slug {got['slug']}, "
+              f"default={got['is_default']})")
+
+
 def phase_frontpage():
     _, idmap = build_idmap()
     home = idmap[953]
@@ -280,6 +306,7 @@ def phase_verify():
 PHASES = {"pages-en": phase_pages_en, "pages-cz": phase_pages_cz,
           "link": phase_link, "menus": phase_menus,
           "fix-switcher": phase_fix_switcher,
+          "rename-langs": phase_rename_langs,
           "frontpage": phase_frontpage, "verify": phase_verify}
 
 if __name__ == "__main__":
