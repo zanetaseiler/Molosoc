@@ -25,6 +25,7 @@ on:
           - pages-cz
           - link
           - menus
+          - fix-switcher
           - frontpage
           - verify
           - remove-helper
@@ -81,7 +82,7 @@ jobs:
           echo "helper removed"
 
   migrate:
-    if: contains(fromJSON('["pages-en","pages-cz","link","menus","frontpage","verify"]'), inputs.phase)
+    if: contains(fromJSON('["pages-en","pages-cz","link","menus","fix-switcher","frontpage","verify"]'), inputs.phase)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

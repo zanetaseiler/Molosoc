@@ -75,6 +75,43 @@ add_action('rest_api_init', function () {
         },
     ]);
 
+    register_rest_route('molosoc-migrate/v1', '/set-switcher', [
+        'methods'             => 'POST',
+        'permission_callback' => $perm,
+        'callback'            => function (WP_REST_Request $req) {
+            // Marks existing #pll_switcher menu items as real Polylang
+            // language switchers by adding the _pll_menu_item meta that
+            // the REST API cannot set. Options mirror staging (Polylang
+            // defaults: inline names, no flags, show current language).
+            $item_ids = $req['item_ids'];
+            if (!is_array($item_ids) || !$item_ids) {
+                return new WP_Error('bad_request', 'item_ids required', ['status' => 400]);
+            }
+            $options = [
+                'hide_if_no_translation' => 0,
+                'hide_current'           => 0,
+                'force_home'             => 0,
+                'show_flags'             => 0,
+                'show_names'             => 1,
+                'dropdown'               => 0,
+            ];
+            $done = [];
+            foreach ($item_ids as $id) {
+                $id   = (int) $id;
+                $post = get_post($id);
+                if (!$post || $post->post_type !== 'nav_menu_item') {
+                    return new WP_Error('no_item', "Menu item $id not found", ['status' => 404]);
+                }
+                if (get_post_meta($id, '_menu_item_url', true) !== '#pll_switcher') {
+                    return new WP_Error('not_switcher', "Item $id is not a #pll_switcher item", ['status' => 400]);
+                }
+                update_post_meta($id, '_pll_menu_item', $options);
+                $done[$id] = get_post_meta($id, '_pll_menu_item', true);
+            }
+            return ['updated' => $done];
+        },
+    ]);
+
     register_rest_route('molosoc-migrate/v1', '/set-nav-menus', [
         'methods'             => 'POST',
         'permission_callback' => $perm,

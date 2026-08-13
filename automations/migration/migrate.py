@@ -234,6 +234,17 @@ def phase_menus():
     print("nav_menus:", json.dumps(res["saved_nav_menus"]))
 
 
+def phase_fix_switcher():
+    """Mark the two #pll_switcher menu items as real Polylang switchers."""
+    items = jget(PROD, P_AUTH, "wp/v2/menu-items?per_page=100&context=edit"
+                               "&_fields=id,title,url,menus")
+    ids = [i["id"] for i in items if i.get("url") == "#pll_switcher"]
+    if not ids:
+        sys.exit("FATAL: no #pll_switcher menu items found on production")
+    res = helper("set-switcher", {"item_ids": ids})
+    print(f"switcher meta set on items {ids}: {json.dumps(res['updated'])}")
+
+
 def phase_frontpage():
     _, idmap = build_idmap()
     home = idmap[953]
@@ -268,6 +279,7 @@ def phase_verify():
 
 PHASES = {"pages-en": phase_pages_en, "pages-cz": phase_pages_cz,
           "link": phase_link, "menus": phase_menus,
+          "fix-switcher": phase_fix_switcher,
           "frontpage": phase_frontpage, "verify": phase_verify}
 
 if __name__ == "__main__":
