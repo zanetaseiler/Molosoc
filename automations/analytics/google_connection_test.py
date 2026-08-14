@@ -31,12 +31,12 @@ explicitly rather than being mistaken for a broken connection.
 import argparse
 import base64
 import binascii
-import datetime as dt
 import json
 import os
-import re
 import sys
 from urllib.parse import quote
+
+from analytics_common import as_number, date_window, describe_error, redact
 
 # Defaults for the Molosoc properties. Neither value is a secret — the GA4
 # property id and the Search Console property string are both visible in the
@@ -56,23 +56,6 @@ GSC_API_BASE = "https://searchconsole.googleapis.com/webmasters/v3"
 GSC_LAG_DAYS = 3
 
 HTTP_TIMEOUT = 60
-
-_REDACT_PATTERNS = [
-    # PEM blocks, with or without the \n escaping used inside JSON.
-    re.compile(r"-----BEGIN[^-]*PRIVATE KEY-----.*?-----END[^-]*PRIVATE KEY-----", re.S),
-    # Any JSON field whose name suggests a secret, e.g. "private_key": "...".
-    re.compile(r'"(private_key|private_key_id|client_secret|refresh_token|access_token)"\s*:\s*"[^"]*"'),
-    # Bearer tokens in case an HTTP layer echoes a request header.
-    re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]+=*"),
-]
-
-
-def redact(text):
-    """Strip anything credential-shaped out of a string before it is printed."""
-    out = str(text)
-    for pattern in _REDACT_PATTERNS:
-        out = pattern.sub("[REDACTED]", out)
-    return out
 
 
 def mask_email(email):
@@ -153,14 +136,6 @@ def build_credentials(info, scopes):
         sys.exit(f"Could not build credentials from the service account key: {redact(exc)}")
 
 
-def date_window(days, end_offset_days):
-    """Inclusive [start, end] window of `days` days, ending `end_offset_days`
-    before today, as YYYY-MM-DD strings."""
-    end = dt.date.today() - dt.timedelta(days=end_offset_days)
-    start = end - dt.timedelta(days=days - 1)
-    return start.isoformat(), end.isoformat()
-
-
 # --------------------------------------------------------------------------
 # GA4
 # --------------------------------------------------------------------------
@@ -197,7 +172,7 @@ def run_ga4_checks(client, property_id, start_date, end_date):
     totals = {"activeUsers": 0, "sessions": 0, "screenPageViews": 0}
     for row in totals_response.rows:
         for header, value in zip(totals_response.metric_headers, row.metric_values):
-            totals[header.name] = _as_number(value.value)
+            totals[header.name] = as_number(value.value)
 
     landing_response = client.run_report(
         RunReportRequest(
@@ -215,8 +190,8 @@ def run_ga4_checks(client, property_id, start_date, end_date):
     landing_pages = [
         {
             "landingPage": row.dimension_values[0].value,
-            "sessions": _as_number(row.metric_values[0].value),
-            "activeUsers": _as_number(row.metric_values[1].value),
+            "sessions": as_number(row.metric_values[0].value),
+            "activeUsers": as_number(row.metric_values[1].value),
         }
         for row in landing_response.rows
     ]
@@ -232,16 +207,6 @@ def run_ga4_checks(client, property_id, start_date, end_date):
     }
 
 
-def _as_number(value):
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0
-
-
 def check_ga4(info, property_id, days):
     from google.analytics.data_v1beta import BetaAnalyticsDataClient
 
@@ -252,7 +217,7 @@ def check_ga4(info, property_id, days):
         client = BetaAnalyticsDataClient(credentials=credentials)
         data = run_ga4_checks(client, property_id, start_date, end_date)
     except Exception as exc:  # noqa: BLE001 — reported, not raised, so GSC still runs
-        return {"ok": False, "error": _describe_error(exc), "propertyId": str(property_id)}
+        return {"ok": False, "error": describe_error(exc), "propertyId": str(property_id)}
 
     return {"ok": True, **data}
 
@@ -308,8 +273,8 @@ def run_gsc_checks(session, site_url, start_date, end_date):
 
 def _gsc_row_metrics(row):
     return {
-        "clicks": _as_number(row.get("clicks", 0)),
-        "impressions": _as_number(row.get("impressions", 0)),
+        "clicks": as_number(row.get("clicks", 0)),
+        "impressions": as_number(row.get("impressions", 0)),
         "ctr": float(row.get("ctr", 0.0) or 0.0),
         "position": float(row.get("position", 0.0) or 0.0),
     }
@@ -337,13 +302,9 @@ def check_search_console(info, site_url, days):
         session = AuthorizedSession(credentials)
         data = run_gsc_checks(session, site_url, start_date, end_date)
     except Exception as exc:  # noqa: BLE001 — reported, not raised
-        return {"ok": False, "error": _describe_error(exc), "siteUrl": site_url}
+        return {"ok": False, "error": describe_error(exc), "siteUrl": site_url}
 
     return {"ok": True, **data}
-
-
-def _describe_error(exc):
-    return f"{type(exc).__name__}: {redact(exc)}"
 
 
 # --------------------------------------------------------------------------

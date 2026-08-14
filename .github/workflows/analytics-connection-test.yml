@@ -1,16 +1,31 @@
 name: Analytics Connection Test (read-only)
 
-# Proves the GOOGLE_SERVICE_ACCOUNT_JSON service account can authenticate and
-# read from both the GA4 property and the Search Console property. Read-only in
-# both directions — the script only calls runReport, sites.list and
-# searchAnalytics.query, all with *.readonly scopes — so this is safe to run at
-# any time and can never change anything in Google.
+# Proves the three analytics sources can be read:
+#   GA4              — GOOGLE_SERVICE_ACCOUNT_JSON -> Analytics Data API
+#   Search Console   — GOOGLE_SERVICE_ACCOUNT_JSON -> Search Console API
+#   Microsoft Clarity — CLARITY_API_TOKEN -> Project Live Insights API
+#
+# Read-only throughout: the Google side only calls runReport, sites.list and
+# searchAnalytics.query with *.readonly scopes; the Clarity side only issues a
+# single GET against an export endpoint that has no write operation.
+#
+# CLARITY CALL BUDGET: Clarity allows 10 API calls per project per day, shared
+# with everything else that reads the project. The Google checks are unmetered
+# and run on every push, but the live Clarity call is deliberately NOT wired to
+# plain pushes — it runs only on a manual dispatch, or on a push whose commit
+# message contains "[clarity]". Otherwise routine commits to this folder would
+# quietly eat the day's budget and lock out the reporting job later.
 #
 # Independent of the WordPress content-sync workflows: different paths,
 # different secrets, no shared steps.
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      run_clarity:
+        description: "Also make the live Clarity call (uses 1 of 10 calls/project/day)"
+        type: boolean
+        default: true
   push:
     paths:
       - "automations/analytics/**"
@@ -36,7 +51,7 @@ jobs:
       - name: Run offline unit tests
         run: python3 -m pytest automations/analytics/ -q
 
-      - name: Check the service account secret is present
+      - name: Check the Google service account secret is present
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
@@ -53,3 +68,45 @@ jobs:
           GA4_PROPERTY_ID: "521643495"
           GSC_SITE_URL: "sc-domain:molosoc.com"
         run: python3 automations/analytics/google_connection_test.py
+
+      # ---- Clarity: rate-limited, so gated. See the note at the top. ----
+
+      - name: Decide whether to make the live Clarity call
+        id: clarity_gate
+        env:
+          # Via env, never interpolated into the script body: a commit message
+          # is untrusted input and `${{ }}` inside run: would execute it.
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_INPUT: ${{ inputs.run_clarity }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            RUN="$DISPATCH_INPUT"
+          elif printf '%s' "$COMMIT_MESSAGE" | grep -qF '[clarity]'; then
+            RUN="true"
+          else
+            RUN="false"
+          fi
+          echo "run=$RUN" >> "$GITHUB_OUTPUT"
+          if [ "$RUN" != "true" ]; then
+            echo "Skipping the live Clarity call to preserve the 10 calls/project/day budget."
+            echo "To run it: dispatch this workflow manually, or include [clarity] in the commit message."
+          fi
+
+      - name: Check the Clarity API token is present
+        if: steps.clarity_gate.outputs.run == 'true'
+        env:
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+        run: |
+          if [ -z "$CLARITY_API_TOKEN" ]; then
+            echo "CLARITY_API_TOKEN is not set for this repository/branch."
+            echo "Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Secret is present (contents never printed)."
+
+      - name: Verify Microsoft Clarity access
+        if: steps.clarity_gate.outputs.run == 'true'
+        env:
+          CLARITY_API_TOKEN: ${{ secrets.CLARITY_API_TOKEN }}
+        run: python3 automations/analytics/clarity_connection_test.py --num-days 3
