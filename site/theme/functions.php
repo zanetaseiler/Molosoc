@@ -332,9 +332,12 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
 		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal' ), $theme_version, true );
-	} elseif ( is_page( 'blog' ) ) {
+	} elseif ( is_page( array( 'blog', 'magazin' ) ) ) {
 		// Journal index — static photo-tile grid, no motion.js/GSAP needed
-		// (see page-blog.php's own header comment for why).
+		// (see page-blog.php's own header comment for why). 'magazin' is
+		// the Czech Journal (/cz/magazin/, rendered by the same
+		// page-blog.php via the page-magazin.php shim) — same explicit
+		// CZ-slug listing as the product branches above.
 		wp_enqueue_style( 'molosoc-blog', $theme_uri . '/assets/css/blog.css', array( 'molosoc-components' ), $theme_version );
 	} elseif ( is_product() ) {
 		// Native WooCommerce single-product page — trust-badge bars
