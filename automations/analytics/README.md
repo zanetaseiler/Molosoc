@@ -117,7 +117,139 @@ parsing for all three APIs (empty-property, permission-denied, rate-limited and
 malformed-shape cases included), and the assertions that only read calls are
 issued and that Clarity is called exactly once.
 
-## Not built yet
+---
 
-The recurring/scheduled analytics report. This directory currently proves the
-three connections work; the reporting system comes after.
+# Phase 1 — historical collection foundation
+
+The connection tests above prove the three sources can be read. Phase 1 adds
+the collection and data-quality layer underneath them. It collects and
+normalizes; it does not analyse, compare, recommend, or report.
+
+## Why Clarity needs a collector and the Google sources do not
+
+GA4 and Search Console can reconstruct any past period on demand, so their
+history needs no daily job — `normalize.py` simply reshapes their existing
+verified output into the shared schema when it is needed.
+
+Clarity cannot. Its Live Insights endpoint returns at most three days, so any
+day not captured is gone permanently. `clarity_daily_collect.py` exists solely
+to make sure that does not happen.
+
+## How Clarity daily history is collected
+
+```bash
+export CLARITY_API_TOKEN='...'
+python3 automations/analytics/clarity_daily_collect.py --store-root ./analytics-data
+
+# check coverage and today's budget without calling the API
+python3 automations/analytics/clarity_daily_collect.py --status
+```
+
+**One call per run, one bucket per UTC day.** `numOfDays=1` means "the trailing
+24 hours", not "the calendar day", which has two consequences the collector
+enforces:
+
+- Snapshots are **always** `numOfDays=1`. It is a constant, not a flag.
+  Consecutive 2- or 3-day windows overlap, so summing them double-counts.
+- **At most one daily bucket per UTC date.** A second run the same day would
+  cover an overlapping window, so it is refused before any call is spent.
+  `--force` stores it as an extra raw revision that never becomes a bucket.
+
+Two independent guards back this up: `records.sum_metric()` refuses to
+aggregate anything with `window_days > 1`, refuses to mix performance with
+data-quality metrics, and refuses duplicate date/entity/metric rows — so even a
+hand-written aggregation cannot double-count.
+
+Budget is reserved from a persisted per-UTC-day ledger *before* the call, so a
+crash loses the budget rather than the limit. The automated cap (3) sits below
+Clarity's hard limit (10) so a human can still investigate on a day the
+collector has run.
+
+Each run stores three things: the raw payload (so a normalization bug is
+fixable later without re-querying data that no longer exists), the normalized
+production-only records, and the excluded rows plus quality flags.
+
+## How URLs are canonicalized
+
+`canonical_url.py`. GA4 reports paths, Search Console reports absolute URLs,
+Clarity reports whatever the browser saw — without one identity, nothing joins.
+
+Applied in order: lowercase scheme and host, `http`→`https`, `www.` folded into
+the apex, default ports and fragments dropped, duplicate slashes collapsed,
+trailing slash added for directory-style paths (but not for `robots.txt`-style
+file paths), bare paths given the site origin, remaining query parameters
+sorted for a stable identity.
+
+Tracking parameters are removed by **denylist**: `utm_*` and the `pk_`/`mtm_`/
+`hsa_` families by prefix, plus exact matches for `fbclid`, `gclid`, `gbraid`,
+`wbraid`, `msclkid`, `dclid`, `ttclid`, `twclid`, `srsltid`, `mc_cid`, `mc_eid`,
+`_ga`, `_gl` and others. Everything unknown is **kept** — dropping a parameter
+that genuinely identifies content (`?lang=cs` under Polylang, a product
+variation, an on-site search term) silently fuses two pages into one, which is
+invisible; keeping one splits a page in two, which is obvious. Dropped
+parameters are recorded on the record, never silently discarded.
+
+This was not theoretical: GA4's first verified run split the homepage across
+`/` and two `?fbclid=…` variants. Those three rows now resolve to one page.
+
+## How staging and other non-production traffic is excluded
+
+Host classification is separate from canonicalization — a staging URL still
+canonicalizes correctly, it is simply labelled. Hosts resolve to one of three
+states: `production` (`molosoc.com`, `www.molosoc.com`), `non_production`
+(`staging.molosoc.com`, plus `dev.`/`test.`/`preview.`/`uat.`/`stage.` prefixes
+and `.local`/`.test` suffixes), or `unknown`.
+
+`quality.split_production()` removes non-production **page** records; site
+totals and non-page dimensions pass through. Unknown hosts are excluded by
+default — a host nobody has classified should surface for a decision rather
+than quietly count.
+
+Exclusions are always reported. `quality.exclusion_flags()` turns them into a
+counted finding with a per-host breakdown, because "the number dropped" and "we
+stopped counting some rows" otherwise look identical.
+
+**Nothing here touches WordPress.** This is an analytics-layer filter only; no
+staging or production configuration is changed.
+
+## How bot and data-quality metrics are handled
+
+Data-quality metrics live in a different class from performance metrics
+(`metric_class` on every record) and `sum_metric()` refuses to mix them.
+
+From Clarity's `Traffic` metric the collector derives four records:
+`clarity_sessions` (performance, includes bots), `clarity_bot_sessions` and
+`clarity_bot_share` (both data quality), and `clarity_human_sessions`
+(performance) — the last is what a traffic trend should read.
+
+`quality.assess_bot_share()` flags each snapshot: normal below 30%, `warn` at
+30–50%, `critical` above 50% (where total sessions stop being a usable proxy
+for human traffic). Below 20 sessions it returns "not assessable" rather than a
+verdict on noise. The first verified run sat at 40% — a `warn`.
+
+Clarity's `ScriptErrorCount` is classified as data quality rather than
+behaviour: a script-error spike means measurement may be broken, which is a
+different kind of problem from a UX one.
+
+## Storage
+
+`storage.py` defines one interface (`SnapshotStore`) with two backends that
+need no infrastructure: `LocalFileStore` (atomic JSON writes, for development
+and workstation runs) and `InMemoryStore` (tests). Writes never overwrite
+without an explicit flag, and raw snapshots are keyed by collection instant so
+a re-collection is a new revision rather than a replacement.
+
+**Neither shipped backend is durable** — `is_durable()` returns False for both,
+and the collector prints a warning. A local store on an ephemeral CI runner
+would report success and preserve nothing, and Clarity history cannot be
+backfilled. A production backend implements the same three methods.
+
+`analytics-data/` is gitignored. Git is deliberately not the analytics
+database.
+
+## What Phase 1 does not include
+
+No Marketing Analysis Agent, no recurring report, no report frequency, no
+scheduling or cron, no LLM-generated recommendations, no dashboards, no SEO or
+content changes, and no staging de-indexing. The collector has no automated
+trigger: wiring it to CI requires the durable-storage decision first.
