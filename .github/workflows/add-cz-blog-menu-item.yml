@@ -1,0 +1,83 @@
+name: Add Blog item to CZ menu (prod)
+
+# Adds a single custom "Blog" menu item to the production CZ menu
+# (ID 68) pointing at https://molosoc.com/blog/ — the shared EN blog
+# page; there is deliberately no separate CZ blog page. menu_order=5
+# slots it between "Návleky na nohy" (top-level order 4; its child
+# holds order 5 but children don't compete with top-level ordering)
+# and "Languages" (order 6), matching the EN menu's placement of Blog
+# after the product group. action=list only prints the CZ menu.
+# The add action is idempotent: it skips if menu 68 already contains
+# an item titled "Blog" or linking to /blog/.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list (print CZ menu items) or add (create the Blog item if missing)"
+        required: true
+        default: "list"
+
+jobs:
+  menu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List / add CZ Blog menu item
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+          ACTION: ${{ github.event.inputs.action }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -m 30 -o /tmp/items.json -w "%{http_code}" -u "$AUTH" \
+              "$BASE/wp-json/wp/v2/menu-items?menus=68&per_page=100&context=edit&_fields=id,title,url,menus,menu_order,parent,object,object_id,type")
+            echo "list attempt $i: HTTP $CODE"
+            if [ "$CODE" = "200" ] && python3 -c "import json; json.load(open('/tmp/items.json'))" 2>/dev/null; then
+              break
+            fi
+            CODE="bad"
+            sleep 15
+          done
+          [ "$CODE" = "200" ] || { echo "::error::could not list CZ menu items (empty/non-JSON body — rerun to draw a clean runner)"; exit 1; }
+
+          echo "=== CZ menu (68) items ==="
+          python3 - <<'EOF'
+          import json, re
+          items = json.load(open('/tmp/items.json'))
+          for it in sorted(items, key=lambda x: x['menu_order']):
+              t = it['title']; title = re.sub(r'<[^>]+>','', t.get('rendered','')) if isinstance(t, dict) else t
+              print(f"id={it['id']} order={it['menu_order']} parent={it['parent']} type={it.get('type')} object={it.get('object')} object_id={it.get('object_id')} title={title!r} url={it.get('url')}")
+          EOF
+
+          if [ "$ACTION" = "add" ]; then
+            EXISTS=$(python3 - <<'EOF'
+          import json, re
+          items = json.load(open('/tmp/items.json'))
+          hits = []
+          for it in items:
+              t = it['title']; title = re.sub(r'<[^>]+>','', t.get('rendered','')) if isinstance(t, dict) else t
+              url = it.get('url') or ''
+              if title.strip().lower() == 'blog' or url.rstrip('/').endswith('/blog'):
+                  hits.append(str(it['id']))
+          print(','.join(hits))
+          EOF
+            )
+            if [ -n "$EXISTS" ]; then
+              echo "Blog item already exists in CZ menu (id(s): $EXISTS) — nothing added."
+              exit 0
+            fi
+            echo "Creating custom Blog item in menu 68, menu_order=5 ..."
+            CODE=$(curl -s -m 60 -o /tmp/new.json -w "%{http_code}" -u "$AUTH" \
+              -X POST -H "Content-Type: application/json" \
+              -d '{"title":"Blog","type":"custom","url":"https://molosoc.com/blog/","menus":68,"menu_order":5,"status":"publish"}' \
+              "$BASE/wp-json/wp/v2/menu-items")
+            echo "create: HTTP $CODE"
+            head -c 1500 /tmp/new.json; echo
+            [ "$CODE" = "201" ] || { echo "::error::create failed"; exit 1; }
+            python3 -c "import json; d=json.load(open('/tmp/new.json')); print('created id', d['id'], 'order', d['menu_order'], 'url', d['url'], 'menus', d['menus'])"
+          fi
