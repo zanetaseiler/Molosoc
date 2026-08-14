@@ -1,0 +1,55 @@
+name: Analytics Connection Test (read-only)
+
+# Proves the GOOGLE_SERVICE_ACCOUNT_JSON service account can authenticate and
+# read from both the GA4 property and the Search Console property. Read-only in
+# both directions — the script only calls runReport, sites.list and
+# searchAnalytics.query, all with *.readonly scopes — so this is safe to run at
+# any time and can never change anything in Google.
+#
+# Independent of the WordPress content-sync workflows: different paths,
+# different secrets, no shared steps.
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "automations/analytics/**"
+      - ".github/workflows/analytics-connection-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit tests
+        run: python3 -m pytest automations/analytics/ -q
+
+      - name: Check the service account secret is present
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "GOOGLE_SERVICE_ACCOUNT_JSON is not set for this repository/branch."
+            echo "Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Secret is present (contents never printed)."
+
+      - name: Verify GA4 + Search Console access
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GA4_PROPERTY_ID: "521643495"
+          GSC_SITE_URL: "sc-domain:molosoc.com"
+        run: python3 automations/analytics/google_connection_test.py

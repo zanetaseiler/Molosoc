@@ -25,6 +25,7 @@ Read `docs/00-build-playbook.md` first — it's the ordered build sequence (Phas
 ## Folder guide
 - `docs/` — standing project knowledge: ICP, brand architecture, SEO/GEO plan, site structure, build playbook.
 - `automations/content-sync/` — script + setup guide that pushes markdown drafts into WordPress as drafts via the REST API.
+- `automations/analytics/` — read-only GA4 + Search Console connection test (`GOOGLE_SERVICE_ACCOUNT_JSON` secret). See its README.
 - `.github/workflows/content-sync.yml` — auto-runs content push on every commit to `staging` touching `seo/` or `content/`.
 - `seo/pillars/`, `seo/spokes/` — TOFU content drafts. Copy `_template.md`, fill in frontmatter + body, commit.
 - `content/` — homepage/category/product page drafts. Same template pattern.
