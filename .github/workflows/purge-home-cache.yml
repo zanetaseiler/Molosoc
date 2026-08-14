@@ -1,0 +1,40 @@
+name: Purge homepage page-cache (no-op resave)
+
+# WP-Optimize's page cache only regenerates a URL's HTML when that post
+# is saved (or the cache expires). After a theme CSS deploy, cached
+# pages keep referencing the previous minify bundle. This workflow does
+# a no-op REST update (status: publish -> publish) on the EN (867) and
+# CZ (884) front pages, which fires save_post and purges their cache
+# entries. It changes no content.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op resave front pages
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+          for id in 867 884; do
+            for i in 1 2 3 4 5; do
+              CODE=$(curl -s -m 30 -o /tmp/r.json -w "%{http_code}" -u "$AUTH" \
+                -X POST -H "Content-Type: application/json" \
+                -d '{"status":"publish"}' \
+                "$BASE/wp-json/wp/v2/pages/$id")
+              echo "page $id attempt $i: HTTP $CODE"
+              if [ "$CODE" = "200" ]; then
+                python3 -c "import json; d=json.load(open('/tmp/r.json')); print(' resaved:', d['id'], d['slug'], d['status'], 'modified', d['modified'])"
+                break
+              fi
+              sleep 15
+            done
+            [ "$CODE" = "200" ] || { echo "::error::page $id resave failed"; exit 1; }
+          done
