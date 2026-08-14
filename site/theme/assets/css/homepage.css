@@ -480,6 +480,23 @@
   object-position: 60% 85%;
 }
 
+/* Story photos #1 (cream/heel) and #3 (drawer) are 4:5 portraits shown
+   in the 4:3 box, so only ~60% of their height is visible and the
+   vertical anchor decides the crop. Both subjects sit low in the frame
+   (foot + cream ~30-90%, drawer contents ~25-85%), so the default
+   centered crop clips them and shows empty wall instead. Unlike #2/#4,
+   their mobile files are the same composition (just downscaled), so one
+   value covers every breakpoint — no mobile override needed.
+   Scoped to the English page for now (CZ renders lang="cs-CZ"); drop
+   the :lang() guard to roll the same crop out to Czech. */
+html:lang(en) .molosoc-story-photo--cream-heel {
+  object-position: 50% 75%;
+}
+
+html:lang(en) .molosoc-story-photo--drawer {
+  object-position: 50% 60%;
+}
+
 .molosoc-story__text {
   margin-top: var(--space-xs);
   width: var(--story-w, 60%);

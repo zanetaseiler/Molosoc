@@ -120,6 +120,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							srcset="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.webp' ); ?> 1143w"
 							sizes="(max-width: 720px) 100vw, 852px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-cream-collection-cropped.jpg' ); ?>"
+							class="molosoc-story-photo--cream-heel"
 							alt="<?php esc_attr_e( 'Close-up of hands massaging cream into a heel, bright white bedroom', 'molosoc' ); ?>"
 							loading="lazy" decoding="async" width="1143" height="1429">
 					</picture>
@@ -165,6 +166,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 							srcset="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded-mobile.webp' ); ?> 750w, <?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.webp' ); ?> 1434w"
 							sizes="(max-width: 720px) 100vw, 783px">
 						<img src="<?php echo esc_url( $molosoc_img . 'homepage-pillar5-drawer-graded.jpg' ); ?>"
+							class="molosoc-story-photo--drawer"
 							alt="<?php esc_attr_e( 'A half-open bathroom drawer crowded with half-used cream tubes and bottles', 'molosoc' ); ?>"
 							loading="lazy" decoding="async" width="1434" height="1792">
 					</picture>
