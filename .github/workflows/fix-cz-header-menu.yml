@@ -1,0 +1,146 @@
+name: Fix CZ header menu structure (prod)
+
+# Makes the production CZ menu (ID 68) mirror the EN menu (ID 67)
+# structure: product dropdown, Blog, Contact/Kontakt, language
+# switcher. Concretely:
+#   - DELETES the three top-level pillar menu items (Kuří oko a
+#     mozoly, Popraskané paty, Zarostlý nehet) — menu items only,
+#     the pages themselves are not touched (URLs/SEO intact).
+#   - ADDS a "Contact/Kontakt" custom item -> /contact-kontakt/
+#     (the bilingual contact page; there is no separate CZ contact
+#     page), matching the EN menu's item.
+#   - Reorders to: Návleky na nohy (1, child Návlek na nohy 2),
+#     Blog (3), Contact/Kontakt (4), Languages (5).
+# action=list only prints both menus. apply is idempotent: pillar
+# deletions and the Contact item creation are skipped when already
+# done, and menu_order updates are no-ops when values already match.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list (print EN+CZ menus) or apply (restructure CZ menu)"
+        required: true
+        default: "list"
+
+jobs:
+  menu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fix CZ menu
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+          ACTION: ${{ github.event.inputs.action }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+
+          fetch_menu() { # $1=menu id, $2=outfile
+            local code i
+            for i in 1 2 3 4 5; do
+              code=$(curl -s -m 30 -o "$2" -w "%{http_code}" -u "$AUTH" \
+                "$BASE/wp-json/wp/v2/menu-items?menus=$1&per_page=100&context=edit&_fields=id,title,url,menus,menu_order,parent,object,object_id,type")
+              echo "list menu $1 attempt $i: HTTP $code" >&2
+              if [ "$code" = "200" ] && python3 -c "import json; json.load(open('$2'))" 2>/dev/null; then
+                return 0
+              fi
+              sleep 15
+            done
+            echo "::error::could not list menu $1 (empty/non-JSON body — rerun to draw a clean runner)"
+            exit 1
+          }
+
+          print_menu() { # $1=infile, $2=label
+            echo "=== $2 ==="
+            python3 - "$1" <<'EOF'
+          import json, re, sys
+          items = json.load(open(sys.argv[1]))
+          for it in sorted(items, key=lambda x: (x['menu_order'], x['id'])):
+              t = it['title']; title = re.sub(r'<[^>]+>','', t.get('rendered','')) if isinstance(t, dict) else t
+              print(f"id={it['id']} order={it['menu_order']} parent={it['parent']} type={it.get('type')} object={it.get('object')} object_id={it.get('object_id')} title={title!r} url={it.get('url')}")
+          EOF
+          }
+
+          fetch_menu 67 /tmp/en.json
+          fetch_menu 68 /tmp/cz.json
+          print_menu /tmp/en.json "EN menu (67)"
+          print_menu /tmp/cz.json "CZ menu (68) — before"
+
+          [ "$ACTION" = "apply" ] || exit 0
+
+          # Plan: pillar item ids to delete, contact presence, order updates.
+          python3 - <<'EOF'
+          import json, re
+          items = json.load(open('/tmp/cz.json'))
+          def title(it):
+              t = it['title']
+              return re.sub(r'<[^>]+>','', t.get('rendered','')) if isinstance(t, dict) else t
+          pillars = {'kuří oko a mozoly', 'popraskané paty', 'zarostlý nehet'}
+          delete = [str(it['id']) for it in items
+                    if it['parent'] == 0 and title(it).strip().lower() in pillars]
+          contact = [str(it['id']) for it in items
+                     if 'contact-kontakt' in (it.get('url') or '')
+                     or title(it).strip().lower() == 'contact/kontakt']
+          open('/tmp/delete_ids','w').write(' '.join(delete))
+          open('/tmp/contact_ids','w').write(' '.join(contact))
+          print('pillar items to delete:', delete or 'none')
+          print('existing contact item:', contact or 'none')
+          EOF
+
+          # 1. Delete pillar menu items (nav_menu_item posts only; pages untouched).
+          for id in $(cat /tmp/delete_ids); do
+            for i in 1 2 3 4 5; do
+              CODE=$(curl -s -m 60 -o /tmp/del.json -w "%{http_code}" -u "$AUTH" \
+                -X DELETE "$BASE/wp-json/wp/v2/menu-items/$id?force=true")
+              echo "delete item $id attempt $i: HTTP $CODE"
+              [ "$CODE" = "200" ] && break
+              sleep 15
+            done
+            [ "$CODE" = "200" ] || { echo "::error::delete of menu item $id failed"; exit 1; }
+            python3 -c "import json; d=json.load(open('/tmp/del.json')); print(' deleted:', d.get('deleted'), 'id', d.get('previous',{}).get('id'))"
+          done
+
+          # 2. Create Contact/Kontakt item if missing (custom link like CZ Blog item;
+          #    /contact-kontakt/ is the shared bilingual contact page).
+          CONTACT_ID=$(cat /tmp/contact_ids | awk '{print $1}')
+          if [ -z "$CONTACT_ID" ]; then
+            for i in 1 2 3 4 5; do
+              CODE=$(curl -s -m 60 -o /tmp/new.json -w "%{http_code}" -u "$AUTH" \
+                -X POST -H "Content-Type: application/json" \
+                -d '{"title":"Contact/Kontakt","type":"custom","url":"https://molosoc.com/contact-kontakt/","menus":68,"menu_order":4,"status":"publish"}' \
+                "$BASE/wp-json/wp/v2/menu-items")
+              echo "create Contact/Kontakt attempt $i: HTTP $CODE"
+              [ "$CODE" = "201" ] && break
+              sleep 15
+            done
+            [ "$CODE" = "201" ] || { echo "::error::Contact/Kontakt create failed"; head -c 800 /tmp/new.json; exit 1; }
+            CONTACT_ID=$(python3 -c "import json; print(json.load(open('/tmp/new.json'))['id'])")
+            echo "created Contact/Kontakt item id $CONTACT_ID"
+          else
+            echo "Contact/Kontakt item already exists (id $CONTACT_ID)"
+          fi
+
+          # 3. Reorder to mirror EN: 904=1, 905=2, 913=3, contact=4, 906=5.
+          set_order() { # $1=item id, $2=order
+            for i in 1 2 3 4 5; do
+              CODE=$(curl -s -m 60 -o /tmp/upd.json -w "%{http_code}" -u "$AUTH" \
+                -X POST -H "Content-Type: application/json" \
+                -d "{\"menu_order\":$2}" \
+                "$BASE/wp-json/wp/v2/menu-items/$1")
+              echo "set item $1 order=$2 attempt $i: HTTP $CODE"
+              [ "$CODE" = "200" ] && return 0
+              sleep 15
+            done
+            echo "::error::order update for item $1 failed"; exit 1
+          }
+          set_order 904 1
+          set_order 905 2
+          set_order 913 3
+          set_order "$CONTACT_ID" 4
+          set_order 906 5
+
+          fetch_menu 68 /tmp/cz2.json
+          print_menu /tmp/cz2.json "CZ menu (68) — after"
