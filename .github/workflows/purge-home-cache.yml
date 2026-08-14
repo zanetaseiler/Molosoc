@@ -1,14 +1,19 @@
-name: Purge homepage page-cache (no-op resave)
+name: Purge page-cache (no-op resave)
 
 # WP-Optimize's page cache only regenerates a URL's HTML when that post
 # is saved (or the cache expires). After a theme CSS deploy, cached
 # pages keep referencing the previous minify bundle. This workflow does
-# a no-op REST update (status: publish -> publish) on the EN (867) and
-# CZ (884) front pages, which fires save_post and purges their cache
-# entries. It changes no content.
+# a no-op REST update (status: publish -> publish) on the given page
+# IDs (default: EN 867 and CZ 884 front pages), which fires save_post
+# and purges their cache entries. It changes no content.
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      page_ids:
+        description: "Space-separated page IDs to resave"
+        required: false
+        default: "867 884"
 
 jobs:
   purge:
@@ -23,7 +28,7 @@ jobs:
           set -u
           BASE="${WP_URL%/}"
           AUTH="$WP_USER:$WP_APP_PASSWORD"
-          for id in 867 884; do
+          for id in ${{ github.event.inputs.page_ids || '867 884' }}; do
             for i in 1 2 3 4 5; do
               CODE=$(curl -s -m 30 -o /tmp/r.json -w "%{http_code}" -u "$AUTH" \
                 -X POST -H "Content-Type: application/json" \

@@ -31,10 +31,10 @@
 /* ---------- Hero — full-bleed background photo, not a boxed inset image.
    The render (3d_turntable_01_mirror.jpg) is already mirrored at the source
    and shot on a plain white backdrop, so it's shown with object-fit:contain
-   (whole product visible, no cropping) rather than cover — the render's own
-   white matches the section background closely enough that letterboxing
-   around it is invisible. Same light warm-scrim approach as
-   .molosoc-who-section for legibility over the parts it does cover. ---------- */
+   (whole product visible, no cropping) rather than cover. The hero is the
+   one deliberate exception to the warm-cream rule above: its background is
+   pure white so it merges seamlessly with the render's own white backdrop
+   (no visible letterbox seam), and the scrim is white-tinted to match. ---------- */
 
 .molosoc-category-hero {
   position: relative;
@@ -43,6 +43,7 @@
   display: flex;
   align-items: center;
   padding: var(--space-2xl) var(--section-padding-x);
+  background: #ffffff;
 }
 
 .molosoc-category-hero__media {
@@ -64,10 +65,10 @@
   z-index: 1;
   background: linear-gradient(
     100deg,
-    rgba(248, 247, 244, 0.92) 0%,
-    rgba(248, 247, 244, 0.7) 32%,
-    rgba(248, 247, 244, 0.25) 55%,
-    rgba(248, 247, 244, 0.15) 100%
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.7) 32%,
+    rgba(255, 255, 255, 0.25) 55%,
+    rgba(255, 255, 255, 0.15) 100%
   );
 }
 
@@ -214,7 +215,7 @@
   }
 
   .molosoc-category-hero__scrim {
-    background: rgba(248, 247, 244, 0.82);
+    background: rgba(255, 255, 255, 0.82);
   }
 
   .molosoc-category-hero__text .molosoc-btn {
