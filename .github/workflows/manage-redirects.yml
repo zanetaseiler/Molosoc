@@ -1,0 +1,75 @@
+name: Manage Redirection-plugin rules (prod)
+
+# The Redirection plugin's "monitor slug changes" feature auto-created a
+# 301 from /blog/ -> /blog-legacy-2018/ when the migration renamed the
+# old 2018 blog page's slug. That rule shadows the newly migrated blog
+# page (ID 881) which lives at /blog/. This workflow lists the plugin's
+# rules over its REST API, and with action=delete removes ONLY rules
+# whose source URL exactly matches the given source_url input.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list (print all rules) or delete (remove rules matching source_url)"
+        required: true
+        default: "list"
+      source_url:
+        description: "Exact source URL to delete (only used with action=delete)"
+        required: false
+        default: "/blog/"
+
+jobs:
+  redirects:
+    runs-on: ubuntu-latest
+    steps:
+      - name: List / delete redirect rules
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+          ACTION: ${{ github.event.inputs.action }}
+          SOURCE_URL: ${{ github.event.inputs.source_url }}
+        run: |
+          set -u
+          BASE="${WP_URL%/}"
+          AUTH="$WP_USER:$WP_APP_PASSWORD"
+
+          echo "=== Current Redirection rules ==="
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -m 30 -o /tmp/rules.json -w "%{http_code}" -u "$AUTH" \
+              "$BASE/wp-json/redirection/v1/redirect?per_page=100")
+            echo "list attempt $i: HTTP $CODE"
+            [ "$CODE" = "200" ] && break
+            sleep 15
+          done
+          [ "$CODE" = "200" ] || { echo "::error::could not list redirects"; exit 1; }
+
+          python3 - <<'EOF'
+          import json
+          d = json.load(open('/tmp/rules.json'))
+          for r in d.get('items', []):
+              print(f"id={r['id']} enabled={r.get('enabled')} url={r['url']!r} -> {r.get('action_data', {}).get('url')!r} (hits {r.get('hits')})")
+          EOF
+
+          if [ "$ACTION" = "delete" ]; then
+            IDS=$(python3 - <<EOF
+          import json
+          d = json.load(open('/tmp/rules.json'))
+          ids = [str(r['id']) for r in d.get('items', []) if r['url'] == "$SOURCE_URL"]
+          print(','.join(ids))
+          EOF
+            )
+            if [ -z "$IDS" ]; then
+              echo "::error::no rule with source url exactly '$SOURCE_URL' found; nothing deleted"
+              exit 1
+            fi
+            echo "Deleting rule id(s): $IDS (source '$SOURCE_URL')"
+            CODE=$(curl -s -m 30 -o /tmp/del.json -w "%{http_code}" -u "$AUTH" \
+              -X POST -H "Content-Type: application/json" \
+              -d "{\"items\":[$IDS]}" \
+              "$BASE/wp-json/redirection/v1/bulk/redirect/delete")
+            echo "delete: HTTP $CODE"
+            cat /tmp/del.json | head -c 2000; echo
+            [ "$CODE" = "200" ] || { echo "::error::delete failed"; exit 1; }
+          fi
