@@ -459,6 +459,24 @@
   overflow: hidden;
 }
 
+/* Every media img on this page is wrapped in a <picture> (for the webp
+   <source>s). <picture> is an inline box with no height of its own, so
+   the img's height:100% resolved against it as auto — the img rendered
+   at its natural ratio and the overflow:hidden container just clipped
+   away the bottom of the photo (top-of-frame crop, e.g. knees instead
+   of feet on the story photos) while object-fit/object-position did
+   nothing. Making the <picture> fill its media box restores the
+   height:100% chain these rules were written for. */
+.molosoc-hero__media picture,
+.molosoc-problem__media--immersive picture,
+.molosoc-story__media picture,
+.molosoc-section--photo-bg .molosoc-section__media picture,
+.molosoc-final-cta__media picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .molosoc-story__media img {
   width: 100%;
   height: 100%;
@@ -487,13 +505,13 @@
    centered crop clips them and shows empty wall instead. Unlike #2/#4,
    their mobile files are the same composition (just downscaled), so one
    value covers every breakpoint — no mobile override needed.
-   Scoped to the English page for now (CZ renders lang="cs-CZ"); drop
-   the :lang() guard to roll the same crop out to Czech. */
-html:lang(en) .molosoc-story-photo--cream-heel {
+   Applies to both languages — the same photos render on the CZ
+   homepage. */
+.molosoc-story-photo--cream-heel {
   object-position: 50% 75%;
 }
 
-html:lang(en) .molosoc-story-photo--drawer {
+.molosoc-story-photo--drawer {
   object-position: 50% 60%;
 }
 
