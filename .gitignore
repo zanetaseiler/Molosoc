@@ -14,6 +14,7 @@ secrets/
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Node (if theme build tooling gets added later)
 node_modules/

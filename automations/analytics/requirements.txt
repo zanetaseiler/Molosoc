@@ -1,0 +1,14 @@
+# Minimum dependencies for the read-only GA4 + Search Console connection test.
+#
+# google-analytics-data is the official GA4 Data API client (it pulls in
+# google-auth and google-api-core transitively).
+#
+# Search Console has no first-party Python client of its own — the usual route
+# is the generic google-api-python-client discovery layer, which is a large
+# dependency for the three read calls we make. Instead we sign plain REST calls
+# with google-auth's AuthorizedSession, which is already installed as a
+# transitive dependency of the GA4 client. requests is listed explicitly
+# because we rely on it directly and the rest of this repo already uses it.
+google-analytics-data>=0.18,<1
+google-auth>=2.30,<3
+requests>=2.31,<3
