@@ -85,6 +85,10 @@ def parse_args(argv=None):
                         default="markdown")
     parser.add_argument("--out", default=None,
                         help="Write the output to this path instead of stdout")
+    parser.add_argument("--hydrate", action="store_true",
+                        help="Fetch GA4 and Search Console read-only for the "
+                             "compared windows instead of reading them from the "
+                             "store. Clarity always comes from the ledger.")
     parser.add_argument("--update-ledger", action="store_true",
                         help="Merge this run's recommendations into the tracking "
                              "ledger. Off by default — analysing is read-only.")
@@ -100,7 +104,13 @@ def main(argv=None):
         store = None
     else:
         store = build_store(args)
-        report = analysis.analyse_from_store(store, today=args.today, now=now)
+        hydrator = None
+        if args.hydrate:
+            import google_hydrate as gh
+
+            hydrator = gh.live_hydrator()
+        report = analysis.analyse_from_store(store, today=args.today, now=now,
+                                             hydrator=hydrator)
 
     if args.update_ledger:
         if store is None:

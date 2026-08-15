@@ -325,3 +325,15 @@ def test_conversion_hierarchy_is_declared():
     assert hist.SUPPORTING_CONVERSIONS == (
         "ga4_key_event_begin_checkout", "ga4_key_event_add_to_cart",
     )
+
+
+def test_impossible_proportions_are_clamped_rather_than_crashing():
+    # An upstream row with more clicks than impressions must not kill the run.
+    z = th.two_proportion_z(40, 3, 40, 3)
+    assert z is not None and z == 0.0
+    assert th.is_significant_rate(40, 3, 1, 3) in (True, False)
+
+
+def test_negative_or_empty_samples_are_rejected_safely():
+    assert th.two_proportion_z(1, 0, 1, 10) is None
+    assert th.two_proportion_z(1, -5, 1, 10) is None

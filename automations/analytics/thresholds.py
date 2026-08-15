@@ -91,13 +91,25 @@ def is_significant_count(metric, current, prior):
 
 
 def two_proportion_z(successes_a, trials_a, successes_b, trials_b):
-    """Z statistic for two rates. None when either sample is empty."""
-    if not trials_a or not trials_b:
+    """Z statistic for two rates. None when either sample is empty.
+
+    Defensive about impossible inputs. An upstream report can hand back more
+    successes than trials — a query row with more clicks than impressions, a
+    sampled figure rescaled inconsistently — and a proportion above 1 makes the
+    pooled variance negative. Clamping keeps a whole analysis from dying on one
+    malformed row, which matters more than the precision lost on data that was
+    already self-contradictory.
+    """
+    if not trials_a or not trials_b or trials_a < 0 or trials_b < 0:
         return None
+
+    successes_a = min(max(successes_a, 0), trials_a)
+    successes_b = min(max(successes_b, 0), trials_b)
+
     p1 = successes_a / trials_a
     p2 = successes_b / trials_b
     pooled = (successes_a + successes_b) / (trials_a + trials_b)
-    if pooled in (0, 1):
+    if pooled <= 0 or pooled >= 1:
         return 0.0
     se = math.sqrt(pooled * (1 - pooled) * (1 / trials_a + 1 / trials_b))
     if se == 0:

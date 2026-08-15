@@ -254,6 +254,18 @@ def render_markdown(report):
             f"period covered: {coverage.get('supports_period', False)}; "
             f"comparison available: {coverage.get('supports_comparison', False)}")
     quality = report.data_quality
+    conversions = quality.get("conversions") or {}
+    if conversions:
+        state = conversions.get("state")
+        marker = "**Conversions unavailable**" if state != "ok" else "Conversions"
+        add(f"- {marker}: {conversions.get('message', '')}")
+    hydration = quality.get("hydration") or {}
+    if hydration.get("used"):
+        add(f"- Google data hydrated on demand for {len(hydration.get('windows', []))} "
+            f"window(s) in {hydration.get('api_calls_made', 0)} read-only API call(s); "
+            "not persisted. Clarity read from the durable ledger.")
+        for error in hydration.get("errors", []):
+            add(f"  - hydration issue: {error}")
     excluded = quality.get("excluded_non_production_records", 0)
     if excluded:
         hosts = ", ".join(h for h in quality.get("excluded_hosts", []) if h)

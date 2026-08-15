@@ -15,6 +15,7 @@ fresh overlapping API windows.
 import datetime as dt
 
 import anomalies as an
+import google_hydrate as gh
 import history as hist
 import periods as pr
 import recommend as rc
@@ -287,7 +288,8 @@ def build_sections(facts, inferences, recommendations, anomaly_list, index):
 
 
 def analyse(period_records, prior_records, baseline_records, windows,
-            clarity_coverage=None, excluded_records=None, now=None):
+            clarity_coverage=None, excluded_records=None, now=None,
+            conversion_readiness=None, hydration=None):
     """Build the full analysis object from already-loaded history."""
     now = now or dt.datetime.now(dt.timezone.utc)
     facts, excluded = build_facts(period_records, prior_records, windows)
@@ -331,6 +333,8 @@ def analyse(period_records, prior_records, baseline_records, windows,
             "instrumentation_anomaly_count": sum(
                 1 for a in anomaly_list if a.is_instrumentation
             ),
+            "conversions": conversion_readiness or gh.assess_conversions({}, fetched=False),
+            "hydration": hydration or {"used": False},
         },
         facts=facts, inferences=inferences, anomalies=anomaly_list,
         recommendations=recommendations, sections=sections,
@@ -340,23 +344,69 @@ def analyse(period_records, prior_records, baseline_records, windows,
     return report
 
 
-def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, now=None):
-    """Load history from the durable store and analyse it.
+def load_clarity_history(store, windows):
+    """Clarity comes only from the durable ledger.
 
-    Clarity is read from the ledger only — its API cannot return history, and
-    consecutive multi-day API windows overlap.
+    Its API cannot return history at all, and consecutive multi-day API windows
+    overlap — so a comparison built from live calls would double-count. This is
+    the one source that must be read from storage.
+    """
+    period, _ = hist.load_window(store, CLARITY, windows[pr.PERIOD])
+    prior, _ = hist.load_window(store, CLARITY, windows[pr.PRIOR])
+    baseline, _ = hist.load_window(store, CLARITY, windows[pr.BASELINE])
+    coverage = pr.ledger_coverage(hist.available_dates(store, CLARITY), windows)
+    return period, prior, baseline, coverage
+
+
+def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, now=None,
+                       hydrator=None):
+    """Analyse using stored Clarity history plus, optionally, hydrated Google data.
+
+    Without a hydrator, every source is read from the store — the pure-storage
+    path, which is what the offline fixtures exercise.
+
+    With a hydrator, GA4 and Search Console are fetched for exactly the windows
+    being compared and normalized through the same canonicalization, production
+    filtering and record model as everything else. They are deliberately not
+    persisted: those two sources can reconstruct any past period on demand, so
+    storing them daily would be a second collection system earning nothing.
     """
     windows = pr.build_windows(today=today, period_days=period_days)
 
-    period_records, prior_records, baseline_records = [], [], []
-    for source in (GA4, GSC, CLARITY):
-        got, _ = hist.load_window(store, source, windows[pr.PERIOD])
-        period_records += got
-        got, _ = hist.load_window(store, source, windows[pr.PRIOR])
-        prior_records += got
-        got, _ = hist.load_window(store, source, windows[pr.BASELINE])
-        baseline_records += got
+    period_records, prior_records, baseline_records, coverage = \
+        load_clarity_history(store, windows)
 
-    coverage = pr.ledger_coverage(hist.available_dates(store, CLARITY), windows)
+    conversion_readiness = None
+    hydration_note = {"used": False}
+
+    if hydrator is None:
+        for source in (GA4, GSC):
+            got, _ = hist.load_window(store, source, windows[pr.PERIOD])
+            period_records += got
+            got, _ = hist.load_window(store, source, windows[pr.PRIOR])
+            prior_records += got
+            got, _ = hist.load_window(store, source, windows[pr.BASELINE])
+            baseline_records += got
+    else:
+        current = hydrator.hydrate(windows[pr.PERIOD])
+        previous = hydrator.hydrate(windows[pr.PRIOR])
+        period_records += current.records
+        prior_records += previous.records
+        conversion_readiness = gh.assess_conversions(current.key_events, fetched=current.ok)
+        hydration_note = {
+            "used": True,
+            "windows": [windows[pr.PERIOD].to_dict(), windows[pr.PRIOR].to_dict()],
+            "api_calls_made": hydrator.calls_made,
+            "period_records": len(current.records),
+            "prior_records": len(previous.records),
+            "errors": list(current.errors) + list(previous.errors),
+            "persisted": False,
+            "note": ("GA4 and Search Console were fetched read-only for the compared "
+                     "windows and not persisted. Clarity came from the durable "
+                     "ledger, which is the only source that cannot be re-queried."),
+        }
+
     return analyse(period_records, prior_records, baseline_records, windows,
-                   clarity_coverage=coverage, now=now)
+                   clarity_coverage=coverage, now=now,
+                   conversion_readiness=conversion_readiness,
+                   hydration=hydration_note)
