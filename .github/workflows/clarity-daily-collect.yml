@@ -1,25 +1,67 @@
-name: Clarity Daily Collection (manual, single authoritative snapshot)
+name: Clarity Daily Collection (single authoritative snapshot)
 
-# One-off manual run of the existing Phase 1 collector (clarity_daily_collect.py).
-# workflow_dispatch ONLY: no push trigger, no schedule/cron — this does not
-# start recurring collection, that stays a separate, later decision.
+# Recurring collection for the existing Phase 1 collector
+# (clarity_daily_collect.py), plus manual dispatch for a missed day.
 #
-# Makes exactly ONE live Clarity API call: numOfDays=1 is a hardcoded constant
-# in clarity_daily_collect.py, not a flag, and the script reserves 1 call from
-# the persisted daily budget ledger before calling. Duplicate protection is
-# built into the collector itself — a second run on a UTC date already
-# collected is skipped, never overwritten, unless --force is passed, which
-# this workflow deliberately never does.
+# This workflow collects Clarity history and nothing else. It generates no
+# report, runs no analysis, and writes nothing back to Clarity, GA4, Search
+# Console, WordPress, or the site.
+#
+# Makes exactly ONE live Clarity API call per run: numOfDays=1 is a hardcoded
+# constant in clarity_daily_collect.py, not a flag, and the script reserves 1
+# call from the persisted daily budget ledger (cap 3 of Clarity's 10) before
+# calling. Duplicate protection is built into the collector itself — a second
+# run on a UTC date already collected is skipped before a call is spent and
+# never overwritten, unless --force is passed, which this workflow deliberately
+# never does.
+#
+# WHY 02:20 UTC
+#
+# Clarity's numOfDays=1 is a trailing 24-hour window from the moment of the
+# call, not a calendar day, so the collection time defines the bucket boundary.
+# Three things drove the choice:
+#
+#   1. Quiet edges. 02:20 UTC is 03:20 (CET) / 04:20 (CEST) local. Traffic is
+#      Czech — every session in the verified run came from the Czech Republic —
+#      so both edges of the window fall in the lowest-traffic hours and a real
+#      browsing session is very unlikely to be split across two daily buckets.
+#   2. Slack after the date rollover. GitHub's scheduled runs are best-effort
+#      and can be delayed by tens of minutes under load. 2h20m past 00:00 UTC
+#      means a late run still records on the UTC date it was meant for. A time
+#      near midnight could slip across the boundary and skip a date entirely —
+#      and a skipped Clarity day cannot be backfilled.
+#   3. Off the hour. Scheduled workflows cluster at :00 and queue behind each
+#      other; an odd minute measurably reduces the delay.
+#
+# The UTC time is fixed, so the local time shifts by an hour across DST. That
+# is intentional: the window stays exactly 24 hours and non-overlapping, which
+# is what the data model requires. A fixed local time would produce a 23- or
+# 25-hour window twice a year.
+#
+# NOTE: GitHub only runs `schedule` triggers for workflows on the DEFAULT
+# branch. Until this branch is merged to main, the cron will not fire and only
+# workflow_dispatch works.
 
 on:
+  schedule:
+    # 02:20 UTC daily — see the rationale above.
+    - cron: "20 2 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
+# Two overlapping runs could both pass the already-collected check before
+# either writes, producing two snapshots for one UTC date. Queue instead of
+# cancelling: a cancelled run mid-write is worse than a late one.
+concurrency:
+  group: clarity-daily-collection
+  cancel-in-progress: false
+
 jobs:
   collect:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
