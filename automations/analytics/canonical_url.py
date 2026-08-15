@@ -70,6 +70,48 @@ UNKNOWN = "unknown"
 UNATTRIBUTED = "(unattributed)"
 GA4_NULL_VALUES = frozenset({"", "(not set)", "(none)", "(other)"})
 
+# --- language -------------------------------------------------------------
+# The site runs Polylang with per-language slugs and no language path prefix:
+# the Czech product page is /product/molosoc-hydratacni-navleky-na-nohy/ and
+# the English legal page is /terms-of-services/, both at the root. So language
+# is not reliably derivable from the URL alone.
+#
+# Rather than guess, each page records both a language and how it was
+# determined. `und` (undetermined) is a legitimate, common outcome — and every
+# record keeps its full path, so language can be back-filled later once the
+# Polylang URL mode is confirmed, without re-collecting anything.
+CZECH = "cs"
+ENGLISH = "en"
+UNDETERMINED = "und"
+
+LANG_PATH_PREFIX = "path_prefix"
+LANG_QUERY_PARAM = "query_param"
+LANG_SLUG_LEXICON = "slug_lexicon"
+LANG_UNDETERMINED = "undetermined"
+
+# Polylang accepts several spellings; the theme checks for 'cz'.
+_LANGUAGE_ALIASES = {
+    "cs": CZECH, "cz": CZECH, "cs-cz": CZECH, "cs_cz": CZECH,
+    "en": ENGLISH, "en-us": ENGLISH, "en-gb": ENGLISH, "en_us": ENGLISH,
+}
+
+# Seed lexicon of known first path segments, taken from the theme's own footer
+# links and the seo/cz-pages drafts. A heuristic, flagged as such on every
+# record it decides — not a source of truth.
+_CZECH_SLUGS = frozenset({
+    "zasady-ochrany-osobnich-udaju", "obchodni-podminky", "zasady-dopravy",
+    "vraceni-a-refundace", "magazin", "kurici-oko", "popraskane-paty",
+    "zarostly-nehet", "jak-odstranit-kurici-oko", "kurici-oko-na-chodidle",
+    "hydratacni-navleky-na-nohy",
+})
+_ENGLISH_SLUGS = frozenset({
+    "privacy-policies", "terms-of-services", "shipping-policy", "refund-policy",
+    "legal-disclaimer", "blog", "cracked-heels", "ingrown-toenails",
+    "dry-skin-feet", "hardened-skin-calluses", "foot-covers", "treatment",
+    "prevent", "callus-remover", "foot-cream-that-works",
+    "moisture-lock-foot-cover", "fix-permanently",
+})
+
 
 class CanonicalUrl:
     """The canonical identity of a page, plus what was done to get there."""
@@ -213,6 +255,50 @@ def canonicalize(url, default_origin=DEFAULT_ORIGIN):
 
 def is_production_url(url, default_origin=DEFAULT_ORIGIN):
     return canonicalize(url, default_origin).is_production
+
+
+def detect_language(url_or_canonical, default_origin=DEFAULT_ORIGIN):
+    """Return (language_code, how_it_was_determined) for a page.
+
+    Checked in order of reliability: an explicit language path prefix, then an
+    explicit ?lang= parameter, then the slug lexicon. Anything else is
+    undetermined — which is honest, and better than a confident wrong label on
+    a site whose two languages share a URL root.
+    """
+    canonical = (url_or_canonical if isinstance(url_or_canonical, CanonicalUrl)
+                 else canonicalize(url_or_canonical, default_origin))
+
+    if canonical.is_unattributed:
+        return UNDETERMINED, LANG_UNDETERMINED
+
+    segments = [s for s in canonical.path.split("/") if s]
+
+    if segments:
+        first = segments[0].lower()
+        if first in _LANGUAGE_ALIASES:
+            return _LANGUAGE_ALIASES[first], LANG_PATH_PREFIX
+
+    if canonical.query:
+        for name, value in parse_qsl(canonical.query, keep_blank_values=True):
+            if name.lower() in ("lang", "language"):
+                code = _LANGUAGE_ALIASES.get(value.lower())
+                if code:
+                    return code, LANG_QUERY_PARAM
+
+    # Check every segment: the product page carries its language in the slug
+    # (/product/molosoc-hydratacni-navleky-na-nohy/), not the first segment.
+    for segment in segments:
+        lowered = segment.lower()
+        if lowered in _CZECH_SLUGS:
+            return CZECH, LANG_SLUG_LEXICON
+        if lowered in _ENGLISH_SLUGS:
+            return ENGLISH, LANG_SLUG_LEXICON
+    for segment in segments:
+        lowered = segment.lower()
+        if any(czech in lowered for czech in _CZECH_SLUGS):
+            return CZECH, LANG_SLUG_LEXICON
+
+    return UNDETERMINED, LANG_UNDETERMINED
 
 
 class ExclusionReport:

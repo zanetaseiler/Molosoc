@@ -24,7 +24,7 @@ date keeps the daily buckets non-overlapping; the collector enforces that.
 import datetime as dt
 
 from analytics_common import as_number
-from canonical_url import canonicalize
+from canonical_url import canonicalize, detect_language
 from records import (
     CLARITY, COUNTRY, DATA_QUALITY, DEVICE, GA4, GSC, OPERATING_SYSTEM, PAGE,
     PAGE_TITLE, PERFORMANCE, QUERY, REFERRER, SITE, SITE_ENTITY_ID, BROWSER,
@@ -56,6 +56,30 @@ CLARITY_DIMENSIONS = {
 
 DIRECT_REFERRER = "(direct)"
 
+# Conversion events, per the approved definitions. purchase is the headline
+# business conversion; the other two are supporting funnel steps recorded when
+# GA4 reports them. Each is its own metric — never a single blended "conversions"
+# figure, which would make the funnel unreadable.
+HEADLINE_CONVERSION = "purchase"
+SUPPORTING_FUNNEL_EVENTS = ("begin_checkout", "add_to_cart")
+TRACKED_KEY_EVENTS = (HEADLINE_CONVERSION,) + SUPPORTING_FUNNEL_EVENTS
+
+
+def page_context(url):
+    """Canonical identity plus the language metadata every page record carries."""
+    canonical = canonicalize(url)
+    language, source = detect_language(canonical)
+    notes = {
+        "host_classification": canonical.classification,
+        "original_url": canonical.original,
+        # The full path is preserved so language can be re-derived later
+        # without re-collecting anything.
+        "path": canonical.path,
+    }
+    if canonical.dropped_params:
+        notes["dropped_params"] = canonical.dropped_params
+    return canonical, language, source, notes
+
 
 def _rows(entry):
     rows = entry.get("information") or []
@@ -83,14 +107,16 @@ def clarity_records(payload, date, collected_at, window_end=None, num_days=1):
     out = []
 
     def add(entity_type, entity_id, metric, value, metric_class=PERFORMANCE,
-            sample_basis=None, raw=None, notes=None):
+            sample_basis=None, raw=None, notes=None, language=None,
+            language_source=None):
         out.append(MetricRecord(
             date=date, source=CLARITY, entity_type=entity_type, entity_id=entity_id,
             metric=metric, value=value, metric_class=metric_class,
             sample_basis=sample_basis, window_days=num_days,
             collected_at=collected_at, window_end=window_end,
             is_final=True,  # Clarity live insights are not revised
-            raw_value=raw, notes=notes or {},
+            raw_value=raw, language=language, language_source=language_source,
+            notes=notes or {},
         ))
 
     for entry in _as_metric_list(payload):
@@ -146,12 +172,12 @@ def clarity_records(payload, date, collected_at, window_end=None, num_days=1):
             for row in rows:
                 if not isinstance(row, dict):
                     continue
-                canonical = canonicalize(row.get("url") or row.get("name") or "")
+                canonical, language, lang_source, notes = page_context(
+                    row.get("url") or row.get("name") or "")
                 add(PAGE, canonical.url, "clarity_visits",
                     as_number(row.get("visitsCount", row.get("sessionsCount", 0))),
-                    raw=row.get("visitsCount"),
-                    notes={"host_classification": canonical.classification,
-                           "original_url": canonical.original})
+                    raw=row.get("visitsCount"), notes=notes,
+                    language=language, language_source=lang_source)
 
         elif name in CLARITY_DIMENSIONS:
             entity_type, metric = CLARITY_DIMENSIONS[name]
@@ -195,12 +221,14 @@ def ga4_records(result, collected_at):
     final = _is_final(window["end"], collected_at)
     out = []
 
-    def add(entity_type, entity_id, metric, value, sample_basis=None, notes=None):
+    def add(entity_type, entity_id, metric, value, sample_basis=None, notes=None,
+            language=None, language_source=None):
         out.append(MetricRecord(
             date=date, source=GA4, entity_type=entity_type, entity_id=entity_id,
             metric=metric, value=value, metric_class=PERFORMANCE,
             sample_basis=sample_basis, window_days=days, collected_at=collected_at,
-            window_end=window["end"], is_final=final, notes=notes or {},
+            window_end=window["end"], is_final=final, language=language,
+            language_source=language_source, notes=notes or {},
         ))
 
     add(SITE, SITE_ENTITY_ID, "ga4_users", as_number(result.get("users", 0)))
@@ -208,15 +236,22 @@ def ga4_records(result, collected_at):
     add(SITE, SITE_ENTITY_ID, "ga4_views", as_number(result.get("views", 0)))
 
     for row in result.get("landingPages", []):
-        canonical = canonicalize(row.get("landingPage", ""))
-        notes = {"host_classification": canonical.classification,
-                 "original_url": canonical.original}
-        if canonical.dropped_params:
-            notes["dropped_params"] = canonical.dropped_params
+        canonical, language, lang_source, notes = page_context(row.get("landingPage", ""))
         add(PAGE, canonical.url, "ga4_sessions", as_number(row.get("sessions", 0)),
-            notes=notes)
+            notes=notes, language=language, language_source=lang_source)
         add(PAGE, canonical.url, "ga4_users", as_number(row.get("activeUsers", 0)),
-            notes=notes)
+            notes=notes, language=language, language_source=lang_source)
+
+    # Key events, when the payload carries them. purchase is the headline
+    # business conversion; begin_checkout and add_to_cart are the supporting
+    # funnel steps. Each stays its own metric so the funnel remains readable.
+    key_events = result.get("keyEvents") or {}
+    sessions = as_number(result.get("sessions", 0))
+    for event_name in TRACKED_KEY_EVENTS:
+        if event_name not in key_events:
+            continue
+        add(SITE, SITE_ENTITY_ID, f"ga4_key_event_{event_name}",
+            as_number(key_events[event_name]), sample_basis=sessions)
 
     return out
 
@@ -232,12 +267,14 @@ def gsc_records(result, collected_at):
     final = _is_final(window["end"], collected_at)
     out = []
 
-    def add(entity_type, entity_id, metric, value, sample_basis=None, notes=None):
+    def add(entity_type, entity_id, metric, value, sample_basis=None, notes=None,
+            language=None, language_source=None):
         out.append(MetricRecord(
             date=date, source=GSC, entity_type=entity_type, entity_id=entity_id,
             metric=metric, value=value, metric_class=PERFORMANCE,
             sample_basis=sample_basis, window_days=days, collected_at=collected_at,
-            window_end=window["end"], is_final=final, notes=notes or {},
+            window_end=window["end"], is_final=final, language=language,
+            language_source=language_source, notes=notes or {},
         ))
 
     impressions = as_number(result.get("impressions", 0))
@@ -262,15 +299,15 @@ def gsc_records(result, collected_at):
             sample_basis=row_impressions)
 
     for row in result.get("topPages", []):
-        canonical = canonicalize(row.get("page", ""))
-        notes = {"host_classification": canonical.classification,
-                 "original_url": canonical.original}
+        canonical, language, lang_source, notes = page_context(row.get("page", ""))
+        lang = {"language": language, "language_source": lang_source}
         row_impressions = as_number(row.get("impressions", 0))
-        add(PAGE, canonical.url, "gsc_clicks", as_number(row.get("clicks", 0)), notes=notes)
-        add(PAGE, canonical.url, "gsc_impressions", row_impressions, notes=notes)
+        add(PAGE, canonical.url, "gsc_clicks", as_number(row.get("clicks", 0)),
+            notes=notes, **lang)
+        add(PAGE, canonical.url, "gsc_impressions", row_impressions, notes=notes, **lang)
         add(PAGE, canonical.url, "gsc_ctr", float(row.get("ctr", 0.0)),
-            sample_basis=row_impressions, notes=notes)
+            sample_basis=row_impressions, notes=notes, **lang)
         add(PAGE, canonical.url, "gsc_position", float(row.get("position", 0.0)),
-            sample_basis=row_impressions, notes=notes)
+            sample_basis=row_impressions, notes=notes, **lang)
 
     return out

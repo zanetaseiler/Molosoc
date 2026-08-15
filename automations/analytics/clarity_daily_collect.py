@@ -37,6 +37,7 @@ Usage:
 
 import argparse
 import datetime as dt
+import os
 import sys
 
 import requests
@@ -48,6 +49,7 @@ from normalize import clarity_records
 from quality import assess_snapshot, worst_severity
 from records import CLARITY, utc_now_iso
 from storage import LocalFileStore, StorageError, facts_key, raw_key, raw_prefix
+from storage_gcs import BUCKET_ENV
 
 # Snapshots are always single-day. This is a constant, not an option: see the
 # double-counting note above.
@@ -161,8 +163,15 @@ def parse_args(argv=None):
             "and store it. Makes exactly one API call."
         )
     )
+    parser.add_argument("--gcs-bucket", default=None,
+                        help="Cloud Storage bucket for durable production storage. "
+                             "Falls back to the ANALYTICS_BUCKET environment variable. "
+                             "Without either, the non-durable local store is used.")
+    parser.add_argument("--gcs-prefix", default="",
+                        help="Optional object-name prefix inside the bucket")
     parser.add_argument("--store-root", default="analytics-data",
-                        help="Directory for the local store (default: analytics-data)")
+                        help="Directory for the local store (default: analytics-data). "
+                             "Development and workstation runs only — not durable.")
     parser.add_argument("--date", default=None,
                         help="UTC date to label the snapshot (default: today)")
     parser.add_argument("--force", action="store_true",
@@ -175,9 +184,24 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
+def build_store(args):
+    """Durable store when a bucket is configured, local store otherwise.
+
+    The choice is explicit and reported. It is never silently downgraded: a
+    local store on an ephemeral runner would report success and preserve
+    nothing, and Clarity history cannot be backfilled.
+    """
+    bucket = args.gcs_bucket or os.environ.get(BUCKET_ENV, "").strip()
+    if bucket:
+        from storage_gcs import GCSStore
+
+        return GCSStore(bucket, prefix=args.gcs_prefix)
+    return LocalFileStore(args.store_root)
+
+
 def main(argv=None):
     args = parse_args(argv)
-    store = LocalFileStore(args.store_root)
+    store = build_store(args)
     budget = (ClarityCallBudget(store, automated_cap=args.automated_cap)
               if args.automated_cap else ClarityCallBudget(store))
 

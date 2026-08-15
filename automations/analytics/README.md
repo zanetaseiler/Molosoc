@@ -233,19 +233,71 @@ different kind of problem from a UX one.
 
 ## Storage
 
-`storage.py` defines one interface (`SnapshotStore`) with two backends that
-need no infrastructure: `LocalFileStore` (atomic JSON writes, for development
-and workstation runs) and `InMemoryStore` (tests). Writes never overwrite
-without an explicit flag, and raw snapshots are keyed by collection instant so
-a re-collection is a new revision rather than a replacement.
+`storage.py` defines one interface (`SnapshotStore`) with three backends:
 
-**Neither shipped backend is durable** — `is_durable()` returns False for both,
-and the collector prints a warning. A local store on an ephemeral CI runner
-would report success and preserve nothing, and Clarity history cannot be
-backfilled. A production backend implements the same three methods.
+| Backend | Durable | Use |
+|---|---|---|
+| `GCSStore` (`storage_gcs.py`) | yes | Production historical store |
+| `LocalFileStore` | no | Development, workstation runs |
+| `InMemoryStore` | no | Tests |
+
+Layout is identical across all three, so a local store can be copied into the
+bucket without translation:
+
+```
+raw/{source}/{date}/{collected_at}.json     one object per collection
+facts/{source}/{date}.json                  normalized records
+facts/{source}/{date}.quality.json          flags and excluded rows
+state/clarity_call_budget/{date}.json       per-UTC-day call ledger
+```
+
+Raw payloads are kept separate from normalized records deliberately: if
+normalization has a bug, the facts layer can be rebuilt from raw — and for
+Clarity there is no other way, because the API cannot return the day again.
+
+**Nothing overwrites an authoritative snapshot silently.** Creates go out with
+`if_generation_match=0`, GCS's atomic create-if-absent, so the write fails
+server-side if the object already exists — even under a race between two
+collectors. Overwriting requires an explicit `overwrite=True`, used only for
+derived facts. Raw snapshots are keyed by collection instant, so a
+re-collection is a new object and the precondition never even fires.
+
+`store_from_env()` raises rather than falling back to a local store when the
+bucket is unconfigured: a silent downgrade would report success and preserve
+nothing.
+
+### Storage credentials
+
+A **separate identity** from the read-only GA4/Search Console service account,
+which stays read-only. The writer key is read from `ANALYTICS_STORAGE_SA_JSON`
+(raw or base64), parsed in memory, registered with the redactor, and never
+logged. When the variable is absent the client falls back to Application
+Default Credentials, so Workload Identity works without a code change.
+
+Required permissions are exactly three — `storage.objects.create`, `.get`,
+`.list`. No delete, no admin. A test asserts the list stays that narrow.
 
 `analytics-data/` is gitignored. Git is deliberately not the analytics
 database.
+
+## Language and conversions
+
+Every **page** record carries `language` and `language_source`. The site runs
+Polylang with per-language slugs and no language path prefix — the Czech
+product page and the English legal pages both sit at the root — so language is
+detected in order of reliability: path prefix (`/cs/`), then `?lang=`, then a
+slug lexicon seeded from the theme's own links. Anything else is `und`
+(undetermined), which is a legitimate answer rather than a guess, and every
+record keeps its full `path` so language can be back-filled later without
+re-collecting.
+
+Reporting is **not** split by language yet — current volume does not justify it
+— but the history supports it when it does.
+
+Conversion events, when GA4 reports them: `purchase` is the headline business
+conversion, with `begin_checkout` and `add_to_cart` as supporting funnel steps.
+Each is its own metric (`ga4_key_event_purchase`, …) with site sessions as its
+`sample_basis`, never a single blended "conversions" figure.
 
 ## What Phase 1 does not include
 

@@ -82,6 +82,13 @@ class MetricRecord:
     window_end: str = None
     is_final: bool = True
     raw_value: object = None
+    #: Language of the page ("cs", "en", "und"), and how it was determined.
+    #: Preserved on every page record so CZ/EN can be segmented later; reporting
+    #: is not split by language yet, but the history will support it when volume
+    #: justifies it. "und" is a legitimate value on a site whose two languages
+    #: share a URL root — the full path is kept so it can be back-filled.
+    language: str = None
+    language_source: str = None
     notes: dict = field(default_factory=dict)
 
     def __post_init__(self):

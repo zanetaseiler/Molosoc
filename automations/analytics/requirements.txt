@@ -12,3 +12,8 @@
 google-analytics-data>=0.18,<1
 google-auth>=2.30,<3
 requests>=2.31,<3
+
+# Durable historical storage (Phase 1). Only needed to run the collector
+# against the production bucket — the offline test suite emulates the client,
+# so tests never require this package, a bucket, or credentials.
+google-cloud-storage>=2.14,<4
