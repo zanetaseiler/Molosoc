@@ -305,3 +305,84 @@ No Marketing Analysis Agent, no recurring report, no report frequency, no
 scheduling or cron, no LLM-generated recommendations, no dashboards, no SEO or
 content changes, and no staging de-indexing. The collector has no automated
 trigger: wiring it to CI requires the durable-storage decision first.
+
+---
+
+# Phase 2 — Marketing Analysis Agent
+
+Answers one question from the Phase 1 history: **what changed, why does it
+matter, and what should we adjust next?**
+
+Analysis only. It reads the durable store, calls no API, and changes nothing —
+not the site, not GA4, not Search Console, not Clarity, not WordPress. No
+recommendation is ever applied anywhere, and there is no report schedule.
+
+Running it costs **zero** Clarity API calls: Clarity comes from the ledger, not
+from fresh overlapping API windows.
+
+## Modules
+
+| Module | Responsibility |
+|---|---|
+| `analysis_model.py` | Fact / Inference / Anomaly / Recommendation / Report schema and its invariants |
+| `periods.py` | Comparison windows, anchored to Search Console's 3-day lag; ledger coverage |
+| `thresholds.py` | Eligibility, significance, and the site readiness gate |
+| `history.py` | Loading and aggregating stored records (counts sum, rates recompute, positions weight) |
+| `anomalies.py` | Performance vs instrumentation anomaly detection |
+| `signals.py` | The six named cross-source signals |
+| `recommend.py` | Signal → recommendation, priority rubric, measurement plans |
+| `tracking.py` | Recommendation ledger and outcome classification |
+| `analysis.py` | Orchestrator: builds facts, runs signals, assembles the report |
+| `render.py` | Human-readable Markdown renderer |
+| `analyze_cli.py` | Manual entry point (no schedule) |
+| `fixtures.py` | Deterministic scenarios: low volume, healthy, broken instrumentation |
+
+## Facts and inferences stay separate
+
+Structurally, not by convention. An `Inference` cannot be constructed without
+referencing the fact ids it rests on, must carry at least one alternative
+explanation, holds `causal_claim=False` as an invariant, and is **rejected at
+construction** if its statement uses causal language ("caused", "led to",
+"because of"). A sentence that asserts causation from this data is
+unfalsifiable, and the cheapest place to stop it is before it exists.
+
+## The readiness gate
+
+Below 100 sessions in the period the agent reports every fact it measured and
+says **`insufficient data for recommendation`**, issuing nothing above Monitor.
+At Molosoc's current volume that is the expected state, and it is the correct
+one — a report that manufactures advice from four clicks is worse than one that
+says it cannot tell yet.
+
+Three gates stand between a signal and an action: the site readiness gate,
+instrumentation suppression, and per-entity eligibility plus significance.
+
+## Signals
+
+`demand_up_capture_down`, `capture_up_satisfaction_down`,
+`friction_against_intent`, `hidden_gem`, `threshold_proximity`,
+`source_disagreement`. Each is a named rule with declared inputs that either
+fires or does not. `source_disagreement` never becomes an action — it is a
+reason *not* to act.
+
+## Running it
+
+```bash
+# deterministic fixture — no storage, no credentials
+python3 automations/analytics/analyze_cli.py --fixture healthy
+python3 automations/analytics/analyze_cli.py --fixture low_volume
+
+# against the durable store
+export ANALYTICS_BUCKET=molosoc-analytics-history
+export ANALYTICS_STORAGE_SA_JSON='...'
+python3 automations/analytics/analyze_cli.py --format both --out analysis.md
+```
+
+`--update-ledger` is off by default: analysing is read-only, and writing the
+recommendation ledger is an explicit choice.
+
+## Not included
+
+No report schedule, no frequency decision, no email or delivery, no dashboard,
+no LLM-generated recommendations, and no automatic application of any
+recommendation. Staging remediation remains a separate task.
