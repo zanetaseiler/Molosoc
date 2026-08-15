@@ -33,6 +33,7 @@ import datetime as dt
 import json
 import sys
 
+from analytics_common import redact
 from storage import StorageError
 from storage_gcs import store_from_env
 
@@ -48,8 +49,8 @@ def main(argv=None):
 
     try:
         store = store_from_env()
-    except StorageError as exc:
-        print(f"FAIL setup: {exc}", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 — incl. auth-layer errors, redacted
+        print(f"FAIL setup: {redact(exc)}", file=sys.stderr)
         return 1
 
     print(f"Store: {store.describe()}")
@@ -58,7 +59,7 @@ def main(argv=None):
     try:
         store.put_json(key, payload)
     except StorageError as exc:
-        print(f"FAIL write: {exc}", file=sys.stderr)
+        print(f"FAIL write: {redact(exc)}", file=sys.stderr)
         return 1
     print(f"PASS write: {key}")
 
@@ -66,7 +67,7 @@ def main(argv=None):
     try:
         read_back = store.get_json(key)
     except StorageError as exc:
-        print(f"FAIL read: {exc}", file=sys.stderr)
+        print(f"FAIL read: {redact(exc)}", file=sys.stderr)
         return 1
     if read_back != payload:
         print(f"FAIL read: content mismatch\n  wrote: {json.dumps(payload)}\n  read:  {json.dumps(read_back)}",
@@ -78,7 +79,7 @@ def main(argv=None):
     try:
         names = store.list_keys("_verification/")
     except StorageError as exc:
-        print(f"FAIL list: {exc}", file=sys.stderr)
+        print(f"FAIL list: {redact(exc)}", file=sys.stderr)
         return 1
     if key not in names:
         print(f"FAIL list: {key} not found under _verification/ (saw {len(names)} object(s))",
@@ -94,7 +95,7 @@ def main(argv=None):
         return 1
     except StorageError as exc:
         if "already exists" not in str(exc):
-            print(f"FAIL create-if-absent: rejected, but not for the expected reason: {exc}",
+            print(f"FAIL create-if-absent: rejected, but not for the expected reason: {redact(exc)}",
                   file=sys.stderr)
             return 1
         print("PASS create-if-absent: second write to the same key was correctly refused")

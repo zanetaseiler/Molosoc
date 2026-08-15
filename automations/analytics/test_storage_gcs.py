@@ -337,3 +337,37 @@ def test_store_from_env_refuses_to_fall_back_to_a_local_store():
     # A silent fallback would report success and preserve nothing.
     with pytest.raises(StorageError, match="Refusing to fall back"):
         sg.store_from_env()
+
+
+# --------------------------------------------------------------------------
+# storage_connection_test hardening
+# --------------------------------------------------------------------------
+
+def test_storage_connection_test_redacts_every_printed_error(monkeypatch, capsys):
+    """Every failure path prints through redact(), so a credential that reaches
+    an exception message cannot land in a CI log."""
+    import storage_connection_test as sct
+
+    monkeypatch.setenv(sg.CREDENTIAL_ENV, json.dumps(FAKE_KEY))
+    sg.load_storage_credentials_info()
+
+    def leaky_store_from_env():
+        raise RuntimeError(f"auth failed with {FAKE_KEY['private_key']}")
+
+    monkeypatch.setattr(sct, "store_from_env", leaky_store_from_env)
+
+    assert sct.main([]) == 1
+    err = capsys.readouterr().err
+    assert "STORAGEFAKEKEYMATERIAL" not in err
+    assert "[REDACTED]" in err
+
+
+def test_storage_connection_test_catches_non_storage_errors(monkeypatch, capsys):
+    """An auth-layer exception must not escape as an unredacted traceback."""
+    import storage_connection_test as sct
+
+    monkeypatch.setattr(sct, "store_from_env",
+                        lambda: (_ for _ in ()).throw(ValueError("bad key format")))
+
+    assert sct.main([]) == 1
+    assert "FAIL setup" in capsys.readouterr().err
