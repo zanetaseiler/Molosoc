@@ -16,5 +16,9 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# Local analytics store. Git is deliberately NOT the analytics database —
+# snapshots belong in durable external storage, not in this repo's history.
+analytics-data/
+
 # Node (if theme build tooling gets added later)
 node_modules/
