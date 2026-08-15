@@ -1,0 +1,58 @@
+name: Analytics Storage Verification (manual, synthetic data only)
+
+# Companion to analytics-connection-test.yml, for the GCS durable-storage
+# backend specifically. workflow_dispatch ONLY: no push trigger, no schedule.
+# This does not start any recurring collection — that stays a separate,
+# later decision. Makes zero Clarity API calls; storage_connection_test.py
+# never imports clarity_api.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit tests
+        run: python3 -m pytest automations/analytics/ -q
+
+      - name: Check ANALYTICS_STORAGE_SA_JSON is present
+        env:
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+        run: |
+          if [ -z "$ANALYTICS_STORAGE_SA_JSON" ]; then
+            echo "ANALYTICS_STORAGE_SA_JSON is not set for this repository/branch."
+            echo "Add it under Settings -> Secrets and variables -> Actions -> Secrets."
+            exit 1
+          fi
+          echo "Secret is present (contents never printed)."
+
+      - name: Check ANALYTICS_BUCKET is present
+        env:
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: |
+          if [ -z "$ANALYTICS_BUCKET" ]; then
+            echo "ANALYTICS_BUCKET is not set for this repository/branch."
+            echo "Add it under Settings -> Secrets and variables -> Actions -> Variables."
+            exit 1
+          fi
+          echo "ANALYTICS_BUCKET=$ANALYTICS_BUCKET"
+
+      - name: Run the synthetic GCS storage verification
+        env:
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: python3 automations/analytics/storage_connection_test.py
