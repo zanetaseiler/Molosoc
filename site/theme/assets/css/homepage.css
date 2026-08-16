@@ -284,7 +284,7 @@
      photography nearly vanish over the cream/white sections below, so
      past the hero they swap to a warm opaque off-white fill with
      charcoal text — same capsules, same sizes, different contrast. */
-  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children) > a,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children):not(.lang-item) > a,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children {
     background: rgba(252, 251, 248, 0.9);
     border-color: rgba(36, 29, 23, 0.24);
@@ -300,7 +300,7 @@
     filter: none;
   }
 
-  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children) > a:hover,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children):not(.lang-item) > a:hover,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children:hover {
     background: rgba(255, 255, 255, 0.97);
     border-color: rgba(36, 29, 23, 0.34);
