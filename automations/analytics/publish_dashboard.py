@@ -121,6 +121,37 @@ def load_settings(env=None):
     }
 
 
+def describe_host_shape(host):
+    """Say what is wrong with a hostname without disclosing it.
+
+    The host arrives from a masked secret, so a DNS failure otherwise leaves
+    nothing to act on: the log says "Name or service not known" and shows
+    `***`. These observations are about the value's shape, never its content,
+    and they catch the mistakes that actually happen — a URL pasted where a
+    bare hostname belongs, a trailing path, an embedded port.
+    """
+    host = host or ""
+    notes = []
+    if "://" in host:
+        scheme = host.split("://", 1)[0]
+        notes.append(f"it starts with {scheme!r}:// — use a bare hostname, "
+                     "not a URL (ftp.example.com, not ftp://ftp.example.com)")
+    if "/" in host.split("://")[-1]:
+        notes.append("it contains '/' — a hostname carries no path")
+    remainder = host.split("://")[-1].split("/")[0]
+    if ":" in remainder:
+        notes.append("it contains ':' — set the port with --port, not in the host")
+    if any(ch.isspace() for ch in host):
+        notes.append("it contains whitespace")
+    if remainder and "." not in remainder:
+        notes.append("it has no dot — that is a bare label, not a fully "
+                     "qualified hostname")
+    if not notes:
+        notes.append("its shape looks like a hostname, so the name itself may "
+                     "be wrong, or DNS for it is unavailable from the runner")
+    return notes
+
+
 def connect(settings, port=FTPS_PORT):
     """Explicit FTPS: upgrade the control channel before sending credentials."""
     context = ssl.create_default_context()
@@ -271,6 +302,16 @@ def main(argv=None):
 
     except PublishError as exc:
         print(f"FAIL {redact(exc)}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        # DNS and connection failures land here. The host is a masked secret,
+        # so say what is wrong with its shape rather than leaving the log with
+        # nothing but "Name or service not known" and three asterisks.
+        print(f"FAIL could not reach the report host: {redact(exc)}", file=sys.stderr)
+        print(f"  {HOST_ENV} could not be resolved. Without disclosing it:",
+              file=sys.stderr)
+        for note in describe_host_shape(settings["host"]):
+            print(f"    - {note}", file=sys.stderr)
         return 1
     except ftplib.all_errors as exc:
         print(f"FAIL FTPS error: {redact(exc)}", file=sys.stderr)

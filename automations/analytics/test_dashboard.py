@@ -513,3 +513,34 @@ def test_the_dashboard_is_not_written_into_the_repository(tmp_path):
 
 def test_the_schema_version_is_stated_on_the_page(healthy):
     assert rs.SCHEMA_VERSION in dash.render_dashboard(healthy)
+
+
+# --------------------------------------------------------------------------
+# Diagnosing an unreachable host without disclosing it
+# --------------------------------------------------------------------------
+
+def test_a_url_pasted_as_a_hostname_is_named_as_the_problem():
+    notes = " ".join(pub.describe_host_shape("ftps://ftp.example.com/reports"))
+    assert "bare hostname" in notes
+    assert "no path" in notes
+
+
+def test_an_embedded_port_is_named():
+    assert any("port" in n for n in pub.describe_host_shape("ftp.example.com:21"))
+
+
+def test_a_bare_label_is_named():
+    assert any("no dot" in n for n in pub.describe_host_shape("reportserver"))
+
+
+def test_a_well_shaped_hostname_points_at_dns_or_the_name_itself():
+    notes = " ".join(pub.describe_host_shape("ftp.example.com"))
+    assert "looks like a hostname" in notes
+
+
+def test_the_diagnosis_never_repeats_the_hostname():
+    """It is a masked secret; the whole point is to describe, not disclose."""
+    secret = "ftps://verysecrethost.example.com:21/path"
+    for note in pub.describe_host_shape(secret):
+        assert "verysecrethost" not in note
+        assert secret not in note
