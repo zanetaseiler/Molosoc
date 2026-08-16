@@ -694,3 +694,83 @@ def test_a_tls_failure_reports_the_certificate_names(monkeypatch, capsys, tmp_pa
     assert "valid for:" in err
     assert "ftp.realname.com" in err
     assert "no credentials were sent" in err.replace("\n", " ").replace("  ", " ")
+
+
+# --------------------------------------------------------------------------
+# Naming the hostname that satisfies BOTH halves
+# --------------------------------------------------------------------------
+
+def _report(monkeypatch, cert_names, dns, host="72.167.124.157"):
+    import io
+
+    monkeypatch.setattr(pub, "certificate_names", lambda *_a, **_k: cert_names)
+    monkeypatch.setattr(pub, "resolve", lambda name: dns.get(name, []))
+    buffer = io.StringIO()
+    answer = pub.certificate_report(host, out=buffer)
+    return answer, buffer.getvalue()
+
+
+def test_the_report_names_the_hostname_that_resolves_to_this_server(monkeypatch):
+    answer, text = _report(
+        monkeypatch,
+        ["ftp.example.com", "mail.example.com"],
+        {"ftp.example.com": ["72.167.124.157"], "mail.example.com": ["9.9.9.9"]})
+
+    assert answer == "ftp.example.com"
+    assert "ANSWER: set REPORTS_SFTP_HOST to  ftp.example.com" in text
+    assert "MATCHES this server" in text
+    assert "different server" in text
+
+
+def test_a_certificate_name_that_does_not_resolve_is_called_out(monkeypatch):
+    answer, text = _report(monkeypatch, ["ftp.example.com"], {})
+
+    assert answer is None
+    assert "does NOT resolve" in text
+    assert "none of the certificate's names currently resolves" in text
+
+
+def test_a_name_pointing_elsewhere_is_not_offered_as_the_answer(monkeypatch):
+    answer, text = _report(monkeypatch, ["ftp.other.com"],
+                           {"ftp.other.com": ["203.0.113.9"]})
+
+    assert answer is None
+    assert "different server" in text
+
+
+def test_a_wildcard_certificate_is_reported_as_the_easy_fix(monkeypatch):
+    answer, text = _report(monkeypatch, ["*.example.com"], {})
+
+    assert answer is None
+    assert "covers *.example.com" in text
+    assert "pointing one at this server in DNS is the fix" in text
+
+
+def test_the_shortest_matching_name_is_preferred(monkeypatch):
+    answer, _text = _report(
+        monkeypatch,
+        ["a.very.long.name.example.com", "ftp.example.com"],
+        {"a.very.long.name.example.com": ["72.167.124.157"],
+         "ftp.example.com": ["72.167.124.157"]})
+
+    assert answer == "ftp.example.com"
+
+
+def test_an_unreadable_certificate_says_so_rather_than_guessing(monkeypatch):
+    answer, text = _report(monkeypatch, None, {})
+
+    assert answer is None
+    assert "could not be read" in text
+
+
+def test_the_report_reads_no_secrets_and_uploads_nothing(monkeypatch, capsys):
+    """It runs before load_settings(), so it works with no credentials at all."""
+    monkeypatch.delenv("REPORTS_SFTP_HOST", raising=False)
+    monkeypatch.delenv("REPORTS_SFTP_PASS", raising=False)
+    monkeypatch.setattr(pub, "certificate_report", lambda *_a, **_k: None)
+
+    assert pub.main(["--certificate-report", "72.167.124.157"]) == 0
+
+
+def test_resolve_returns_empty_for_an_unresolvable_name():
+    assert pub.resolve("no-such-host.invalid") == []

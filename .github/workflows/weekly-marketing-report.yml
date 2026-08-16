@@ -178,6 +178,18 @@ jobs:
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
         run: python3 automations/analytics/publish_dashboard.py --file site/index.html
 
+      # Only when publishing failed. A verified connection needs a hostname
+      # that BOTH resolves to this server and appears on its certificate;
+      # checking those halves separately is what has cost several rounds. This
+      # asks the server directly and names the hostname that satisfies both.
+      # Reads only — no credentials, no upload. The IP is the FTPS endpoint
+      # already confirmed reachable, and is not a secret.
+      - name: Which hostname should REPORTS_SFTP_HOST use?
+        if: failure()
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --certificate-report 72.167.124.157 --port 21
+
       # A successful STOR proves the file reached the filesystem; it does not
       # prove the web server serves it at the expected URL. Different question,
       # so it gets its own check.

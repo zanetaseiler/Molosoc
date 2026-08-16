@@ -206,6 +206,74 @@ def certificate_names(host, port=FTPS_PORT):
     return sorted(names) or None
 
 
+def resolve(name):
+    """Every address a name resolves to, or an empty list if it does not."""
+    try:
+        return sorted({info[4][0] for info in socket.getaddrinfo(name, None)})
+    except OSError:
+        return []
+
+
+def certificate_report(host, port=FTPS_PORT, out=None):
+    """Answer one question: which hostname belongs in REPORTS_SFTP_HOST?
+
+    A working verified connection needs a name that satisfies BOTH halves —
+    it must resolve in DNS to this server, and it must appear on this server's
+    certificate. Each half has been checked in isolation across several runs
+    and neither alone was enough, so this checks them together and names the
+    winner, or explains precisely which half fails for every candidate.
+
+    Reads only. Never logs in, never sends credentials, never uploads.
+    """
+    out = out or sys.stdout
+    target_ips = resolve(host) or ([host] if _looks_like_ip(host) else [])
+    print(f"FTPS endpoint probed: {host}:{port}", file=out)
+    print(f"  addresses: {', '.join(target_ips) or 'none'}", file=out)
+
+    names = certificate_names(host, port)
+    if not names:
+        print("  certificate names could not be read — the chain does not "
+              "validate against the system CAs, or the server did not complete "
+              "the TLS handshake.", file=out)
+        return None
+
+    print(f"\nCertificate is valid for {len(names)} name(s):", file=out)
+    usable = []
+    for name in names:
+        addresses = resolve(name)
+        if not addresses:
+            verdict = "does NOT resolve"
+        elif set(addresses) & set(target_ips):
+            verdict = f"resolves to {', '.join(addresses)} — MATCHES this server"
+            usable.append(name)
+        else:
+            verdict = f"resolves to {', '.join(addresses)} — different server"
+        prefix = "*" if name.startswith("*.") else " "
+        print(f"  {prefix} {name}: {verdict}", file=out)
+
+    print("", file=out)
+    if usable:
+        best = min(usable, key=len)
+        print(f"ANSWER: set {HOST_ENV} to  {best}", file=out)
+        if len(usable) > 1:
+            print(f"  (also valid: {', '.join(n for n in usable if n != best)})",
+                  file=out)
+        return best
+
+    wildcards = [n for n in names if n.startswith("*.")]
+    print(f"ANSWER: none of the certificate's names currently resolves to this "
+          f"server, so no value for {HOST_ENV} can verify today.", file=out)
+    if wildcards:
+        print(f"  The certificate covers {', '.join(wildcards)}. Any single-label "
+              "host under that suffix would verify — pointing one at this "
+              "server in DNS is the fix.", file=out)
+    else:
+        print("  Every name on the certificate points elsewhere or is unregistered. "
+              "Either add a DNS record for one of them pointing here, or obtain a "
+              "certificate that covers a name you control.", file=out)
+    return None
+
+
 def connect(settings, port=FTPS_PORT):
     """Explicit FTPS: upgrade the control channel before sending credentials."""
     context = ssl.create_default_context()
@@ -304,11 +372,19 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true",
                         help="Resolve and print the destination without connecting")
     parser.add_argument("--port", type=int, default=FTPS_PORT)
+    parser.add_argument("--certificate-report", metavar="HOST", default=None,
+                        help=("Report which of a server's certificate names "
+                              "resolve to it, and which to use. Reads only."))
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
+
+    if args.certificate_report:
+        # Pure diagnostic: no secrets are read and nothing is uploaded.
+        certificate_report(args.certificate_report, args.port)
+        return 0
 
     try:
         settings = load_settings()
