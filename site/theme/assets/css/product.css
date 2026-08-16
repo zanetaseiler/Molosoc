@@ -746,3 +746,6 @@
     padding: 0.9em 1.6em;
   }
 }
+
+/* Touched to force WP-Optimize to rebuild a stale minify bundle that
+   raced the previous deploy (same pattern as commit a265bc2). */
