@@ -19,6 +19,7 @@ Run with:  python3 -m pytest automations/analytics/
 
 import datetime as dt
 import ftplib
+import ssl
 import re
 import sys
 from pathlib import Path
@@ -571,6 +572,7 @@ def test_tls_failures_are_not_reported_as_dns_failures(monkeypatch, capsys, tmp_
         raise ssl_module.SSLError("certificate verify failed: IP address mismatch")
 
     monkeypatch.setattr(pub, "connect", failing_tls)
+    monkeypatch.setattr(pub, "certificate_names", lambda *_a, **_k: None)
     for name, value in (("REPORTS_SFTP_HOST", "72.167.124.157"),
                         ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
                         ("REPORTS_BASE_PATH", BASE)):
@@ -601,3 +603,94 @@ def test_a_refused_connection_is_not_reported_as_a_dns_failure(monkeypatch, caps
     assert "could not connect" in err
     assert "may be closed, filtered" in err
     assert "could not resolve" not in err
+
+
+# --------------------------------------------------------------------------
+# Reading the certificate's names to make the fix a single step
+# --------------------------------------------------------------------------
+
+def test_certificate_names_are_collected_from_san_and_common_name(monkeypatch):
+    class FakeSock:
+        def getpeercert(self):
+            return {"subject": ((("commonName", "ftp.example.com"),),),
+                    "subjectAltName": (("DNS", "ftp.example.com"),
+                                       ("DNS", "*.example.com"),
+                                       ("IP Address", "1.2.3.4"))}
+
+    class FakeFTPS:
+        sock = FakeSock()
+
+        def __init__(self, *a, **k):
+            pass
+
+        def connect(self, *a, **k):
+            pass
+
+        def auth(self):
+            pass
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(pub.ftplib, "FTP_TLS", FakeFTPS)
+
+    assert pub.certificate_names("1.2.3.4") == ["*.example.com", "ftp.example.com"]
+
+
+def test_reading_the_certificate_never_logs_in_or_uploads():
+    """It completes the handshake and hangs up. Credentials and data only ever
+    go over the fully verified connection in connect()."""
+    import inspect
+
+    body = inspect.getsource(pub.certificate_names)
+    body = body.split('"""')[2]        # drop the docstring; scan the code only
+    for forbidden in ("login", "storbinary", "prot_p", "password"):
+        assert forbidden not in body, forbidden
+
+
+def test_the_certificate_probe_still_validates_the_chain():
+    """check_hostname is off — that is the question being asked. verify_mode
+    must stay on, or this would be trusting any certificate at all."""
+    import inspect
+
+    body = inspect.getsource(pub.certificate_names).split('"""')[2]
+    assert "check_hostname = False" in body
+    assert "CERT_NONE" not in body
+    assert "verify_mode" not in body
+
+
+def test_a_failed_probe_returns_none_rather_than_raising(monkeypatch):
+    class Exploding:
+        def __init__(self, *a, **k):
+            pass
+
+        def connect(self, *a, **k):
+            raise OSError("unreachable")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(pub.ftplib, "FTP_TLS", Exploding)
+    assert pub.certificate_names("nowhere.invalid") is None
+
+
+def test_a_tls_failure_reports_the_certificate_names(monkeypatch, capsys, tmp_path):
+    page = tmp_path / "index.html"
+    page.write_text("<!doctype html>", encoding="utf-8")
+
+    def failing_tls(*_args, **_kwargs):
+        raise ssl.SSLError("certificate verify failed: Hostname mismatch")
+
+    monkeypatch.setattr(pub, "connect", failing_tls)
+    monkeypatch.setattr(pub, "certificate_names",
+                        lambda *_a, **_k: ["ftp.realname.com", "realname.com"])
+    for name, value in (("REPORTS_SFTP_HOST", "ftp.wrongname.com"),
+                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
+                        ("REPORTS_BASE_PATH", BASE)):
+        monkeypatch.setenv(name, value)
+
+    assert pub.main(["--file", str(page)]) == 1
+    err = capsys.readouterr().err
+    assert "valid for:" in err
+    assert "ftp.realname.com" in err
+    assert "no credentials were sent" in err.replace("\n", " ").replace("  ", " ")

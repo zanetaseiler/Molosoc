@@ -166,6 +166,46 @@ def describe_host_shape(host):
     return notes
 
 
+def certificate_names(host, port=FTPS_PORT):
+    """Read the names the server's certificate is issued for.
+
+    Diagnostic only, and deliberately narrow: it completes the TLS handshake,
+    reads the certificate, and hangs up. **It never logs in, never sends the
+    password, and never transfers a byte of data** — the credentials and the
+    upload always go over the fully verified connection in connect().
+
+    Hostname checking is off here because the whole point is to discover which
+    hostname *would* check out; the certificate chain is still validated
+    against the system CAs, so this is not trusting an arbitrary certificate,
+    only declining to insist on a name before we know what the names are.
+
+    Returns a sorted list of names, or None if they could not be read.
+    """
+    context = ssl.create_default_context()
+    context.check_hostname = False        # the question being asked, not a bypass
+
+    ftps = ftplib.FTP_TLS(context=context, timeout=TIMEOUT_SECONDS)
+    try:
+        ftps.connect(host, port)
+        ftps.auth()
+        cert = ftps.sock.getpeercert() or {}
+    except Exception:  # noqa: BLE001 — a diagnostic must never mask the real error
+        return None
+    finally:
+        try:
+            ftps.close()
+        except Exception:  # noqa: BLE001
+            pass
+
+    names = {value for field, value in cert.get("subjectAltName", ())
+             if field.lower() == "dns"}
+    for rdn in cert.get("subject", ()):
+        for field, value in rdn:
+            if field == "commonName":
+                names.add(value)
+    return sorted(names) or None
+
+
 def connect(settings, port=FTPS_PORT):
     """Explicit FTPS: upgrade the control channel before sending credentials."""
     context = ssl.create_default_context()
@@ -325,12 +365,26 @@ def main(argv=None):
         if _looks_like_ip(settings["host"]):
             print("  The host is an IP address, so certificate hostname "
                   "verification cannot succeed: a certificate is issued for a "
-                  "name, not an address. Use the hostname the certificate is "
-                  "issued for, or decide explicitly to connect without "
-                  "verifying it.", file=sys.stderr)
+                  "name, not an address.", file=sys.stderr)
         else:
-            print("  The certificate did not validate for this host. Check "
-                  f"that {HOST_ENV} matches the name on the certificate.",
+            print(f"  The certificate is not valid for the name in {HOST_ENV}.",
+                  file=sys.stderr)
+
+        # Ask the server which names it *is* valid for. Without this the fix is
+        # a guessing game: a name has to both resolve in DNS and appear on the
+        # certificate, and only the server knows the second half.
+        names = certificate_names(settings["host"], args.port)
+        if names:
+            print("  The certificate presented by this server is valid for:",
+                  file=sys.stderr)
+            for name in names:
+                print(f"    - {name}", file=sys.stderr)
+            print(f"  Set {HOST_ENV} to whichever of those resolves in DNS to "
+                  "this server. No certificate was trusted and no credentials "
+                  "were sent to obtain this list.", file=sys.stderr)
+        else:
+            print("  The certificate's names could not be read, which usually "
+                  "means it is self-signed or its chain does not validate.",
                   file=sys.stderr)
         return 1
     except socket.gaierror as exc:
