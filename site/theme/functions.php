@@ -60,7 +60,12 @@ function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
 
-	wp_enqueue_style( 'molosoc-style', get_stylesheet_uri(), array(), $theme_version );
+	// style.css is deliberately NOT enqueued: it holds only the theme-header
+	// comment (WordPress reads that metadata from the file directly), so its
+	// minified output is empty — WP-Optimize never writes the bundle file,
+	// and every page then shipped a render-blocking <link> that 404ed and
+	// 301ed to the homepage (~2s, uncacheable). All real CSS lives in
+	// assets/css/ below.
 
 	wp_enqueue_style(
 		'molosoc-fonts',
