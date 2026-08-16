@@ -99,20 +99,36 @@ jobs:
           # Exit codes: 0 ok, 1 generation/storage failure, 2 reports stored but
           # the latest/index pointer could not be updated, 3 this week is
           # already published and was not overwritten.
+          set +e
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist --today "$REPORT_TODAY"
+              --out-dir reports --also-json --persist \
+              --dashboard-out site/index.html --today "$REPORT_TODAY"
           else
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist
+              --out-dir reports --also-json --persist \
+              --dashboard-out site/index.html
           fi
+          code=$?
+          set -e
+
+          # 3 means the authoritative record for this week already exists and
+          # was protected — which is the storage layer succeeding, not failing.
+          # The report and the dashboard were both still produced, and there is
+          # no reason to withhold the page because the history was already
+          # written. Anything else is a real failure and stops the run.
+          if [ "$code" = "3" ]; then
+            echo "::warning::This week is already published; the stored report was left untouched. Continuing to publish the dashboard."
+            exit 0
+          fi
+          exit "$code"
 
       - name: Confirm nothing was committed back to the repository
         if: always()
         run: |
           # The report is an artifact, never a commit. A dirty tree here would
           # mean generated output landed in the working copy.
-          if [ -n "$(git status --porcelain -- . ':!reports')" ]; then
+          if [ -n "$(git status --porcelain -- . ':!reports' ':!site/index.html')" ]; then
             echo "::error::Repository working tree is dirty outside reports/ — the report run must not modify tracked files."
             git status --porcelain
             exit 1
@@ -129,3 +145,58 @@ jobs:
           path: reports/
           retention-days: 90
           if-no-files-found: error
+
+      # ---------------------------------------------------------------------
+      # Publish the HTML view to the Trafficdom report host over SFTP.
+      #
+      # Last, and deliberately so: GCS persistence and the GitHub artifact are
+      # already done by this point, so a problem with the report host cannot
+      # cost either of them.
+      #
+      # SFTP rather than FTPS. The shared host presents its provider's internal
+      # certificate for *.prod.phx3.secureserver.net, which no hostname we
+      # control can verify against — so the transport was replaced rather than
+      # its verification switched off. SSH authenticates by host key, which the
+      # publisher prints on every run so it can be pinned via REPORTS_SSH_HOST_KEY.
+      #
+      # The destination is derived in code as ${REPORTS_BASE_PATH}/molosoc and
+      # cannot be redirected from here. The dry run prints the resolved path
+      # without connecting; the uploader then re-checks the server's own working
+      # directory and abandons the upload unless it matches. That host also
+      # serves a live WordPress site, which is why the check is doubled.
+      #
+      # One file, index.html. Nothing is deleted, renamed or moved.
+      # ---------------------------------------------------------------------
+      - name: Verify the resolved remote path (no connection)
+        env:
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: python3 automations/analytics/publish_dashboard.py --dry-run
+
+      - name: Publish the dashboard over SFTP
+        env:
+          REPORTS_SSH_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: python3 automations/analytics/publish_dashboard.py --file site/index.html
+
+      - name: Verify the page is live
+        run: |
+          url="https://trafficdom.com/reports/molosoc/"
+          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
+          echo "HTTP $code from $url"
+          if [ "$code" != "200" ]; then
+            echo "::error::$url returned HTTP $code"
+            exit 1
+          fi
+          if ! grep -q "Weekly marketing analysis" /tmp/live.html; then
+            echo "::error::$url served a page, but not the dashboard"
+            head -c 400 /tmp/live.html
+            exit 1
+          fi
+          echo "PASS the dashboard is live at $url ($(wc -c < /tmp/live.html) bytes)"

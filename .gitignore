@@ -25,3 +25,6 @@ node_modules/
 
 # Generated weekly reports are build artifacts, never commits.
 reports/
+
+# Generated dashboard page — a build output, uploaded to the report host.
+site/index.html

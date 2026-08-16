@@ -17,3 +17,8 @@ requests>=2.31,<3
 # against the production bucket — the offline test suite emulates the client,
 # so tests never require this package, a bucket, or credentials.
 google-cloud-storage>=2.14,<4
+
+# SFTP publishing of the weekly dashboard (Phase 3 Stage 2). FTPS was
+# abandoned: the shared host presents its provider's internal certificate, so
+# it could never verify honestly. SSH authenticates by host key instead.
+paramiko>=3.4,<4
