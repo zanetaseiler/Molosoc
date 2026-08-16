@@ -65,6 +65,67 @@ SUPPORTING_FUNNEL_EVENTS = ("begin_checkout", "add_to_cart")
 TRACKED_KEY_EVENTS = (HEADLINE_CONVERSION,) + SUPPORTING_FUNNEL_EVENTS
 
 
+def merge_by_canonical_page(rows, url_key, count_fields=(), rate_fields=(),
+                            weight_field=None):
+    """Collapse source rows that resolve to the same canonical page.
+
+    GA4's landing-page report really does return `/`, `/?fbclid=…` and a second
+    `fbclid` variant as three rows for one page — that was in the very first
+    verified run. Canonicalization gives them one identity, so their counts must
+    be added rather than emitted as three records for the same page, which would
+    both overstate nothing and trip the aggregation guard downstream.
+
+    `count_fields` are summed. `rate_fields` are recomputed as a weighted mean
+    over `weight_field` (impressions, for CTR and position) rather than averaged.
+    """
+    merged = {}
+    order = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        canonical, language, source, notes = page_context(row.get(url_key, ""))
+        key = canonical.url
+        if key not in merged:
+            merged[key] = {
+                "canonical": canonical, "language": language,
+                "language_source": source, "notes": notes,
+                "counts": {f: 0 for f in count_fields},
+                "weighted": {f: 0.0 for f in rate_fields},
+                "weight": 0.0, "source_rows": 0,
+            }
+            order.append(key)
+        entry = merged[key]
+        entry["source_rows"] += 1
+        for field in count_fields:
+            entry["counts"][field] += as_number(row.get(field, 0))
+        weight = as_number(row.get(weight_field, 0)) if weight_field else 0
+        entry["weight"] += weight
+        for field in rate_fields:
+            entry["weighted"][field] += float(row.get(field, 0) or 0) * weight
+        # Keep every original URL that folded into this identity, and every
+        # tracking parameter dropped along the way — the merge must stay
+        # auditable, not just correct.
+        originals = entry["notes"].setdefault("merged_from", [])
+        if canonical.original and canonical.original not in originals:
+            originals.append(canonical.original)
+        if canonical.dropped_params:
+            dropped = entry["notes"].setdefault("dropped_params", [])
+            for name in canonical.dropped_params:
+                if name not in dropped:
+                    dropped.append(name)
+
+    for key in order:
+        entry = merged[key]
+        rates = {}
+        for field in rate_fields:
+            rates[field] = (entry["weighted"][field] / entry["weight"]
+                            if entry["weight"] else 0.0)
+        if entry["source_rows"] < 2:
+            entry["notes"].pop("merged_from", None)
+        yield entry["canonical"], entry["language"], entry["language_source"], \
+            entry["notes"], entry["counts"], rates, entry["weight"]
+
+
 def page_context(url):
     """Canonical identity plus the language metadata every page record carries."""
     canonical = canonicalize(url)
@@ -169,15 +230,15 @@ def clarity_records(payload, date, collected_at, window_end=None, num_days=1):
                 break  # site-level friction has one row unless dimensioned
 
         elif name == "PopularPages":
-            for row in rows:
-                if not isinstance(row, dict):
-                    continue
-                canonical, language, lang_source, notes = page_context(
-                    row.get("url") or row.get("name") or "")
-                add(PAGE, canonical.url, "clarity_visits",
-                    as_number(row.get("visitsCount", row.get("sessionsCount", 0))),
-                    raw=row.get("visitsCount"), notes=notes,
-                    language=language, language_source=lang_source)
+            normalized = [{"url": r.get("url") or r.get("name") or "",
+                           "visits": as_number(r.get("visitsCount",
+                                                     r.get("sessionsCount", 0)))}
+                          for r in rows if isinstance(r, dict)]
+            for canonical, language, lang_source, notes, counts, _rates, _weight in \
+                    merge_by_canonical_page(normalized, "url",
+                                            count_fields=("visits",)):
+                add(PAGE, canonical.url, "clarity_visits", counts["visits"],
+                    notes=notes, language=language, language_source=lang_source)
 
         elif name in CLARITY_DIMENSIONS:
             entity_type, metric = CLARITY_DIMENSIONS[name]
@@ -235,11 +296,12 @@ def ga4_records(result, collected_at):
     add(SITE, SITE_ENTITY_ID, "ga4_sessions", as_number(result.get("sessions", 0)))
     add(SITE, SITE_ENTITY_ID, "ga4_views", as_number(result.get("views", 0)))
 
-    for row in result.get("landingPages", []):
-        canonical, language, lang_source, notes = page_context(row.get("landingPage", ""))
-        add(PAGE, canonical.url, "ga4_sessions", as_number(row.get("sessions", 0)),
+    for canonical, language, lang_source, notes, counts, _rates, _weight in \
+            merge_by_canonical_page(result.get("landingPages", []), "landingPage",
+                                    count_fields=("sessions", "activeUsers")):
+        add(PAGE, canonical.url, "ga4_sessions", counts["sessions"],
             notes=notes, language=language, language_source=lang_source)
-        add(PAGE, canonical.url, "ga4_users", as_number(row.get("activeUsers", 0)),
+        add(PAGE, canonical.url, "ga4_users", counts["activeUsers"],
             notes=notes, language=language, language_source=lang_source)
 
     # Key events, when the payload carries them. purchase is the headline
@@ -298,16 +360,18 @@ def gsc_records(result, collected_at):
         add(QUERY, query, "gsc_position", float(row.get("position", 0.0)),
             sample_basis=row_impressions)
 
-    for row in result.get("topPages", []):
-        canonical, language, lang_source, notes = page_context(row.get("page", ""))
+    for canonical, language, lang_source, notes, counts, rates, impressions in \
+            merge_by_canonical_page(result.get("topPages", []), "page",
+                                    count_fields=("clicks", "impressions"),
+                                    rate_fields=("ctr", "position"),
+                                    weight_field="impressions"):
         lang = {"language": language, "language_source": lang_source}
-        row_impressions = as_number(row.get("impressions", 0))
-        add(PAGE, canonical.url, "gsc_clicks", as_number(row.get("clicks", 0)),
+        add(PAGE, canonical.url, "gsc_clicks", counts["clicks"], notes=notes, **lang)
+        add(PAGE, canonical.url, "gsc_impressions", counts["impressions"],
             notes=notes, **lang)
-        add(PAGE, canonical.url, "gsc_impressions", row_impressions, notes=notes, **lang)
-        add(PAGE, canonical.url, "gsc_ctr", float(row.get("ctr", 0.0)),
-            sample_basis=row_impressions, notes=notes, **lang)
-        add(PAGE, canonical.url, "gsc_position", float(row.get("position", 0.0)),
-            sample_basis=row_impressions, notes=notes, **lang)
+        add(PAGE, canonical.url, "gsc_ctr", rates["ctr"],
+            sample_basis=impressions, notes=notes, **lang)
+        add(PAGE, canonical.url, "gsc_position", rates["position"],
+            sample_basis=impressions, notes=notes, **lang)
 
     return out

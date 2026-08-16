@@ -132,11 +132,14 @@ def test_missing_referrer_becomes_an_explicit_direct_entity(clarity_rows):
     assert find(clarity_rows, "clarity_sessions", nz.DIRECT_REFERRER).value == 44
 
 
-def test_popular_pages_are_canonicalized(clarity_rows):
-    # The tracking-parameter variant is the same page identity as the plain one.
+def test_popular_pages_are_canonicalized_and_merged(clarity_rows):
+    # The tracking-parameter variant is the same page, so its visits add.
     pages = [r for r in clarity_rows if r.entity_type == PAGE]
     ids = [r.entity_id for r in pages]
-    assert ids.count("https://molosoc.com/") == 2  # plain row and the fbclid row
+
+    assert ids.count("https://molosoc.com/") == 1
+    home = [r for r in pages if r.entity_id == "https://molosoc.com/"][0]
+    assert home.value == 48  # 42 plain + 6 from the fbclid variant
     assert "https://staging.molosoc.com/" in ids
 
 
@@ -217,13 +220,36 @@ def test_ga4_window_length_is_carried_so_it_cannot_be_summed_as_daily():
     assert not rows[0].is_aggregatable
 
 
-def test_ga4_landing_pages_are_canonicalized_and_tracked():
+def test_ga4_landing_pages_are_canonicalized_and_merged():
+    # The real GA4 report returns / and ?fbclid= variants as separate rows for
+    # one page. They must become one record whose sessions are added, not
+    # several records competing for the same identity.
     rows = nz.ga4_records(GA4_RESULT, COLLECTED_AT)
-    page_ids = {r.entity_id for r in rows if r.entity_type == PAGE}
+    page_ids = [r.entity_id for r in rows if r.entity_type == PAGE]
+
     assert "https://molosoc.com/" in page_ids
     assert not any("fbclid" in pid for pid in page_ids)
-    fbclid_row = [r for r in rows if r.notes.get("dropped_params")][0]
-    assert fbclid_row.notes["dropped_params"] == ["fbclid"]
+    session_ids = [r.entity_id for r in rows
+                   if r.entity_type == PAGE and r.metric == "ga4_sessions"]
+    assert session_ids.count("https://molosoc.com/") == 1  # one record per metric
+
+    home_sessions = [r for r in rows if r.entity_id == "https://molosoc.com/"
+                     and r.metric == "ga4_sessions"][0]
+    assert home_sessions.value == 9  # 8 from "/" plus 1 from the fbclid variant
+
+
+def test_a_merged_page_records_what_folded_into_it():
+    rows = nz.ga4_records(GA4_RESULT, COLLECTED_AT)
+    home = [r for r in rows if r.entity_id == "https://molosoc.com/"][0]
+
+    assert len(home.notes["merged_from"]) == 2
+    assert home.notes["dropped_params"] == ["fbclid"]
+
+
+def test_an_unmerged_page_carries_no_merge_note():
+    rows = nz.ga4_records(GA4_RESULT, COLLECTED_AT)
+    product = [r for r in rows if "hydratacni" in r.entity_id][0]
+    assert "merged_from" not in product.notes
 
 
 def test_ga4_blank_landing_page_becomes_an_explicit_entity():
