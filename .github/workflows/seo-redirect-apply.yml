@@ -1,0 +1,95 @@
+name: SEO Step 3A apply redirects (prod)
+
+# Creates the Step 3A 301 rules in the Redirection plugin.
+#
+# It re-runs the full pre-flight in-process before writing anything and skips
+# any mapping that does not come back clean, so a rule is never created
+# against facts that have gone stale. It creates rules only — it never
+# deletes, disables or edits an existing one, never touches page content or
+# the sitemap, and has no path that could reach Search Console.
+#
+# Default is dry_run=true. Ship the dry run first, read it, then re-run with
+# dry_run=false.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "true = print what would change and write nothing"
+        required: true
+        default: "true"
+      include_conditional:
+        description: "also apply /blog-legacy-2018/ (only after the content decision)"
+        required: false
+        default: "false"
+      only:
+        description: "comma-separated mapping ids, e.g. 1,2,3 (blank = all)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seo-redirect-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install "requests>=2.31,<3"
+
+      - name: Check credentials are present
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          missing=0
+          [ -z "$WP_URL" ] && echo "Missing PROD_WP_URL" && missing=1
+          [ -z "$WP_USER" ] && echo "Missing PROD_WP_USER" && missing=1
+          [ -z "$WP_APP_PASSWORD" ] && echo "Missing PROD_WP_APP_PASSWORD" && missing=1
+          if [ "$missing" = "1" ]; then exit 1; fi
+          echo "Credentials present (values never printed)."
+
+      - name: Apply
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          FLAGS=""
+          [ "${{ inputs.dry_run }}" = "true" ] && FLAGS="$FLAGS --dry-run"
+          [ "${{ inputs.include_conditional }}" = "true" ] && FLAGS="$FLAGS --include-conditional"
+          [ -n "${{ inputs.only }}" ] && FLAGS="$FLAGS --only ${{ inputs.only }}"
+          echo "flags:$FLAGS"
+          python3 automations/seo/apply_redirects.py $FLAGS
+
+      # Independent of the script's own post-check: re-list the plugin's rules
+      # so the slug-change monitor creating something unexpected is visible.
+      - name: Re-list rules afterwards
+        if: always()
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          curl -s -m 30 -u "$WP_USER:$WP_APP_PASSWORD" \
+            "${WP_URL%/}/wp-json/redirection/v1/redirect?per_page=200" -o /tmp/r.json
+          python3 - <<'EOF'
+          import json
+          for r in json.load(open('/tmp/r.json')).get('items', []):
+              print(f"id={r['id']} enabled={r.get('enabled')} {r['url']!r} -> "
+                    f"{(r.get('action_data') or {}).get('url')!r} "
+                    f"({r.get('action_code')}, hits {r.get('hits')})")
+          EOF
