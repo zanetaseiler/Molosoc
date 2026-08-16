@@ -1,0 +1,39 @@
+name: Diagnose staging FTP docroot
+
+# Read-only: lists directory names on the staging FTP account to find the
+# real document root. Created 2026-08-16 because staging.yml deploys report
+# success but the live site keeps serving files from early August — the
+# server-dir it writes to is evidently not the docroot the web server
+# reads. Prints directory listings only; never writes or deletes.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: List candidate docroots (read-only)
+        env:
+          HOST: ${{ secrets.STAGING_SFTP_HOST }}
+          USER: ${{ secrets.STAGING_SFTP_USER }}
+          PASS: ${{ secrets.STAGING_SFTP_PASS }}
+        run: |
+          run_ls() {
+            echo "===== ls $1 ====="
+            lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 $1; bye" "$HOST" 2>&1 | head -40 || true
+            echo ""
+          }
+          run_ls "/"
+          run_ls "/public_html"
+          run_ls "/public_html/staging.molosoc.com"
+          run_ls "/public_html/staging.molosoc.com/wp-content/themes/molosoc"
+          run_ls "/public_html/staging.molosoc.com/public_html"
+          run_ls "/staging.molosoc.com"
+          run_ls "/www"
+          run_ls "/domains"
+          echo "===== newest files in the deploy target (mtime check) ====="
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -l /public_html/staging.molosoc.com/wp-content/themes/molosoc/ ; bye" "$HOST" 2>&1 | head -30 || true
