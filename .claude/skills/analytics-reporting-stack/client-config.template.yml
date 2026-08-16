@@ -1,0 +1,168 @@
+# =========================================================================
+# Client configuration for the analytics + reporting stack.
+#
+# Copy this file, fill every value, and keep it in the client's repository.
+# It is the single place client-specific values live. Nothing in the
+# playbook hardcodes them; everything reads from here or from the
+# GitHub secrets/variables this file names.
+#
+# NOTHING SECRET GOES IN THIS FILE. It records the NAMES of secrets and
+# the non-sensitive identifiers. Tokens, private keys and service-account
+# JSON live only in GitHub Actions secrets. A property ID is not a secret;
+# an API token is.
+#
+# Values marked EXAMPLE show the shape using the first deployment
+# (MOLOSOC, a Czech foot-care e-commerce brand). Replace all of them.
+# =========================================================================
+
+client:
+  # Short human name. Appears in report titles and the dashboard header.
+  name: "{{CLIENT_NAME}}"                       # EXAMPLE: MOLOSOC
+
+  # Lowercase, no spaces. Used for storage namespaces, the dashboard
+  # directory and the report kind. Changing it later orphans stored history,
+  # so choose once.
+  slug: "{{CLIENT_SLUG}}"                       # EXAMPLE: molosoc
+
+  # The live site being measured, no scheme, no trailing slash. Used to
+  # canonicalize URLs and to exclude staging traffic.
+  production_domain: "{{PRODUCTION_DOMAIN}}"    # EXAMPLE: molosoc.com
+
+  # Any hostname that must NOT be counted as production traffic.
+  excluded_hosts:                               # EXAMPLE: staging + previews
+    - "{{STAGING_HOST}}"
+
+  # Primary market timezone. Only used to explain local report timing in
+  # documentation — every analysis window is whole UTC days regardless.
+  timezone: "{{CLIENT_TIMEZONE}}"               # EXAMPLE: Europe/Prague
+
+google_analytics:
+  # GA4 numeric property ID (Admin > Property Settings). NOT the measurement ID.
+  property_id: "{{GA4_PROPERTY_ID}}"            # EXAMPLE: 521643495
+
+  # The G- tag on the site. Recorded so the install can be verified and so a
+  # second, duplicate tag is detectable. Not used by the API client.
+  measurement_id: "{{GA4_MEASUREMENT_ID}}"      # EXAMPLE: G-XXXXXXXXXX
+
+  # The GA4 key event that counts as the business conversion.
+  conversion_event: "{{CONVERSION_EVENT}}"      # EXAMPLE: purchase
+
+search_console:
+  # Domain property: "sc-domain:example.com"
+  # URL-prefix property: "https://example.com/"
+  # Must match the property type verified in Search Console exactly.
+  property: "{{GSC_PROPERTY}}"                  # EXAMPLE: sc-domain:molosoc.com
+
+clarity:
+  # Clarity project ID (from the project URL). Not a secret.
+  project_id: "{{CLARITY_PROJECT_ID}}"
+
+  # Name of the GitHub secret holding the Clarity API token.
+  api_token_secret: "CLARITY_API_TOKEN"
+
+  # Hard API ceiling set by Microsoft: 10 calls per project per day.
+  # The automated collector is capped below it so manual checks stay possible.
+  daily_hard_limit: 10
+  automated_daily_cap: 3
+
+  # THE DATE DAILY COLLECTION STARTED. Clarity serves no historical API, so
+  # nothing before this date can ever be obtained. Record it honestly.
+  collection_start_date: "{{CLARITY_COLLECTION_START}}"   # EXAMPLE: 2026-08-01
+
+google_cloud:
+  project_id: "{{GCP_PROJECT_ID}}"
+  bucket: "{{GCS_BUCKET}}"                      # EXAMPLE: molosoc-analytics-history
+  location: "{{GCS_LOCATION}}"                  # EXAMPLE: europe-west3
+  storage_class: "STANDARD"
+  uniform_bucket_level_access: true             # required for IAM conditions
+  public_access_prevention: "enforced"
+
+  service_accounts:
+    # Reads GA4 + Search Console. No write scope anywhere.
+    analytics_reader: "{{SA_ANALYTICS_READER}}" # EXAMPLE: analytics-reader@PROJECT.iam.gserviceaccount.com
+    # Reads and writes the history bucket. No analytics access.
+    storage_writer: "{{SA_STORAGE_WRITER}}"     # EXAMPLE: analytics-storage@PROJECT.iam.gserviceaccount.com
+
+github:
+  repo: "{{GITHUB_REPO}}"                       # EXAMPLE: owner/repository
+  default_branch: "main"
+
+  # Repository VARIABLES (visible, non-secret).
+  variables:
+    ANALYTICS_BUCKET: "{{GCS_BUCKET}}"
+    ECOMMERCE_TRACKING_START: "{{ECOMMERCE_TRACKING_START}}"
+    REPORTS_BASE_PATH: "{{SSH_BASE_PATH}}"
+
+  # Repository SECRETS (masked). Names only — never values.
+  secrets:
+    - GOOGLE_SERVICE_ACCOUNT_JSON     # analytics_reader key JSON
+    - ANALYTICS_STORAGE_SA_JSON       # storage_writer key JSON
+    - CLARITY_API_TOKEN
+    - REPORTS_SSH_HOST
+    - REPORTS_SSH_USER
+    - REPORTS_SSH_KEY
+    - REPORTS_SSH_HOST_KEY            # optional but recommended (pinning)
+
+ecommerce:
+  # The date real ecommerce/conversion tracking became trustworthy.
+  # Windows before it are reported as "unavailable", NOT as zero sales.
+  # If tracking has always been correct, set the site's launch date.
+  # If it is genuinely unknown, leave empty — the state becomes "unknown",
+  # which is honest. Do not guess.
+  tracking_start_date: "{{ECOMMERCE_TRACKING_START}}"   # EXAMPLE: 2026-08-16
+
+schedule:
+  # Search Console finalises on a ~3-day lag, so the analysis anchor is
+  # (today - 3). Pick the report weekday so that anchor lands on the last day
+  # of the week you want reported:
+  #     report_weekday = (desired_week_end_weekday + 3) mod 7
+  # Mon-Sun weeks (week ends Sunday=0) -> Wednesday. See SKILL.md §9.
+  report_cron: "{{REPORT_CRON}}"                # EXAMPLE: "15 6 * * 3"  (Wed 06:15 UTC)
+
+  # The daily Clarity collector. Must run SEVERAL HOURS BEFORE the report so
+  # the ledger is settled and the two jobs never contend for the API budget.
+  collector_cron: "{{COLLECTOR_CRON}}"          # EXAMPLE: "20 2 * * *"  (02:20 UTC)
+
+  # Off-the-hour minutes on purpose: scheduled workflows cluster at :00 and queue.
+
+reporting:
+  # Namespaced so two clients can never collide in a shared bucket or index.
+  report_kind: "{{CLIENT_SLUG}}.weekly_marketing_analysis"
+  schema_version: "1.0.0"
+
+  # GitHub Actions artifact retention for the human-downloadable report.
+  artifact_retention_days: 90
+
+  # How long dated report objects are kept in GCS before a lifecycle rule may
+  # delete them. Pointers (latest.json, index.json) are NEVER expired.
+  report_retention_days: 400
+  index_max_entries: 260                        # five years of weeks
+
+dashboard:
+  # Public URL the published page is served from. Must correspond exactly to
+  # ssh.base_path + "/" + client.slug on the report host.
+  url: "{{DASHBOARD_URL}}"                      # EXAMPLE: https://reports.example.com/reports/molosoc/
+
+  # Set true only if the host requires it; the page is unlisted and noindexed
+  # either way. See SKILL.md §11 on why "unlisted" is not "private".
+  http_auth_required: false
+
+ssh:
+  # SFTP over SSH, port 22. FTPS is not used — see SKILL.md §9.
+  host: "{{SSH_HOST}}"                          # EXAMPLE: server.hostingprovider.net
+  port: 22
+  user: "{{SSH_USER}}"                          # cPanel ACCOUNT username, not an FTP sub-account
+  # Web root of the report host. The publisher appends "/{{CLIENT_SLUG}}".
+  base_path: "{{SSH_BASE_PATH}}"                # EXAMPLE: /public_html/example.com/reports
+  # Pin after the first run prints it: "ssh-ed25519 AAAA..."
+  host_key: "{{SSH_HOST_KEY}}"
+
+thresholds:
+  # Conservative on purpose. Raising them is safe; lowering them manufactures
+  # advice from noise. Do NOT lower per-client without a written reason.
+  # Full list and rationale in reference/thresholds.md.
+  min_site_sessions_for_recommendations: 100
+  low_volume_sessions: 100
+  min_relative_change: 0.20
+  min_query_impressions: 50
+  min_page_sessions: 30
