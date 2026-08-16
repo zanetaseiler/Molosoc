@@ -254,6 +254,11 @@ def render_markdown(report):
             f"period covered: {coverage.get('supports_period', False)}; "
             f"comparison available: {coverage.get('supports_comparison', False)}")
     quality = report.data_quality
+    coverage = quality.get("tracking_coverage") or {}
+    if coverage:
+        add(f"- Tracking coverage (GA4 vs Clarity): {coverage.get('headline', '')}")
+        for caveat in coverage.get("caveats", []):
+            add(f"  - {caveat}")
     boundary = quality.get("ecommerce_boundary") or {}
     if boundary:
         start = boundary.get("start_date")

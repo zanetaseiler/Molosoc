@@ -16,6 +16,7 @@ import datetime as dt
 from dataclasses import replace
 
 import anomalies as an
+import coverage as cov
 import google_hydrate as gh
 import history as hist
 import periods as pr
@@ -363,6 +364,7 @@ def analyse(period_records, prior_records, baseline_records, windows,
             "instrumentation_anomaly_count": sum(
                 1 for a in anomaly_list if a.is_instrumentation
             ),
+            "tracking_coverage": cov.coverage_from_facts(index),
             "conversions": conversion_readiness or gh.assess_conversions({}, fetched=False),
             "hydration": hydration or {"used": False},
             "ecommerce_boundary": ecommerce_boundary or {

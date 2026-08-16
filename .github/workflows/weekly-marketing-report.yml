@@ -1,0 +1,119 @@
+name: Weekly Marketing Analysis Report
+
+# Generates one Markdown marketing analysis report per week and uploads it as a
+# GitHub Actions artifact. Nothing is delivered anywhere else: no email, no
+# Slack, no dashboard, and nothing is committed back to the repository.
+#
+# Read-only against every source. GA4 and Search Console are hydrated for the
+# two compared windows; Clarity is read only from the durable GCS ledger.
+#
+# ZERO CLARITY API CALLS. The daily collector owns Clarity's 10-calls-per-day
+# budget, and a day of Clarity history that is missed cannot be backfilled — so
+# a report that spent from that budget could permanently cost real data. The
+# analysis reads Clarity from storage only, and a test asserts it.
+#
+# WHY WEDNESDAY 06:15 UTC
+#
+#   1. Search Console finalises on a ~3-day lag, so the analysis anchor is
+#      today - 3. Running on a Wednesday makes that anchor a Sunday, which
+#      means the analysed period is the previous Monday-to-Sunday week and the
+#      comparison is the Monday-to-Sunday week before it. Whole calendar weeks
+#      compare like with like; a mid-week boundary would split weekend traffic
+#      across both windows.
+#   2. 06:15 UTC is roughly four hours after the daily Clarity collector at
+#      02:20 UTC, so the ledger is settled and the two jobs never contend.
+#   3. Off the hour, because scheduled workflows cluster at :00 and queue.
+#   4. 07:15/08:15 in Prague, so the report is ready at the start of the day.
+#
+# The UTC time is fixed, so local time shifts by an hour across DST. That is
+# intentional — the analysis windows are whole UTC days either way.
+#
+# NOTE: GitHub only fires `schedule` for workflows on the DEFAULT branch. Until
+# this is merged to main the cron will not run; workflow_dispatch still works.
+
+on:
+  schedule:
+    # 06:15 UTC every Wednesday — see the rationale above.
+    - cron: "15 6 * * 3"
+  workflow_dispatch:
+    inputs:
+      today:
+        description: "Override today's date (YYYY-MM-DD) to re-run a past week"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weekly-marketing-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit tests
+        run: python3 -m pytest automations/analytics/ -q
+
+      - name: Check required secrets/variables are present
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: |
+          missing=0
+          [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ] && echo "Missing GOOGLE_SERVICE_ACCOUNT_JSON" && missing=1
+          [ -z "$ANALYTICS_STORAGE_SA_JSON" ] && echo "Missing ANALYTICS_STORAGE_SA_JSON" && missing=1
+          [ -z "$ANALYTICS_BUCKET" ] && echo "Missing ANALYTICS_BUCKET" && missing=1
+          if [ "$missing" = "1" ]; then exit 1; fi
+          echo "All required secrets/variables present (values never printed)."
+
+      - name: Generate the weekly report
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+          GA4_PROPERTY_ID: "521643495"
+          GSC_SITE_URL: "sc-domain:molosoc.com"
+          # Committed default is 2026-08-16; the variable overrides it if set.
+          ECOMMERCE_TRACKING_START: ${{ vars.ECOMMERCE_TRACKING_START }}
+          REPORT_TODAY: ${{ inputs.today }}
+        run: |
+          if [ -n "$REPORT_TODAY" ]; then
+            python3 automations/analytics/weekly_report.py \
+              --out-dir reports --also-json --today "$REPORT_TODAY"
+          else
+            python3 automations/analytics/weekly_report.py \
+              --out-dir reports --also-json
+          fi
+
+      - name: Confirm nothing was committed back to the repository
+        run: |
+          # The report is an artifact, never a commit. A dirty tree here would
+          # mean generated output landed in the working copy.
+          if [ -n "$(git status --porcelain -- . ':!reports')" ]; then
+            echo "::error::Repository working tree is dirty outside reports/ — the report run must not modify tracked files."
+            git status --porcelain
+            exit 1
+          fi
+          echo "Working tree clean; report exists only as a build output."
+
+      - name: Upload the report as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: molosoc-marketing-analysis
+          path: reports/
+          retention-days: 90
+          if-no-files-found: error
