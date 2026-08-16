@@ -101,10 +101,12 @@ jobs:
           # already published and was not overwritten.
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist --today "$REPORT_TODAY"
+              --out-dir reports --also-json --persist \
+              --dashboard-out site/index.html --today "$REPORT_TODAY"
           else
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist
+              --out-dir reports --also-json --persist \
+              --dashboard-out site/index.html
           fi
 
       - name: Confirm nothing was committed back to the repository
@@ -112,7 +114,7 @@ jobs:
         run: |
           # The report is an artifact, never a commit. A dirty tree here would
           # mean generated output landed in the working copy.
-          if [ -n "$(git status --porcelain -- . ':!reports')" ]; then
+          if [ -n "$(git status --porcelain -- . ':!reports' ':!site/index.html')" ]; then
             echo "::error::Repository working tree is dirty outside reports/ — the report run must not modify tracked files."
             git status --porcelain
             exit 1
@@ -129,3 +131,35 @@ jobs:
           path: reports/
           retention-days: 90
           if-no-files-found: error
+
+      # ---------------------------------------------------------------------
+      # Publish the HTML view to the Trafficdom report host.
+      #
+      # Last, and deliberately so: GCS persistence and the GitHub artifact are
+      # already done by this point, so a problem with the report host cannot
+      # cost either of them.
+      #
+      # The destination is derived in code as ${REPORTS_BASE_PATH}/molosoc and
+      # cannot be pointed anywhere else from here. The dry run below prints the
+      # resolved path and connects to nothing, so the path is visible in the log
+      # before the first byte is sent. The uploader then re-checks the server's
+      # own PWD and abandons the upload unless it matches. That host also serves
+      # a live WordPress site, which is why the check is doubled.
+      #
+      # One file, index.html. Nothing is deleted, renamed or moved.
+      # ---------------------------------------------------------------------
+      - name: Verify the resolved remote path (no connection)
+        env:
+          REPORTS_SFTP_HOST: ${{ secrets.REPORTS_SFTP_HOST }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SFTP_PASS: ${{ secrets.REPORTS_SFTP_PASS }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: python3 automations/analytics/publish_dashboard.py --dry-run
+
+      - name: Publish the dashboard over FTPS
+        env:
+          REPORTS_SFTP_HOST: ${{ secrets.REPORTS_SFTP_HOST }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SFTP_PASS: ${{ secrets.REPORTS_SFTP_PASS }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: python3 automations/analytics/publish_dashboard.py --file site/index.html

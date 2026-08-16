@@ -160,7 +160,34 @@ def parse_args(argv=None):
                         help=("What to do if this week is already published. "
                               "'reject' (default) protects the historical record; "
                               "'revision' files the re-run alongside it."))
+    parser.add_argument("--dashboard-out", default=None,
+                        help=("Also render the self-contained HTML dashboard to "
+                              "this path, from the same analysis run"))
     return parser.parse_args(argv)
+
+
+def write_dashboard(report, path, store=None, now=None):
+    """Render the HTML view from the run already in hand.
+
+    Same analysis object as the Markdown and the JSON, so the three views
+    cannot disagree, and no source is queried a second time.
+    """
+    import dashboard as dash
+
+    index = None
+    if store is not None:
+        try:
+            index = rs.load_index(store)
+        except Exception:  # noqa: BLE001 — a missing index costs the trend strip only
+            index = None
+
+    stamp = (now or dt.datetime.now(dt.timezone.utc)).replace(microsecond=0).isoformat()
+    page = dash.render_dashboard(rs.build_document(report), index=index,
+                                 generated_at=stamp)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write(page)
+    return len(page)
 
 
 def persist(store, report, markdown, now, on_duplicate=rs.ON_DUPLICATE_REJECT):
@@ -226,6 +253,12 @@ def main(argv=None):
                   "under an isolated prefix.", file=sys.stderr)
             return 1
         exit_code, _ = persist(store, report, markdown, now, args.on_duplicate)
+
+    # After persisting, so this week is already in the index the trend reads.
+    if args.dashboard_out:
+        size = write_dashboard(report, args.dashboard_out,
+                               store=None if args.fixture else store, now=now)
+        print(f"\nWrote {args.dashboard_out} ({size:,} bytes)")
 
     # A low-volume report is a successful run. The agent declining to advise is
     # the designed behaviour, not a failure to alert on.
