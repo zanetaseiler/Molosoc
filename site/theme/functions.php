@@ -79,6 +79,22 @@ function molosoc_staging_noindex_header() {
 }
 add_action( 'send_headers', 'molosoc_staging_noindex_header' );
 
+/**
+ * Same guard, baked into the HTML: WP-Optimize page-cache HITS replay
+ * cached markup without re-running PHP, so the send_headers header above
+ * only covers uncached responses. wp_robots prints
+ * <meta name='robots' content='noindex'> into wp_head, which IS stored in
+ * the cached HTML — Google honors the meta tag and the header equally.
+ */
+function molosoc_staging_noindex_meta( $robots ) {
+	$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
+	if ( 0 === strpos( $host, 'staging.' ) ) {
+		$robots['noindex'] = true;
+	}
+	return $robots;
+}
+add_filter( 'wp_robots', 'molosoc_staging_noindex_meta' );
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
