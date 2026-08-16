@@ -371,3 +371,72 @@ def test_storage_connection_test_catches_non_storage_errors(monkeypatch, capsys)
 
     assert sct.main([]) == 1
     assert "FAIL setup" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------
+# Text objects and the overwrite permission
+# --------------------------------------------------------------------------
+
+class Forbidden(Exception):
+    code = 403
+
+
+def test_text_objects_round_trip_with_a_markdown_content_type(store):
+    store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md",
+                   "# Molosoc\n", content_type="text/markdown")
+
+    assert store.get_text("reports/weekly/data/2026/08/2026-08-14/report.md") == "# Molosoc\n"
+
+
+def test_a_text_write_is_create_if_absent_like_every_other_write(store):
+    store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md", "first")
+
+    with pytest.raises(StorageError) as excinfo:
+        store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md", "second")
+    assert "already exists" in str(excinfo.value)
+    assert store.get_text("reports/weekly/data/2026/08/2026-08-14/report.md") == "first"
+
+
+def test_reading_a_missing_text_object_says_so(store):
+    with pytest.raises(StorageError) as excinfo:
+        store.get_text("reports/weekly/nope.md")
+    assert "no such key" in str(excinfo.value)
+
+
+def test_a_denied_overwrite_names_the_permission_that_is_missing(store, client):
+    """GCS models replacing an object as delete-then-create.
+
+    A writer scoped to create/get/list therefore gets 403 on overwrite, and the
+    generic 'write failed' message would send someone hunting for a bucket or
+    network fault that does not exist.
+    """
+    bucket = client.bucket(BUCKET)
+    original = bucket.blob
+
+    def denying_blob(name):
+        blob = original(name)
+        upload = blob.upload_from_string
+
+        def guarded(body, content_type=None, if_generation_match=None):
+            if if_generation_match is None:      # i.e. an overwrite
+                raise Forbidden("does not have storage.objects.delete access")
+            return upload(body, content_type=content_type,
+                          if_generation_match=if_generation_match)
+
+        blob.upload_from_string = guarded
+        return blob
+
+    bucket.blob = denying_blob
+
+    store.put_json("reports/weekly/index.json", {"count": 0})   # create: fine
+    with pytest.raises(sg.PermissionDeniedError) as excinfo:
+        store.put_json("reports/weekly/index.json", {"count": 1}, overwrite=True)
+
+    message = str(excinfo.value)
+    assert "storage.objects.delete" in message
+    assert "create/get/list" in message
+
+
+def test_a_denied_overwrite_is_still_a_storage_error(store):
+    """Callers that only know StorageError keep working."""
+    assert issubclass(sg.PermissionDeniedError, StorageError)

@@ -56,3 +56,26 @@ jobs:
           ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
           ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
         run: python3 automations/analytics/storage_connection_test.py
+
+      # Everything below writes under _verification/reports/<run stamp>/ only.
+      # No real weekly report, Clarity ledger object, or analytics history is
+      # read, written, overwritten or deleted, and no Clarity API call is made.
+      #
+      # Exit 2 means the immutable report storage works but the writer cannot
+      # update latest.json/index.json — GCS implements replacing an object as
+      # delete-then-create, so that needs storage.objects.delete. Surfaced as a
+      # distinct code so a permission gap is never mistaken for lost data.
+      - name: Verify the weekly report-storage mechanism (synthetic, isolated prefix)
+        env:
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: |
+          set +e
+          python3 automations/analytics/report_store_verify.py
+          code=$?
+          set -e
+          if [ "$code" = "2" ]; then
+            echo "::warning::Report storage verified. Pointer updates need storage.objects.delete on the analytics bucket."
+            exit 0
+          fi
+          exit "$code"
