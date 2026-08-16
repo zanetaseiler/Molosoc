@@ -66,7 +66,11 @@
             header.classList.toggle("is-past-hero", !entry.isIntersecting);
           });
         },
-        { threshold: 0 }
+        // Negative top margin ≈ the fixed header's height, so the class
+        // flips when the hero slides out from UNDER the header, not a
+        // header-height later when it clears the viewport top — the nav
+        // pills' past-hero contrast swap (homepage.css) keys off this.
+        { threshold: 0, rootMargin: "-90px 0px 0px 0px" }
       );
       headerObserver.observe(heroSentinel);
     }

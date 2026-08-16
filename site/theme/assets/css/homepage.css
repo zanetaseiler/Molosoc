@@ -181,7 +181,7 @@
     background: rgba(255, 255, 255, 0.18);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
-    transition: background-color 250ms ease, border-color 250ms ease;
+    transition: background-color 250ms ease, border-color 250ms ease, color 250ms ease;
   }
 
   .molosoc-home-header__nav > ul > li > a {
@@ -247,7 +247,7 @@
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.14);
-    transition: background-color 250ms ease, border-color 250ms ease;
+    transition: background-color 250ms ease, border-color 250ms ease, color 250ms ease;
   }
 
   .molosoc-home-header__nav .lang-item-first a {
@@ -276,6 +276,67 @@
 
   .molosoc-home-header__nav .lang-item.current-lang a:hover {
     background: var(--color-white);
+  }
+
+  /* ---------- Past-hero state ----------
+     motion.js toggles .is-past-hero on the header once the hero photo
+     has scrolled out of view. The white-glass pills that read well over
+     photography nearly vanish over the cream/white sections below, so
+     past the hero they swap to a warm opaque off-white fill with
+     charcoal text — same capsules, same sizes, different contrast. */
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children) > a,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children {
+    background: rgba(252, 251, 248, 0.9);
+    border-color: rgba(36, 29, 23, 0.24);
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li > a {
+    color: var(--color-ink-warm);
+    text-shadow: none;
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav .molosoc-submenu-toggle {
+    color: var(--color-ink-warm);
+    filter: none;
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children) > a:hover,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children:hover {
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(36, 29, 23, 0.34);
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current-menu-item:not(.menu-item-has-children) > a,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current_page_item:not(.menu-item-has-children) > a,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-item,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-parent,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-ancestor,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current_page_ancestor {
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(36, 29, 23, 0.42);
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav .lang-item a {
+    color: var(--color-ink-warm);
+    background: rgba(252, 251, 248, 0.82);
+    border-color: rgba(36, 29, 23, 0.3);
+  }
+
+  /* White-on-white would vanish here, so the active language flips to
+     the sitewide ink chip instead of the over-photo white fill. */
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav .lang-item.current-lang a {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: var(--color-white);
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav .lang-item a:hover {
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav .lang-item.current-lang a:hover {
+    background: var(--color-ink-warm);
+    border-color: var(--color-ink-warm);
   }
 }
 
