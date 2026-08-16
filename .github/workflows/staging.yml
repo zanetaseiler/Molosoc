@@ -25,4 +25,8 @@ jobs:
           password: ${{ secrets.STAGING_SFTP_PASS }}
           protocol: ftps
           local-dir: site/theme/
-          server-dir: /public_html/staging.molosoc.com/wp-content/themes/molosoc/
+          # The staging FTP account is chrooted to the staging docroot itself
+          # (verified 2026-08-16 via staging-ftp-diagnose.yml: / contains wp-admin/,
+          # wp-content/ ...). The old /public_html/staging.molosoc.com/... path
+          # silently created a phantom tree the web server never read.
+          server-dir: /wp-content/themes/molosoc/
