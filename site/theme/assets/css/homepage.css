@@ -306,8 +306,11 @@
     border-color: rgba(36, 29, 23, 0.34);
   }
 
-  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current-menu-item:not(.menu-item-has-children) > a,
-  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current_page_item:not(.menu-item-has-children) > a,
+  /* :not(.lang-item) — Polylang marks the active language's li with
+     current_page_item too; without the guard this rule out-specifies the
+     ink chip the language switcher gets below. */
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current-menu-item:not(.menu-item-has-children):not(.lang-item) > a,
+  .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.current_page_item:not(.menu-item-has-children):not(.lang-item) > a,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-item,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-parent,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-ancestor,
