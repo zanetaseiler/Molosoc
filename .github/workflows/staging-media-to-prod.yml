@@ -1,0 +1,106 @@
+name: Copy staging media to production uploads
+
+# One-shot migration (SEO remediation step 2, 2026-08-16): production
+# templates hot-link 52 images that exist only on staging. This downloads
+# each file from staging over HTTPS and FTPS-uploads it to production at
+# the IDENTICAL /wp-content/uploads/ path, so the theme-side rewrite is a
+# pure host swap. Non-destructive: every target 404s on production today,
+# and any file that already exists on the server is skipped, never
+# overwritten. Nothing is deleted anywhere; staging is untouched.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Download from staging
+        run: |
+          set -e
+          mkdir -p media/2026/07
+          while read -r f; do
+            [ -z "$f" ] && continue
+            curl -sSf --retry 3 -o "media/$f" "https://staging.molosoc.com/wp-content/uploads/$f"
+            [ -s "media/$f" ] || { echo "EMPTY: $f"; exit 1; }
+          done <<'LIST'
+            2026/07/3d_render_01_front_nobg.png
+            2026/07/3d_turntable_01_front.png
+            2026/07/3d_turntable_01_mirror.jpg
+            2026/07/3d_turntable_04_topdown.png
+            2026/07/Disposable-Foot-masks-versus-reusable-Molosoc.png
+            2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg
+            2026/07/hero_collection_02_cream-scaled.jpg
+            2026/07/hero_collection_03_relaxing-scaled.jpg
+            2026/07/hero_pair_bedroom.jpg
+            2026/07/homepage-cream-collection-cropped.png
+            2026/07/homepage-pillar5-drawer-graded.png
+            2026/07/homepage-results-full.jpg
+            2026/07/homepage_02_cream_massage.jpg
+            2026/07/molosoc-6a6c3e786c068.png
+            2026/07/molosoc_cracked_heels_03.jpg
+            2026/07/molosoc_cracked_heels_05.jpg
+            2026/07/molosoc_cream_drawers.jpg
+            2026/07/molosoc_disposable_mask_editorial.jpg
+            2026/07/molosoc_ingrown_toenail.jpg
+            2026/07/molosoc_pack_env3.jpg
+            2026/07/molosoc_pack_gift.jpg
+            2026/07/molosoc_pedicure_01.jpg
+            2026/07/molosoc_pedicure_relaxing.jpg
+            2026/07/molosoc_product_only.jpg
+            2026/07/molosoc_ritual_ankle_cream_closeup-scaled.jpg
+            2026/07/molosoc_ritual_bedside_rug-scaled.jpg
+            2026/07/molosoc_ritual_hallway_walk-scaled.jpg
+            2026/07/molosoc_ritual_reading_nook-scaled.jpg
+            2026/07/molosoc_ritual_vanity_cream-scaled.jpg
+            2026/07/molosoc_spa_treatment_01.jpg
+            2026/07/molosoc_spa_treatment_02.jpg
+            2026/07/molosoc_spa_treatment_03.jpg
+            2026/07/molosoc_spa_treatment_04.jpg
+            2026/07/molosoc_spa_treatment_05.jpg
+            2026/07/molosoc_walking_07_bedroom_web.jpg
+            2026/07/persona3_01_painted_nails.jpg
+            2026/07/persona4_02_giving_gift.jpg
+            2026/07/pillar1_01_heels_floor.jpg
+            2026/07/pillar1_02_bed_checking.jpg
+            2026/07/pillar1_03_sandals.jpg
+            2026/07/pillar2_01_soaking.jpg
+            2026/07/pillar2_02_trimming.jpg
+            2026/07/pillar2_03_elevated.jpg
+            2026/07/pillar3_01_foot_file.jpg
+            2026/07/pillar3_02_pumice.jpg
+            2026/07/pillar3_03_texture.jpg
+            2026/07/pillar4_01_wool_socks.jpg
+            2026/07/pillar4_03_radiator.jpg
+            2026/07/pillar5_01_drawer.jpg
+            2026/07/pillar5_02_squeezing.jpg
+            2026/07/pillar5_03_nightstand.jpg
+            2026/07/seasonal_03_winter.jpg
+LIST
+          echo "Downloaded: $(find media -type f | wc -l) files, $(du -sh media | cut -f1)"
+          md5sum media/2026/07/* | sed 's|media/||'
+
+      - name: Upload to production uploads (skip any existing)
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          set -e
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; mkdir -pf /wp-content/uploads/2026/07; bye" "$HOST" || true
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 /wp-content/uploads/2026/07/; bye" "$HOST" > existing.txt 2>/dev/null || true
+          sed -i 's|.*/||' existing.txt
+          uploaded=0; skipped=0
+          cd media/2026/07
+          for f in *; do
+            if grep -qxF "$f" ../../../existing.txt; then
+              echo "SKIP (already on server): $f"; skipped=$((skipped+1))
+            else
+              lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; put -O /wp-content/uploads/2026/07/ \"$f\"; bye" "$HOST"
+              echo "UPLOADED: $f"; uploaded=$((uploaded+1))
+            fi
+          done
+          echo "Done: $uploaded uploaded, $skipped skipped."
