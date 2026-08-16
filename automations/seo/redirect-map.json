@@ -1,0 +1,44 @@
+{
+  "_comment": "Step 3A legacy-URL retirement map. Read by preflight_redirects.py (read-only) and, once verified, by the implementation step. Editing this file is the only way to change what gets redirected — nothing is hardcoded in the scripts.",
+  "_status": "PRE-FLIGHT ONLY — nothing here has been applied to production.",
+  "site": "https://molosoc.com",
+  "mappings": [
+    {
+      "id": 1,
+      "source": "/home-2/",
+      "target": "/",
+      "note": "Legacy duplicate of the EN homepage."
+    },
+    {
+      "id": 2,
+      "source": "/cz/home-cestina/",
+      "target": "/cz/molosoc-home-cestina/",
+      "note": "Legacy CZ homepage slug; migration created molosoc-home-cestina (page 1032)."
+    },
+    {
+      "id": 3,
+      "source": "/blog-2/",
+      "target": "/blog/",
+      "note": "Legacy duplicate blog index."
+    },
+    {
+      "id": 4,
+      "source": "/hydratacni-navleky-na-nohy-2/",
+      "target": "/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/",
+      "note": "Legacy flat CZ product URL; migrated under the CZ category path."
+    },
+    {
+      "id": 5,
+      "source": "/doprava-a-platba/",
+      "target": "/cz/zasady-dopravy/",
+      "note": "Legacy CZ shipping/payment page."
+    },
+    {
+      "id": 6,
+      "source": "/blog-legacy-2018/",
+      "target": "/blog/",
+      "conditional": true,
+      "note": "ONLY if content comparison confirms it is obsolete/duplicate. This is the 2018 blog page whose slug the migration renamed; the Redirection plugin's slug monitor auto-created /blog/ -> /blog-legacy-2018/, so a naive rule here creates a LOOP. Verify plugin rules before applying."
+    }
+  ]
+}

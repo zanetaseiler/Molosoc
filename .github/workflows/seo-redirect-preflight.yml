@@ -1,0 +1,70 @@
+name: SEO Step 3A pre-flight (READ-ONLY)
+
+# Read-only reconnaissance for the legacy-URL retirement. Every call this
+# makes is a GET. It does not write to WordPress, does not touch the
+# Redirection plugin, does not change the sitemap, and does not contact
+# Search Console. Running it twice is identical to running it once.
+#
+# It exists because the decision it informs is genuinely dangerous to get
+# wrong: the Redirection plugin's "monitor slug changes" feature has already
+# auto-created at least one rule on this site (/blog/ -> /blog-legacy-2018/),
+# and adding the obvious reverse rule without checking would produce an
+# infinite redirect on the blog index.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seo-redirect-preflight
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install "requests>=2.31,<3"
+
+      - name: Check credentials are present
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: |
+          missing=0
+          [ -z "$WP_URL" ] && echo "Missing PROD_WP_URL" && missing=1
+          [ -z "$WP_USER" ] && echo "Missing PROD_WP_USER" && missing=1
+          [ -z "$WP_APP_PASSWORD" ] && echo "Missing PROD_WP_APP_PASSWORD" && missing=1
+          if [ "$missing" = "1" ]; then
+            echo "::error::Without credentials the Redirection rule list cannot be read, and loop detection is unreliable."
+            exit 1
+          fi
+          echo "Credentials present (values never printed)."
+
+      - name: Run the read-only pre-flight
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: python3 automations/seo/preflight_redirects.py
+
+      - name: Confirm the run changed nothing in the repository
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::working tree dirty — a read-only pre-flight must write nothing"
+            git status --porcelain
+            exit 1
+          fi
+          echo "Working tree clean."
