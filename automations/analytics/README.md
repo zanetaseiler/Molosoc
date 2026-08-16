@@ -386,3 +386,67 @@ recommendation ledger is an explicit choice.
 No report schedule, no frequency decision, no email or delivery, no dashboard,
 no LLM-generated recommendations, and no automatic application of any
 recommendation. Staging remediation remains a separate task.
+
+---
+
+# Weekly marketing analysis report
+
+One Markdown report per week, uploaded as a GitHub Actions artifact. Nothing is
+delivered anywhere else — no email, no Slack, no dashboard — and nothing is
+committed back to the repository.
+
+## Schedule
+
+`.github/workflows/weekly-marketing-report.yml`, **Wednesdays 06:15 UTC**
+(`15 6 * * 3`), plus `workflow_dispatch` for a manual run or a re-run of a past
+week via the `today` input.
+
+Wednesday is not arbitrary. Search Console finalises on a ~3-day lag, so the
+analysis anchor is `today - 3`. A Wednesday run puts that anchor on a Sunday,
+which makes the analysed period the previous **Monday-to-Sunday** week and the
+comparison the Monday-to-Sunday week before it. Whole calendar weeks compare
+like with like; a mid-week boundary would split weekend traffic across both
+windows. 06:15 UTC sits ~4 hours after the daily Clarity collector (02:20 UTC)
+so the two never contend, is off the hour to avoid scheduler congestion, and
+lands early morning in Prague.
+
+## Zero Clarity API calls
+
+The daily collector owns Clarity's 10-calls-per-day budget, and a missed day of
+Clarity history **cannot be backfilled**. A report that spent from that budget
+could permanently cost real data. So the report reads Clarity from the durable
+ledger only, and `test_weekly_report.py` makes any live Clarity call raise —
+completing the run is the proof.
+
+GA4 and Search Console are hydrated read-only for exactly the two compared
+windows: four API calls, cached so a window is never fetched twice.
+
+## Tracking coverage diagnostic
+
+`coverage.py` compares GA4 sessions against Clarity bot-adjusted sessions for
+the same period. It is reported as a **coverage indicator and explicitly not a
+consent rate** — the ratio is moved by differing session definitions, Clarity's
+own bot estimation and sampling, script placement, ad blockers, and separate
+consent gating, none of which this number can distinguish. Every result carries
+those caveats, and the ratio is suppressed below 30 sessions on either side.
+
+## Low volume
+
+Thresholds are unchanged. Below them the report states **`insufficient data for
+recommendation`**, reports every fact and trend it measured, and proposes
+nothing above Monitor.
+
+## Running it manually
+
+```bash
+# live
+export ANALYTICS_BUCKET=molosoc-analytics-history
+export ANALYTICS_STORAGE_SA_JSON='...'
+export GOOGLE_SERVICE_ACCOUNT_JSON='...'
+python3 automations/analytics/weekly_report.py --out-dir reports --also-json
+
+# deterministic fixture, no credentials or storage
+python3 automations/analytics/weekly_report.py --fixture low_volume --out-dir /tmp
+```
+
+`reports/` is gitignored: the report is a build output, never a commit.

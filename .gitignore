@@ -22,3 +22,6 @@ analytics-data/
 
 # Node (if theme build tooling gets added later)
 node_modules/
+
+# Generated weekly reports are build artifacts, never commits.
+reports/

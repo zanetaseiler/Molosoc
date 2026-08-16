@@ -247,3 +247,86 @@ def store_with(store, records_by_date_source):
     for (source, date), rows in grouped.items():
         store.put_records(facts_key(source, date), rows, overwrite=True)
     return store
+
+
+# --------------------------------------------------------------------------
+# Google fixture fetchers, for hydrated runs without credentials
+# --------------------------------------------------------------------------
+# Shaped exactly like the verified connection checks' output, so a fixture run
+# exercises the real hydration and normalization path.
+
+_SCENARIO_GA4 = {
+    # scenario -> (sessions, users, views, key_events)
+    "low_volume": (21, 10, 23, None),          # real verified magnitudes, no key events
+    "healthy": (840, 665, 1470, {"purchase": 21, "begin_checkout": 56,
+                                 "add_to_cart": 133}),
+    "broken": (840, 665, 1470, {"purchase": 21}),
+}
+
+_SCENARIO_GSC = {
+    "low_volume": (1, 8),
+    "healthy": (280, 6300),
+    "broken": (280, 6300),
+}
+
+
+def fixture_ga4_fetcher(scenario="low_volume"):
+    """A GA4 fetcher returning deterministic data for any window."""
+    sessions, users, views, key_events = _SCENARIO_GA4[scenario]
+
+    def fetch(start_date, end_date):
+        payload = {
+            "ok": True, "propertyId": "521643495",
+            "dateRange": {"start": start_date, "end": end_date},
+            "users": users, "sessions": sessions, "views": views,
+            "landingPages": [
+                {"landingPage": "/", "sessions": int(sessions * 0.38),
+                 "activeUsers": int(users * 0.35)},
+                {"landingPage": "/?fbclid=IwcGRvZgRleHRu", "sessions": max(1, int(sessions * 0.05)),
+                 "activeUsers": max(1, int(users * 0.05))},
+                {"landingPage": "/product/molosoc-hydratacni-navleky-na-nohy/",
+                 "sessions": int(sessions * 0.38), "activeUsers": int(users * 0.30)},
+                {"landingPage": "/cracked-heels/", "sessions": int(sessions * 0.14),
+                 "activeUsers": int(users * 0.14)},
+                {"landingPage": "", "sessions": 1, "activeUsers": 1},
+            ],
+        }
+        if key_events is not None:
+            payload["keyEvents"] = dict(key_events)
+        return payload
+
+    return fetch
+
+
+def fixture_gsc_fetcher(scenario="low_volume"):
+    """A Search Console fetcher returning deterministic data for any window."""
+    clicks, impressions = _SCENARIO_GSC[scenario]
+
+    def fetch(start_date, end_date):
+        return {
+            "ok": True, "siteUrl": "sc-domain:molosoc.com",
+            "dateRange": {"start": start_date, "end": end_date},
+            "clicks": clicks, "impressions": impressions,
+            "ctr": (clicks / impressions) if impressions else 0.0, "position": 8.0,
+            "topQueries": [
+                {"query": "molosoc", "clicks": max(1, int(clicks * 0.5)),
+                 "impressions": max(3, int(impressions * 0.2)),
+                 "ctr": 0.33, "position": 1.4},
+                {"query": "popraskane paty krem", "clicks": int(clicks * 0.2),
+                 "impressions": max(2, int(impressions * 0.3)),
+                 "ctr": 0.05, "position": 12.0},
+            ],
+            "topPages": [
+                {"page": "https://molosoc.com/", "clicks": max(1, int(clicks * 0.6)),
+                 "impressions": max(1, int(impressions * 0.5)), "ctr": 0.12,
+                 "position": 8.0},
+                {"page": "https://molosoc.com/product/molosoc-hydratacni-navleky-na-nohy/",
+                 "clicks": int(clicks * 0.3), "impressions": max(1, int(impressions * 0.3)),
+                 "ctr": 0.04, "position": 2.7},
+                # Always present, always excluded — proves the filter runs.
+                {"page": "https://staging.molosoc.com/legal-disclaimer/", "clicks": 0,
+                 "impressions": 1, "ctr": 0.0, "position": 5.0},
+            ],
+        }
+
+    return fetch
