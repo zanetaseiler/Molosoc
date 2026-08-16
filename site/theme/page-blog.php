@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
 
 get_header();
 
-$molosoc_img = 'https://staging.molosoc.com/wp-content/uploads/2026/07/';
+$molosoc_img = 'https://molosoc.com/wp-content/uploads/2026/07/';
 $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
 
 // Eyebrow = parent topic, heading = the short, specific angle. Pillars

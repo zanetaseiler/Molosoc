@@ -117,7 +117,7 @@ get_header();
 	     category.css's .molosoc-category-hero. -->
 	<div class="molosoc-product-proof-block">
 		<div class="molosoc-product-proof-block__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_turntable_04_topdown.png"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_turntable_04_topdown.png"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-product-proof-block__scrim"></div>
@@ -133,7 +133,7 @@ get_header();
 					<article class="molosoc-product-proof__card">
 						<h3><?php echo esc_html( $molosoc_is_cz ? '3měsíční srovnání před/po, s datem' : __( '3-month before/after', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
-							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
+							<img src="https://molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
 								alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
@@ -142,7 +142,7 @@ get_header();
 					<article class="molosoc-product-proof__card">
 						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co se skutečně stane s popraskanými patami v čase' : __( 'What actually happens to cracked heels over time', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
-							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
+							<img src="https://molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
 								alt="<?php esc_attr_e( "Mom's cracked heels before using Molosoc", 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
@@ -151,7 +151,7 @@ get_header();
 					<article class="molosoc-product-proof__card">
 						<h3><?php echo esc_html( $molosoc_is_cz ? 'Nefiltrované reakce (styl "reakce mámy")' : __( 'Mom surprised with results', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
-							<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+							<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 								alt="<?php esc_attr_e( 'Nail comparison showing visible improvement, no filters', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
@@ -179,12 +179,12 @@ get_header();
 		<div class="molosoc-argument molosoc-argument--reverse">
 			<div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
 				<div class="molosoc-media molosoc-media--primary molosoc-media--static">
-					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_01.jpg"
+					<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_01.jpg"
 						alt="<?php esc_attr_e( 'Woman in cream loungewear giving herself an at-home pedicure, foot resting in a ceramic basin, minimalist bright hallway', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
 				<div class="molosoc-media molosoc-media--secondary molosoc-media--static">
-					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/persona3_01_painted_nails.jpg"
+					<img src="https://molosoc.com/wp-content/uploads/2026/07/persona3_01_painted_nails.jpg"
 						alt="<?php esc_attr_e( 'Freshly painted toenails resting on a spa towel', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -219,12 +219,12 @@ get_header();
 		<div class="molosoc-argument">
 			<div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
 				<div class="molosoc-media molosoc-media--primary molosoc-media--static">
-					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pack_gift.jpg"
+					<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_pack_gift.jpg"
 						alt="<?php esc_attr_e( 'An open gift box with a pair of Molosoc foot covers, lavender oil, and dried lavender sprigs styled around it', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
 				<div class="molosoc-media molosoc-media--secondary molosoc-media--static">
-					<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/persona4_02_giving_gift.jpg"
+					<img src="https://molosoc.com/wp-content/uploads/2026/07/persona4_02_giving_gift.jpg"
 						alt="<?php esc_attr_e( 'Two pairs of hands — one giving a wrapped gift to another', 'molosoc' ); ?>"
 						loading="lazy" decoding="async">
 				</div>
@@ -254,7 +254,7 @@ get_header();
 	     action. -->
 	<div class="molosoc-product-how-block">
 		<div class="molosoc-product-how-block__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_front.png"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_front.png"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-product-how-block__scrim"></div>
@@ -269,12 +269,12 @@ get_header();
 				<div class="molosoc-argument molosoc-argument--reverse">
 					<div class="molosoc-argument__media molosoc-argument__media--duo">
 						<div class="molosoc-media molosoc-media--primary">
-							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pack_env3.jpg"
+							<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_pack_env3.jpg"
 								alt="<?php esc_attr_e( 'Molosoc foot covers and packaging styled on a sunlit windowsill with a plant and a glass of water', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
 						<div class="molosoc-media molosoc-media--secondary molosoc-media--contain">
-							<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_product_only.jpg"
+							<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_product_only.jpg"
 								alt="<?php esc_attr_e( 'The Molosoc foot cover shown alone with a minimal, plain background', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>

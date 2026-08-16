@@ -38,7 +38,7 @@ get_header();
 	     visual thread rather than picking a new photo. -->
 	<section class="molosoc-pillar-hero" id="pillarHero">
 		<div class="molosoc-pillar-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
@@ -63,7 +63,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ingrown_toenail.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_ingrown_toenail.jpg"
 							alt="<?php esc_attr_e( 'Foot soaking in a warm basin beside nail clippers and cotton pads', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -94,8 +94,8 @@ get_header();
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'How to get rid of ingrown toenails', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar2_02_trimming.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_01.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar2_02_trimming.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_01.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
@@ -187,7 +187,7 @@ get_header();
 	     targets). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>

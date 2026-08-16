@@ -37,7 +37,7 @@ get_header();
 	     "Pillar 1 Cracked Heels / Hero"). -->
 	<section class="molosoc-pillar-hero" id="pillarHero">
 		<div class="molosoc-pillar-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar1_01_heels_floor.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar1_01_heels_floor.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
@@ -62,7 +62,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar1_02_bed_checking.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar1_02_bed_checking.jpg"
 							alt="<?php esc_attr_e( 'Person checking their heel, seated on the edge of a bed', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -92,8 +92,8 @@ get_header();
 	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Kdy popraskané paty přejdou ze suchých v bolestivé' : __( 'When cracked heels go from dry to painful', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar3_03_texture.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar1_03_sandals.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar3_03_texture.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar1_03_sandals.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
@@ -183,7 +183,7 @@ get_header();
 			<div class="molosoc-topic-grid">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/cracked-heels-cream/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_05.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_05.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Cracked heels cream', 'molosoc' ); ?></h3>
@@ -191,7 +191,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/fix-permanently/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_03.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_cracked_heels_03.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'How to fix cracked heels permanently', 'molosoc' ); ?></h3>
@@ -199,7 +199,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/cracked-heels/cracked-heels-treatment/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc-6a6c3e786c068.png"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc-6a6c3e786c068.png"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Cracked heels treatment', 'molosoc' ); ?></h3>
@@ -215,7 +215,7 @@ get_header();
 	     "Deep-links to" note for Pillar 1. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>

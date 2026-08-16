@@ -38,7 +38,7 @@ get_header();
 	     "Pillar 2 Ingrown Toenails / Hero"). -->
 	<section class="molosoc-pillar-hero" id="pillarHero">
 		<div class="molosoc-pillar-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar2_01_soaking.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar2_01_soaking.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
@@ -63,7 +63,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar2_02_trimming.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar2_02_trimming.jpg"
 							alt="<?php esc_attr_e( 'Hands trimming toenails carefully at a bathroom sink', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -93,8 +93,8 @@ get_header();
 	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Zmizí zarostlý nehet sám?' : __( 'Do ingrown toenails go away', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ingrown_toenail.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar2_03_elevated.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_ingrown_toenail.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar2_03_elevated.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
@@ -185,7 +185,7 @@ get_header();
 			<div class="molosoc-topic-grid">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/ingrown-toenails/treatment/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'How to treat ingrown toenails', 'molosoc' ); ?></h3>
@@ -193,7 +193,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/ingrown-toenails/prevent/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_03.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_03.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'How to prevent ingrown toenails', 'molosoc' ); ?></h3>
@@ -201,7 +201,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/ingrown-toenails/treatment/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_01.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_01.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Ingrown toenails treatment', 'molosoc' ); ?></h3>
@@ -217,7 +217,7 @@ get_header();
 	     own persona). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>

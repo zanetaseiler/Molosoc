@@ -42,7 +42,7 @@ get_header();
 	     the full note. -->
 	<section class="molosoc-category-hero">
 		<div class="molosoc-category-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_mirror.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_mirror.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-category-hero__scrim" aria-hidden="true"></div>
@@ -86,7 +86,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media molosoc-media--static">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/Disposable-Foot-masks-versus-reusable-Molosoc.png"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/Disposable-Foot-masks-versus-reusable-Molosoc.png"
 							alt="<?php echo esc_attr( $molosoc_is_cz ? 'Srovnání jednorázové masky na nohy vedle sebe s opakovaně použitelným návlekem Molosoc' : __( 'Side-by-side comparison of a disposable single-use foot mask versus the reusable Molosoc foot cover', 'molosoc' ) ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -125,7 +125,7 @@ get_header();
 			<div class="molosoc-argument molosoc-argument--reverse">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media molosoc-media--static molosoc-media--justify-right">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_disposable_mask_editorial.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_disposable_mask_editorial.jpg"
 							alt="<?php esc_attr_e( 'A foot inside a clear single-use plastic sock mask, cream visibly pooled inside, stepping onto a wool rug in front of a wooden stool with a folded towel', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -186,8 +186,8 @@ get_header();
 	<section class="molosoc-who-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?>">
 		<div class="molosoc-who-section__stage">
 			<div class="molosoc-who-section__media" aria-hidden="true">
-				<div class="molosoc-who-section__bg molosoc-who-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_relaxing.jpg');"></div>
-				<div class="molosoc-who-section__bg molosoc-who-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/hero_collection_03_relaxing-scaled.jpg');"></div>
+				<div class="molosoc-who-section__bg molosoc-who-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_relaxing.jpg');"></div>
+				<div class="molosoc-who-section__bg molosoc-who-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/hero_collection_03_relaxing-scaled.jpg');"></div>
 			</div>
 			<div class="molosoc-who-section__scrim" aria-hidden="true"></div>
 
@@ -216,7 +216,7 @@ get_header();
 	<!-- Final CTA -->
 	<section class="molosoc-section molosoc-category-final-cta">
 		<div class="molosoc-category-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-category-final-cta__scrim" aria-hidden="true"></div>

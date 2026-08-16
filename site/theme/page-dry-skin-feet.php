@@ -41,7 +41,7 @@ get_header();
 	     "Pillar 4 Dry Skin / Hero"). -->
 	<section class="molosoc-pillar-hero" id="pillarHero">
 		<div class="molosoc-pillar-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar4_01_wool_socks.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar4_01_wool_socks.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
@@ -66,7 +66,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar4_03_radiator.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar4_03_radiator.jpg"
 							alt="<?php esc_attr_e( 'Feet resting near a radiator, winter dryness mood', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -150,8 +150,8 @@ get_header();
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'Socks, tights, and the dryness nobody talks about', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/seasonal_03_winter.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_02.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/seasonal_03_winter.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
@@ -193,7 +193,7 @@ get_header();
 			<div class="molosoc-topic-grid">
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/dry-skin-feet/dry-foot-skin-treatment/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_ankle_cream_closeup-scaled.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_ankle_cream_closeup-scaled.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Dry foot skin treatment', 'molosoc' ); ?></h3>
@@ -201,7 +201,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/dry-skin-feet/home-remedies/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_bedside_rug-scaled.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_bedside_rug-scaled.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Dry skin feet home remedies', 'molosoc' ); ?></h3>
@@ -209,7 +209,7 @@ get_header();
 				</a>
 				<a class="molosoc-topic-card" href="<?php echo esc_url( home_url( '/dry-skin-feet/vs-cracked-heels/' ) ); ?>">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar1_01_heels_floor.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar1_01_heels_floor.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( "Dry feet vs. cracked heels: what's the difference", 'molosoc' ); ?></h3>
@@ -227,7 +227,7 @@ get_header();
 	     (see assets/molosoc-image-assets.csv's updated multi-use note). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>

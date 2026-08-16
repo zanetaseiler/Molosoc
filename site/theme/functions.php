@@ -513,7 +513,7 @@ function molosoc_product_schema() {
 	      "name": "Molosoc Foot Cover",
 	      "description": "A reusable, moisture-lock foot cover that seals your favorite cream against the skin — cutting the mess and making your foot care routine actually stick. Works with any cream you already own.",
 	      "brand": { "@id": "https://molosoc.com/#organization" },
-	      "image": "https://staging.molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png",
+	      "image": "https://molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png",
 	      "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
 	      "category": "Foot Care",
 	      "offers": {

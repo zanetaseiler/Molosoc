@@ -45,7 +45,7 @@ get_header();
 	     "Pillar 5 Cream That Works / Cream graveyard drawer"). -->
 	<section class="molosoc-pillar-hero" id="pillarHero">
 		<div class="molosoc-pillar-hero__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar5_01_drawer.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar5_01_drawer.jpg"
 				alt="" loading="eager" decoding="async">
 		</div>
 		<div class="molosoc-pillar-hero__scrim" aria-hidden="true"></div>
@@ -70,7 +70,7 @@ get_header();
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/pillar5_02_squeezing.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/pillar5_02_squeezing.jpg"
 							alt="<?php esc_attr_e( 'Hands squeezing the last bit of cream from an almost-empty tube', 'molosoc' ); ?>"
 							loading="lazy" decoding="async">
 					</div>
@@ -100,8 +100,8 @@ get_header();
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'How long does foot cream take to absorb', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_ankle_cream_closeup-scaled.jpg');"></div>
-				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://staging.molosoc.com/wp-content/uploads/2026/07/pillar5_03_nightstand.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_ankle_cream_closeup-scaled.jpg');"></div>
+				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar5_03_nightstand.jpg');"></div>
 			</div>
 			<div class="molosoc-severity-section__scrim" aria-hidden="true"></div>
 
@@ -196,7 +196,7 @@ get_header();
 			<div class="molosoc-topic-grid">
 				<div class="molosoc-topic-card">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/hero_collection_02_cream-scaled.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/hero_collection_02_cream-scaled.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Softening foot cream', 'molosoc' ); ?></h3>
@@ -204,7 +204,7 @@ get_header();
 				</div>
 				<div class="molosoc-topic-card">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_vanity_cream-scaled.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_ritual_vanity_cream-scaled.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'How to moisturize feet overnight', 'molosoc' ); ?></h3>
@@ -212,7 +212,7 @@ get_header();
 				</div>
 				<div class="molosoc-topic-card">
 					<div class="molosoc-topic-card__media molosoc-media">
-						<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_05.jpg"
+						<img src="https://molosoc.com/wp-content/uploads/2026/07/molosoc_spa_treatment_05.jpg"
 							alt="" loading="lazy" decoding="async">
 					</div>
 					<h3><?php esc_html_e( 'Overnight foot cream', 'molosoc' ); ?></h3>
@@ -230,7 +230,7 @@ get_header();
 	     already uses). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>

@@ -323,7 +323,7 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 	<!-- Beat 9 — Final CTA -->
 	<section class="molosoc-section molosoc-final-cta">
 		<div class="molosoc-final-cta__media" aria-hidden="true">
-			<img src="https://staging.molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png" alt="" loading="lazy" decoding="async">
+			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png" alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-final-cta__scrim"></div>
 		<div class="molosoc-section__inner molosoc-reveal" style="text-align:center;">
