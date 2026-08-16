@@ -1,0 +1,27 @@
+name: Purge staging page cache
+
+# Deletes WP-Optimize's page-cache directory on STAGING over FTPS so the
+# next request re-renders every page fresh. Cache only — WPO recreates the
+# directory on demand; no content, media, or plugin files are touched.
+# Created 2026-08-16 so the staging noindex meta (functions.php on the
+# staging branch) isn't shadowed by HTML cached before it existed.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Delete wpo-cache directory (staging only)
+        env:
+          HOST: ${{ secrets.STAGING_SFTP_HOST }}
+          USER: ${{ secrets.STAGING_SFTP_USER }}
+          PASS: ${{ secrets.STAGING_SFTP_PASS }}
+        run: |
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; rm -rf /wp-content/cache/wpo-cache; bye" "$HOST" || true
+          echo "Remaining contents of /wp-content/cache:"
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 /wp-content/cache; bye" "$HOST" || true
