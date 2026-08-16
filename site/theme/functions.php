@@ -56,6 +56,29 @@ function molosoc_remove_woocommerce_sidebar() {
 }
 add_action( 'init', 'molosoc_remove_woocommerce_sidebar' );
 
+/**
+ * Staging-only indexing guard (2026-08-16).
+ *
+ * staging.molosoc.com is a full, publicly reachable copy of the site and
+ * must never be indexed — but it must stay online and unauthenticated for
+ * now, because production still hot-links staging-hosted media. So: no
+ * robots.txt Disallow (Google must be able to fetch pages to SEE the
+ * noindex) and no password protection; just a noindex response header.
+ *
+ * send_headers fires only on WordPress-rendered responses (the HTML
+ * pages), never for static files the web server serves directly, which is
+ * exactly the required scope — images keep serving untouched. The host
+ * gate makes this a structural no-op on molosoc.com production even if
+ * this code is ever merged there.
+ */
+function molosoc_staging_noindex_header() {
+	$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) $_SERVER['HTTP_HOST'] ) : '';
+	if ( 0 === strpos( $host, 'staging.' ) ) {
+		header( 'X-Robots-Tag: noindex' );
+	}
+}
+add_action( 'send_headers', 'molosoc_staging_noindex_header' );
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
