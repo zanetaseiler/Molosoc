@@ -22,11 +22,7 @@ jobs:
         run: |
           set -e
           mkdir -p media/2026/07
-          while read -r f; do
-            [ -z "$f" ] && continue
-            curl -sSf --retry 3 -o "media/$f" "https://staging.molosoc.com/wp-content/uploads/$f"
-            [ -s "media/$f" ] || { echo "EMPTY: $f"; exit 1; }
-          done <<'LIST'
+          FILES="
             2026/07/3d_render_01_front_nobg.png
             2026/07/3d_turntable_01_front.png
             2026/07/3d_turntable_01_mirror.jpg
@@ -78,8 +74,11 @@ jobs:
             2026/07/pillar5_01_drawer.jpg
             2026/07/pillar5_02_squeezing.jpg
             2026/07/pillar5_03_nightstand.jpg
-            2026/07/seasonal_03_winter.jpg
-LIST
+            2026/07/seasonal_03_winter.jpg"
+          for f in $FILES; do
+            curl -sSf --retry 3 -o "media/$f" "https://staging.molosoc.com/wp-content/uploads/$f"
+            [ -s "media/$f" ] || { echo "EMPTY: $f"; exit 1; }
+          done
           echo "Downloaded: $(find media -type f | wc -l) files, $(du -sh media | cut -f1)"
           md5sum media/2026/07/* | sed 's|media/||'
 
