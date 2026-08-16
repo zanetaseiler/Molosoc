@@ -51,6 +51,11 @@
      higher than product.css's own .molosoc-sticky-buy bar (z-index: 30,
      mobile only) and everything else here. */
   z-index: 50;
+  /* The model-viewer canvas is a transparent 960px rectangle that bleeds
+     over the drawer's price/CTA row below the hero — at z-index 50 it was
+     swallowing clicks on the Order Now button. The model is decorative
+     only (auto-rotate, no camera-controls), so let clicks pass through. */
+  pointer-events: none;
 }
 
 /* Soft ambient light behind the model. Originally the brand's warm peach
