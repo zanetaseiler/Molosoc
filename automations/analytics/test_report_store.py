@@ -244,6 +244,70 @@ def test_latest_is_written_after_the_report_objects(store):
 
 
 # --------------------------------------------------------------------------
+# Staying inside the narrow delete grant
+# --------------------------------------------------------------------------
+
+def _record_overwrites(store):
+    """Every key this store is asked to overwrite, in order."""
+    overwritten = []
+    put_json, put_text = store.put_json, store.put_text
+
+    def json_spy(key, document, overwrite=False):
+        if overwrite:
+            overwritten.append(key)
+        return put_json(key, document, overwrite=overwrite)
+
+    def text_spy(key, text, overwrite=False, content_type="text/plain"):
+        if overwrite:
+            overwritten.append(key)
+        return put_text(key, text, overwrite=overwrite, content_type=content_type)
+
+    store.put_json, store.put_text = json_spy, text_spy
+    return overwritten
+
+
+def test_publishing_never_overwrites_anything_but_the_two_pointer_objects(store):
+    """The bucket's IAM condition permits deleting exactly these two objects.
+
+    If publish() ever tried to replace a dated report or a Clarity snapshot,
+    GCS would refuse it — but the failure would surface as a broken weekly run
+    rather than as the design error it is. Assert it here instead.
+    """
+    overwritten = _record_overwrites(store)
+
+    for today in ("2026-08-10", "2026-08-17", "2026-08-24"):
+        report, markdown = make_report(today=today)
+        rs.publish(store, report, markdown, now=NOW)
+    report, markdown = make_report(today="2026-08-17")
+    rs.publish(store, report, markdown, now=NOW + dt.timedelta(hours=2),
+               on_duplicate=rs.ON_DUPLICATE_REVISION)
+
+    assert overwritten, "expected the pointer and index to be updated"
+    assert set(overwritten) <= set(rs.MUTABLE_KEYS), (
+        f"publish() overwrote {set(overwritten) - set(rs.MUTABLE_KEYS)}, which "
+        "the narrow storage.objects.delete grant does not cover"
+    )
+
+
+def test_rebuilding_pointers_also_stays_inside_the_grant(store):
+    for today in ("2026-08-10", "2026-08-17"):
+        report, markdown = make_report(today=today)
+        rs.publish(store, report, markdown, now=NOW)
+
+    overwritten = _record_overwrites(store)
+    rs.rebuild_pointers(store, now=NOW)
+
+    assert set(overwritten) == set(rs.MUTABLE_KEYS)
+
+
+def test_the_mutable_keys_are_exactly_the_two_documented_objects():
+    assert rs.MUTABLE_KEYS == ("reports/weekly/latest.json",
+                               "reports/weekly/index.json")
+    # Neither may sit under the prefix a lifecycle rule would expire.
+    assert not any(k.startswith(rs.DATA_ROOT + "/") for k in rs.MUTABLE_KEYS)
+
+
+# --------------------------------------------------------------------------
 # Degraded mode: the writer cannot overwrite
 # --------------------------------------------------------------------------
 

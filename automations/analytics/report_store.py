@@ -31,16 +31,23 @@ objects are stored and confirmed present. A reader that follows `latest.json`
 therefore cannot land on a half-written report — the worst case is a pointer
 one week stale, which is visibly old rather than quietly wrong.
 
-MUTABLE POINTERS NEED A PERMISSION THE WRITER MAY NOT HAVE
+MUTABLE POINTERS AND THE NARROW DELETE GRANT
 
 `latest.json` and `index.json` are updated in place. GCS models replacing an
 object as delete-then-create, so overwriting needs `storage.objects.delete` on
-top of `storage.objects.create`. The analytics writer was deliberately scoped
-to create/get/list, which means it can store reports but cannot move the
-pointer until that permission is granted. `publish()` treats this as a
-degraded outcome, not data loss: the immutable report objects are already
-safe, the result says the pointer is stale, and `rebuild_pointers()` can
-reconstruct both mutable objects from a listing once the permission exists.
+top of `storage.objects.create`, and the analytics writer was deliberately
+scoped to create/get/list.
+
+The grant is therefore conditional, not blanket: `storage.objects.delete` is
+allowed only where `resource.name` is exactly one of the two objects in
+MUTABLE_KEYS. Clarity history, dated reports and raw snapshots stay
+undeletable by this identity — the guarantee Phase 1 was built on survives
+intact, and the pointer still moves every week.
+
+Until that condition is in place `publish()` degrades rather than losing
+anything: the immutable report objects are already safe, the result says the
+pointer is stale and names the exact grant needed, and `rebuild_pointers()`
+reconstructs both mutable objects from a listing afterwards.
 
 HISTORY SURVIVES RETENTION
 
@@ -65,6 +72,18 @@ ROOT = "reports/weekly"
 DATA_ROOT = f"{ROOT}/data"
 LATEST_KEY = f"{ROOT}/latest.json"
 INDEX_KEY = f"{ROOT}/index.json"
+
+#: The ONLY two objects this module ever overwrites.
+#:
+#: This tuple is not documentation — it is the contract the bucket's IAM
+#: condition enforces. The analytics writer holds storage.objects.delete under
+#: a condition matching exactly these two resource names, so an overwrite of
+#: anything else is refused by GCS regardless of what the code asks for.
+#: Clarity history, dated reports and raw snapshots are therefore
+#: undeletable by this identity, which is the property the whole Phase 1
+#: design rests on. A test asserts that publish() never overwrites a key
+#: outside this tuple, so the code cannot drift outside the grant.
+MUTABLE_KEYS = (LATEST_KEY, INDEX_KEY)
 
 #: Recommended lifecycle for DATA_ROOT. Declared here and echoed into every
 #: document so the intent is discoverable, but NOT applied — changing the
