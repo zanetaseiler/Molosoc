@@ -292,10 +292,17 @@ def test_the_remote_directory_is_the_molosoc_folder_under_the_base_path():
     assert pub.resolve_remote_dir(BASE + "/") == EXPECTED_DIR
 
 
-def test_an_unset_base_path_stops_the_upload():
+def test_an_unset_base_path_falls_back_to_the_committed_default():
+    """The variable was unset on the first deployment attempt. A default keeps
+    that from silently becoming a missing dashboard every week — and the
+    guards below still apply to it."""
     for value in (None, "", "   "):
-        with pytest.raises(pub.PublishError, match="not set"):
-            pub.resolve_remote_dir(value)
+        assert pub.resolve_remote_dir(value) == EXPECTED_DIR
+    assert pub.DEFAULT_BASE_PATH == BASE
+
+
+def test_the_variable_overrides_the_default():
+    assert pub.resolve_remote_dir("/srv/other/reports") == "/srv/other/reports/molosoc"
 
 
 def test_a_relative_base_path_is_refused():

@@ -163,3 +163,22 @@ jobs:
           REPORTS_SFTP_PASS: ${{ secrets.REPORTS_SFTP_PASS }}
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
         run: python3 automations/analytics/publish_dashboard.py --file site/index.html
+
+      # A successful STOR proves the file reached the filesystem; it does not
+      # prove the web server serves it at the expected URL. Different question,
+      # so it gets its own check.
+      - name: Verify the page is live
+        run: |
+          url="https://trafficdom.com/reports/molosoc/"
+          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
+          echo "HTTP $code from $url"
+          if [ "$code" != "200" ]; then
+            echo "::error::$url returned HTTP $code"
+            exit 1
+          fi
+          if ! grep -q "Weekly marketing analysis" /tmp/live.html; then
+            echo "::error::$url served a page, but not the dashboard"
+            head -c 400 /tmp/live.html
+            exit 1
+          fi
+          echo "PASS the dashboard is live at $url ($(wc -c < /tmp/live.html) bytes)"

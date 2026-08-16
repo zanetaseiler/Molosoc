@@ -43,8 +43,19 @@ USER_ENV = "REPORTS_SFTP_USER"
 PASS_ENV = "REPORTS_SFTP_PASS"
 BASE_PATH_ENV = "REPORTS_BASE_PATH"
 
+#: Where the report host keeps its report folders. The repository variable
+#: REPORTS_BASE_PATH overrides it; this default exists so a variable that is
+#: unset — as it was on the first deployment attempt — does not silently
+#: become a missing dashboard every week. Same pattern as
+#: ECOMMERCE_TRACKING_START. Not a secret: it is a directory on a host that
+#: needs credentials to reach, and every guard below still applies to it.
+DEFAULT_BASE_PATH = "/public_html/Trafficdom.com/reports"
+
 #: The single sub-directory this script may write to, under the base path.
 PROJECT_DIR = "molosoc"
+
+#: Where that directory is served from. Used only to verify the deployment.
+PUBLIC_URL = "https://trafficdom.com/reports/molosoc/"
 
 #: The only filename it may store.
 REMOTE_FILENAME = "index.html"
@@ -67,11 +78,7 @@ def resolve_remote_dir(base_path):
     Returns a POSIX path with no trailing slash. Raises rather than guessing:
     an unset or odd base path must stop the upload, not silently retarget it.
     """
-    base = (base_path or "").strip()
-    if not base:
-        raise PublishError(
-            f"{BASE_PATH_ENV} is not set. Refusing to guess a remote directory."
-        )
+    base = (base_path or "").strip() or DEFAULT_BASE_PATH
     if not base.startswith("/"):
         raise PublishError(
             f"{BASE_PATH_ENV} must be an absolute path; got {base!r}."
@@ -225,8 +232,12 @@ def main(argv=None):
         return 1
 
     remote_dir = settings["remote_dir"]
+    source = (f"{BASE_PATH_ENV}" if (os.environ.get(BASE_PATH_ENV) or "").strip()
+              else f"committed default ({BASE_PATH_ENV} unset)")
+    print(f"Base path from:            {source}")
     print(f"Resolved remote directory: {remote_dir}")
     print(f"Remote file:               {remote_dir}/{REMOTE_FILENAME}")
+    print(f"Public URL:                {PUBLIC_URL}")
     print(f"Host:                      {settings['host']} (FTPS, port {args.port})")
 
     if args.dry_run:
