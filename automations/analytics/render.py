@@ -254,6 +254,16 @@ def render_markdown(report):
             f"period covered: {coverage.get('supports_period', False)}; "
             f"comparison available: {coverage.get('supports_comparison', False)}")
     quality = report.data_quality
+    boundary = quality.get("ecommerce_boundary") or {}
+    if boundary:
+        start = boundary.get("start_date")
+        boundary_label = (f"Ecommerce tracking boundary ({start})" if start
+                          else "**Ecommerce tracking boundary not configured**")
+        add(f"- {boundary_label}: {boundary.get('note', '')}")
+        if start:
+            add(f"  - current period: {boundary.get('period_state')}; "
+                f"comparison period: {boundary.get('prior_state')}; "
+                f"conversion comparison valid: {boundary.get('comparison_valid')}")
     conversions = quality.get("conversions") or {}
     if conversions:
         state = conversions.get("state")

@@ -25,6 +25,9 @@ purchase record is created and the run reports why — a zero would read as "no
 sales", which is a different and much worse claim than "not measured".
 """
 
+import datetime as dt
+import os
+
 from analytics_common import describe_error
 from normalize import (
     HEADLINE_CONVERSION, SUPPORTING_FUNNEL_EVENTS, TRACKED_KEY_EVENTS,
@@ -40,6 +43,101 @@ CONVERSIONS_OK = "ok"
 CONVERSIONS_MISSING_PRIMARY = "missing_primary_conversion"
 CONVERSIONS_NONE = "no_key_events"
 CONVERSIONS_NOT_FETCHED = "not_fetched"
+CONVERSIONS_BEFORE_TRACKING = "before_ecommerce_tracking"
+
+# --------------------------------------------------------------------------
+# Ecommerce tracking boundary
+# --------------------------------------------------------------------------
+# WooCommerce Google Analytics Integration was enabled on a specific date.
+# Before it, the property received no usable ecommerce stream data; after it,
+# ecommerce events are real measurements.
+#
+# The distinction this draws is the important one: "no purchase records"
+# means two completely different things either side of that date.
+#
+#   before  -> tracking was not running. Absence is UNKNOWN. It is not zero
+#              sales, and a period-over-period comparison across the boundary
+#              is meaningless.
+#   after   -> tracking was running. A zero is a real, reportable observation.
+#
+# Without the date configured both cases look identical, so the agent stays on
+# the conservative side and reports "unknown" rather than claiming zero.
+ECOMMERCE_TRACKING_START_ENV = "ECOMMERCE_TRACKING_START"
+
+TRACKING_ACTIVE = "active"            # window sits entirely after the boundary
+TRACKING_UNAVAILABLE = "unavailable"  # window sits entirely before it
+TRACKING_PARTIAL = "partial"          # window straddles it
+TRACKING_UNKNOWN = "unknown"          # no boundary configured
+
+
+def ecommerce_tracking_start(explicit=None):
+    """The date WooCommerce ecommerce tracking went live, or None if unset.
+
+    Configured rather than hard-coded: the agent must not invent a boundary it
+    was not told about, and an invented one would silently mislabel periods.
+    """
+    value = explicit if explicit is not None else os.environ.get(
+        ECOMMERCE_TRACKING_START_ENV, ""
+    )
+    value = str(value or "").strip()
+    if not value:
+        return None
+    try:
+        return dt.date.fromisoformat(value[:10])
+    except ValueError:
+        return None
+
+
+def tracking_state_for_window(window, boundary=None):
+    """Classify one analysis window against the ecommerce tracking boundary."""
+    boundary = boundary if isinstance(boundary, dt.date) else ecommerce_tracking_start(boundary)
+    if boundary is None:
+        return TRACKING_UNKNOWN
+    start = dt.date.fromisoformat(window.start)
+    end = dt.date.fromisoformat(window.end)
+    if start >= boundary:
+        return TRACKING_ACTIVE
+    if end < boundary:
+        return TRACKING_UNAVAILABLE
+    return TRACKING_PARTIAL
+
+
+def conversion_data_is_valid(state):
+    """Only a fully post-boundary window yields trustworthy conversion figures."""
+    return state == TRACKING_ACTIVE
+
+
+def comparison_is_valid(period_state, prior_state):
+    """A conversion comparison needs both windows fully inside the tracked era."""
+    return conversion_data_is_valid(period_state) and conversion_data_is_valid(prior_state)
+
+
+def describe_boundary(period_state, prior_state, boundary=None):
+    """A sentence a reader can act on, stating what the periods can support."""
+    boundary = boundary if isinstance(boundary, dt.date) else ecommerce_tracking_start(boundary)
+    if boundary is None:
+        return (
+            "Ecommerce tracking start date is not configured "
+            f"({ECOMMERCE_TRACKING_START_ENV} unset), so periods cannot be classified "
+            "as before or after the WooCommerce tracking fix. Missing conversion "
+            "data is therefore treated as unknown, never as zero sales."
+        )
+    if comparison_is_valid(period_state, prior_state):
+        return (f"Both periods fall after ecommerce tracking went live on {boundary}, "
+                "so conversion figures and their comparison are valid.")
+    if period_state == TRACKING_ACTIVE:
+        return (f"The current period falls after ecommerce tracking went live on "
+                f"{boundary}, but the comparison period does not. Conversion figures "
+                "are reported for the current period only; no period-over-period "
+                "conversion comparison is made, because the earlier period has no "
+                "ecommerce measurement — that is missing data, not zero sales.")
+    if period_state == TRACKING_PARTIAL:
+        return (f"The current period straddles the ecommerce tracking start date "
+                f"({boundary}), so its conversion totals cover only part of the "
+                "window and are incomplete rather than comparable.")
+    return (f"Both periods predate ecommerce tracking, which went live on {boundary}. "
+            "No conversion data exists for either — this is tracking unavailability, "
+            "not an absence of sales.")
 
 
 class HydrationResult:
@@ -127,17 +225,35 @@ class GoogleHydrator:
 # Conversion readiness
 # --------------------------------------------------------------------------
 
-def assess_conversions(key_events, fetched=True):
+def assess_conversions(key_events, fetched=True, period_state=TRACKING_UNKNOWN,
+                      prior_state=TRACKING_UNKNOWN, boundary=None):
     """Report whether GA4 is returning the commerce events the model needs.
 
-    Never fabricates. A missing `purchase` produces a message, not a zero.
+    Never fabricates. A missing `purchase` produces a message, not a zero — and
+    when the window predates the ecommerce tracking fix, the absence is
+    explicitly reported as tracking unavailability rather than as no sales.
     """
+    if period_state in (TRACKING_UNAVAILABLE, TRACKING_PARTIAL) and not (key_events or {}):
+        return {
+            "state": CONVERSIONS_BEFORE_TRACKING,
+            "primary": HEADLINE_CONVERSION,
+            "present": [],
+            "missing": list(TRACKED_KEY_EVENTS),
+            "period_tracking_state": period_state,
+            "prior_tracking_state": prior_state,
+            "comparison_valid": False,
+            "message": describe_boundary(period_state, prior_state, boundary),
+        }
+
     if not fetched:
         return {
             "state": CONVERSIONS_NOT_FETCHED,
             "primary": HEADLINE_CONVERSION,
             "present": [],
             "missing": [HEADLINE_CONVERSION] + list(SUPPORTING_FUNNEL_EVENTS),
+            "period_tracking_state": period_state,
+            "prior_tracking_state": prior_state,
+            "comparison_valid": False,
             "message": "GA4 was not hydrated, so conversion data was not requested.",
         }
 
@@ -172,11 +288,21 @@ def assess_conversions(key_events, fetched=True):
         )
         state = CONVERSIONS_OK
 
+    # Whatever the state, if the two windows cannot support a conversion
+    # comparison the reader needs to know why. Without this an unconfigured
+    # boundary produces "configure purchase as a key event", which is actively
+    # wrong once it has been configured and the window simply predates it.
+    if not comparison_is_valid(period_state, prior_state):
+        message += " " + describe_boundary(period_state, prior_state, boundary)
+
     return {
         "state": state,
         "primary": HEADLINE_CONVERSION,
         "present": present,
         "missing": missing,
+        "period_tracking_state": period_state,
+        "prior_tracking_state": prior_state,
+        "comparison_valid": comparison_is_valid(period_state, prior_state),
         "message": message,
     }
 

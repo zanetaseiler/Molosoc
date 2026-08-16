@@ -13,6 +13,7 @@ fresh overlapping API windows.
 """
 
 import datetime as dt
+from dataclasses import replace
 
 import anomalies as an
 import google_hydrate as gh
@@ -157,6 +158,34 @@ def build_facts(period_records, prior_records, windows, max_entities=25):
     return facts, excluded
 
 
+def _annotate_conversion_boundary(facts, boundary_info):
+    """Mark conversion facts whose comparison window predates ecommerce tracking.
+
+    The comparison is already absent in that case — aggregate() returns None for
+    a window with no records, so no delta is computed and nothing reads as a
+    change from zero. This adds the reason, so a reader sees "not tracked then"
+    rather than an unexplained blank.
+    """
+    if not boundary_info or boundary_info.get("comparison_valid"):
+        return facts
+
+    annotated = []
+    for fact in facts:
+        if not fact.metric.startswith("ga4_key_event_"):
+            annotated.append(fact)
+            continue
+        notes = dict(fact.notes)
+        notes["comparison_unavailable_reason"] = (
+            "ecommerce tracking was not active for the whole comparison period; "
+            "absence of conversion data there is unmeasured, not zero sales"
+        )
+        notes["ecommerce_tracking_period_state"] = boundary_info.get("period_state")
+        notes["ecommerce_tracking_prior_state"] = boundary_info.get("prior_state")
+        annotated.append(replace(fact, notes=notes, comparison_value=None,
+                                 delta_abs=None, delta_pct=None, significant=False))
+    return annotated
+
+
 def detect_all_anomalies(facts, baseline_records, windows):
     """Performance and instrumentation anomalies over the analysis window."""
     index = sg.FactIndex(facts)
@@ -289,12 +318,13 @@ def build_sections(facts, inferences, recommendations, anomaly_list, index):
 
 def analyse(period_records, prior_records, baseline_records, windows,
             clarity_coverage=None, excluded_records=None, now=None,
-            conversion_readiness=None, hydration=None):
+            conversion_readiness=None, hydration=None, ecommerce_boundary=None):
     """Build the full analysis object from already-loaded history."""
     now = now or dt.datetime.now(dt.timezone.utc)
     facts, excluded = build_facts(period_records, prior_records, windows)
     excluded = list(excluded) + list(excluded_records or [])
 
+    facts = _annotate_conversion_boundary(facts, ecommerce_boundary)
     anomaly_list = detect_all_anomalies(facts, baseline_records, windows)
     index = sg.FactIndex(facts)
 
@@ -335,6 +365,11 @@ def analyse(period_records, prior_records, baseline_records, windows,
             ),
             "conversions": conversion_readiness or gh.assess_conversions({}, fetched=False),
             "hydration": hydration or {"used": False},
+            "ecommerce_boundary": ecommerce_boundary or {
+                "start_date": None, "period_state": gh.TRACKING_UNKNOWN,
+                "prior_state": gh.TRACKING_UNKNOWN, "comparison_valid": False,
+                "note": gh.describe_boundary(gh.TRACKING_UNKNOWN, gh.TRACKING_UNKNOWN),
+            },
         },
         facts=facts, inferences=inferences, anomalies=anomaly_list,
         recommendations=recommendations, sections=sections,
@@ -359,7 +394,7 @@ def load_clarity_history(store, windows):
 
 
 def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, now=None,
-                       hydrator=None):
+                       hydrator=None, ecommerce_tracking_start=None):
     """Analyse using stored Clarity history plus, optionally, hydrated Google data.
 
     Without a hydrator, every source is read from the store — the pure-storage
@@ -376,7 +411,17 @@ def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, no
     period_records, prior_records, baseline_records, coverage = \
         load_clarity_history(store, windows)
 
-    conversion_readiness = None
+    # Classify both windows against the ecommerce tracking boundary before any
+    # conversion figure is read. Absence of conversion data before the boundary
+    # is tracking unavailability, never zero sales.
+    boundary = gh.ecommerce_tracking_start(ecommerce_tracking_start)
+    period_state = gh.tracking_state_for_window(windows[pr.PERIOD], boundary)
+    prior_state = gh.tracking_state_for_window(windows[pr.PRIOR], boundary)
+
+    conversion_readiness = gh.assess_conversions(
+        {}, fetched=False, period_state=period_state, prior_state=prior_state,
+        boundary=boundary,
+    )
     hydration_note = {"used": False}
 
     if hydrator is None:
@@ -392,7 +437,10 @@ def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, no
         previous = hydrator.hydrate(windows[pr.PRIOR])
         period_records += current.records
         prior_records += previous.records
-        conversion_readiness = gh.assess_conversions(current.key_events, fetched=current.ok)
+        conversion_readiness = gh.assess_conversions(
+            current.key_events, fetched=current.ok,
+            period_state=period_state, prior_state=prior_state, boundary=boundary,
+        )
         hydration_note = {
             "used": True,
             "windows": [windows[pr.PERIOD].to_dict(), windows[pr.PRIOR].to_dict()],
@@ -409,4 +457,11 @@ def analyse_from_store(store, today=None, period_days=pr.DEFAULT_PERIOD_DAYS, no
     return analyse(period_records, prior_records, baseline_records, windows,
                    clarity_coverage=coverage, now=now,
                    conversion_readiness=conversion_readiness,
-                   hydration=hydration_note)
+                   hydration=hydration_note,
+                   ecommerce_boundary={
+                       "start_date": boundary.isoformat() if boundary else None,
+                       "period_state": period_state,
+                       "prior_state": prior_state,
+                       "comparison_valid": gh.comparison_is_valid(period_state, prior_state),
+                       "note": gh.describe_boundary(period_state, prior_state, boundary),
+                   })
