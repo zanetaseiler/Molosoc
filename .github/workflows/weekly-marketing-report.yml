@@ -99,6 +99,7 @@ jobs:
           # Exit codes: 0 ok, 1 generation/storage failure, 2 reports stored but
           # the latest/index pointer could not be updated, 3 this week is
           # already published and was not overwritten.
+          set +e
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
               --out-dir reports --also-json --persist \
@@ -108,6 +109,19 @@ jobs:
               --out-dir reports --also-json --persist \
               --dashboard-out site/index.html
           fi
+          code=$?
+          set -e
+
+          # 3 means the authoritative record for this week already exists and
+          # was protected — which is the storage layer succeeding, not failing.
+          # The report and the dashboard were both still produced, and there is
+          # no reason to withhold the page because the history was already
+          # written. Anything else is a real failure and stops the run.
+          if [ "$code" = "3" ]; then
+            echo "::warning::This week is already published; the stored report was left untouched. Continuing to publish the dashboard."
+            exit 0
+          fi
+          exit "$code"
 
       - name: Confirm nothing was committed back to the repository
         if: always()
