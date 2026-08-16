@@ -544,3 +544,60 @@ def test_the_diagnosis_never_repeats_the_hostname():
     for note in pub.describe_host_shape(secret):
         assert "verysecrethost" not in note
         assert secret not in note
+
+
+def test_an_ip_address_is_recognised_as_such():
+    assert pub._looks_like_ip("72.167.124.157")
+    assert pub._looks_like_ip("2001:db8::1")
+    assert not pub._looks_like_ip("ftp.example.com")
+
+
+def test_an_ip_that_fails_to_resolve_is_diagnosed_as_a_delivery_problem():
+    """An IP needs no DNS, so 'could not resolve' means the value in the
+    runner is not the value that was set."""
+    notes = " ".join(pub.describe_host_shape("72.167.124.157"))
+    assert "needs no DNS" in notes
+    assert "looks like a hostname" not in notes
+
+
+def test_tls_failures_are_not_reported_as_dns_failures(monkeypatch, capsys, tmp_path):
+    """A certificate problem and a resolver problem need different answers."""
+    import ssl as ssl_module
+
+    page = tmp_path / "index.html"
+    page.write_text("<!doctype html>", encoding="utf-8")
+
+    def failing_tls(*_args, **_kwargs):
+        raise ssl_module.SSLError("certificate verify failed: IP address mismatch")
+
+    monkeypatch.setattr(pub, "connect", failing_tls)
+    for name, value in (("REPORTS_SFTP_HOST", "72.167.124.157"),
+                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
+                        ("REPORTS_BASE_PATH", BASE)):
+        monkeypatch.setenv(name, value)
+
+    assert pub.main(["--file", str(page)]) == 1
+    err = capsys.readouterr().err
+    assert "TLS handshake" in err
+    assert "certificate hostname verification cannot succeed" in err
+    assert "could not resolve" not in err
+
+
+def test_a_refused_connection_is_not_reported_as_a_dns_failure(monkeypatch, capsys, tmp_path):
+    page = tmp_path / "index.html"
+    page.write_text("<!doctype html>", encoding="utf-8")
+
+    def refused(*_args, **_kwargs):
+        raise ConnectionRefusedError(111, "Connection refused")
+
+    monkeypatch.setattr(pub, "connect", refused)
+    for name, value in (("REPORTS_SFTP_HOST", "ftp.example.com"),
+                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
+                        ("REPORTS_BASE_PATH", BASE)):
+        monkeypatch.setenv(name, value)
+
+    assert pub.main(["--file", str(page)]) == 1
+    err = capsys.readouterr().err
+    assert "could not connect" in err
+    assert "may be closed, filtered" in err
+    assert "could not resolve" not in err

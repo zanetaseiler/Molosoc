@@ -32,7 +32,9 @@ Usage:
 
 import argparse
 import ftplib
+import ipaddress
 import os
+import socket
 import ssl
 import sys
 
@@ -121,6 +123,14 @@ def load_settings(env=None):
     }
 
 
+def _looks_like_ip(host):
+    try:
+        ipaddress.ip_address((host or "").strip())
+        return True
+    except ValueError:
+        return False
+
+
 def describe_host_shape(host):
     """Say what is wrong with a hostname without disclosing it.
 
@@ -146,7 +156,11 @@ def describe_host_shape(host):
     if remainder and "." not in remainder:
         notes.append("it has no dot — that is a bare label, not a fully "
                      "qualified hostname")
-    if not notes:
+    if _looks_like_ip(host):
+        notes.append("it is an IP address, which needs no DNS — if this "
+                     "failed to resolve, the value reaching the runner is "
+                     "not the one you think it is")
+    elif not notes:
         notes.append("its shape looks like a hostname, so the name itself may "
                      "be wrong, or DNS for it is unavailable from the runner")
     return notes
@@ -303,15 +317,41 @@ def main(argv=None):
     except PublishError as exc:
         print(f"FAIL {redact(exc)}", file=sys.stderr)
         return 1
-    except OSError as exc:
-        # DNS and connection failures land here. The host is a masked secret,
-        # so say what is wrong with its shape rather than leaving the log with
-        # nothing but "Name or service not known" and three asterisks.
-        print(f"FAIL could not reach the report host: {redact(exc)}", file=sys.stderr)
+    except ssl.SSLError as exc:
+        # TLS is a different problem from DNS and needs a different answer,
+        # so it must not fall through to the resolver diagnosis below.
+        print(f"FAIL TLS handshake with the report host failed: {redact(exc)}",
+              file=sys.stderr)
+        if _looks_like_ip(settings["host"]):
+            print("  The host is an IP address, so certificate hostname "
+                  "verification cannot succeed: a certificate is issued for a "
+                  "name, not an address. Use the hostname the certificate is "
+                  "issued for, or decide explicitly to connect without "
+                  "verifying it.", file=sys.stderr)
+        else:
+            print("  The certificate did not validate for this host. Check "
+                  f"that {HOST_ENV} matches the name on the certificate.",
+                  file=sys.stderr)
+        return 1
+    except socket.gaierror as exc:
+        # The host is a masked secret, so say what is wrong with its shape
+        # rather than leaving the log with nothing but "Name or service not
+        # known" and three asterisks.
+        print(f"FAIL could not resolve the report host: {redact(exc)}",
+              file=sys.stderr)
         print(f"  {HOST_ENV} could not be resolved. Without disclosing it:",
               file=sys.stderr)
         for note in describe_host_shape(settings["host"]):
             print(f"    - {note}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        # Resolved, but the connection itself failed: refused, filtered,
+        # timed out. Nothing to say about the name; say that plainly.
+        print(f"FAIL could not connect to the report host: {redact(exc)}",
+              file=sys.stderr)
+        print(f"  The address resolved, so this is the connection itself — "
+              f"port {args.port} may be closed, filtered, or the service is "
+              "not listening.", file=sys.stderr)
         return 1
     except ftplib.all_errors as exc:
         print(f"FAIL FTPS error: {redact(exc)}", file=sys.stderr)
