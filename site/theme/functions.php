@@ -550,8 +550,8 @@ function molosoc_product_schema() {
 	      "offers": {
 	        "@type": "Offer",
 	        "url": "https://molosoc.com/foot-covers/moisture-lock-foot-cover/",
-	        "priceCurrency": "USD",
-	        "price": "13.00",
+	        "priceCurrency": "CZK",
+	        "price": "229",
 	        "availability": "https://schema.org/InStock",
 	        "itemCondition": "https://schema.org/NewCondition"
 	      }

@@ -46,7 +46,7 @@ Skutečný moment, kdy si někdo všimne změny na vlastních nohou — zachycen
 Čerstvá pedikúra vypadá nejlépe zhruba týden až deset dní, než se začne vracet sucho. Není to chyba salonního ošetření — je to prostě to, co se stane, jakmile intenzivní péče skončí.
 
 ### Cena za použití vs. další návštěva salonu
-Návlek Molosoc stojí 199 Kč a vydrží alespoň 10 použití — tedy zhruba 20 Kč na použití. Udržet si stejný výsledek doma vychází na zlomek toho, co jedna další návštěva salonu.
+Návlek Molosoc stojí 229 Kč a vydrží alespoň 10 použití — tedy zhruba 23 Kč na použití. Udržet si stejný výsledek doma vychází na zlomek toho, co jedna další návštěva salonu.
 
 ### Domácí spa, bez ceny salonu
 Deset až patnáct minut s vlastním krémem a návlekem vám dá většinu toho, co dodatečná návštěva salonu — bez cesty, bez objednávání, bez účtu.

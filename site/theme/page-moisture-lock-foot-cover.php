@@ -83,7 +83,12 @@ get_header();
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už doma máte, konečně funguje' : __( 'The cream you already own, finally working', 'molosoc' ) ); ?></h2>
 				</div>
 				<div class="molosoc-orbit-drawer__buy">
-					<span class="molosoc-orbit-drawer__price"><?php echo $molosoc_is_cz ? '199 Kč' : '$13'; ?></span>
+					<span class="molosoc-price-group">
+						<span class="molosoc-orbit-drawer__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
+						<?php if ( ! $molosoc_is_cz ) : ?>
+							<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
+						<?php endif; ?>
+					</span>
 					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
 				</div>
 			</div>
@@ -191,7 +196,7 @@ get_header();
 				</div>
 				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Cena za použití vs. další návštěva salonu' : __( 'Cost per use vs. another salon visit', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek Molosoc stojí 199 Kč a vydrží alespoň 10 použití — tedy zhruba 20 Kč na použití. Udržet si stejný výsledek doma vychází na zlomek toho, co jedna další návštěva salonu.' : __( 'A Molosoc cover costs $13 and holds up for at least 10 sessions — working out to about $1.30 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.', 'molosoc' ) ); ?></p>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek Molosoc stojí 229 Kč a vydrží alespoň 10 použití — tedy zhruba 23 Kč na použití. Udržet si stejný výsledek doma vychází na zlomek toho, co jedna další návštěva salonu.' : __( 'A Molosoc cover costs €10 and holds up for at least 10 sessions — working out to about €1 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Domácí spa, bez ceny salonu' : __( 'Home spa, without the salon price', 'molosoc' ) ); ?></h3>
@@ -290,7 +295,10 @@ get_header();
 					</div>
 				</div>
 				<div class="molosoc-product-buy">
-					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní — 199 Kč' : __( 'Order Now — $13', 'molosoc' ) ); ?></a>
+					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní — 229 Kč' : __( 'Order Now — €10', 'molosoc' ) ); ?></a>
+					<?php if ( ! $molosoc_is_cz ) : ?>
+						<p class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></p>
+					<?php endif; ?>
 				</div>
 			</section>
 		</div>
@@ -301,7 +309,12 @@ get_header();
 <!-- Sticky mobile buy bar — see product.css for why this exists only at
      mobile widths. -->
 <div class="molosoc-sticky-buy">
-	<span class="molosoc-sticky-buy__price"><?php echo $molosoc_is_cz ? '199 Kč' : '$13'; ?></span>
+	<span class="molosoc-price-group">
+		<span class="molosoc-sticky-buy__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
+		<?php if ( ! $molosoc_is_cz ) : ?>
+			<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
+		<?php endif; ?>
+	</span>
 	<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
 </div>
 
