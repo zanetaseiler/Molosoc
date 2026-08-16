@@ -596,3 +596,131 @@ def test_reports_are_not_written_into_the_repository(tmp_path, store):
     rs.publish(store, report, markdown, now=NOW)
     assert set(Path(".").glob("**/*.md")) == before
     assert rs.ROOT not in {str(p) for p in Path(".").iterdir()}
+
+
+# --------------------------------------------------------------------------
+# The production pointer probe
+#
+# It is the only thing in this system that touches a production path, so what
+# it must NOT do matters as much as what it must.
+# --------------------------------------------------------------------------
+
+def _gcs_store(prefix=""):
+    """A GCSStore over the emulated client, so get_text sees real stored bytes."""
+    from test_storage_gcs import BUCKET, FakeClient
+    import storage_gcs as sg
+
+    return sg.GCSStore(BUCKET, prefix=prefix, client=FakeClient())
+
+
+def test_the_probe_creates_a_valid_empty_index_when_none_exists():
+    import report_store_verify as v
+
+    store = _gcs_store()
+    outcome = v.Outcome()
+    v.probe_production_pointer(store, outcome, NOW)
+
+    assert not outcome.failures
+    index = store.get_json(rs.INDEX_KEY)
+    assert index["count"] == 0
+    assert index["entries"] == []
+    assert index["schema_version"] == rs.SCHEMA_VERSION
+    assert index["retention"]["policy_applied"] is False
+
+
+def test_the_probe_rewrites_byte_for_byte():
+    import report_store_verify as v
+
+    store = _gcs_store()
+    v.probe_production_pointer(store, v.Outcome(), NOW)
+    first = store.get_text(rs.INDEX_KEY)
+
+    outcome = v.Outcome()
+    v.probe_production_pointer(store, outcome, NOW + dt.timedelta(days=3))
+
+    assert not outcome.failures
+    assert store.get_text(rs.INDEX_KEY) == first, "the probe must be a no-op"
+
+
+def test_the_probe_preserves_a_real_index_exactly():
+    import report_store_verify as v
+
+    store = _gcs_store()
+    report, markdown = make_report()
+    rs.publish(store, report, markdown, now=NOW)
+    before = store.get_text(rs.INDEX_KEY)
+
+    outcome = v.Outcome()
+    v.probe_production_pointer(store, outcome, NOW + dt.timedelta(days=9))
+
+    assert not outcome.failures
+    assert store.get_text(rs.INDEX_KEY) == before
+    assert rs.load_index(store)["entries"][0]["report_date"] == "2026-08-14"
+
+
+def test_the_probe_touches_index_json_and_nothing_else():
+    import report_store_verify as v
+
+    store = _gcs_store()
+    report, markdown = make_report()
+    rs.publish(store, report, markdown, now=NOW)
+    snapshot = {k: store.get_text(k) for k in store.list_keys()}
+
+    v.probe_production_pointer(store, v.Outcome(), NOW)
+
+    assert {k: store.get_text(k) for k in store.list_keys()} == snapshot
+    assert rs.LATEST_KEY in snapshot           # present, and provably unchanged
+    assert any(k.startswith(rs.DATA_ROOT) for k in snapshot)
+
+
+def test_the_probe_reports_a_denied_grant_as_a_failure():
+    """Denial on the production path means the condition is wrong.
+
+    Not a soft "needs permission" — this is the object the grant names, so a
+    refusal here predicts a broken weekly run.
+    """
+    import report_store_verify as v
+    from storage import PermissionDeniedError
+
+    class Denying:
+        prefix = ""
+
+        def exists(self, key):
+            return False
+
+        def put_json(self, key, document, overwrite=False):
+            if overwrite:
+                raise PermissionDeniedError("overwrite denied for " + key)
+            self.stored = document
+
+        def get_text(self, key):
+            return json.dumps(self.stored)
+
+    outcome = v.Outcome()
+    v.probe_production_pointer(Denying(), outcome, NOW)
+
+    assert outcome.failures
+    assert "does NOT cover" in outcome.failures[0]
+
+
+def test_the_probe_refuses_a_prefixed_store():
+    """A prefixed store addresses a different object name than the grant names."""
+    import report_store_verify as v
+
+    store = _gcs_store(prefix="_verification/reports/RUN")
+    outcome = v.Outcome()
+    v.probe_production_pointer(store, outcome, NOW)
+
+    assert outcome.failures
+    assert "prefixed" in outcome.failures[0]
+    assert not store.list_keys(), "nothing should have been written"
+
+
+def test_the_probe_makes_no_clarity_api_call():
+    # The autouse fixture turns any Clarity call into a failure.
+    import report_store_verify as v
+
+    store = _gcs_store()
+    outcome = v.Outcome()
+    v.probe_production_pointer(store, outcome, NOW)
+    assert not outcome.failures

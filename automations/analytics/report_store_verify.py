@@ -22,17 +22,29 @@ What it proves against the real bucket:
   7. an older week does not drag the latest pointer backwards
   8. a report can be discovered from the pointer alone, with no bucket listing
 
-Check 6 is the one that earns its keep. The verification prefix is fresh on
-every run, so writing `latest.json` the first time is a create and needs only
-`storage.objects.create`. Production replaces that object every week, and
-replacing needs `storage.objects.delete` as well, because GCS implements
-"replace an object" as delete-then-create. A verification that stopped at
-check 3 would pass against a create-only writer while the weekly job failed
-from its second run onward.
+Before any of that, it runs ONE probe against a production path — an
+idempotent create-or-rewrite of `reports/weekly/index.json`.
 
-Where that permission is missing the script reports NEEDS-PERMISSION with the
-exact grant required rather than a failure: the immutable half is what proves
-the reports are durable, and that half stands on its own.
+That probe exists because the isolation which makes the rest of this script
+safe also puts it beyond the permission it needs to test. The conditional
+`storage.objects.delete` grant matches `resource.name` by EQUALITY against the
+two production pointer names, so an object at
+`_verification/reports/<stamp>/reports/weekly/latest.json` is a different name
+and is correctly not covered. No amount of testing under the verification
+prefix can prove the production grant; only touching the real object can.
+
+The probe is a no-op by construction. If the index does not exist it creates a
+valid empty one — the correct initial state, and exactly what the first real
+publish would create anyway. Then it reads the object and writes the same
+parsed document back. `put_json` serialises deterministically, so the result is
+byte-identical, and the probe asserts that rather than assuming it. Logical
+contents never change, and no other production object is touched.
+
+Consequently, the second-week pointer failure under the verification prefix is
+now reported as an expected NOTE rather than a problem: the mechanism is proven
+there, the permission is proven by the probe.
+
+Exit codes: 0 everything passed, 1 something is genuinely wrong.
 
 Usage:
     export ANALYTICS_STORAGE_SA_JSON='...'
@@ -44,24 +56,25 @@ Objects are left in place: the writer has no delete permission, so cleanup of
 """
 
 import datetime as dt
+import json
 import os
 import sys
 
 import report_store as rs
 import weekly_report as wr
 from analytics_common import redact
-from storage import StorageError
+from storage import PermissionDeniedError, StorageError
 from storage_gcs import BUCKET_ENV, GCSStore, load_storage_credentials_info
 
 VERIFICATION_ROOT = "_verification/reports"
 
 
 class Outcome:
-    """Pass/fail tallies that keep a permission gap distinct from a break."""
+    """Pass/fail tallies, with a third bucket for expected-and-harmless."""
 
     def __init__(self):
         self.failures = []
-        self.needs_permission = []
+        self.notes = []
 
     def ok(self, message):
         print(f"PASS {message}")
@@ -70,9 +83,111 @@ class Outcome:
         print(f"FAIL {message}", file=sys.stderr)
         self.failures.append(message)
 
-    def permission(self, message):
-        print(f"NEEDS-PERMISSION {message}", file=sys.stderr)
-        self.needs_permission.append(message)
+    def note(self, message):
+        """Something worth saying that is not a problem."""
+        print(f"NOTE {message}")
+        self.notes.append(message)
+
+
+# --------------------------------------------------------------------------
+# The production pointer probe
+# --------------------------------------------------------------------------
+
+def probe_production_pointer(store, outcome, now):
+    """Prove the IAM condition on the real reports/weekly/index.json.
+
+    This is the only check that touches a production path, and it is the only
+    one that can prove the conditional delete grant, because that grant matches
+    resource.name by EQUALITY. Objects under the verification prefix have
+    different names and are deliberately outside it.
+
+    Idempotent by construction:
+
+      * if the index does not exist, create a valid empty one using the
+        production schema — which is the correct initial state anyway, and
+        exactly what the first real publish would otherwise create;
+      * read it back, then write the SAME parsed document again.
+
+    put_json serialises deterministically, so re-writing an unchanged document
+    reproduces the object byte for byte. The probe asserts that rather than
+    assuming it. Logical contents are never modified.
+
+    Touches reports/weekly/index.json and nothing else — not latest.json, not
+    any dated report, not the Clarity ledger. A guard enforces that rather than
+    trusting the caller to pass the right store.
+    """
+    key = rs.INDEX_KEY
+
+    prefix = getattr(store, "prefix", "")
+    if prefix:
+        outcome.fail(
+            f"the production probe was handed a store prefixed with {prefix!r}. "
+            "It must address real object names, or it proves nothing about the "
+            "condition that governs them."
+        )
+        return
+    if key != "reports/weekly/index.json":
+        outcome.fail(f"refusing to probe an unexpected object: {key}")
+        return
+
+    try:
+        existed = store.exists(key)
+    except StorageError as exc:
+        outcome.fail(f"production probe could not check for {key}: {redact(exc)}")
+        return
+
+    if not existed:
+        try:
+            store.put_json(key, rs.empty_index(now))
+        except StorageError as exc:
+            outcome.fail(f"production probe could not create {key}: {redact(exc)}")
+            return
+        outcome.ok(f"created {key} — a valid empty index, the correct initial state")
+    else:
+        outcome.note(f"{key} already exists; rewriting it unchanged")
+
+    try:
+        before_text = store.get_text(key)
+        before_doc = json.loads(before_text)
+    except (StorageError, ValueError) as exc:
+        outcome.fail(f"production probe could not read {key}: {redact(exc)}")
+        return
+
+    # THE PROBE. Same document, written over itself. This is the delete-then-
+    # create that the conditional grant must permit, on the exact object name
+    # the condition names.
+    try:
+        store.put_json(key, before_doc, overwrite=True)
+    except PermissionDeniedError as exc:
+        outcome.fail(
+            f"the conditional delete grant does NOT cover {key}: {redact(exc)} "
+            "This is the production path, so the weekly report would fail to "
+            "update its index from its second run onward. Check the condition's "
+            "resource.name expression."
+        )
+        return
+    except StorageError as exc:
+        outcome.fail(f"production probe rewrite of {key} failed: {redact(exc)}")
+        return
+
+    try:
+        after_text = store.get_text(key)
+    except StorageError as exc:
+        outcome.fail(f"production probe could not re-read {key}: {redact(exc)}")
+        return
+
+    if after_text != before_text:
+        outcome.fail(
+            f"{key} changed across an idempotent rewrite "
+            f"({len(before_text)} bytes before, {len(after_text)} after). The "
+            "probe was supposed to be a no-op."
+        )
+        return
+
+    outcome.ok(f"rewrote {key} byte-for-byte identically ({len(after_text)} bytes) "
+               "— the conditional storage.objects.delete grant is proven")
+    outcome.ok("logical contents unchanged: "
+               f"{json.loads(after_text) == before_doc}")
 
 
 def build_verification_store(run_stamp):
@@ -139,7 +254,7 @@ def verify(store, outcome, now):
         else:
             outcome.fail(f"index does not list {report.as_of_date}")
     else:
-        outcome.permission(f"index.json could not be written: {first.pointer_error}")
+        outcome.fail(f"index.json could not be created: {first.pointer_error}")
 
     if first.pointer_updated and not first.pointer_error:
         pointer = rs.load_latest(store)
@@ -148,7 +263,7 @@ def verify(store, outcome, now):
         else:
             outcome.fail("latest.json does not resolve to the report just published")
     else:
-        outcome.permission(f"latest.json could not be written: {first.pointer_error}")
+        outcome.fail(f"latest.json could not be created: {first.pointer_error}")
 
     # --- 4. duplicate refused --------------------------------------------
     try:
@@ -191,9 +306,17 @@ def verify(store, outcome, now):
 
     if second and second.stored:
         if second.degraded:
-            outcome.permission(
-                "a second week stored its reports but could not update "
-                f"latest.json/index.json: {second.pointer_error}"
+            # EXPECTED, and not a problem. The delete grant matches
+            # resource.name by equality against the two production pointer
+            # names; objects under this run's verification prefix have
+            # different names and are deliberately outside it. The mechanism
+            # is proven here, the permission is proven by
+            # probe_production_pointer() against the real object.
+            outcome.note(
+                "a second week stored its reports; its pointer update was "
+                "refused because this run writes under the verification "
+                "prefix, which the production-scoped grant correctly does not "
+                "cover. The grant itself is proven separately, above."
             )
         else:
             pointer = rs.load_latest(store)
@@ -215,7 +338,8 @@ def verify(store, outcome, now):
         pointer = rs.load_latest(store)
         newest = (pointer or {}).get("report_date")
         if pointer is None:
-            outcome.permission("latest.json absent, so pointer regression is untested")
+            outcome.note("latest.json absent under this prefix, so pointer "
+                         "regression is untested here")
         elif newest >= report.as_of_date:
             outcome.ok(f"older week stored without dragging latest back (still {newest})")
         else:
@@ -226,7 +350,7 @@ def verify(store, outcome, now):
     # --- 8. discovery from the pointer alone ------------------------------
     pointer = rs.load_latest(store)
     if pointer is None:
-        outcome.permission("discovery via latest.json is untested (pointer absent)")
+        outcome.note("discovery via latest.json is untested here (pointer absent)")
     else:
         try:
             document = store.get_json(pointer["json_key"])
@@ -247,39 +371,46 @@ def main(argv=None):
     outcome = Outcome()
 
     try:
+        production = GCSStore(bucket_name=_bucket(), prefix="",
+                              credentials_info=load_storage_credentials_info())
         store, prefix = build_verification_store(run_stamp)
     except Exception as exc:  # noqa: BLE001 — incl. auth errors, redacted
         print(f"FAIL setup: {redact(exc)}", file=sys.stderr)
         return 1
 
-    print(f"Store: {store.describe()}")
+    print(f"Bucket: gs://{production.bucket_name}")
     print(f"Isolated verification prefix: {prefix}/")
-    print("No real weekly report, Clarity ledger object, or analytics history "
-          "is touched. Zero Clarity API calls.\n")
+    print("Zero Clarity API calls. No dated weekly report, no latest.json, no "
+          "Clarity ledger object, no GA4/Search Console data, no WordPress or "
+          "site content is read or written.\n")
 
+    # 1. The production probe. The only production path touched, and the only
+    #    check that can prove the conditional grant, because that grant matches
+    #    resource.name by equality.
+    print(f"--- production pointer probe ({rs.INDEX_KEY}) ---")
+    try:
+        probe_production_pointer(production, outcome, now)
+    except Exception as exc:  # noqa: BLE001
+        print(f"FAIL production probe: {redact(exc)}", file=sys.stderr)
+        outcome.failures.append("production probe raised")
+
+    # 2. The mechanism, end to end, entirely inside the verification prefix.
+    print(f"\n--- report-storage mechanism (synthetic, {prefix}/) ---")
     try:
         verify(store, outcome, now)
     except Exception as exc:  # noqa: BLE001
         print(f"FAIL unexpected: {redact(exc)}", file=sys.stderr)
         outcome.failures.append("unexpected error")
 
-    print(f"\nObjects left in place under {prefix}/ "
-          "(the writer has no delete permission).")
+    print(f"\nSynthetic objects left in place under {prefix}/ — the writer's "
+          "delete grant covers the two production pointer names only, so this "
+          "script cannot clean up after itself. Sweep manually when convenient.")
 
     if outcome.failures:
         print(f"\n{len(outcome.failures)} check(s) FAILED.", file=sys.stderr)
         return 1
-    if outcome.needs_permission:
-        print(f"\nImmutable report storage verified. "
-              f"{len(outcome.needs_permission)} check(s) need a permission the "
-              "writer does not have:\n"
-              "  storage.objects.delete on this bucket (GCS implements object "
-              "replacement as delete-then-create).\n"
-              "  Without it, reports are stored durably but latest.json and "
-              "index.json cannot be updated.", file=sys.stderr)
-        return 2
 
-    print("\nAll checks passed.")
+    print(f"\nAll checks passed ({len(outcome.notes)} informational note(s)).")
     return 0
 
 

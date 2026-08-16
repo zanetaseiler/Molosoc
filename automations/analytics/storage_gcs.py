@@ -214,8 +214,7 @@ class GCSStore(SnapshotStore):
             raise StorageError(f"GCS write failed for {key}: {redact(exc)}") from None
 
     def put_json(self, key, document, overwrite=False):
-        body = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-        self._upload(key, body, "application/json", overwrite)
+        self._upload(key, canonical_json(document), "application/json", overwrite)
 
     def put_text(self, key, text, overwrite=False, content_type="text/plain"):
         self._upload(key, str(text), f"{content_type}; charset=utf-8", overwrite)
@@ -253,6 +252,17 @@ class GCSStore(SnapshotStore):
     def describe(self):
         location = f"gs://{self.bucket_name}" + (f"/{self.prefix}" if self.prefix else "")
         return f"GCSStore({location}, durable=True)"
+
+
+def canonical_json(document):
+    """The exact bytes put_json writes.
+
+    Deterministic — sorted keys, fixed indent — so re-writing a document that
+    was read back unchanged produces a byte-identical object. The idempotent
+    production pointer probe depends on that property, so it lives here rather
+    than being open-coded twice and allowed to drift.
+    """
+    return json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
 def _is_precondition_failure(exc):

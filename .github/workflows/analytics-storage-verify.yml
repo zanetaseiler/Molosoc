@@ -57,25 +57,24 @@ jobs:
           ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
         run: python3 automations/analytics/storage_connection_test.py
 
-      # Everything below writes under _verification/reports/<run stamp>/ only.
-      # No real weekly report, Clarity ledger object, or analytics history is
-      # read, written, overwritten or deleted, and no Clarity API call is made.
+      # Two parts, both read-only with respect to real data.
       #
-      # Exit 2 means the immutable report storage works but the writer cannot
-      # update latest.json/index.json — GCS implements replacing an object as
-      # delete-then-create, so that needs storage.objects.delete. Surfaced as a
-      # distinct code so a permission gap is never mistaken for lost data.
-      - name: Verify the weekly report-storage mechanism (synthetic, isolated prefix)
+      #   1. An idempotent probe of reports/weekly/index.json — the one
+      #      production path touched. If the index is absent it creates a valid
+      #      empty one (the correct initial state), then rewrites the same
+      #      document byte-for-byte. This is the only check that can prove the
+      #      conditional storage.objects.delete grant, because that grant
+      #      matches resource.name by equality and objects under the
+      #      verification prefix have different names.
+      #
+      #   2. The storage mechanism end to end, entirely under
+      #      _verification/reports/<run stamp>/.
+      #
+      # No dated weekly report, latest.json, Clarity ledger object, GA4/Search
+      # Console data, WordPress or site content is read or written, and no
+      # Clarity API call is made anywhere.
+      - name: Verify report storage (production pointer probe + synthetic mechanism)
         env:
           ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
           ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
-        run: |
-          set +e
-          python3 automations/analytics/report_store_verify.py
-          code=$?
-          set -e
-          if [ "$code" = "2" ]; then
-            echo "::warning::Report storage verified. Pointer updates need storage.objects.delete on the analytics bucket."
-            exit 0
-          fi
-          exit "$code"
+        run: python3 automations/analytics/report_store_verify.py

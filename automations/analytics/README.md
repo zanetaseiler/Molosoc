@@ -676,16 +676,37 @@ and no Clarity API call is made. Also available as a step in the
 **Analytics Storage Verification** workflow.
 
 The run stamp is unique per run, so each verification gets a fresh namespace.
-That matters for one check in particular: with a fresh prefix the first
-`latest.json` is a *create*, which needs no delete permission. The script
-therefore publishes a **second** week as well, because replacing that pointer
-is what production does every week and is the only operation that exercises the
-conditional delete grant. A verification that stopped at the first publish
-would pass against a create-only writer while the weekly job failed from its
-second run onward.
 
-Exit codes: 0 all checks passed, 1 something is genuinely broken, 2 the
-immutable storage works but the pointer grant is missing.
+### Why one probe touches production
+
+The isolation that makes the rest of the script safe also puts it beyond the
+permission it needs to test. The conditional delete grant matches
+`resource.name` by **equality** against the two production pointer names, so an
+object at `_verification/reports/<stamp>/reports/weekly/latest.json` is a
+different name and is correctly not covered. No amount of testing under the
+verification prefix can prove the production grant.
+
+So the script begins with a single **idempotent probe of
+`reports/weekly/index.json`**:
+
+* if the index does not exist, create a valid empty one — the correct initial
+  state, and exactly what the first real publish would create anyway;
+* read it back and write the same parsed document again.
+
+`put_json` serialises deterministically (`canonical_json`), so re-writing an
+unchanged document reproduces the object byte for byte, and the probe asserts
+that rather than assuming it. Logical contents never change. `latest.json`,
+every dated report, and the Clarity ledger are untouched — a guard rejects any
+store carrying a prefix, and any key other than the index.
+
+A denial here is a hard **failure**, not a warning: that is the object the
+grant names, so a refusal predicts a broken weekly run.
+
+The second-week pointer failure under the verification prefix is therefore
+reported as an expected **NOTE**. The mechanism is proven there; the permission
+is proven by the probe.
+
+Exit codes: 0 all checks passed, 1 something is genuinely wrong.
 
 ### Sweeping the verification objects
 
