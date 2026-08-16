@@ -329,6 +329,38 @@ def test_minimum_permissions_are_documented_and_narrow():
     assert not any("admin" in p.lower() for p in sg.REQUIRED_PERMISSIONS)
 
 
+def test_delete_is_never_granted_unconditionally():
+    """The whole Phase 1 guarantee is that this identity cannot destroy history.
+
+    Delete exists only under a condition naming two objects. If it ever moves
+    into REQUIRED_PERMISSIONS it becomes bucket-wide, and a bug in the weekly
+    report could erase a year of Clarity snapshots that cannot be backfilled.
+    """
+    assert sg.CONDITIONAL_DELETE["permission"] == "storage.objects.delete"
+    assert sg.CONDITIONAL_DELETE["permission"] not in sg.REQUIRED_PERMISSIONS
+    assert sg.CONDITIONAL_DELETE["match"] == "equality"
+
+
+def test_the_delete_condition_names_exactly_the_two_mutable_objects():
+    import report_store as rs
+
+    assert sg.CONDITIONAL_DELETE["objects"] == rs.MUTABLE_KEYS
+
+
+def test_the_condition_expression_matches_object_names_exactly():
+    expression = sg.conditional_delete_expression(BUCKET)
+
+    assert expression == (
+        'resource.name == "projects/_/buckets/molosoc-analytics-history/'
+        'objects/reports/weekly/latest.json" || '
+        'resource.name == "projects/_/buckets/molosoc-analytics-history/'
+        'objects/reports/weekly/index.json"'
+    )
+    # startsWith would also match every dated report under reports/weekly/.
+    assert "startsWith" not in expression
+    assert expression.count("==") == 2
+
+
 # --------------------------------------------------------------------------
 # Environment wiring
 # --------------------------------------------------------------------------

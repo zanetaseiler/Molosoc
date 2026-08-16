@@ -274,8 +274,12 @@ which stays read-only. The writer key is read from `ANALYTICS_STORAGE_SA_JSON`
 logged. When the variable is absent the client falls back to Application
 Default Credentials, so Workload Identity works without a code change.
 
-Required permissions are exactly three — `storage.objects.create`, `.get`,
-`.list`. No delete, no admin. A test asserts the list stays that narrow.
+Unconditional permissions are exactly three — `storage.objects.create`,
+`.get`, `.list`. No delete, no admin. A test asserts the list stays that narrow.
+
+`storage.objects.delete` is granted **only under an IAM condition** naming two
+object names by equality, so the weekly report pointer can be replaced and
+nothing else can be destroyed. See *The narrow delete grant* under Phase 3.
 
 `analytics-data/` is gitignored. Git is deliberately not the analytics
 database.

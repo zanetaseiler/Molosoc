@@ -39,12 +39,45 @@ from storage import PermissionDeniedError, SnapshotStore, StorageError
 CREDENTIAL_ENV = "ANALYTICS_STORAGE_SA_JSON"
 BUCKET_ENV = "ANALYTICS_BUCKET"
 
-# Only what this backend needs. Anything wider is a permissions smell.
+# Granted unconditionally, on every object in the bucket. Note what is absent:
+# no delete, no admin. Anything wider here is a permissions smell.
 REQUIRED_PERMISSIONS = (
     "storage.objects.create",
     "storage.objects.get",
     "storage.objects.list",
 )
+
+# Granted ONLY under an IAM condition matching these exact resource names.
+#
+# GCS implements replacing an object as delete-then-create, so updating the
+# weekly report pointer needs delete on those two objects — and on nothing
+# else. The condition uses equality rather than a prefix match: `startsWith`
+# on "reports/weekly/" would also cover every dated report. With this scoping
+# the Clarity ledger, the raw snapshots and every published week remain
+# undeletable by this identity.
+#
+# report_store.MUTABLE_KEYS holds the same two keys and is what the code
+# actually writes through; a test asserts the two stay in step.
+CONDITIONAL_DELETE = {
+    "permission": "storage.objects.delete",
+    "objects": (
+        "reports/weekly/latest.json",
+        "reports/weekly/index.json",
+    ),
+    "match": "equality",
+    "rationale": (
+        "GCS models object replacement as delete-then-create; these two "
+        "pointer objects are overwritten weekly and nothing else ever is."
+    ),
+}
+
+
+def conditional_delete_expression(bucket_name):
+    """The CEL condition to attach to the writer's delete binding."""
+    return " || ".join(
+        f'resource.name == "projects/_/buckets/{bucket_name}/objects/{obj}"'
+        for obj in CONDITIONAL_DELETE["objects"]
+    )
 
 
 def load_storage_credentials_info(env_var=CREDENTIAL_ENV):
