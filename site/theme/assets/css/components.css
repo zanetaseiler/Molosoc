@@ -421,6 +421,104 @@
   color: var(--color-cta-text);
 }
 
+/* ---------- Desktop nav capsules ----------
+   Same Scandinavian pill treatment as .molosoc-home-header__nav in
+   homepage.css, recolored for this header's ink-on-cream colorway.
+   Desktop/tablet only — the ≤760px hamburger panel below keeps its
+   existing full-width-row styling untouched. Capsule lives on the <a>
+   for plain items, but on the <li> for .menu-item-has-children so the
+   injected submenu arrow shares the capsule with its label. */
+@media (min-width: 761px) {
+  .molosoc-site-header__nav > ul {
+    align-items: center;
+  }
+
+  .molosoc-site-header__nav > ul > li > a,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children {
+    padding: 0.625rem 1.25rem;
+    border: 1px solid rgba(12, 17, 21, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    transition: background-color 250ms ease, border-color 250ms ease;
+  }
+
+  .molosoc-site-header__nav > ul > li > a {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.9375rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* Dropdown parent: capsule moved up onto the li — strip it back off
+     the li's own link so the pill isn't doubled. */
+  .molosoc-site-header__nav > ul > li.menu-item-has-children > a {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+  }
+
+  /* Hover — slightly stronger fill/border only, no movement, and keep
+     the label ink instead of the base muted-color hover. */
+  .molosoc-site-header__nav > ul > li > a:hover,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(12, 17, 21, 0.2);
+  }
+
+  .molosoc-site-header__nav > ul > li > a:hover {
+    color: var(--color-text);
+  }
+
+  /* Active/current page — a touch more defined, still quiet. */
+  .molosoc-site-header__nav > ul > li.current-menu-item > a,
+  .molosoc-site-header__nav > ul > li.current_page_item > a,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children.current-menu-item,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children.current-menu-parent,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children.current-menu-ancestor,
+  .molosoc-site-header__nav > ul > li.menu-item-has-children.current_page_ancestor {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(12, 17, 21, 0.28);
+  }
+
+  /* Small breathing gap between a capsule and the dropdown it opens
+     (dropdown opens on click, so the gap can't break a hover chain). */
+  .molosoc-site-header__nav .sub-menu {
+    top: calc(100% + 0.375rem);
+    border-radius: var(--radius-m);
+  }
+
+  /* Language switcher → two separate mini-pills instead of one joined
+     two-segment chip. Overrides below restore the second chip's left
+     border and full radius that the base joined-chip rules remove. */
+  .molosoc-site-header__nav .lang-item a {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid rgba(12, 17, 21, 0.15);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.45);
+    transition: background-color 250ms ease, border-color 250ms ease;
+  }
+
+  .molosoc-site-header__nav .lang-item-first a {
+    border-radius: 999px;
+  }
+
+  .molosoc-site-header__nav .lang-item:not(.lang-item-first) a {
+    border-left: 1px solid rgba(12, 17, 21, 0.15);
+    border-radius: 999px;
+  }
+
+  .molosoc-site-header__nav .lang-item:not(.lang-item-first) {
+    margin-left: 0.375rem;
+  }
+
+  .molosoc-site-header__nav .lang-item.current-lang a {
+    background: var(--color-cta-bg);
+    border-color: var(--color-cta-bg);
+    color: var(--color-cta-text);
+  }
+}
+
 /* ---------- Hamburger nav toggle (mobile) ----------
    Shared between .molosoc-site-header (every page, this file) and
    .molosoc-home-header (front-page.php, homepage.css) — same markup
