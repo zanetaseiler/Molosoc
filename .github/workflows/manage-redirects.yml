@@ -11,13 +11,17 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "list (print all rules) or delete (remove rules matching source_url)"
+        description: "list (print all rules), delete (remove rules matching source_url), or add (create 301s from mappings)"
         required: true
         default: "list"
       source_url:
         description: "Exact source URL to delete (only used with action=delete)"
         required: false
         default: "/blog/"
+      mappings:
+        description: "JSON array of {\"source\":...,\"target\":...} 301s to create (only used with action=add); sources that already have a rule are skipped"
+        required: false
+        default: "[]"
 
 jobs:
   redirects:
@@ -30,6 +34,7 @@ jobs:
           WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
           ACTION: ${{ github.event.inputs.action }}
           SOURCE_URL: ${{ github.event.inputs.source_url }}
+          MAPPINGS: ${{ github.event.inputs.mappings }}
         run: |
           set -u
           BASE="${WP_URL%/}"
@@ -72,4 +77,29 @@ jobs:
             echo "delete: HTTP $CODE"
             cat /tmp/del.json | head -c 2000; echo
             [ "$CODE" = "200" ] || { echo "::error::delete failed"; exit 1; }
+          fi
+
+          if [ "$ACTION" = "add" ]; then
+            python3 - <<'EOF'
+          import json, os, subprocess
+          base = os.environ['WP_URL'].rstrip('/')
+          auth = os.environ['WP_USER'] + ':' + os.environ['WP_APP_PASSWORD']
+          existing = {r['url'] for r in json.load(open('/tmp/rules.json')).get('items', [])}
+          for m in json.loads(os.environ['MAPPINGS']):
+              src, dst = m['source'], m['target']
+              if src in existing:
+                  print(f'SKIP (rule already exists): {src}')
+                  continue
+              payload = json.dumps({'url': src, 'match_type': 'url', 'action_type': 'url',
+                                    'action_code': 301, 'group_id': 1, 'regex': False,
+                                    'action_data': {'url': dst}})
+              r = subprocess.run(['curl', '-s', '-m', '30', '-u', auth, '-X', 'POST',
+                                  '-H', 'Content-Type: application/json', '-d', payload,
+                                  base + '/wp-json/redirection/v1/redirect'],
+                                 capture_output=True, text=True)
+              ok = '"id"' in r.stdout
+              print(('ADDED' if ok else 'FAILED') + f': {src} -> {dst}')
+              if not ok:
+                  print('  response:', r.stdout[:300]); raise SystemExit(1)
+          EOF
           fi
