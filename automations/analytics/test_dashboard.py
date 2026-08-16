@@ -435,6 +435,53 @@ def test_the_host_key_fingerprint_is_the_sha256_form():
     assert pub.fingerprint(FakeKey()) == expected
 
 
+def test_the_public_half_is_reported_in_the_form_cpanel_shows():
+    import paramiko
+
+    generated = paramiko.Ed25519Key.generate() if hasattr(paramiko.Ed25519Key, "generate") \
+        else paramiko.RSAKey.generate(2048)
+    line, digest = pub.describe_public_key(generated)
+
+    # A known_hosts/authorized_keys line, so it can be pasted into cPanel,
+    # and the same fingerprint form cPanel and ssh-keygen -l both print.
+    assert line == f"{generated.get_name()} {generated.get_base64()}"
+    assert digest == pub.fingerprint(generated)
+
+
+def test_the_public_half_never_carries_the_private_half():
+    import paramiko
+
+    generated = paramiko.Ed25519Key.generate() if hasattr(paramiko.Ed25519Key, "generate") \
+        else paramiko.RSAKey.generate(2048)
+    buffer = io.StringIO()
+    generated.write_private_key(buffer)
+    secret = buffer.getvalue()
+
+    line, digest = pub.describe_public_key(generated)
+    for private_line in secret.splitlines():
+        if "PRIVATE KEY" in private_line or not private_line.strip():
+            continue
+        assert private_line not in line
+        assert private_line not in digest
+
+
+def test_an_ftp_subaccount_username_is_named_as_the_likely_cause():
+    notes = " ".join(pub.describe_user_shape("reports@trafficdom.com"))
+    assert "FTP sub-account" in notes
+    assert "REPORTS_SSH_USER" in notes
+
+
+def test_a_plain_cpanel_username_draws_no_complaint():
+    assert pub.describe_user_shape("molosoc") == []
+
+
+def test_the_username_is_never_printed_by_its_own_diagnosis():
+    for user in ("reports@trafficdom.com", "molosoc ", "with space"):
+        for note in pub.describe_user_shape(user):
+            assert user not in note
+            assert user.strip() not in note
+
+
 # --------------------------------------------------------------------------
 # The server's own working directory is what decides
 # --------------------------------------------------------------------------

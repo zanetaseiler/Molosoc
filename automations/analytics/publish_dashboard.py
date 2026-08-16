@@ -341,6 +341,44 @@ def resolve(name):
         return []
 
 
+def describe_public_key(pkey):
+    """The public half of the loaded key, as cPanel and known_hosts write it.
+
+    Printed only when authentication fails, and safe to print: it is the
+    public half. It is also the only thing that can settle the question the
+    failure raises — whether the private key in the secret is the pair of the
+    key authorized on the server — because everything else about the key is
+    invisible from here. Comparing this fingerprint against the one cPanel
+    lists beside `molosoc-reports-ci` answers it in one look.
+    """
+    blob = base64.b64encode(pkey.asbytes()).decode("ascii")
+    digest = hashlib.sha256(pkey.asbytes()).digest()
+    return (f"{pkey.get_name()} {blob}",
+            "SHA256:" + base64.b64encode(digest).decode("ascii").rstrip("="))
+
+
+def describe_user_shape(user):
+    """Say what is notable about the username without disclosing it.
+
+    The username is a secret, but its *shape* decides this failure: cPanel
+    grants SSH to the account user only, so an FTP sub-account name — the
+    `name@domain` form — authenticates over FTP and is rejected over SSH even
+    when the key is perfect. That distinction is worth surfacing, and it can
+    be surfaced without printing the name.
+    """
+    user = user or ""
+    notes = []
+    if "@" in user:
+        notes.append("the username contains '@', which is the FTP sub-account "
+                     "form. cPanel grants SSH to the main account user only, so "
+                     "an FTP sub-account is refused here however good the key is "
+                     f"— set {USER_ENV} to the cPanel account username.")
+    if any(ch.isspace() for ch in user):
+        notes.append("the username contains whitespace, which is almost "
+                     "certainly a stray newline or space in the secret.")
+    return notes
+
+
 def describe_host_shape(host):
     """Say what is wrong with a hostname without disclosing it."""
     host = host or ""
@@ -439,11 +477,26 @@ def main(argv=None):
         name = type(exc).__name__
         print(f"FAIL SSH/SFTP error ({name}): {redact(exc)}", file=sys.stderr)
         if "Authentication" in name:
-            print("  The server refused the key. Check that the public half of "
-                  f"the key in {KEY_ENV} is the authorized key in cPanel, and "
-                  "that the username is the cPanel account name "
-                  f"(currently taken from {settings['user_source']}).",
+            print("  The server accepted the connection and refused the "
+                  "credentials, so the host, the port and the key file itself "
+                  "are all fine. Exactly one of two things is wrong: the key is "
+                  "not the one authorized, or the username is not the one it is "
+                  f"authorized for (currently from {settings['user_source']}).",
                   file=sys.stderr)
+            for note in describe_user_shape(settings["user"]):
+                print(f"    - {note}", file=sys.stderr)
+            try:
+                line, digest = describe_public_key(load_private_key(settings["key"]))
+            except PublishError:
+                pass
+            else:
+                print(f"    - the key in {KEY_ENV} has this public half. Compare "
+                      "the fingerprint with the one cPanel lists beside the "
+                      "authorized key; if they differ, the wrong key is in the "
+                      "secret. If cPanel lists it but shows it as not "
+                      "authorized, authorize it there.", file=sys.stderr)
+                print(f"      {digest}", file=sys.stderr)
+                print(f"      {line}", file=sys.stderr)
         elif "BadHostKey" in name:
             print(f"  The server's host key does not match {HOST_KEY_ENV}.",
                   file=sys.stderr)
