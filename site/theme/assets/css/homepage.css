@@ -417,14 +417,23 @@
      photo — still steeper than a plain linear fade (near-transparent over
      the top ~40%, deepening under the text zone for contrast), just with
      lower ceiling values throughout so the bright bedroom actually reads as
-     bright, not dark and gray. */
-  background: linear-gradient(
-    180deg,
-    rgba(12, 17, 21, 0.02) 0%,
-    rgba(12, 17, 21, 0.06) 40%,
-    rgba(12, 17, 21, 0.32) 65%,
-    rgba(12, 17, 21, 0.5) 100%
-  );
+     bright, not dark and gray.
+
+     Warmed (2026-08-16): the gradient's base swapped from the cool ink
+     (#0c1115, blue-cast) to the warm espresso ink (--color-ink-warm,
+     #241d17) at the same alphas, plus a very low-opacity warm greige
+     veil under it so the bright upper photo reads as warm natural
+     daylight/linen instead of cool gray. Deliberately neutral-warm, not
+     sepia — saturation untouched. */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(36, 29, 23, 0.02) 0%,
+      rgba(36, 29, 23, 0.06) 40%,
+      rgba(36, 29, 23, 0.33) 65%,
+      rgba(36, 29, 23, 0.52) 100%
+    ),
+    rgba(210, 198, 183, 0.14);
 }
 
 .molosoc-hero__content {
