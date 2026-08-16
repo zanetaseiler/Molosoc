@@ -102,15 +102,13 @@ class PublishError(RuntimeError):
 # Destination — derived, never free text
 # --------------------------------------------------------------------------
 
-def resolve_remote_dir(base_path):
-    """`${REPORTS_BASE_PATH}/molosoc`, or refuse to produce a path at all."""
-    base = (base_path or "").strip() or DEFAULT_BASE_PATH
-    if not base.startswith("/"):
-        raise PublishError(f"{BASE_PATH_ENV} must be an absolute path; got {base!r}.")
+def check_remote_dir(target, base):
+    """Every rule a path must satisfy before it may be written to.
 
-    base = base.rstrip("/")
-    target = f"{base}/{PROJECT_DIR}"
-
+    Kept separate from how the path was produced, so that a path derived a
+    second way — see `home_relative` — has to clear exactly the same bar
+    rather than a weaker one.
+    """
     segments = [s for s in target.split("/") if s]
     if any(s in ("..", ".") for s in segments):
         raise PublishError(f"refusing a remote path with relative segments: {target!r}")
@@ -124,6 +122,37 @@ def resolve_remote_dir(base_path):
         raise PublishError(f"resolved path escapes {base!r}: {target!r}")
 
     return target
+
+
+def resolve_remote_dir(base_path):
+    """`${REPORTS_BASE_PATH}/molosoc`, or refuse to produce a path at all."""
+    base = (base_path or "").strip() or DEFAULT_BASE_PATH
+    if not base.startswith("/"):
+        raise PublishError(f"{BASE_PATH_ENV} must be an absolute path; got {base!r}.")
+
+    base = base.rstrip("/")
+    return check_remote_dir(f"{base}/{PROJECT_DIR}", base)
+
+
+def home_relative(remote_dir, home):
+    """The same derived path, read from inside the account's home directory.
+
+    FTP and SSH disagree about what `/public_html/...` means on cPanel. FTP
+    drops you in the account home and treats it as the root, so the base path
+    was written the way FTP displays it; SSH gives you the real filesystem,
+    where that same path is an absolute one that does not exist. The
+    destination is unchanged — this is the identical folder under the name the
+    other protocol uses for it, not a second place to try.
+
+    Returns None when the idea does not apply, so the caller has nothing to
+    fall back to rather than something plausible-looking.
+    """
+    home = (home or "").rstrip("/")
+    if not home.startswith("/") or home == "/":
+        return None
+    if remote_dir.startswith(home + "/"):
+        return None  # already inside the home directory; nothing to add
+    return check_remote_dir(home + remote_dir, home)
 
 
 def load_settings(env=None):
@@ -253,19 +282,37 @@ def connect(settings, port=SSH_PORT, out=None):
 # The upload
 # --------------------------------------------------------------------------
 
-def enter_remote_dir(sftp, remote_dir, create=True):
+def enter_remote_dir(sftp, remote_dir, create=True, home=None):
     """Change into the target directory, creating only its last segment.
 
     The base path must already exist. Building a missing tree is how a typo in
-    the base path silently becomes a new folder in someone's web root.
+    the base path silently becomes a new folder in someone's web root — so a
+    base that cannot be entered is an error, never something to create.
+
+    `home` allows the one alternative reading of the base path: the same
+    folder addressed from inside the account's home directory, which is how
+    SSH sees what FTP calls `/public_html/...`. It is tried only after the
+    literal path fails, and it is checked by the same rules.
     """
     base, _, leaf = remote_dir.rpartition("/")
-    try:
-        sftp.chdir(base)
-    except IOError as exc:
-        raise PublishError(
-            f"base path {base!r} does not exist or is not reachable: {redact(exc)}"
-        ) from None
+
+    candidates = [base]
+    rebased = home_relative(remote_dir, home)
+    if rebased is not None:
+        candidates.append(rebased.rpartition("/")[0])
+
+    for index, candidate in enumerate(candidates):
+        try:
+            sftp.chdir(candidate)
+            base = candidate
+            break
+        except IOError as exc:
+            if index == len(candidates) - 1:
+                raise PublishError(
+                    f"base path {base!r} does not exist or is not reachable: "
+                    f"{redact(exc)}"
+                    + (f" (also tried {candidate!r})" if candidate != base else "")
+                ) from None
 
     try:
         sftp.chdir(leaf)
@@ -448,7 +495,17 @@ def main(argv=None):
         client = connect(settings, port=args.port)
         sftp = client.open_sftp()
 
-        entered = enter_remote_dir(sftp, remote_dir)
+        # Where the server puts us before we go anywhere: on cPanel this is
+        # the account home, and it is what makes the FTP-style base path
+        # resolvable over SSH.
+        try:
+            home = sftp.normalize(".")
+        except Exception:  # noqa: BLE001 — only costs the fallback
+            home = None
+        if home:
+            print(f"Session home:              {home}")
+
+        entered = enter_remote_dir(sftp, remote_dir, home=home)
         print(f"Entered: {entered}")
 
         confirmed = verify_location(sftp, remote_dir)

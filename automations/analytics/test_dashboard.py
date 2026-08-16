@@ -568,6 +568,57 @@ def test_an_existing_project_directory_is_entered_without_being_recreated():
     assert sftp.made == []
 
 
+HOME = "/home/lf7mcmvh2g6m"
+HOME_DIR = HOME + EXPECTED_DIR
+
+
+def test_the_base_path_is_found_inside_the_home_directory_when_not_at_the_root():
+    """What FTP calls /public_html/... is $HOME/public_html/... over SSH."""
+    sftp = FakeSFTP(cwd=HOME, dirs={"/", HOME, HOME + BASE})
+
+    assert pub.enter_remote_dir(sftp, EXPECTED_DIR, home=HOME) == HOME_DIR
+    assert sftp.made == [HOME_DIR], "only the project directory may be created"
+
+
+def test_the_literal_path_wins_when_it_exists():
+    """The fallback must never redirect a path that already resolves."""
+    sftp = FakeSFTP(cwd="/", dirs={"/", BASE, HOME, HOME + BASE})
+
+    assert pub.enter_remote_dir(sftp, EXPECTED_DIR, home=HOME) == EXPECTED_DIR
+
+
+def test_the_home_fallback_still_lands_on_the_molosoc_folder():
+    sftp = FakeSFTP(cwd=HOME, dirs={"/", HOME, HOME + BASE})
+    pub.enter_remote_dir(sftp, EXPECTED_DIR, home=HOME)
+
+    # The server's own answer is what the location check is given, and the
+    # home-prefixed path must still satisfy it.
+    assert pub.verify_location(sftp, EXPECTED_DIR) == HOME_DIR
+
+
+def test_neither_path_existing_is_still_an_error_rather_than_a_tree_to_build():
+    sftp = FakeSFTP(cwd="/", dirs={"/", HOME})
+
+    with pytest.raises(pub.PublishError, match="does not exist or is not reachable"):
+        pub.enter_remote_dir(sftp, EXPECTED_DIR, home=HOME)
+    assert not sftp.made
+
+
+def test_the_home_fallback_obeys_the_same_rules_as_the_derived_path():
+    with pytest.raises(pub.PublishError, match="WordPress"):
+        pub.home_relative(EXPECTED_DIR, "/home/user/wp-content")
+    with pytest.raises(pub.PublishError, match="relative segments"):
+        pub.home_relative(EXPECTED_DIR, "/home/..")
+
+
+def test_a_useless_home_gives_nothing_to_fall_back_to():
+    assert pub.home_relative(EXPECTED_DIR, "/") is None
+    assert pub.home_relative(EXPECTED_DIR, "") is None
+    assert pub.home_relative(EXPECTED_DIR, "relative/path") is None
+    # Already inside the home directory — there is nothing to prefix.
+    assert pub.home_relative(HOME_DIR, HOME) is None
+
+
 def test_the_upload_stores_exactly_one_file_in_the_verified_directory(tmp_path):
     page = tmp_path / "index.html"
     page.write_text("<!doctype html><html></html>", encoding="utf-8")
