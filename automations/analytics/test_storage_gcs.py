@@ -466,7 +466,40 @@ def test_a_denied_overwrite_names_the_permission_that_is_missing(store, client):
 
     message = str(excinfo.value)
     assert "storage.objects.delete" in message
-    assert "create/get/list" in message
+    # The FULL object name, prefix included. The delete grant matches
+    # resource.name by equality, so a store with a prefix maps this key to an
+    # object the grant does not name — and a message showing only the key
+    # hides the one fact that distinguishes that from a missing permission.
+    assert "gs://molosoc-analytics-history/reports/weekly/index.json" in message
+    assert "resource.name" in message
+
+
+def test_a_prefixed_store_reports_the_prefixed_object_name(client):
+    """A verification store writes under its own prefix, not the real path."""
+    prefixed = sg.GCSStore(BUCKET, prefix="_verification/reports/RUN", client=client)
+    bucket = client.bucket(BUCKET)
+    original = bucket.blob
+
+    def denying_blob(name):
+        blob = original(name)
+        upload = blob.upload_from_string
+
+        def guarded(body, content_type=None, if_generation_match=None):
+            if if_generation_match is None:
+                raise Forbidden("does not have storage.objects.delete access")
+            return upload(body, content_type=content_type,
+                          if_generation_match=if_generation_match)
+
+        blob.upload_from_string = guarded
+        return blob
+
+    bucket.blob = denying_blob
+    prefixed.put_json("reports/weekly/latest.json", {"a": 1})
+
+    with pytest.raises(sg.PermissionDeniedError) as excinfo:
+        prefixed.put_json("reports/weekly/latest.json", {"a": 2}, overwrite=True)
+
+    assert "_verification/reports/RUN/reports/weekly/latest.json" in str(excinfo.value)
 
 
 def test_a_denied_overwrite_is_still_a_storage_error(store):

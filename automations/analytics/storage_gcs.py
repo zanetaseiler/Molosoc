@@ -193,15 +193,23 @@ class GCSStore(SnapshotStore):
                     "overwritten silently; pass overwrite=True only for derived data."
                 ) from None
             if overwrite and _is_permission_denied(exc):
-                # GCS models "replace an object" as delete-then-create, so a
-                # writer scoped to create/get/list cannot overwrite. Say so
-                # precisely — the generic message would send someone hunting
-                # for a bucket or network problem that does not exist.
+                # GCS models "replace an object" as delete-then-create, so an
+                # overwrite needs storage.objects.delete, which this writer
+                # holds only under a condition matching two exact object names.
+                #
+                # Report the FULL object name, not the store-relative key. A
+                # store with a prefix maps the same key to a different object,
+                # and an equality-matched condition covers one and not the
+                # other — printing only the key hides the single fact needed
+                # to tell "the grant is missing" from "this object is not the
+                # one the grant names".
                 raise PermissionDeniedError(
-                    f"overwrite of {key} was denied. Replacing an object in GCS "
-                    "requires storage.objects.delete in addition to "
-                    "storage.objects.create; the analytics writer currently has "
-                    "create/get/list only."
+                    f"overwrite denied for gs://{self.bucket_name}/"
+                    f"{self._object_name(key)} (store key {key!r}). Replacing an "
+                    "object in GCS requires storage.objects.delete alongside "
+                    "storage.objects.create. Either the writer lacks that "
+                    "permission, or it holds it under a condition whose "
+                    "resource.name does not equal this object's full name."
                 ) from None
             raise StorageError(f"GCS write failed for {key}: {redact(exc)}") from None
 
