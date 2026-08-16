@@ -366,7 +366,10 @@ def test_the_report_states_conversions_are_unavailable():
     report = analysis.analyse_from_store(store, today=TODAY, now=NOW, hydrator=hydrator)
     text = render.render_markdown(report)
 
-    assert report.data_quality["conversions"]["state"] == gh.CONVERSIONS_NONE
+    # With the committed activation date (2026-08-16), this window predates
+    # ecommerce tracking — so the correct answer is "not tracked then", not
+    # "purchase is unconfigured in GA4".
+    assert report.data_quality["conversions"]["state"] == gh.CONVERSIONS_BEFORE_TRACKING
     assert "Conversions unavailable" in text
     assert "not persisted" in text
 

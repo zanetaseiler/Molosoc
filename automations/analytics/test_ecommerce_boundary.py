@@ -81,9 +81,12 @@ def test_both_windows_after_an_old_boundary(windows):
     assert gh.tracking_state_for_window(windows[pr.PRIOR], AFTER_BOTH) == gh.TRACKING_ACTIVE
 
 
-def test_no_boundary_configured_is_unknown_not_assumed(windows):
-    # The agent must not invent a date it was never told.
-    assert gh.tracking_state_for_window(windows[pr.PERIOD]) == gh.TRACKING_UNKNOWN
+def test_an_unusable_boundary_value_yields_unknown_not_a_guess(windows):
+    # The committed default now applies when nothing is configured, so
+    # "unknown" is reached only when a supplied value cannot be parsed. The
+    # agent still never invents a date in that case.
+    assert gh.tracking_state_for_window(windows[pr.PERIOD], "") == gh.TRACKING_UNKNOWN
+    assert gh.tracking_state_for_window(windows[pr.PERIOD], "garbage") == gh.TRACKING_UNKNOWN
 
 
 def test_the_boundary_is_read_from_the_environment(monkeypatch, windows):
@@ -161,9 +164,9 @@ def test_a_partial_current_period_is_called_incomplete():
     assert "incomplete rather than comparable" in readiness["message"]
 
 
-def test_an_unconfigured_boundary_says_so_and_stays_conservative():
+def test_an_unresolvable_boundary_says_so_and_stays_conservative():
     readiness = gh.assess_conversions({}, period_state=gh.TRACKING_UNKNOWN,
-                                      prior_state=gh.TRACKING_UNKNOWN)
+                                      prior_state=gh.TRACKING_UNKNOWN, boundary="")
     assert readiness["comparison_valid"] is False
     assert "never as zero sales" in readiness["message"]
 
@@ -272,8 +275,8 @@ def test_the_rendered_report_explains_the_boundary():
     assert "conversion comparison valid: False" in text
 
 
-def test_an_unconfigured_boundary_is_flagged_in_the_report():
-    report = _run(None)
+def test_an_unresolvable_boundary_is_flagged_in_the_report():
+    report = _run("")  # supplied but unusable
     text = render.render_markdown(report)
     assert "Ecommerce tracking boundary not configured" in text
 
@@ -292,3 +295,35 @@ def test_the_boundary_does_not_unlock_recommendations_at_low_volume():
                   prior_key_events={"purchase": 2})
     assert report.readiness == "insufficient_data"
     assert all(r.priority == "Monitor" for r in report.recommendations)
+
+
+# --------------------------------------------------------------------------
+# The committed activation date
+# --------------------------------------------------------------------------
+
+def test_the_verified_activation_date_is_the_default():
+    # WooCommerce Google Analytics Integration went live on this date.
+    assert gh.ECOMMERCE_TRACKING_START_DEFAULT == "2026-08-16"
+    assert gh.ecommerce_tracking_start() == dt.date(2026, 8, 16)
+
+
+def test_the_environment_still_overrides_the_default(monkeypatch):
+    monkeypatch.setenv(gh.ECOMMERCE_TRACKING_START_ENV, "2026-01-01")
+    assert gh.ecommerce_tracking_start() == dt.date(2026, 1, 1)
+
+
+def test_an_explicit_argument_beats_both(monkeypatch):
+    monkeypatch.setenv(gh.ECOMMERCE_TRACKING_START_ENV, "2026-01-01")
+    assert gh.ecommerce_tracking_start("2026-03-05") == dt.date(2026, 3, 5)
+
+
+def test_periods_before_the_real_activation_date_are_unavailable():
+    # A week entirely before 2026-08-16 can hold no ecommerce measurement.
+    windows = pr.build_windows(today="2026-08-17")
+    assert gh.tracking_state_for_window(windows[pr.PRIOR]) == gh.TRACKING_UNAVAILABLE
+    assert gh.tracking_state_for_window(windows[pr.PERIOD]) == gh.TRACKING_UNAVAILABLE
+
+
+def test_periods_after_the_real_activation_date_are_active():
+    windows = pr.build_windows(today="2026-09-01")  # period 2026-08-23..08-29
+    assert gh.tracking_state_for_window(windows[pr.PERIOD]) == gh.TRACKING_ACTIVE

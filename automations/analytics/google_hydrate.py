@@ -64,6 +64,14 @@ CONVERSIONS_BEFORE_TRACKING = "before_ecommerce_tracking"
 # the conservative side and reports "unknown" rather than claiming zero.
 ECOMMERCE_TRACKING_START_ENV = "ECOMMERCE_TRACKING_START"
 
+# The verified activation date of WooCommerce Google Analytics Integration on
+# molosoc.com, with MonsterInsights removed at the same time. Committed rather
+# than left to configuration because it is a fixed historical fact that will
+# never change: a config value someone has to remember to set is a liability,
+# and an unset one silently degrades every conversion comparison to "unknown".
+# The environment variable still overrides it, for backfills or a corrected date.
+ECOMMERCE_TRACKING_START_DEFAULT = "2026-08-16"
+
 TRACKING_ACTIVE = "active"            # window sits entirely after the boundary
 TRACKING_UNAVAILABLE = "unavailable"  # window sits entirely before it
 TRACKING_PARTIAL = "partial"          # window straddles it
@@ -76,9 +84,11 @@ def ecommerce_tracking_start(explicit=None):
     Configured rather than hard-coded: the agent must not invent a boundary it
     was not told about, and an invented one would silently mislabel periods.
     """
-    value = explicit if explicit is not None else os.environ.get(
-        ECOMMERCE_TRACKING_START_ENV, ""
-    )
+    if explicit is not None:
+        value = explicit
+    else:
+        value = os.environ.get(ECOMMERCE_TRACKING_START_ENV, "").strip() \
+            or ECOMMERCE_TRACKING_START_DEFAULT
     value = str(value or "").strip()
     if not value:
         return None
@@ -115,7 +125,10 @@ def comparison_is_valid(period_state, prior_state):
 def describe_boundary(period_state, prior_state, boundary=None):
     """A sentence a reader can act on, stating what the periods can support."""
     boundary = boundary if isinstance(boundary, dt.date) else ecommerce_tracking_start(boundary)
-    if boundary is None:
+    # An UNKNOWN state is itself the signal that no usable boundary resolved —
+    # more reliable than re-deriving it here, now that None means "use the
+    # committed default" rather than "unset".
+    if boundary is None or TRACKING_UNKNOWN in (period_state, prior_state):
         return (
             "Ecommerce tracking start date is not configured "
             f"({ECOMMERCE_TRACKING_START_ENV} unset), so periods cannot be classified "
