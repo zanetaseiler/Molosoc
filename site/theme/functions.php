@@ -56,6 +56,79 @@ function molosoc_remove_woocommerce_sidebar() {
 }
 add_action( 'init', 'molosoc_remove_woocommerce_sidebar' );
 
+/* ---------- XML-sitemap + robots hygiene (SEO remediation step 3B, 2026-08-16) ----------
+ * The site uses WordPress core's wp-sitemap.xml (no SEO plugin), so the
+ * cleanup lives in core's filter API. Goal: the sitemap lists only
+ * canonical, indexable, 200 URLs. Thrive's tcb_* post types stay fully
+ * registered (symbols/lightboxes keep rendering inside pages) — they're
+ * only dropped from sitemap output, and their thin public taxonomy
+ * archives get a robots noindex. */
+
+// Author archives are empty (no posts exist) — drop the users sitemaps.
+add_filter( 'wp_sitemaps_add_provider', function ( $provider, $name ) {
+	return 'users' === $name ? false : $provider;
+}, 10, 2 );
+
+// Keep Thrive builder internals out of the sitemap: the tcb_symbol
+// entries are ?p= query URLs that 302 to the homepage, and lightboxes
+// are noindexed fragments — neither belongs in a sitemap.
+add_filter( 'wp_sitemaps_post_types', function ( $post_types ) {
+	unset( $post_types['tcb_symbol'], $post_types['tcb_lightbox'] );
+	return $post_types;
+} );
+
+add_filter( 'wp_sitemaps_taxonomies', function ( $taxonomies ) {
+	unset( $taxonomies['tcb_symbols_tax'] );
+	return $taxonomies;
+} );
+
+/**
+ * Pages the sitemap must not list: WooCommerce utility pages (already
+ * noindexed at render time, which core sitemaps don't know about), the
+ * post-purchase thank-you page, and the six retired legacy pages that
+ * now 301 via Redirection rules (the pages still exist under the
+ * redirect layer, so core would keep listing them).
+ */
+function molosoc_sitemap_excluded_page_ids() {
+	static $ids = null;
+	if ( null !== $ids ) {
+		return $ids;
+	}
+	$ids   = array();
+	$slugs = array(
+		'cart', 'checkout', 'my-account', 'thank-you',
+		'home-2', 'blog-2', 'blog-legacy-2018',
+		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
+	);
+	foreach ( $slugs as $slug ) {
+		$page = get_page_by_path( $slug );
+		if ( $page ) {
+			$ids[] = (int) $page->ID;
+		}
+	}
+	return $ids;
+}
+
+add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
+	if ( 'page' === $post_type ) {
+		$args['post__not_in'] = array_merge(
+			isset( $args['post__not_in'] ) ? (array) $args['post__not_in'] : array(),
+			molosoc_sitemap_excluded_page_ids()
+		);
+	}
+	return $args;
+}, 10, 2 );
+
+// noindex for thin/utility URLs that stay reachable: the post-purchase
+// thank-you page, the empty author archives, the empty Uncategorized
+// archive, and Thrive's symbol-taxonomy archive pages.
+add_filter( 'wp_robots', function ( $robots ) {
+	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( 'thank-you' ) ) {
+		$robots['noindex'] = true;
+	}
+	return $robots;
+} );
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );

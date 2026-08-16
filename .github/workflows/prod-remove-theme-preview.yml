@@ -1,0 +1,31 @@
+name: Remove theme preview dir from production
+
+# One-shot (SEO remediation step 3B, 2026-08-16): deletes the deployed
+# /wp-content/themes/molosoc/preview/ directory from PRODUCTION over FTPS.
+# The nine preview HTML files were publicly reachable, indexable
+# near-duplicates of real pages; nothing on the live site references them
+# (verified — only code comments mention them). production.yml now
+# excludes preview/** so deploys won't re-upload them; the repo keeps the
+# files as dev artifacts. Deletes ONLY that directory.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Delete preview directory (production theme dir only)
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          echo "Before:"
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 /wp-content/themes/molosoc/preview/; bye" "$HOST" 2>&1 | head -15 || true
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; rm -rf /wp-content/themes/molosoc/preview; bye" "$HOST"
+          echo "After (expect failure to list):"
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 /wp-content/themes/molosoc/preview/; bye" "$HOST" 2>&1 | head -3 || true

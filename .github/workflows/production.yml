@@ -26,3 +26,12 @@ jobs:
           protocol: ftps
           local-dir: site/theme/
           server-dir: /wp-content/themes/molosoc/
+          # First three are the action's defaults (setting exclude replaces
+          # them). preview/** are local design previews - dev artifacts that
+          # were publicly reachable, indexable near-duplicates of real pages
+          # on production (SEO remediation step 3B removed them server-side).
+          exclude: |
+            .git*
+            .git*/**
+            **/node_modules/**
+            preview/**
