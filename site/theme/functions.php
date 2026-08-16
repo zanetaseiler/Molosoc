@@ -1444,6 +1444,373 @@ function molosoc_spoke6_schema() {
 add_action( 'wp_head', 'molosoc_spoke6_schema' );
 
 /**
+ * Czech structured data (SEO remediation step 3C, 2026-08-16).
+ *
+ * The CZ pages render from the same bilingual templates as their EN
+ * twins, but every schema function above is gated on the EN slug, so the
+ * Czech pages shipped no JSON-LD at all. One function covers the seven
+ * priority CZ URLs, mirroring each EN counterpart's graph shape with
+ * Czech text taken from the pages' own rendered copy, canonical CZ
+ * URLs/@ids, inLanguage "cs", and the live 229 CZK price on the product
+ * landing. The CZ homepage already gets Organization/WebSite from
+ * molosoc_homepage_schema() and is untouched.
+ */
+function molosoc_cz_schema() {
+	if ( is_page( 'popraskane-paty' ) ) {
+		?>
+		<meta name="description" content="Popraskané paty vznikají, když kůže ztratí schopnost se natahovat pod tlakem — nejde o smůlu ani jen o suchou kůži. Co je skutečně způsobuje a co doopravdy pomáhá.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/popraskane-paty/#article",
+		      "headline": "Popraskané paty: co se skutečně děje a co pomáhá",
+		      "description": "Popraskané paty vznikají, když kůže ztratí schopnost se natahovat pod tlakem — nejde o smůlu ani jen o suchou kůži. Náprava je jednoduchá, pokud je pravidelná, ne příležitostná.",
+		      "url": "https://molosoc.com/cz/popraskane-paty/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/popraskane-paty/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-08-13",
+		      "dateModified": "2026-08-13",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "FAQPage",
+		      "@id": "https://molosoc.com/cz/popraskane-paty/#faq",
+		      "mainEntity": [
+		        {
+		          "@type": "Question",
+		          "name": "Proč vznikají popraskané paty?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Kůže na patě praská, když vyschne a ztratí pružnost potřebnou k natahování pod tlakem. Vnější okraj paty nese při každém kroku nejvíc váhy — suchá, nepružná kůže na tomto místě praská jako první. Dlouhé celodenní stání a boty s otevřenou patou zrychlují oba problémy najednou: víc tlaku, víc ztráty vlhkosti." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Co znamená, když popraskané paty bolí?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Prasklina, která bolí při každém kroku, už překonala povrchové sucho a zasahuje hlubší vrstvu kůže. Krém, který není zapečetěný na kůži, se otře dřív, než se vstřebá — víc produktu to nevyřeší, potřeba je delší kontakt a pravidelná, zapečetěná vlhkost." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Co jsou vážně popraskané paty?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Vážně popraskané paty se rozšiřují, prohlubují a mohou krvácet — příležitostné mazání krémem v této fázi nestačí. Kůže potřebuje každodenní rutinu, která se skutečně dodržuje, aby měla šanci se obnovit." }
+		        }
+		      ]
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/popraskane-paty/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Popraskané paty", "item": "https://molosoc.com/cz/popraskane-paty/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'zarostly-nehet' ) ) {
+		?>
+		<meta name="description" content="Zarostlý nehet začíná, když se okraj nehtu prohne nebo roste dolů do kůže vedle sebe. Proč vzniká, kdy odezní sám a co skutečně pomáhá.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/zarostly-nehet/#article",
+		      "headline": "Zarostlý nehet: co se děje a co skutečně pomáhá",
+		      "description": "Zarostlý nehet začíná ve chvíli, kdy se okraj nehtu prohne nebo roste dolů do kůže vedle sebe, místo aby rostl rovně přes ni. Proč vzniká, kdy odezní sám a co skutečně pomáhá.",
+		      "url": "https://molosoc.com/cz/zarostly-nehet/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/zarostly-nehet/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-08-13",
+		      "dateModified": "2026-08-13",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "FAQPage",
+		      "@id": "https://molosoc.com/cz/zarostly-nehet/#faq",
+		      "mainEntity": [
+		        {
+		          "@type": "Question",
+		          "name": "Proč vzniká zarostlý nehet?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Zarostlý nehet začíná ve chvíli, kdy se okraj nehtu prohne nebo roste dolů do kůže vedle sebe, místo aby rostl rovně přes ni. Těsná obuv tlačí kůži proti okraji nehtu a příliš krátké nebo zaoblené stříhání dává tomuto okraji prostor zarůst při dalším růstu." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Zmizí zarostlý nehet sám?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Mírně zarostlý nehet může odeznít sám, jakmile zmizí tlak, který ho způsobil — těsné boty, příliš krátké stříhání — a kůže dostane prostor se zahojit. Zesilující zarudnutí, otok nebo bolest, která po pár dnech neustupuje, znamenají, že už nejde jen o běžný tlak." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Proč se zarostlý nehet vrací?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Stejný tvar nehtu a stejné návyky s obuví znovu vytvářejí stejné místo tlaku — bez změny v jednom nebo druhém se problém typicky opakuje." }
+		        }
+		      ]
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/zarostly-nehet/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Zarostlý nehet", "item": "https://molosoc.com/cz/zarostly-nehet/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'kurici-oko' ) ) {
+		?>
+		<meta name="description" content="Kuří oko vzniká postupně, jako reakce kůže na opakovaný tlak a tření — a stejně postupně se dá i změkčit. Rozdíl mezi kuřím okem a mozolem a co skutečně pomáhá.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/kurici-oko/#article",
+		      "headline": "Kuří oko a mozoly: proč vznikají a co je změkčí",
+		      "description": "Kuří oko vzniká postupně, jako reakce kůže na opakovaný tlak a tření — a stejně postupně, s pravidelnou péčí, se dá i změkčit.",
+		      "url": "https://molosoc.com/cz/kurici-oko/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/kurici-oko/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-08-13",
+		      "dateModified": "2026-08-13",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "FAQPage",
+		      "@id": "https://molosoc.com/cz/kurici-oko/#faq",
+		      "mainEntity": [
+		        {
+		          "@type": "Question",
+		          "name": "Co je kuří oko a jak vzniká?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Opakovaný tlak a tření na stále stejném místě mění kůži v malý, tvrdý, soustředěný bod — to je kuří oko. Nejčastěji se objevuje na chodidle, mezi prsty nebo na patě — tedy přesně tam, kde se tlak při chůzi soustředí nejvíc. Kůže tloustne postupně, v průběhu týdnů opakovaného tlaku." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Jaký je rozdíl mezi kuřím okem a mozolem?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Kuří oko je menší a soustředěné do jednoho bodu, zatímco mozol pokrývá širší, plošší oblast — oba vznikají ze stejného důvodu, jen na jiném místě." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Proč samotné namáčení a pilování nepomůže natrvalo?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Odloupnutí řeší jen kůži, která už je ztvrdlá — nemění tlak, který ji způsobil, takže se stejné místo znovu ztvrdne. Jakmile ztvrdlá kůže dosáhne určité tloušťky, začíná měnit rozložení váhy při každém kroku." }
+		        }
+		      ]
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/kurici-oko/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Kuří oko a mozoly", "item": "https://molosoc.com/cz/kurici-oko/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'navleky-na-nohy' ) ) {
+		?>
+		<meta name="description" content="Většina masek na nohy je na jedno použití — návlek Molosoc je na stovky. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "CollectionPage",
+		      "@id": "https://molosoc.com/cz/navleky-na-nohy/#webpage",
+		      "url": "https://molosoc.com/cz/navleky-na-nohy/",
+		      "name": "Návleky na nohy | Hydratační návlek na nohy — Molosoc",
+		      "description": "Většina masek na nohy je na jedno použití — návlek Molosoc je na stovky. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.",
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "about": { "@id": "https://molosoc.com/#organization" },
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/navleky-na-nohy/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Návleky na nohy", "item": "https://molosoc.com/cz/navleky-na-nohy/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'hydratacni-navlek-na-nohy' ) ) {
+		?>
+		<meta name="description" content="Skutečné výsledky, žádné filtry. Návlek na nohy na opakované použití, který zapečetí váš oblíbený krém přímo na kůži — méně nepořádku a rutina, u které konečně vydržíte.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Product",
+		      "@id": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/#product",
+		      "name": "Návlek na nohy Molosoc",
+		      "description": "Návlek na nohy na opakované použití, který zapečetí váš oblíbený krém přímo na kůži — méně nepořádku a rutina, u které konečně vydržíte. Funguje s jakýmkoli krémem, který už doma máte.",
+		      "brand": { "@id": "https://molosoc.com/#organization" },
+		      "image": "https://molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png",
+		      "url": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/",
+		      "category": "Péče o nohy",
+		      "offers": {
+		        "@type": "Offer",
+		        "url": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/",
+		        "priceCurrency": "CZK",
+		        "price": "229",
+		        "availability": "https://schema.org/InStock",
+		        "itemCondition": "https://schema.org/NewCondition"
+		      }
+		    },
+		    {
+		      "@type": "WebPage",
+		      "@id": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/#webpage",
+		      "url": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/",
+		      "name": "Návlek na nohy Molosoc — Krém, který už doma máte, konečně funguje",
+		      "description": "Skutečné výsledky, žádné filtry. Návlek na nohy na opakované použití, který zapečetí váš oblíbený krém přímo na kůži — méně nepořádku a rutina, u které konečně vydržíte.",
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "about": { "@id": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/#product" },
+		      "breadcrumb": { "@id": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/#breadcrumb" },
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Návleky na nohy", "item": "https://molosoc.com/cz/navleky-na-nohy/" },
+		        { "@type": "ListItem", "position": 3, "name": "Návlek na nohy Molosoc", "item": "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'jak-odstranit' ) ) {
+		?>
+		<meta name="description" content="Neexistuje jeden nástroj, který kuří oko odstraní natrvalo — každá metoda, která funguje, musí řešit tlak, který ho způsobil. Co skutečně funguje a proč se kuří oko vrací.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/kurici-oko/jak-odstranit/#article",
+		      "headline": "Jak odstranit kuří oko: co skutečně funguje",
+		      "description": "Neexistuje jeden nástroj ani produkt, který kuří oko odstraní natrvalo — každá metoda, která skutečně funguje, musí následně řešit to samé: tlak, který ho způsobil.",
+		      "url": "https://molosoc.com/cz/kurici-oko/jak-odstranit/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/kurici-oko/jak-odstranit/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-08-13",
+		      "dateModified": "2026-08-13",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "FAQPage",
+		      "@id": "https://molosoc.com/cz/kurici-oko/jak-odstranit/#faq",
+		      "mainEntity": [
+		        {
+		          "@type": "Question",
+		          "name": "Co kuří oko skutečně odstraní?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Pilování fyzicky opotřebovává vrchní vrstvu ztvrdlé kůže, což funguje na povrchové nahromadění, ale nemění tlak, kvůli kterému pod ním znovu tvrdne nová kůže. Náplasti s kyselinou salicylovou změkčují a chemicky rozrušují ztvrdlou kůži — účinné, ale při přílišném používání mohou podráždit i zdravou kůži kolem." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Pomáhá namočení před pilováním?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Namočení změkčí ztvrdlou kůži ještě před pilováním, což zákrok usnadní a sníží riziko, že se odstraní i zdravá kůže pod ní. Mírné, povrchové kuří oko lze bezpečně řešit doma; cokoliv hlubšího, bolestivého nebo s náznakem infekce patří spíš k lékaři." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Proč se kuří oko vrací?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Žádná z těchto metod neřeší tlakový bod, který kuří oko způsobil — proto se na stejném místě obvykle znovu vytvoří. Čerstvě odkrytá kůže potřebuje po zákroku pravidelnou vlhkost — odstranění bez následné péče jen znovu nastaví stejný cyklus." }
+		        }
+		      ]
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/kurici-oko/jak-odstranit/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Kuří oko a mozoly", "item": "https://molosoc.com/cz/kurici-oko/" },
+		        { "@type": "ListItem", "position": 3, "name": "Jak odstranit kuří oko", "item": "https://molosoc.com/cz/kurici-oko/jak-odstranit/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'na-chodidle' ) ) {
+		?>
+		<meta name="description" content="Kuří oko pod chodidlem nese tlak při každém kroku — to ho odlišuje od kuřího oka kdekoliv jinde na noze a mění to i to, co na něj skutečně pomáhá.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/kurici-oko/na-chodidle/#article",
+		      "headline": "Kuří oko na chodidle: proč je jiné a co s ním",
+		      "description": "Kuří oko pod chodidlem nese tlak při každém jednotlivém kroku, což ho odlišuje od kuřího oka kdekoliv jinde na noze — a mění to i to, co na něj skutečně pomáhá.",
+		      "url": "https://molosoc.com/cz/kurici-oko/na-chodidle/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/kurici-oko/na-chodidle/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-08-13",
+		      "dateModified": "2026-08-13",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "FAQPage",
+		      "@id": "https://molosoc.com/cz/kurici-oko/na-chodidle/#faq",
+		      "mainEntity": [
+		        {
+		          "@type": "Question",
+		          "name": "Čím se liší kuří oko na chodidle od kuřího oka na prstu?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Kuří oko na chodidle vzniká hlavně tlakem při chůzi, zatímco na prstech je hlavní příčinou tření o obuv. Opakovaný tlak při každém kroku ho zatlačuje hlouběji do kůže a bývá proto citelně bolestivější než na méně zatížených místech nohy." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Co pomáhá, když je kuří oko pod chodidlem?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Obuv s dostatečným prostorem a vložky, které rozloží tlak rovnoměrněji, snižují zátěž přesně v místě, kde kuří oko vzniká. Změkčení okolní kůže by mělo být prvním krokem, ne až tím posledním — dává tlaku menší šanci vytvořit znovu stejně tvrdý bod." }
+		        },
+		        {
+		          "@type": "Question",
+		          "name": "Kdy jít s kuřím okem na chodidle k lékaři?",
+		          "acceptedAnswer": { "@type": "Answer", "text": "Pokud bolest natolik omezuje chůzi, že mění způsob, jak našlapujete, je čas nechat to posoudit odborníkem. Neobvyklý tvar, barva nebo bolest, která neodpovídá typickému kuřímu oku, mohou znamenat jiný problém, který si zaslouží vyšetření." }
+		        }
+		      ]
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/kurici-oko/na-chodidle/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Kuří oko a mozoly", "item": "https://molosoc.com/cz/kurici-oko/" },
+		        { "@type": "ListItem", "position": 3, "name": "Kuří oko na chodidle", "item": "https://molosoc.com/cz/kurici-oko/na-chodidle/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	}
+}
+add_action( 'wp_head', 'molosoc_cz_schema' );
+
+/**
  * WordPress doesn't allow .glb uploads by default (not in its core mime
  * whitelist) — needed for the 3D product model in the media library.
  */
