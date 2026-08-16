@@ -40,13 +40,13 @@ Molosoc isn't formulated to work with one specific cream — it's designed to wo
 ## H2: Reusable vs. disposable: the real cost
 
 ### H3: Cost per use over a month
-Using a twice-weekly routine as an example: a Molosoc cover costs $13 and holds up for at least 10 uses — so across a month of regular use (roughly 8 sessions), that $13 covers the entire month, working out to under $2 per session. A disposable sock mask, priced $6–10, is a new purchase every single time — the same 8 sessions cost $48–80 in disposables alone.
+Using a twice-weekly routine as an example: a Molosoc cover costs €10 and holds up for at least 10 uses — so across a month of regular use (roughly 8 sessions), that €10 covers the entire month, working out to under €1.50 per session. A disposable sock mask, priced $6–10, is a new purchase every single time — the same 8 sessions cost $48–80 in disposables alone.
 
 ### H3: Cost per use over a year
-Stretched across a year at the same twice-weekly pace (roughly 96 sessions), a Molosoc cover — replaced every 10 uses at $13 each — comes to around $130 for the year. The same 96 sessions in disposable masks, at $6–10 each, adds up to $576–960. The gap isn't a marketing number — it's the same $13 cover, reused instead of rebought.
+Stretched across a year at the same twice-weekly pace (roughly 96 sessions), a Molosoc cover — replaced every 10 uses at €10 each — comes to around €100 for the year. The same 96 sessions in disposable masks, at $6–10 each, adds up to $576–960. The gap isn't a marketing number — it's the same €10 cover, reused instead of rebought.
 
 ### H3: What you're not paying for anymore (salon touch-ups)
-A salon pedicure fades within days to a couple of weeks. Maintaining that result at home with a $13 reusable cover costs a fraction of what a single repeat salon visit runs — the saving isn't just the cover versus the mask, it's the trips you stop needing to book.
+A salon pedicure fades within days to a couple of weeks. Maintaining that result at home with a €10 reusable cover costs a fraction of what a single repeat salon visit runs — the saving isn't just the cover versus the mask, it's the trips you stop needing to book.
 
 ---
 

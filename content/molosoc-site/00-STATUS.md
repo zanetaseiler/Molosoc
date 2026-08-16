@@ -47,7 +47,7 @@ Each copy file matches the structure doc's title tag, meta description, H1/H2/H3
 | Item | Where it lives | What's needed |
 |---|---|---|
 | Product SKU | `03-product/product-schema.html` | Not yet assigned — placeholder left in schema, drop in when ready |
-| Currency check | `03-product/product-schema.html` | Pending — schema currently set to USD based on the $13 figure; confirm when ready if storefront actually charges in CZK/EUR |
+| Currency check | `03-product/product-schema.html` | Resolved 2026-08-16 — schema set to 229 CZK (matches WooCommerce checkout); €10 is the EN/EU display price only |
 | Publish dates | All 11 Article schema files (5 pillars + 6 spokes) | `datePublished`/`dateModified` are placeholders — drop in real dates once each page goes live |
 
 ### ✅ Resolved (previously open, now filled in)
@@ -68,7 +68,7 @@ The only future work not yet possible: fresh spoke-level keyword research for Pi
 ---
 
 ## Confirmed facts locked in across all copy (so nothing gets re-invented per page)
-- Price: **$13** per cover
+- Price: **€10** display price on EN pages (charged as 229 CZK at checkout); **229 Kč** on CZ pages
 - Durability: **10+ uses** minimum before replacement (conservative — real range may be 15–30)
 - Session length: **30–60 minutes** (not overnight)
 - Disposable mask comparison price: **$6–10** per single-use mask

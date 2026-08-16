@@ -42,7 +42,7 @@ Molosoc není navržen na jednu konkrétní formuli — je navržen tak, aby fun
 ## Opakované použití vs. jednorázové: skutečná cena
 
 ### Cena za použití během měsíce
-Návlek Molosoc stojí 199 Kč a vydrží alespoň 10 použití — při pravidelném používání dvakrát týdně tak jedno balení pokryje celý měsíc za méně než 20 Kč na použití. Jednorázová maska se musí kupovat znovu při každém dalším použití.
+Návlek Molosoc stojí 229 Kč a vydrží alespoň 10 použití — při pravidelném používání dvakrát týdně tak jedno balení pokryje celý měsíc za méně než 23 Kč na použití. Jednorázová maska se musí kupovat znovu při každém dalším použití.
 
 ### Cena za použití během roku
 Při stejném tempu (přibližně 96 použití za rok) vychází Molosoc, vyměňovaný každých 10 použití, na přibližně 1 900 Kč ročně. Jednorázové masky se musí dokupovat znovu s každým balením — u stejného počtu použití je celková částka výrazně vyšší.

@@ -45,7 +45,7 @@ The real moment a mom sees and reacts to her own results after a home pedicure s
 A fresh pedicure looks its best for about a week to ten days before dryness starts creeping back in. That's not a flaw in the salon treatment — it's just what happens once the intensive care stops.
 
 ### H3: Cost per use vs. another salon visit
-A Molosoc cover costs $13 and holds up for at least 10 sessions — working out to about $1.30 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.
+A Molosoc cover costs €10 (charged as 229 CZK at checkout) and holds up for at least 10 sessions — working out to about €1 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.
 
 ### H3: Home spa, without the salon price
 Ten to fifteen minutes with your own cream and a cover gets you most of what a touch-up appointment does, without the drive, the booking, or the bill.
