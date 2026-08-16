@@ -147,52 +147,44 @@ jobs:
           if-no-files-found: error
 
       # ---------------------------------------------------------------------
-      # Publish the HTML view to the Trafficdom report host.
+      # Publish the HTML view to the Trafficdom report host over SFTP.
       #
       # Last, and deliberately so: GCS persistence and the GitHub artifact are
       # already done by this point, so a problem with the report host cannot
       # cost either of them.
       #
+      # SFTP rather than FTPS. The shared host presents its provider's internal
+      # certificate for *.prod.phx3.secureserver.net, which no hostname we
+      # control can verify against — so the transport was replaced rather than
+      # its verification switched off. SSH authenticates by host key, which the
+      # publisher prints on every run so it can be pinned via REPORTS_SSH_HOST_KEY.
+      #
       # The destination is derived in code as ${REPORTS_BASE_PATH}/molosoc and
-      # cannot be pointed anywhere else from here. The dry run below prints the
-      # resolved path and connects to nothing, so the path is visible in the log
-      # before the first byte is sent. The uploader then re-checks the server's
-      # own PWD and abandons the upload unless it matches. That host also serves
-      # a live WordPress site, which is why the check is doubled.
+      # cannot be redirected from here. The dry run prints the resolved path
+      # without connecting; the uploader then re-checks the server's own working
+      # directory and abandons the upload unless it matches. That host also
+      # serves a live WordPress site, which is why the check is doubled.
       #
       # One file, index.html. Nothing is deleted, renamed or moved.
       # ---------------------------------------------------------------------
       - name: Verify the resolved remote path (no connection)
         env:
-          REPORTS_SFTP_HOST: ${{ secrets.REPORTS_SFTP_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
           REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
-          REPORTS_SFTP_PASS: ${{ secrets.REPORTS_SFTP_PASS }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
         run: python3 automations/analytics/publish_dashboard.py --dry-run
 
-      - name: Publish the dashboard over FTPS
+      - name: Publish the dashboard over SFTP
         env:
-          REPORTS_SFTP_HOST: ${{ secrets.REPORTS_SFTP_HOST }}
+          REPORTS_SSH_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
           REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
-          REPORTS_SFTP_PASS: ${{ secrets.REPORTS_SFTP_PASS }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
         run: python3 automations/analytics/publish_dashboard.py --file site/index.html
 
-      # Only when publishing failed. A verified connection needs a hostname
-      # that BOTH resolves to this server and appears on its certificate;
-      # checking those halves separately is what has cost several rounds. This
-      # asks the server directly and names the hostname that satisfies both.
-      # Reads only — no credentials, no upload. The IP is the FTPS endpoint
-      # already confirmed reachable, and is not a secret.
-      - name: Which hostname should REPORTS_SFTP_HOST use?
-        if: failure()
-        run: |
-          python3 automations/analytics/publish_dashboard.py \
-            --certificate-report 72.167.124.157 --port 21
-
-      # A successful STOR proves the file reached the filesystem; it does not
-      # prove the web server serves it at the expected URL. Different question,
-      # so it gets its own check.
       - name: Verify the page is live
         run: |
           url="https://trafficdom.com/reports/molosoc/"

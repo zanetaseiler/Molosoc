@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Upload the weekly dashboard to the Trafficdom report host over FTPS.
+Upload the weekly dashboard to the Trafficdom report host over SFTP.
 
 One file, one directory, no deletions. The report host also serves a
 WordPress installation, so the entire risk of this script is writing to the
@@ -11,16 +11,33 @@ guard below exists for that reason:
     `${REPORTS_BASE_PATH}/molosoc`, with nothing else accepted;
   * the resolved path is refused if it escapes the base, is relative, or
     contains a WordPress directory name;
-  * after connecting, the server's own `PWD` is compared against the expected
-    path and the upload is abandoned unless they match exactly — the check
-    that matters, because it is the server's opinion of where we are rather
-    than ours;
+  * after connecting, the server's own working directory is compared against
+    the expected path and the upload is abandoned unless they match — the
+    check that matters, because it is the server's opinion of where we are
+    rather than ours;
   * only `molosoc/` is ever created, and only directly inside a base path
     that must already exist;
   * exactly one file is stored, and nothing is ever deleted or renamed.
 
-Explicit FTPS (AUTH TLS) on port 21: connect in the clear, upgrade before
-login, then PROT P so both the credentials and the payload are encrypted.
+WHY NOT FTPS
+
+FTPS was abandoned deliberately rather than for convenience. This is GoDaddy
+shared hosting, and its FTP service presents GoDaddy's own internal
+certificate for `*.prod.phx3.secureserver.net`. Verifying that honestly needs
+a hostname under a domain nobody here controls, so the only way to make FTPS
+work was to stop checking the certificate. SSH authenticates the server by
+host key instead, which is a check we can actually perform and record.
+
+HOST KEY
+
+A CI runner is new every time and has no `known_hosts`, so first contact has
+nothing to compare against. Two modes:
+
+  * `REPORTS_SSH_HOST_KEY` set — the key is pinned, and a server presenting
+    anything else aborts the run. This is the strong mode.
+  * unset — the key is accepted and its fingerprint printed prominently, so
+    it can be checked once against cPanel and then pinned. It is printed on
+    every run, so a host key that changes underneath you is visible.
 
 Usage:
     # resolve and print the destination without connecting
@@ -31,26 +48,33 @@ Usage:
 """
 
 import argparse
-import ftplib
-import ipaddress
+import base64
+import hashlib
+import io
 import os
+import posixpath
 import socket
-import ssl
+import stat
 import sys
 
 from analytics_common import redact, register_secret
 
-HOST_ENV = "REPORTS_SFTP_HOST"
-USER_ENV = "REPORTS_SFTP_USER"
-PASS_ENV = "REPORTS_SFTP_PASS"
+HOST_ENV = "REPORTS_SSH_HOST"
+USER_ENV = "REPORTS_SSH_USER"
+KEY_ENV = "REPORTS_SSH_KEY"
+HOST_KEY_ENV = "REPORTS_SSH_HOST_KEY"
 BASE_PATH_ENV = "REPORTS_BASE_PATH"
 
-#: Where the report host keeps its report folders. The repository variable
-#: REPORTS_BASE_PATH overrides it; this default exists so a variable that is
-#: unset — as it was on the first deployment attempt — does not silently
-#: become a missing dashboard every week. Same pattern as
-#: ECOMMERCE_TRACKING_START. Not a secret: it is a directory on a host that
-#: needs credentials to reach, and every guard below still applies to it.
+#: On GoDaddy cPanel the SSH account is normally the same as the FTP account,
+#: so the existing secret is reused unless REPORTS_SSH_USER says otherwise.
+#: This is what kept the move to SFTP down to a single new secret.
+FALLBACK_USER_ENV = "REPORTS_SFTP_USER"
+
+#: The server cPanel reports for this account. Committed rather than required
+#: as a variable, for the same reason as the base path: an unset variable must
+#: not quietly become a missing dashboard every week.
+DEFAULT_SSH_HOST = "p3plmcpnl502709.prod.phx3.secureserver.net"
+
 DEFAULT_BASE_PATH = "/public_html/Trafficdom.com/reports"
 
 #: The single sub-directory this script may write to, under the base path.
@@ -62,7 +86,7 @@ PUBLIC_URL = "https://trafficdom.com/reports/molosoc/"
 #: The only filename it may store.
 REMOTE_FILENAME = "index.html"
 
-FTPS_PORT = 21
+SSH_PORT = 22
 TIMEOUT_SECONDS = 60
 
 #: Path segments that would mean we are inside a WordPress install. Present as
@@ -74,17 +98,15 @@ class PublishError(RuntimeError):
     pass
 
 
-def resolve_remote_dir(base_path):
-    """`${REPORTS_BASE_PATH}/molosoc`, or refuse to produce a path at all.
+# --------------------------------------------------------------------------
+# Destination — derived, never free text
+# --------------------------------------------------------------------------
 
-    Returns a POSIX path with no trailing slash. Raises rather than guessing:
-    an unset or odd base path must stop the upload, not silently retarget it.
-    """
+def resolve_remote_dir(base_path):
+    """`${REPORTS_BASE_PATH}/molosoc`, or refuse to produce a path at all."""
     base = (base_path or "").strip() or DEFAULT_BASE_PATH
     if not base.startswith("/"):
-        raise PublishError(
-            f"{BASE_PATH_ENV} must be an absolute path; got {base!r}."
-        )
+        raise PublishError(f"{BASE_PATH_ENV} must be an absolute path; got {base!r}.")
 
     base = base.rstrip("/")
     target = f"{base}/{PROJECT_DIR}"
@@ -95,8 +117,7 @@ def resolve_remote_dir(base_path):
     for forbidden in FORBIDDEN_SEGMENTS:
         if forbidden in segments:
             raise PublishError(
-                f"refusing a remote path inside a WordPress directory: {target!r}"
-            )
+                f"refusing a remote path inside a WordPress directory: {target!r}")
     if segments[-1] != PROJECT_DIR:
         raise PublishError(f"resolved path does not end in {PROJECT_DIR!r}: {target!r}")
     if not target.startswith(base + "/"):
@@ -107,45 +128,226 @@ def resolve_remote_dir(base_path):
 
 def load_settings(env=None):
     env = os.environ if env is None else env
-    missing = [name for name in (HOST_ENV, USER_ENV, PASS_ENV)
-               if not (env.get(name) or "").strip()]
+
+    user = (env.get(USER_ENV) or env.get(FALLBACK_USER_ENV) or "").strip()
+    key_material = (env.get(KEY_ENV) or "").strip()
+
+    missing = []
+    if not user:
+        missing.append(f"{USER_ENV} (or {FALLBACK_USER_ENV})")
+    if not key_material:
+        missing.append(KEY_ENV)
     if missing:
         raise PublishError(f"missing required secret(s): {', '.join(missing)}")
 
-    password = env[PASS_ENV].strip()
-    register_secret(password)  # any later error text is scrubbed of it
+    register_secret(key_material)  # any later error text is scrubbed of it
 
     return {
-        "host": env[HOST_ENV].strip(),
-        "user": env[USER_ENV].strip(),
-        "password": password,
+        "host": (env.get(HOST_ENV) or "").strip() or DEFAULT_SSH_HOST,
+        "user": user,
+        "key": key_material,
+        "host_key": (env.get(HOST_KEY_ENV) or "").strip(),
         "remote_dir": resolve_remote_dir(env.get(BASE_PATH_ENV)),
+        "user_source": USER_ENV if (env.get(USER_ENV) or "").strip()
+                       else FALLBACK_USER_ENV,
+        "host_source": HOST_ENV if (env.get(HOST_ENV) or "").strip()
+                       else "committed default",
     }
 
 
-def _looks_like_ip(host):
+# --------------------------------------------------------------------------
+# SSH
+# --------------------------------------------------------------------------
+
+def load_private_key(material):
+    """Parse the key, trying each type rather than trusting the header.
+
+    Accepts raw PEM/OpenSSH text or base64 of it: a multi-line secret pasted
+    into a single-line field is the classic way this goes wrong, and failing
+    with "could not parse" when the fix is "decode it first" wastes a round
+    trip.
+    """
+    import paramiko
+
+    text = material
+    if "PRIVATE KEY" not in text:
+        try:
+            text = base64.b64decode(text, validate=True).decode("utf-8")
+        except Exception:  # noqa: BLE001 — fall through to the message below
+            pass
+    if "PRIVATE KEY" not in text:
+        raise PublishError(
+            f"{KEY_ENV} does not contain a private key. Paste the whole private "
+            "key file including its BEGIN and END lines, or the base64 of it."
+        )
+    if not text.endswith("\n"):
+        text += "\n"
+
+    errors = []
+    for key_class in (paramiko.Ed25519Key, paramiko.RSAKey,
+                      paramiko.ECDSAKey, paramiko.DSSKey):
+        try:
+            return key_class.from_private_key(io.StringIO(text))
+        except Exception as exc:  # noqa: BLE001 — try the next type
+            errors.append(f"{key_class.__name__}: {exc}")
+
+    raise PublishError(
+        f"{KEY_ENV} could not be parsed as any supported key type. If the key "
+        "has a passphrase it must be removed — a CI job cannot type one. "
+        f"({'; '.join(errors)})"
+    )
+
+
+def fingerprint(host_key):
+    """SHA256 fingerprint, in the form both ssh and cPanel display."""
+    digest = hashlib.sha256(host_key.asbytes()).digest()
+    return "SHA256:" + base64.b64encode(digest).decode("ascii").rstrip("=")
+
+
+def connect(settings, port=SSH_PORT, out=None):
+    """Open an authenticated SSH connection. Returns the client."""
+    import paramiko
+
+    out = out or sys.stdout
+    client = paramiko.SSHClient()
+    expected = settings.get("host_key")
+
+    if expected:
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
+        try:
+            key_type, key_blob = expected.split()[:2]
+            client.get_host_keys().add(
+                settings["host"], key_type,
+                paramiko.PKey.from_type_string(key_type, base64.b64decode(key_blob)))
+        except Exception as exc:  # noqa: BLE001
+            raise PublishError(
+                f"{HOST_KEY_ENV} could not be parsed: {exc}. It should be the "
+                "'<type> <base64>' pair from a known_hosts line."
+            ) from None
+    else:
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
     try:
-        ipaddress.ip_address((host or "").strip())
-        return True
-    except ValueError:
-        return False
+        client.connect(
+            hostname=settings["host"], port=port, username=settings["user"],
+            pkey=load_private_key(settings["key"]),
+            timeout=TIMEOUT_SECONDS, allow_agent=False, look_for_keys=False,
+        )
+    except Exception:
+        client.close()
+        raise
+
+    host_key = client.get_transport().get_remote_server_key()
+    if expected:
+        print(f"Host key pinned and matched: {fingerprint(host_key)}", file=out)
+    else:
+        print(f"Host key accepted on first use: {fingerprint(host_key)}", file=out)
+        print(f"  Verify it once against cPanel, then pin it by setting "
+              f"{HOST_KEY_ENV} to:", file=out)
+        print(f"  {host_key.get_name()} "
+              f"{base64.b64encode(host_key.asbytes()).decode('ascii')}", file=out)
+    return client
+
+
+# --------------------------------------------------------------------------
+# The upload
+# --------------------------------------------------------------------------
+
+def enter_remote_dir(sftp, remote_dir, create=True):
+    """Change into the target directory, creating only its last segment.
+
+    The base path must already exist. Building a missing tree is how a typo in
+    the base path silently becomes a new folder in someone's web root.
+    """
+    base, _, leaf = remote_dir.rpartition("/")
+    try:
+        sftp.chdir(base)
+    except IOError as exc:
+        raise PublishError(
+            f"base path {base!r} does not exist or is not reachable: {redact(exc)}"
+        ) from None
+
+    try:
+        sftp.chdir(leaf)
+    except IOError:
+        if not create:
+            raise PublishError(
+                f"remote directory {remote_dir!r} does not exist") from None
+        try:
+            sftp.mkdir(leaf)
+            sftp.chdir(leaf)
+        except IOError as exc:
+            raise PublishError(
+                f"could not create or enter {remote_dir!r}: {redact(exc)}"
+            ) from None
+    return sftp.getcwd()
+
+
+def verify_location(sftp, remote_dir):
+    """Compare the SERVER's working directory with the one we mean to write to.
+
+    A chroot, a symlink or a home-relative base path can each make a
+    locally-correct path land somewhere else; only asking the server reveals
+    it. Returns the server's path on success and raises otherwise.
+    """
+    actual = (sftp.getcwd() or "").rstrip("/") or "/"
+    expected = remote_dir.rstrip("/")
+
+    # A chrooted account reports a path relative to its own root, so accept a
+    # suffix match — but require the project directory to be the final segment
+    # either way, which is the part that must never be wrong.
+    if actual == expected or (actual.endswith("/" + PROJECT_DIR)
+                              and expected.endswith("/" + PROJECT_DIR)
+                              and (expected.endswith(actual)
+                                   or actual.endswith(expected))):
+        return actual
+
+    raise PublishError(
+        f"remote directory check FAILED. Server reports {actual!r}, expected "
+        f"{expected!r}. Nothing was uploaded."
+    )
+
+
+def upload(sftp, local_path, remote_filename=REMOTE_FILENAME):
+    if remote_filename != REMOTE_FILENAME:
+        raise PublishError(f"refusing to upload anything but {REMOTE_FILENAME}")
+    sftp.put(local_path, remote_filename)
+    return os.path.getsize(local_path)
+
+
+def confirm_uploaded(sftp, expected_bytes, remote_filename=REMOTE_FILENAME):
+    """Ask the server how big the file is, rather than trusting the transfer."""
+    try:
+        attrs = sftp.stat(remote_filename)
+    except IOError as exc:
+        return None, f"could not stat the uploaded file: {redact(exc)}"
+    if stat.S_ISDIR(attrs.st_mode):
+        return None, f"{remote_filename} is a directory on the server"
+    if attrs.st_size != expected_bytes:
+        return attrs.st_size, (f"size mismatch: sent {expected_bytes} bytes, "
+                               f"server reports {attrs.st_size}")
+    return attrs.st_size, None
+
+
+# --------------------------------------------------------------------------
+# Diagnostics
+# --------------------------------------------------------------------------
+
+def resolve(name):
+    """Every address a name resolves to, or an empty list if it does not."""
+    try:
+        return sorted({info[4][0] for info in socket.getaddrinfo(name, None)})
+    except OSError:
+        return []
 
 
 def describe_host_shape(host):
-    """Say what is wrong with a hostname without disclosing it.
-
-    The host arrives from a masked secret, so a DNS failure otherwise leaves
-    nothing to act on: the log says "Name or service not known" and shows
-    `***`. These observations are about the value's shape, never its content,
-    and they catch the mistakes that actually happen — a URL pasted where a
-    bare hostname belongs, a trailing path, an embedded port.
-    """
+    """Say what is wrong with a hostname without disclosing it."""
     host = host or ""
     notes = []
     if "://" in host:
         scheme = host.split("://", 1)[0]
-        notes.append(f"it starts with {scheme!r}:// — use a bare hostname, "
-                     "not a URL (ftp.example.com, not ftp://ftp.example.com)")
+        notes.append(f"it starts with {scheme!r}:// — use a bare hostname, not a URL")
     if "/" in host.split("://")[-1]:
         notes.append("it contains '/' — a hostname carries no path")
     remainder = host.split("://")[-1].split("/")[0]
@@ -156,235 +358,29 @@ def describe_host_shape(host):
     if remainder and "." not in remainder:
         notes.append("it has no dot — that is a bare label, not a fully "
                      "qualified hostname")
-    if _looks_like_ip(host):
-        notes.append("it is an IP address, which needs no DNS — if this "
-                     "failed to resolve, the value reaching the runner is "
-                     "not the one you think it is")
-    elif not notes:
-        notes.append("its shape looks like a hostname, so the name itself may "
-                     "be wrong, or DNS for it is unavailable from the runner")
+    if not notes:
+        notes.append("its shape looks like a hostname, so the name itself may be "
+                     "wrong, or DNS for it is unavailable from the runner")
     return notes
 
 
-def certificate_names(host, port=FTPS_PORT):
-    """Read the names the server's certificate is issued for.
-
-    Diagnostic only, and deliberately narrow: it completes the TLS handshake,
-    reads the certificate, and hangs up. **It never logs in, never sends the
-    password, and never transfers a byte of data** — the credentials and the
-    upload always go over the fully verified connection in connect().
-
-    Hostname checking is off here because the whole point is to discover which
-    hostname *would* check out; the certificate chain is still validated
-    against the system CAs, so this is not trusting an arbitrary certificate,
-    only declining to insist on a name before we know what the names are.
-
-    Returns a sorted list of names, or None if they could not be read.
-    """
-    context = ssl.create_default_context()
-    context.check_hostname = False        # the question being asked, not a bypass
-
-    ftps = ftplib.FTP_TLS(context=context, timeout=TIMEOUT_SECONDS)
-    try:
-        ftps.connect(host, port)
-        ftps.auth()
-        cert = ftps.sock.getpeercert() or {}
-    except Exception:  # noqa: BLE001 — a diagnostic must never mask the real error
-        return None
-    finally:
-        try:
-            ftps.close()
-        except Exception:  # noqa: BLE001
-            pass
-
-    names = {value for field, value in cert.get("subjectAltName", ())
-             if field.lower() == "dns"}
-    for rdn in cert.get("subject", ()):
-        for field, value in rdn:
-            if field == "commonName":
-                names.add(value)
-    return sorted(names) or None
-
-
-def resolve(name):
-    """Every address a name resolves to, or an empty list if it does not."""
-    try:
-        return sorted({info[4][0] for info in socket.getaddrinfo(name, None)})
-    except OSError:
-        return []
-
-
-def certificate_report(host, port=FTPS_PORT, out=None):
-    """Answer one question: which hostname belongs in REPORTS_SFTP_HOST?
-
-    A working verified connection needs a name that satisfies BOTH halves —
-    it must resolve in DNS to this server, and it must appear on this server's
-    certificate. Each half has been checked in isolation across several runs
-    and neither alone was enough, so this checks them together and names the
-    winner, or explains precisely which half fails for every candidate.
-
-    Reads only. Never logs in, never sends credentials, never uploads.
-    """
-    out = out or sys.stdout
-    target_ips = resolve(host) or ([host] if _looks_like_ip(host) else [])
-    print(f"FTPS endpoint probed: {host}:{port}", file=out)
-    print(f"  addresses: {', '.join(target_ips) or 'none'}", file=out)
-
-    names = certificate_names(host, port)
-    if not names:
-        print("  certificate names could not be read — the chain does not "
-              "validate against the system CAs, or the server did not complete "
-              "the TLS handshake.", file=out)
-        return None
-
-    print(f"\nCertificate is valid for {len(names)} name(s):", file=out)
-    usable = []
-    for name in names:
-        addresses = resolve(name)
-        if not addresses:
-            verdict = "does NOT resolve"
-        elif set(addresses) & set(target_ips):
-            verdict = f"resolves to {', '.join(addresses)} — MATCHES this server"
-            usable.append(name)
-        else:
-            verdict = f"resolves to {', '.join(addresses)} — different server"
-        prefix = "*" if name.startswith("*.") else " "
-        print(f"  {prefix} {name}: {verdict}", file=out)
-
-    print("", file=out)
-    if usable:
-        best = min(usable, key=len)
-        print(f"ANSWER: set {HOST_ENV} to  {best}", file=out)
-        if len(usable) > 1:
-            print(f"  (also valid: {', '.join(n for n in usable if n != best)})",
-                  file=out)
-        return best
-
-    wildcards = [n for n in names if n.startswith("*.")]
-    print(f"ANSWER: none of the certificate's names currently resolves to this "
-          f"server, so no value for {HOST_ENV} can verify today.", file=out)
-    if wildcards:
-        print(f"  The certificate covers {', '.join(wildcards)}. Any single-label "
-              "host under that suffix would verify — pointing one at this "
-              "server in DNS is the fix.", file=out)
-    else:
-        print("  Every name on the certificate points elsewhere or is unregistered. "
-              "Either add a DNS record for one of them pointing here, or obtain a "
-              "certificate that covers a name you control.", file=out)
-    return None
-
-
-def connect(settings, port=FTPS_PORT):
-    """Explicit FTPS: upgrade the control channel before sending credentials."""
-    context = ssl.create_default_context()
-    ftps = ftplib.FTP_TLS(context=context, timeout=TIMEOUT_SECONDS)
-    ftps.connect(settings["host"], port)
-    ftps.auth()                       # AUTH TLS, before login
-    ftps.login(settings["user"], settings["password"])
-    ftps.prot_p()                     # encrypt the data channel too
-    return ftps
-
-
-def enter_remote_dir(ftps, remote_dir, create=True):
-    """Change into the target directory, creating only its last segment.
-
-    The base path must already exist. If it does not, that is a configuration
-    error worth stopping on rather than a directory tree to invent — building
-    one would be how a typo in the base path silently becomes a new folder in
-    someone's web root.
-    """
-    base, _, leaf = remote_dir.rpartition("/")
-    try:
-        ftps.cwd(base)
-    except ftplib.all_errors as exc:
-        raise PublishError(
-            f"base path {base!r} does not exist or is not reachable: {redact(exc)}"
-        ) from None
-
-    try:
-        ftps.cwd(leaf)
-    except ftplib.all_errors:
-        if not create:
-            raise PublishError(f"remote directory {remote_dir!r} does not exist") from None
-        try:
-            ftps.mkd(leaf)
-            ftps.cwd(leaf)
-        except ftplib.all_errors as exc:
-            raise PublishError(
-                f"could not create or enter {remote_dir!r}: {redact(exc)}"
-            ) from None
-    return ftps.pwd()
-
-
-def verify_location(ftps, remote_dir):
-    """The check that actually protects the live site.
-
-    Compares the SERVER's idea of the working directory with the path we
-    intend to write to. A chroot, a symlink or a home-relative base path can
-    all make a locally-correct path land somewhere else; only PWD reveals it.
-    Returns the server's path on success and raises otherwise.
-    """
-    actual = ftps.pwd().rstrip("/") or "/"
-    expected = remote_dir.rstrip("/")
-
-    # A chrooted account reports a path relative to its own root, so accept a
-    # suffix match — but require the project directory to be the final segment
-    # either way, which is the part that must never be wrong.
-    if actual == expected or (actual.endswith("/" + PROJECT_DIR)
-                              and expected.endswith("/" + PROJECT_DIR)
-                              and (expected.endswith(actual) or actual.endswith(expected))):
-        return actual
-
-    raise PublishError(
-        f"remote directory check FAILED. Server reports {actual!r}, expected "
-        f"{expected!r}. Nothing was uploaded."
-    )
-
-
-def upload(ftps, local_path, remote_filename=REMOTE_FILENAME):
-    if remote_filename != REMOTE_FILENAME:
-        raise PublishError(f"refusing to upload anything but {REMOTE_FILENAME}")
-    with open(local_path, "rb") as handle:
-        ftps.storbinary(f"STOR {remote_filename}", handle)
-    return os.path.getsize(local_path)
-
-
-def confirm_uploaded(ftps, expected_bytes, remote_filename=REMOTE_FILENAME):
-    """Ask the server how big the file is, rather than trusting STOR."""
-    try:
-        ftps.voidcmd("TYPE I")
-        remote_size = ftps.size(remote_filename)
-    except ftplib.all_errors as exc:
-        return None, f"could not read back the remote size: {redact(exc)}"
-    if remote_size is None:
-        return None, "server did not report a size for the uploaded file"
-    if remote_size != expected_bytes:
-        return remote_size, (f"size mismatch: sent {expected_bytes} bytes, "
-                             f"server reports {remote_size}")
-    return remote_size, None
-
+# --------------------------------------------------------------------------
+# CLI
+# --------------------------------------------------------------------------
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Upload index.html to the Molosoc report folder over FTPS.")
+        description="Upload index.html to the Molosoc report folder over SFTP.")
     parser.add_argument("--file", default="site/index.html",
                         help="Local file to upload (default: site/index.html)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Resolve and print the destination without connecting")
-    parser.add_argument("--port", type=int, default=FTPS_PORT)
-    parser.add_argument("--certificate-report", metavar="HOST", default=None,
-                        help=("Report which of a server's certificate names "
-                              "resolve to it, and which to use. Reads only."))
+    parser.add_argument("--port", type=int, default=SSH_PORT)
     return parser.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-
-    if args.certificate_report:
-        # Pure diagnostic: no secrets are read and nothing is uploaded.
-        certificate_report(args.certificate_report, args.port)
-        return 0
 
     try:
         settings = load_settings()
@@ -393,13 +389,12 @@ def main(argv=None):
         return 1
 
     remote_dir = settings["remote_dir"]
-    source = (f"{BASE_PATH_ENV}" if (os.environ.get(BASE_PATH_ENV) or "").strip()
-              else f"committed default ({BASE_PATH_ENV} unset)")
-    print(f"Base path from:            {source}")
+    print(f"Host:                      {settings['host']}:{args.port} "
+          f"(SFTP over SSH) [{settings['host_source']}]")
+    print(f"User from:                 {settings['user_source']}")
     print(f"Resolved remote directory: {remote_dir}")
     print(f"Remote file:               {remote_dir}/{REMOTE_FILENAME}")
     print(f"Public URL:                {PUBLIC_URL}")
-    print(f"Host:                      {settings['host']} (FTPS, port {args.port})")
 
     if args.dry_run:
         print("\nDry run — nothing was uploaded and no connection was made.")
@@ -410,90 +405,55 @@ def main(argv=None):
         return 1
     local_bytes = os.path.getsize(args.file)
 
-    ftps = None
+    client = None
     try:
-        ftps = connect(settings, port=args.port)
-        print(f"Connected. {ftps.getwelcome() or ''}".strip())
+        client = connect(settings, port=args.port)
+        sftp = client.open_sftp()
 
-        entered = enter_remote_dir(ftps, remote_dir)
+        entered = enter_remote_dir(sftp, remote_dir)
         print(f"Entered: {entered}")
 
-        confirmed = verify_location(ftps, remote_dir)
+        confirmed = verify_location(sftp, remote_dir)
         print(f"PASS remote directory verified: {confirmed}")
 
-        sent = upload(ftps, args.file)
+        sent = upload(sftp, args.file)
         print(f"Uploaded {REMOTE_FILENAME} ({sent:,} bytes)")
 
-        remote_size, problem = confirm_uploaded(ftps, sent)
+        remote_size, problem = confirm_uploaded(sftp, sent)
         if problem:
             print(f"FAIL {problem}", file=sys.stderr)
             return 1
-        print(f"PASS server confirms {remote_size:,} bytes at {confirmed}/{REMOTE_FILENAME}")
+        print(f"PASS server confirms {remote_size:,} bytes at "
+              f"{posixpath.join(confirmed, REMOTE_FILENAME)}")
 
     except PublishError as exc:
         print(f"FAIL {redact(exc)}", file=sys.stderr)
         return 1
-    except ssl.SSLError as exc:
-        # TLS is a different problem from DNS and needs a different answer,
-        # so it must not fall through to the resolver diagnosis below.
-        print(f"FAIL TLS handshake with the report host failed: {redact(exc)}",
-              file=sys.stderr)
-        if _looks_like_ip(settings["host"]):
-            print("  The host is an IP address, so certificate hostname "
-                  "verification cannot succeed: a certificate is issued for a "
-                  "name, not an address.", file=sys.stderr)
-        else:
-            print(f"  The certificate is not valid for the name in {HOST_ENV}.",
-                  file=sys.stderr)
-
-        # Ask the server which names it *is* valid for. Without this the fix is
-        # a guessing game: a name has to both resolve in DNS and appear on the
-        # certificate, and only the server knows the second half.
-        names = certificate_names(settings["host"], args.port)
-        if names:
-            print("  The certificate presented by this server is valid for:",
-                  file=sys.stderr)
-            for name in names:
-                print(f"    - {name}", file=sys.stderr)
-            print(f"  Set {HOST_ENV} to whichever of those resolves in DNS to "
-                  "this server. No certificate was trusted and no credentials "
-                  "were sent to obtain this list.", file=sys.stderr)
-        else:
-            print("  The certificate's names could not be read, which usually "
-                  "means it is self-signed or its chain does not validate.",
-                  file=sys.stderr)
-        return 1
     except socket.gaierror as exc:
-        # The host is a masked secret, so say what is wrong with its shape
-        # rather than leaving the log with nothing but "Name or service not
-        # known" and three asterisks.
         print(f"FAIL could not resolve the report host: {redact(exc)}",
-              file=sys.stderr)
-        print(f"  {HOST_ENV} could not be resolved. Without disclosing it:",
               file=sys.stderr)
         for note in describe_host_shape(settings["host"]):
             print(f"    - {note}", file=sys.stderr)
         return 1
-    except OSError as exc:
-        # Resolved, but the connection itself failed: refused, filtered,
-        # timed out. Nothing to say about the name; say that plainly.
-        print(f"FAIL could not connect to the report host: {redact(exc)}",
-              file=sys.stderr)
-        print(f"  The address resolved, so this is the connection itself — "
-              f"port {args.port} may be closed, filtered, or the service is "
-              "not listening.", file=sys.stderr)
-        return 1
-    except ftplib.all_errors as exc:
-        print(f"FAIL FTPS error: {redact(exc)}", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 — incl. paramiko auth/SSH errors
+        name = type(exc).__name__
+        print(f"FAIL SSH/SFTP error ({name}): {redact(exc)}", file=sys.stderr)
+        if "Authentication" in name:
+            print("  The server refused the key. Check that the public half of "
+                  f"the key in {KEY_ENV} is the authorized key in cPanel, and "
+                  "that the username is the cPanel account name "
+                  f"(currently taken from {settings['user_source']}).",
+                  file=sys.stderr)
+        elif "BadHostKey" in name:
+            print(f"  The server's host key does not match {HOST_KEY_ENV}.",
+                  file=sys.stderr)
         return 1
     finally:
-        if ftps is not None:
-            try:
-                ftps.quit()
-            except Exception:  # noqa: BLE001 — a failed QUIT must not mask the result
-                ftps.close()
+        if client is not None:
+            client.close()
 
-    print("\nOne file uploaded. Nothing was deleted, renamed or moved.")
+    print(f"\nOne file uploaded ({local_bytes:,} bytes). Nothing was deleted, "
+          "renamed or moved.")
     return 0
 
 

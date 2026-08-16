@@ -18,8 +18,7 @@ Run with:  python3 -m pytest automations/analytics/
 """
 
 import datetime as dt
-import ftplib
-import ssl
+import io
 import re
 import sys
 from pathlib import Path
@@ -36,6 +35,7 @@ from analysis_model import INSUFFICIENT_DATA, PRIORITY_MONITOR  # noqa: E402
 
 BASE = "/public_html/Trafficdom.com/reports"
 EXPECTED_DIR = "/public_html/Trafficdom.com/reports/molosoc"
+KEY = "-----BEGIN OPENSSH PRIVATE KEY-----\nnotarealkey\n-----END OPENSSH PRIVATE KEY-----\n"
 
 
 @pytest.fixture(autouse=True)
@@ -286,6 +286,10 @@ def test_report_values_are_html_escaped():
 
 # --------------------------------------------------------------------------
 # Publisher: the destination is derived, never free text
+#
+# These guards are transport-independent and survived the move from FTPS to
+# SFTP unchanged, which is the point of deriving the path rather than passing
+# it in: swapping the protocol could not move where the file lands.
 # --------------------------------------------------------------------------
 
 def test_the_remote_directory_is_the_molosoc_folder_under_the_base_path():
@@ -294,9 +298,6 @@ def test_the_remote_directory_is_the_molosoc_folder_under_the_base_path():
 
 
 def test_an_unset_base_path_falls_back_to_the_committed_default():
-    """The variable was unset on the first deployment attempt. A default keeps
-    that from silently becoming a missing dashboard every week — and the
-    guards below still apply to it."""
     for value in (None, "", "   "):
         assert pub.resolve_remote_dir(value) == EXPECTED_DIR
     assert pub.DEFAULT_BASE_PATH == BASE
@@ -334,149 +335,234 @@ def test_only_index_html_may_be_uploaded():
 
 
 # --------------------------------------------------------------------------
-# Publisher: the server's own PWD is what gets checked
+# Settings: one new secret, everything else derived or reused
 # --------------------------------------------------------------------------
 
-class FakeFTP:
-    """Enough of ftplib.FTP_TLS to drive the guards."""
+def test_the_ssh_user_falls_back_to_the_existing_reports_user():
+    """The move to SFTP was meant to need exactly one new secret."""
+    settings = pub.load_settings({"REPORTS_SFTP_USER": "cpaneluser",
+                                  "REPORTS_SSH_KEY": KEY})
+    assert settings["user"] == "cpaneluser"
+    assert settings["user_source"] == "REPORTS_SFTP_USER"
 
-    def __init__(self, cwd="/", dirs=(), fail_cwd=()):
+
+def test_an_explicit_ssh_user_wins():
+    settings = pub.load_settings({"REPORTS_SFTP_USER": "ftponly",
+                                  "REPORTS_SSH_USER": "sshuser",
+                                  "REPORTS_SSH_KEY": KEY})
+    assert settings["user"] == "sshuser"
+    assert settings["user_source"] == "REPORTS_SSH_USER"
+
+
+def test_the_host_defaults_to_the_cpanel_server():
+    settings = pub.load_settings({"REPORTS_SFTP_USER": "u", "REPORTS_SSH_KEY": KEY})
+    assert settings["host"] == "p3plmcpnl502709.prod.phx3.secureserver.net"
+    assert pub.SSH_PORT == 22
+
+
+def test_a_missing_key_is_the_one_thing_that_stops_the_run():
+    with pytest.raises(pub.PublishError, match="REPORTS_SSH_KEY"):
+        pub.load_settings({"REPORTS_SFTP_USER": "u"})
+
+
+def test_a_missing_user_names_both_secrets_that_could_supply_it():
+    with pytest.raises(pub.PublishError) as excinfo:
+        pub.load_settings({"REPORTS_SSH_KEY": KEY})
+    assert "REPORTS_SSH_USER" in str(excinfo.value)
+    assert "REPORTS_SFTP_USER" in str(excinfo.value)
+
+
+def test_the_private_key_is_registered_for_redaction():
+    import analytics_common
+
+    analytics_common.reset_secrets()
+    try:
+        pub.load_settings({"REPORTS_SFTP_USER": "u", "REPORTS_SSH_KEY": KEY})
+        assert KEY not in analytics_common.redact(f"auth failed using {KEY}")
+    finally:
+        analytics_common.reset_secrets()
+
+
+# --------------------------------------------------------------------------
+# The private key
+# --------------------------------------------------------------------------
+
+def test_a_key_that_is_not_a_key_says_so_plainly():
+    with pytest.raises(pub.PublishError, match="does not contain a private key"):
+        pub.load_private_key("hunter2")
+
+
+def test_a_base64_wrapped_key_is_unwrapped_before_parsing():
+    """A multi-line secret pasted into a single-line field is the classic
+    mistake; failing with 'could not parse' would send someone the wrong way."""
+    import base64 as b64
+
+    wrapped = b64.b64encode(KEY.encode()).decode()
+    with pytest.raises(pub.PublishError) as excinfo:
+        pub.load_private_key(wrapped)
+    # It got past the "not a key" check and into real parsing.
+    assert "does not contain a private key" not in str(excinfo.value)
+    assert "could not be parsed" in str(excinfo.value)
+
+
+def test_an_unparseable_key_mentions_the_passphrase_case():
+    with pytest.raises(pub.PublishError, match="passphrase"):
+        pub.load_private_key(KEY)
+
+
+def test_a_real_key_round_trips():
+    import paramiko
+
+    generated = paramiko.Ed25519Key.generate() if hasattr(paramiko.Ed25519Key, "generate") \
+        else paramiko.RSAKey.generate(2048)
+    buffer = io.StringIO()
+    generated.write_private_key(buffer)
+
+    parsed = pub.load_private_key(buffer.getvalue())
+    assert parsed.get_base64() == generated.get_base64()
+
+
+def test_the_host_key_fingerprint_is_the_sha256_form():
+    import base64 as b64
+    import hashlib
+
+    class FakeKey:
+        def asbytes(self):
+            return b"host-key-bytes"
+
+    expected = "SHA256:" + b64.b64encode(
+        hashlib.sha256(b"host-key-bytes").digest()).decode().rstrip("=")
+    assert pub.fingerprint(FakeKey()) == expected
+
+
+# --------------------------------------------------------------------------
+# The server's own working directory is what decides
+# --------------------------------------------------------------------------
+
+class FakeSFTP:
+    """Enough of paramiko.SFTPClient to drive the guards."""
+
+    def __init__(self, cwd="/", dirs=()):
         self._cwd = cwd
         self._dirs = set(dirs)
-        self._fail_cwd = set(fail_cwd)
         self.stored = []
         self.made = []
 
-    def cwd(self, path):
+    def chdir(self, path):
         target = path if path.startswith("/") else f"{self._cwd.rstrip('/')}/{path}"
-        if target in self._fail_cwd or target not in self._dirs:
-            raise ftplib.error_perm(f"550 {target}: No such file or directory")
+        if target not in self._dirs:
+            raise IOError(f"No such file: {target}")
         self._cwd = target
 
-    def pwd(self):
+    def getcwd(self):
         return self._cwd
 
-    def mkd(self, name):
+    def mkdir(self, name):
         target = f"{self._cwd.rstrip('/')}/{name}"
         self._dirs.add(target)
         self.made.append(target)
 
-    def storbinary(self, command, handle):
-        self.stored.append((command, self._cwd, handle.read()))
+    def put(self, local_path, remote_name):
+        with open(local_path, "rb") as handle:
+            self.stored.append((remote_name, self._cwd, handle.read()))
 
-    def voidcmd(self, _command):
-        return "200"
-
-    def size(self, _name):
-        return len(self.stored[-1][2]) if self.stored else None
+    def stat(self, name):
+        class Attrs:
+            st_mode = 0o100644
+            st_size = len(self.stored[-1][2]) if self.stored else 0
+        return Attrs()
 
 
 def test_the_upload_is_abandoned_when_the_server_reports_a_different_directory():
-    """A chroot or a symlink can land a locally-correct path elsewhere.
-    Only PWD reveals it, so PWD is what decides."""
-    ftps = FakeFTP(cwd="/public_html/someone-elses-site")
+    """A chroot or a symlink can land a locally-correct path elsewhere."""
+    sftp = FakeSFTP(cwd="/public_html/someone-elses-site")
 
     with pytest.raises(pub.PublishError) as excinfo:
-        pub.verify_location(ftps, EXPECTED_DIR)
+        pub.verify_location(sftp, EXPECTED_DIR)
 
     assert "FAILED" in str(excinfo.value)
     assert "Nothing was uploaded" in str(excinfo.value)
-    assert not ftps.stored
+    assert not sftp.stored
 
 
 def test_the_location_check_passes_on_the_expected_directory():
-    ftps = FakeFTP(cwd=EXPECTED_DIR)
-    assert pub.verify_location(ftps, EXPECTED_DIR) == EXPECTED_DIR
+    assert pub.verify_location(FakeSFTP(cwd=EXPECTED_DIR), EXPECTED_DIR) == EXPECTED_DIR
 
 
 def test_a_chrooted_account_reporting_a_shorter_path_still_verifies():
-    # Some hosts chroot to the account root, so PWD is /reports/molosoc.
-    ftps = FakeFTP(cwd="/reports/molosoc")
-    assert pub.verify_location(ftps, EXPECTED_DIR) == "/reports/molosoc"
+    sftp = FakeSFTP(cwd="/reports/molosoc")
+    assert pub.verify_location(sftp, EXPECTED_DIR) == "/reports/molosoc"
 
 
 def test_a_sibling_project_directory_is_rejected():
-    ftps = FakeFTP(cwd="/public_html/Trafficdom.com/reports/othersite")
+    sftp = FakeSFTP(cwd="/public_html/Trafficdom.com/reports/othersite")
     with pytest.raises(pub.PublishError):
-        pub.verify_location(ftps, EXPECTED_DIR)
+        pub.verify_location(sftp, EXPECTED_DIR)
 
 
 def test_a_missing_base_path_is_an_error_rather_than_a_directory_to_invent():
-    """A typo in the base path must not create a folder in someone's web root."""
-    ftps = FakeFTP(cwd="/", dirs={"/"})
+    sftp = FakeSFTP(cwd="/", dirs={"/"})
 
     with pytest.raises(pub.PublishError, match="does not exist or is not reachable"):
-        pub.enter_remote_dir(ftps, EXPECTED_DIR)
-    assert not ftps.made
+        pub.enter_remote_dir(sftp, EXPECTED_DIR)
+    assert not sftp.made
 
 
 def test_only_the_project_directory_is_ever_created():
-    ftps = FakeFTP(cwd="/", dirs={"/", BASE})
+    sftp = FakeSFTP(cwd="/", dirs={"/", BASE})
 
-    entered = pub.enter_remote_dir(ftps, EXPECTED_DIR)
-
-    assert entered == EXPECTED_DIR
-    assert ftps.made == [EXPECTED_DIR], "nothing above the project dir may be created"
+    assert pub.enter_remote_dir(sftp, EXPECTED_DIR) == EXPECTED_DIR
+    assert sftp.made == [EXPECTED_DIR], "nothing above the project dir may be created"
 
 
 def test_an_existing_project_directory_is_entered_without_being_recreated():
-    ftps = FakeFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
-    assert pub.enter_remote_dir(ftps, EXPECTED_DIR) == EXPECTED_DIR
-    assert ftps.made == []
+    sftp = FakeSFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
+    assert pub.enter_remote_dir(sftp, EXPECTED_DIR) == EXPECTED_DIR
+    assert sftp.made == []
 
 
 def test_the_upload_stores_exactly_one_file_in_the_verified_directory(tmp_path):
     page = tmp_path / "index.html"
     page.write_text("<!doctype html><html></html>", encoding="utf-8")
-    ftps = FakeFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
-    pub.enter_remote_dir(ftps, EXPECTED_DIR)
-    pub.verify_location(ftps, EXPECTED_DIR)
+    sftp = FakeSFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
+    pub.enter_remote_dir(sftp, EXPECTED_DIR)
+    pub.verify_location(sftp, EXPECTED_DIR)
 
-    sent = pub.upload(ftps, str(page))
+    sent = pub.upload(sftp, str(page))
 
-    assert len(ftps.stored) == 1
-    command, cwd, _body = ftps.stored[0]
-    assert command == "STOR index.html"
+    assert len(sftp.stored) == 1
+    name, cwd, _body = sftp.stored[0]
+    assert name == "index.html"
     assert cwd == EXPECTED_DIR
-    assert pub.confirm_uploaded(ftps, sent) == (sent, None)
+    assert pub.confirm_uploaded(sftp, sent) == (sent, None)
 
 
 def test_a_size_mismatch_is_reported_rather_than_passed_over(tmp_path):
     page = tmp_path / "index.html"
     page.write_text("<!doctype html>", encoding="utf-8")
-    ftps = FakeFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
-    pub.enter_remote_dir(ftps, EXPECTED_DIR)
-    pub.upload(ftps, str(page))
+    sftp = FakeSFTP(cwd="/", dirs={"/", BASE, EXPECTED_DIR})
+    pub.enter_remote_dir(sftp, EXPECTED_DIR)
+    pub.upload(sftp, str(page))
 
-    _size, problem = pub.confirm_uploaded(ftps, 999999)
+    _size, problem = pub.confirm_uploaded(sftp, 999999)
     assert "size mismatch" in problem
 
 
 def test_the_publisher_never_deletes_or_renames():
     source = Path(pub.__file__).read_text(encoding="utf-8")
-    for destructive in (".delete(", ".rmd(", ".rename(", "DELE ", "RMD ", "RNFR "):
+    for destructive in (".remove(", ".unlink(", ".rmdir(", ".rename(", ".rmtree("):
         assert destructive not in source, destructive
 
 
-def test_missing_credentials_stop_the_run_before_connecting():
-    env = {"REPORTS_BASE_PATH": BASE}
-    with pytest.raises(pub.PublishError, match="missing required secret"):
-        pub.load_settings(env)
-
-
-def test_the_password_is_registered_for_redaction():
-    import analytics_common
-
-    analytics_common.reset_secrets()
-    try:
-        pub.load_settings({"REPORTS_SFTP_HOST": "ftp.example.com",
-                           "REPORTS_SFTP_USER": "reports",
-                           "REPORTS_SFTP_PASS": "hunter2-secret",
-                           "REPORTS_BASE_PATH": BASE})
-        assert "hunter2-secret" not in analytics_common.redact(
-            "login failed for hunter2-secret")
-    finally:
-        analytics_common.reset_secrets()
+def test_ftps_is_gone_entirely():
+    """The shared host's certificate could never verify, so the transport was
+    replaced rather than its verification weakened."""
+    source = Path(pub.__file__).read_text(encoding="utf-8")
+    assert "ftplib" not in source
+    assert "FTP_TLS" not in source
+    assert "check_hostname" not in source
+    assert "CERT_NONE" not in source
+    assert "verify_mode" not in source
 
 
 def test_the_dry_run_resolves_the_path_without_connecting(monkeypatch, capsys):
@@ -484,9 +570,7 @@ def test_the_dry_run_resolves_the_path_without_connecting(monkeypatch, capsys):
         raise AssertionError("--dry-run must not open a connection")
 
     monkeypatch.setattr(pub, "connect", no_connections)
-    for name, value in (("REPORTS_SFTP_HOST", "ftp.example.com"),
-                        ("REPORTS_SFTP_USER", "reports"),
-                        ("REPORTS_SFTP_PASS", "pw"),
+    for name, value in (("REPORTS_SFTP_USER", "reports"), ("REPORTS_SSH_KEY", KEY),
                         ("REPORTS_BASE_PATH", BASE)):
         monkeypatch.setenv(name, value)
 
@@ -494,6 +578,7 @@ def test_the_dry_run_resolves_the_path_without_connecting(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert EXPECTED_DIR in out
     assert f"{EXPECTED_DIR}/index.html" in out
+    assert "port 22" in out or ":22" in out
     assert "nothing was uploaded" in out
 
 
@@ -514,263 +599,3 @@ def test_the_dashboard_is_not_written_into_the_repository(tmp_path):
 
 def test_the_schema_version_is_stated_on_the_page(healthy):
     assert rs.SCHEMA_VERSION in dash.render_dashboard(healthy)
-
-
-# --------------------------------------------------------------------------
-# Diagnosing an unreachable host without disclosing it
-# --------------------------------------------------------------------------
-
-def test_a_url_pasted_as_a_hostname_is_named_as_the_problem():
-    notes = " ".join(pub.describe_host_shape("ftps://ftp.example.com/reports"))
-    assert "bare hostname" in notes
-    assert "no path" in notes
-
-
-def test_an_embedded_port_is_named():
-    assert any("port" in n for n in pub.describe_host_shape("ftp.example.com:21"))
-
-
-def test_a_bare_label_is_named():
-    assert any("no dot" in n for n in pub.describe_host_shape("reportserver"))
-
-
-def test_a_well_shaped_hostname_points_at_dns_or_the_name_itself():
-    notes = " ".join(pub.describe_host_shape("ftp.example.com"))
-    assert "looks like a hostname" in notes
-
-
-def test_the_diagnosis_never_repeats_the_hostname():
-    """It is a masked secret; the whole point is to describe, not disclose."""
-    secret = "ftps://verysecrethost.example.com:21/path"
-    for note in pub.describe_host_shape(secret):
-        assert "verysecrethost" not in note
-        assert secret not in note
-
-
-def test_an_ip_address_is_recognised_as_such():
-    assert pub._looks_like_ip("72.167.124.157")
-    assert pub._looks_like_ip("2001:db8::1")
-    assert not pub._looks_like_ip("ftp.example.com")
-
-
-def test_an_ip_that_fails_to_resolve_is_diagnosed_as_a_delivery_problem():
-    """An IP needs no DNS, so 'could not resolve' means the value in the
-    runner is not the value that was set."""
-    notes = " ".join(pub.describe_host_shape("72.167.124.157"))
-    assert "needs no DNS" in notes
-    assert "looks like a hostname" not in notes
-
-
-def test_tls_failures_are_not_reported_as_dns_failures(monkeypatch, capsys, tmp_path):
-    """A certificate problem and a resolver problem need different answers."""
-    import ssl as ssl_module
-
-    page = tmp_path / "index.html"
-    page.write_text("<!doctype html>", encoding="utf-8")
-
-    def failing_tls(*_args, **_kwargs):
-        raise ssl_module.SSLError("certificate verify failed: IP address mismatch")
-
-    monkeypatch.setattr(pub, "connect", failing_tls)
-    monkeypatch.setattr(pub, "certificate_names", lambda *_a, **_k: None)
-    for name, value in (("REPORTS_SFTP_HOST", "72.167.124.157"),
-                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
-                        ("REPORTS_BASE_PATH", BASE)):
-        monkeypatch.setenv(name, value)
-
-    assert pub.main(["--file", str(page)]) == 1
-    err = capsys.readouterr().err
-    assert "TLS handshake" in err
-    assert "certificate hostname verification cannot succeed" in err
-    assert "could not resolve" not in err
-
-
-def test_a_refused_connection_is_not_reported_as_a_dns_failure(monkeypatch, capsys, tmp_path):
-    page = tmp_path / "index.html"
-    page.write_text("<!doctype html>", encoding="utf-8")
-
-    def refused(*_args, **_kwargs):
-        raise ConnectionRefusedError(111, "Connection refused")
-
-    monkeypatch.setattr(pub, "connect", refused)
-    for name, value in (("REPORTS_SFTP_HOST", "ftp.example.com"),
-                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
-                        ("REPORTS_BASE_PATH", BASE)):
-        monkeypatch.setenv(name, value)
-
-    assert pub.main(["--file", str(page)]) == 1
-    err = capsys.readouterr().err
-    assert "could not connect" in err
-    assert "may be closed, filtered" in err
-    assert "could not resolve" not in err
-
-
-# --------------------------------------------------------------------------
-# Reading the certificate's names to make the fix a single step
-# --------------------------------------------------------------------------
-
-def test_certificate_names_are_collected_from_san_and_common_name(monkeypatch):
-    class FakeSock:
-        def getpeercert(self):
-            return {"subject": ((("commonName", "ftp.example.com"),),),
-                    "subjectAltName": (("DNS", "ftp.example.com"),
-                                       ("DNS", "*.example.com"),
-                                       ("IP Address", "1.2.3.4"))}
-
-    class FakeFTPS:
-        sock = FakeSock()
-
-        def __init__(self, *a, **k):
-            pass
-
-        def connect(self, *a, **k):
-            pass
-
-        def auth(self):
-            pass
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr(pub.ftplib, "FTP_TLS", FakeFTPS)
-
-    assert pub.certificate_names("1.2.3.4") == ["*.example.com", "ftp.example.com"]
-
-
-def test_reading_the_certificate_never_logs_in_or_uploads():
-    """It completes the handshake and hangs up. Credentials and data only ever
-    go over the fully verified connection in connect()."""
-    import inspect
-
-    body = inspect.getsource(pub.certificate_names)
-    body = body.split('"""')[2]        # drop the docstring; scan the code only
-    for forbidden in ("login", "storbinary", "prot_p", "password"):
-        assert forbidden not in body, forbidden
-
-
-def test_the_certificate_probe_still_validates_the_chain():
-    """check_hostname is off — that is the question being asked. verify_mode
-    must stay on, or this would be trusting any certificate at all."""
-    import inspect
-
-    body = inspect.getsource(pub.certificate_names).split('"""')[2]
-    assert "check_hostname = False" in body
-    assert "CERT_NONE" not in body
-    assert "verify_mode" not in body
-
-
-def test_a_failed_probe_returns_none_rather_than_raising(monkeypatch):
-    class Exploding:
-        def __init__(self, *a, **k):
-            pass
-
-        def connect(self, *a, **k):
-            raise OSError("unreachable")
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr(pub.ftplib, "FTP_TLS", Exploding)
-    assert pub.certificate_names("nowhere.invalid") is None
-
-
-def test_a_tls_failure_reports_the_certificate_names(monkeypatch, capsys, tmp_path):
-    page = tmp_path / "index.html"
-    page.write_text("<!doctype html>", encoding="utf-8")
-
-    def failing_tls(*_args, **_kwargs):
-        raise ssl.SSLError("certificate verify failed: Hostname mismatch")
-
-    monkeypatch.setattr(pub, "connect", failing_tls)
-    monkeypatch.setattr(pub, "certificate_names",
-                        lambda *_a, **_k: ["ftp.realname.com", "realname.com"])
-    for name, value in (("REPORTS_SFTP_HOST", "ftp.wrongname.com"),
-                        ("REPORTS_SFTP_USER", "u"), ("REPORTS_SFTP_PASS", "p"),
-                        ("REPORTS_BASE_PATH", BASE)):
-        monkeypatch.setenv(name, value)
-
-    assert pub.main(["--file", str(page)]) == 1
-    err = capsys.readouterr().err
-    assert "valid for:" in err
-    assert "ftp.realname.com" in err
-    assert "no credentials were sent" in err.replace("\n", " ").replace("  ", " ")
-
-
-# --------------------------------------------------------------------------
-# Naming the hostname that satisfies BOTH halves
-# --------------------------------------------------------------------------
-
-def _report(monkeypatch, cert_names, dns, host="72.167.124.157"):
-    import io
-
-    monkeypatch.setattr(pub, "certificate_names", lambda *_a, **_k: cert_names)
-    monkeypatch.setattr(pub, "resolve", lambda name: dns.get(name, []))
-    buffer = io.StringIO()
-    answer = pub.certificate_report(host, out=buffer)
-    return answer, buffer.getvalue()
-
-
-def test_the_report_names_the_hostname_that_resolves_to_this_server(monkeypatch):
-    answer, text = _report(
-        monkeypatch,
-        ["ftp.example.com", "mail.example.com"],
-        {"ftp.example.com": ["72.167.124.157"], "mail.example.com": ["9.9.9.9"]})
-
-    assert answer == "ftp.example.com"
-    assert "ANSWER: set REPORTS_SFTP_HOST to  ftp.example.com" in text
-    assert "MATCHES this server" in text
-    assert "different server" in text
-
-
-def test_a_certificate_name_that_does_not_resolve_is_called_out(monkeypatch):
-    answer, text = _report(monkeypatch, ["ftp.example.com"], {})
-
-    assert answer is None
-    assert "does NOT resolve" in text
-    assert "none of the certificate's names currently resolves" in text
-
-
-def test_a_name_pointing_elsewhere_is_not_offered_as_the_answer(monkeypatch):
-    answer, text = _report(monkeypatch, ["ftp.other.com"],
-                           {"ftp.other.com": ["203.0.113.9"]})
-
-    assert answer is None
-    assert "different server" in text
-
-
-def test_a_wildcard_certificate_is_reported_as_the_easy_fix(monkeypatch):
-    answer, text = _report(monkeypatch, ["*.example.com"], {})
-
-    assert answer is None
-    assert "covers *.example.com" in text
-    assert "pointing one at this server in DNS is the fix" in text
-
-
-def test_the_shortest_matching_name_is_preferred(monkeypatch):
-    answer, _text = _report(
-        monkeypatch,
-        ["a.very.long.name.example.com", "ftp.example.com"],
-        {"a.very.long.name.example.com": ["72.167.124.157"],
-         "ftp.example.com": ["72.167.124.157"]})
-
-    assert answer == "ftp.example.com"
-
-
-def test_an_unreadable_certificate_says_so_rather_than_guessing(monkeypatch):
-    answer, text = _report(monkeypatch, None, {})
-
-    assert answer is None
-    assert "could not be read" in text
-
-
-def test_the_report_reads_no_secrets_and_uploads_nothing(monkeypatch, capsys):
-    """It runs before load_settings(), so it works with no credentials at all."""
-    monkeypatch.delenv("REPORTS_SFTP_HOST", raising=False)
-    monkeypatch.delenv("REPORTS_SFTP_PASS", raising=False)
-    monkeypatch.setattr(pub, "certificate_report", lambda *_a, **_k: None)
-
-    assert pub.main(["--certificate-report", "72.167.124.157"]) == 0
-
-
-def test_resolve_returns_empty_for_an_unresolvable_name():
-    assert pub.resolve("no-such-host.invalid") == []
