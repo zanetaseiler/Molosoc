@@ -28,12 +28,10 @@ jobs:
             echo ""
           }
           run_ls "/"
-          run_ls "/public_html"
-          run_ls "/public_html/staging.molosoc.com"
-          run_ls "/public_html/staging.molosoc.com/wp-content/themes/molosoc"
-          run_ls "/public_html/staging.molosoc.com/public_html"
-          run_ls "/staging.molosoc.com"
-          run_ls "/www"
-          run_ls "/domains"
+          run_ls "/wp-content"
+          run_ls "/wp-content/themes"
+          run_ls "/wp-content/themes/molosoc"
+          echo "===== cls -la / (dotfiles + all) ====="
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -la /; bye" "$HOST" 2>&1 | head -40 || true
           echo "===== newest files in the deploy target (mtime check) ====="
           lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -l /public_html/staging.molosoc.com/wp-content/themes/molosoc/ ; bye" "$HOST" 2>&1 | head -30 || true
