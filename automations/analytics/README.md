@@ -274,8 +274,12 @@ which stays read-only. The writer key is read from `ANALYTICS_STORAGE_SA_JSON`
 logged. When the variable is absent the client falls back to Application
 Default Credentials, so Workload Identity works without a code change.
 
-Required permissions are exactly three — `storage.objects.create`, `.get`,
-`.list`. No delete, no admin. A test asserts the list stays that narrow.
+Unconditional permissions are exactly three — `storage.objects.create`,
+`.get`, `.list`. No delete, no admin. A test asserts the list stays that narrow.
+
+`storage.objects.delete` is granted **only under an IAM condition** naming two
+object names by equality, so the weekly report pointer can be replaced and
+nothing else can be destroyed. See *The narrow delete grant* under Phase 3.
 
 `analytics-data/` is gitignored. Git is deliberately not the analytics
 database.
@@ -450,3 +454,272 @@ python3 automations/analytics/weekly_report.py --fixture low_volume --out-dir /t
 ```
 
 `reports/` is gitignored: the report is a build output, never a commit.
+
+---
+
+# Phase 3, Stage 1 — Durable report storage
+
+GitHub artifacts expire after 90 days and need a human with repository access
+and a short-lived signed URL. That is a good download path and a poor
+foundation for an agent. Every successful weekly report is therefore also
+written to the existing private bucket, `gs://molosoc-analytics-history`, and
+that copy is the machine-readable source of truth.
+
+The artifact is unchanged: still uploaded, still 90 days.
+
+## Canonical paths
+
+Bucket: **`gs://molosoc-analytics-history`** (private, unchanged).
+
+| Path | Mutability | Retention |
+| --- | --- | --- |
+| `reports/weekly/latest.json` | overwritten weekly | **indefinite** |
+| `reports/weekly/index.json` | overwritten weekly | **indefinite** |
+| `reports/weekly/data/YYYY/MM/YYYY-MM-DD/report.json` | write-once | 400 days (intended) |
+| `reports/weekly/data/YYYY/MM/YYYY-MM-DD/report.md` | write-once | 400 days (intended) |
+| `reports/weekly/data/YYYY/MM/YYYY-MM-DD/revisions/<stamp>/report.json` | write-once | 400 days (intended) |
+| `reports/weekly/data/YYYY/MM/YYYY-MM-DD/revisions/<stamp>/report.md` | write-once | 400 days (intended) |
+
+`YYYY-MM-DD` is the report date — the last day of the analysed week — and it
+appears in the path exactly once as a directory. `<stamp>` is the generation
+instant as `YYYYMMDDTHHMMSSZ`.
+
+Those six lines are the whole contract. **`reports/weekly/latest.json` and
+`reports/weekly/index.json` are the only objects this system ever overwrites**
+(`report_store.MUTABLE_KEYS`), and everything under `reports/weekly/data/` is
+written once and never modified.
+
+The `data/` segment exists for retention isolation. A GCS lifecycle condition
+can match a prefix but cannot express an exclusion, so a rule that expired
+`reports/weekly/` would take the pointer and the index with it. Giving the
+expiring reports their own prefix makes the eventual rule one safe line, and
+keeps the two permanent metadata objects structurally out of its reach.
+
+Untouched by this stage, listed so the bucket layout is readable in one place:
+`raw/`, `facts/` and `state/` hold the Clarity ledger from Phase 1, and
+`_verification/` holds synthetic connection-test objects.
+
+## Reading it
+
+```python
+import report_store as rs
+
+pointer = rs.load_latest(store)          # reports/weekly/latest.json
+report  = store.get_json(pointer["json_key"])
+markdown = store.get_text(pointer["markdown_key"])
+
+rs.load_index(store)                     # every published week, newest first
+rs.load_report(store, "2026-08-14")      # one named week
+rs.published_dates(store)                # authoritative, straight from listing
+```
+
+A consumer needs one GET to find the newest report and one more to read it. No
+bucket listing, no Actions API, no repository access.
+
+## Schema
+
+`schema_version` is semver. Additive fields bump the minor; anything a reader
+could break on bumps the major. **A consumer should refuse a major it does not
+know** rather than guess.
+
+Current version: **1.0.0**, `kind: molosoc.weekly_marketing_analysis`.
+
+| Field | What it holds |
+| --- | --- |
+| `schema_version`, `kind` | Envelope identity |
+| `report_date`, `generated_at`, `report_id` | Identity of this run |
+| `period`, `comparison_period` | The two compared windows |
+| `comparison_periods` | All windows, including the 28-day baseline |
+| `facts` | Measured comparisons. Never opinions |
+| `inferences` | Interpretations, each citing the fact ids beneath it |
+| `anomalies` | Outliers, split into performance and instrumentation |
+| `recommendations` | Proposed actions, each with a measurement plan |
+| `prioritized_actions` | Recommendation ids in priority order |
+| `readiness`, `readiness_note` | Whether advice was permitted at all |
+| `findings` | Named views — see below |
+| `headline_metrics` | Site-level totals, flat |
+| `conversions` | Conversion measurement state |
+| `ecommerce_tracking_boundary` | Which side of 2026-08-16 each window falls |
+| `tracking_coverage` | GA4-vs-Clarity diagnostic. **Not a consent rate** |
+| `data_quality` | Exclusions, hydration, suppressions, anomaly counts |
+| `source_coverage` | What each source could actually cover |
+| `storage` | Own keys, revision, and the declared retention intent |
+
+`findings` names the views an agent will ask for — `ga4`, `search_console`,
+`clarity`, `seo`, `landing_pages_and_cro`, `ux`, `cross_source`,
+`executive_health`. Their values are **fact and inference ids**, not copies, so
+a finding exists once in `facts`/`inferences` and two versions of it can never
+drift apart. `sections` is the older internal view that `render.py` uses;
+`findings` is the stable public one.
+
+Facts and inferences remain separate types, and readiness thresholds are
+unchanged from Phase 2.
+
+## Duplicates and revisions
+
+A published week is **never silently overwritten**. The weekly report is the
+only record of what the site looked like that week, and once Search Console's
+window rolls past it cannot be regenerated.
+
+* Default (`--on-duplicate reject`): republishing a week raises
+  `DuplicateReport` and writes nothing.
+* `--on-duplicate revision`: the re-run is filed under
+  `revisions/<YYYYMMDDTHHMMSSZ>/`, the authoritative `report.json` is untouched,
+  and the index records how many revisions a week has.
+
+`latest.json` never moves backwards: re-running an older week stores it without
+disturbing the pointer.
+
+## Write order
+
+Markdown, then JSON, then — only once both are confirmed present — the index
+and the pointer. A reader following `latest.json` cannot land on half a report;
+the worst case is a pointer one week stale, which is visibly old rather than
+quietly wrong. A failed report write leaves the pointer entirely alone.
+
+## The narrow delete grant
+
+`latest.json` and `index.json` are updated in place. **GCS implements replacing
+an object as delete-then-create**, so overwriting needs `storage.objects.delete`
+in addition to `storage.objects.create`. The analytics writer was scoped to
+create/get/list, so out of the box it can store reports but cannot move the
+pointer.
+
+The grant is therefore **conditional and exact**, never blanket. The writer may
+delete precisely two object names and nothing else:
+
+```
+resource.name == "projects/_/buckets/molosoc-analytics-history/objects/reports/weekly/latest.json" ||
+resource.name == "projects/_/buckets/molosoc-analytics-history/objects/reports/weekly/index.json"
+```
+
+Equality, not `startsWith` — a prefix match on `reports/weekly/` would also
+cover every dated report. With this condition the Clarity ledger, the raw
+snapshots and every dated report stay undeletable by this identity, which is
+the guarantee the whole Phase 1 design rests on.
+
+`report_store.MUTABLE_KEYS` holds the same two keys, and a test asserts that
+`publish()` and `rebuild_pointers()` never overwrite anything outside it — so
+the code cannot quietly drift outside the grant and turn a design error into a
+mysterious weekly failure.
+
+Until the condition is in place, this degrades rather than losing anything:
+
+* the immutable report objects are written and confirmed first;
+* `publish()` returns `degraded=True` with the exact permission required;
+* the CLI exits **2** — distinct from 1 (real failure) and 3 (duplicate);
+* `rs.rebuild_pointers(store)` reconstructs both mutable objects from a
+  listing afterwards, so a gap costs nothing but a stale pointer.
+
+Note the gap only bites from the **second** week: creating `latest.json` the
+first time needs no delete permission, because there is nothing to replace.
+
+## Retention
+
+Measured, uncompressed, per week: **~45 KB** at current volume (41 KB JSON +
+4 KB Markdown), **~72 KB** for the busiest fixture.
+
+| Horizon | At today's volume | At a 75 KB/week ceiling |
+| --- | --- | --- |
+| 3 months (13 weeks) | 0.6 MB | 1.0 MB |
+| 12 months (52 weeks) | 2.4 MB | 3.8 MB |
+| 3 years (157 weeks) | 7.1 MB | 11.5 MB |
+
+At roughly $0.023/GB/month for standard storage, three years of reports costs
+well under **$0.01 per year**. Storage cost is not a reason to delete anything
+here; the reason to have a policy is predictability.
+
+Agreed target: **400 days for dated weekly reports.** 400 rather than 365
+because a 365-day rule deletes the week you need for a year-over-year
+comparison days before you need it.
+
+`latest.json` and `index.json` are **kept indefinitely**. Each index entry
+carries the week's headline numbers, so trend continuity outlives the reports
+it points at, at ~550 bytes per week (~29 KB a year).
+
+**No lifecycle rule has been applied, and none is applied by this stage.**
+Every document declares `retention.policy_applied: false`. The rule below is
+documented for a later, separate decision — do not add it as a side effect of
+some other change:
+
+```jsonc
+// Intended future rule — NOT applied.
+{
+  "lifecycle": {
+    "rule": [
+      {
+        "action": { "type": "Delete" },
+        "condition": {
+          "age": 400,
+          "matchesPrefix": ["reports/weekly/data/"]
+        }
+      }
+    ]
+  }
+}
+```
+
+The prefix is exactly **`reports/weekly/data/`** — with the trailing slash, and
+never `reports/weekly/`, which would take the two permanent metadata objects
+with it. That single-character difference is the reason the `data/` segment
+exists at all.
+
+## Verifying it against the real bucket
+
+```bash
+python3 automations/analytics/report_store_verify.py
+```
+
+Writes only under `_verification/reports/<run stamp>/`. No real report, Clarity
+ledger object, or analytics history is read, written, overwritten or deleted,
+and no Clarity API call is made. Also available as a step in the
+**Analytics Storage Verification** workflow.
+
+The run stamp is unique per run, so each verification gets a fresh namespace.
+
+### Why one probe touches production
+
+The isolation that makes the rest of the script safe also puts it beyond the
+permission it needs to test. The conditional delete grant matches
+`resource.name` by **equality** against the two production pointer names, so an
+object at `_verification/reports/<stamp>/reports/weekly/latest.json` is a
+different name and is correctly not covered. No amount of testing under the
+verification prefix can prove the production grant.
+
+So the script begins with a single **idempotent probe of
+`reports/weekly/index.json`**:
+
+* if the index does not exist, create a valid empty one — the correct initial
+  state, and exactly what the first real publish would create anyway;
+* read it back and write the same parsed document again.
+
+`put_json` serialises deterministically (`canonical_json`), so re-writing an
+unchanged document reproduces the object byte for byte, and the probe asserts
+that rather than assuming it. Logical contents never change. `latest.json`,
+every dated report, and the Clarity ledger are untouched — a guard rejects any
+store carrying a prefix, and any key other than the index.
+
+A denial here is a hard **failure**, not a warning: that is the object the
+grant names, so a refusal predicts a broken weekly run.
+
+The second-week pointer failure under the verification prefix is therefore
+reported as an expected **NOTE**. The mechanism is proven there; the permission
+is proven by the probe.
+
+Exit codes: 0 all checks passed, 1 something is genuinely wrong.
+
+### Sweeping the verification objects
+
+The writer has no delete permission for `_verification/`, by design — the
+conditional grant covers the two pointer objects and nothing else, so this
+script cannot clean up after itself even in principle. The objects it leaves
+are synthetic, a few hundred KB in total, and confined to that prefix.
+
+Deleting them is a manual action for someone with broader access, whenever it
+is convenient:
+
+```bash
+gsutil -m rm -r gs://molosoc-analytics-history/_verification/
+```
+
+Do **not** widen the writer's permissions to automate this.

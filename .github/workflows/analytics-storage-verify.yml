@@ -56,3 +56,25 @@ jobs:
           ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
           ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
         run: python3 automations/analytics/storage_connection_test.py
+
+      # Two parts, both read-only with respect to real data.
+      #
+      #   1. An idempotent probe of reports/weekly/index.json — the one
+      #      production path touched. If the index is absent it creates a valid
+      #      empty one (the correct initial state), then rewrites the same
+      #      document byte-for-byte. This is the only check that can prove the
+      #      conditional storage.objects.delete grant, because that grant
+      #      matches resource.name by equality and objects under the
+      #      verification prefix have different names.
+      #
+      #   2. The storage mechanism end to end, entirely under
+      #      _verification/reports/<run stamp>/.
+      #
+      # No dated weekly report, latest.json, Clarity ledger object, GA4/Search
+      # Console data, WordPress or site content is read or written, and no
+      # Clarity API call is made anywhere.
+      - name: Verify report storage (production pointer probe + synthetic mechanism)
+        env:
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: python3 automations/analytics/report_store_verify.py

@@ -80,7 +80,12 @@ jobs:
           if [ "$missing" = "1" ]; then exit 1; fi
           echo "All required secrets/variables present (values never printed)."
 
-      - name: Generate the weekly report
+      # --persist additionally stores the report in the analytics bucket under
+      # reports/weekly/, which is where a future strategy agent or dashboard
+      # reads it from. The GitHub artifact below is unchanged and remains the
+      # human download path; the two are independent, and the upload steps run
+      # with if: always() so a storage problem can never cost the artifact.
+      - name: Generate the weekly report and persist it durably
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
@@ -91,15 +96,19 @@ jobs:
           ECOMMERCE_TRACKING_START: ${{ vars.ECOMMERCE_TRACKING_START }}
           REPORT_TODAY: ${{ inputs.today }}
         run: |
+          # Exit codes: 0 ok, 1 generation/storage failure, 2 reports stored but
+          # the latest/index pointer could not be updated, 3 this week is
+          # already published and was not overwritten.
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --today "$REPORT_TODAY"
+              --out-dir reports --also-json --persist --today "$REPORT_TODAY"
           else
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json
+              --out-dir reports --also-json --persist
           fi
 
       - name: Confirm nothing was committed back to the repository
+        if: always()
         run: |
           # The report is an artifact, never a commit. A dirty tree here would
           # mean generated output landed in the working copy.
@@ -110,7 +119,10 @@ jobs:
           fi
           echo "Working tree clean; report exists only as a build output."
 
+      # 90 days, unchanged. GCS is the durable machine-readable record; this
+      # stays the convenient human download.
       - name: Upload the report as an artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: molosoc-marketing-analysis

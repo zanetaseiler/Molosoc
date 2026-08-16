@@ -40,6 +40,7 @@ import analysis
 import fixtures as fx
 import periods as pr
 import render
+import report_store as rs
 from analysis_model import INSUFFICIENT_DATA, PRIORITY_HIGH, PRIORITY_MEDIUM
 from records import CLARITY
 from storage import InMemoryStore, LocalFileStore
@@ -113,7 +114,7 @@ def summarise_run(report):
         counts[rec.priority] = counts.get(rec.priority, 0) + 1
     hydration = report.data_quality.get("hydration", {})
     coverage = report.data_quality.get("tracking_coverage", {})
-    return {
+    summary = {
         "period": f"{report.period['start']}..{report.period['end']}",
         "comparison": (f"{report.comparison_periods[0]['start']}.."
                        f"{report.comparison_periods[0]['end']}"),
@@ -128,6 +129,11 @@ def summarise_run(report):
         "conversions": report.data_quality.get("conversions", {}).get("state"),
         "tracking_coverage": coverage.get("state"),
     }
+    # Headline numbers in the log as well as the report: the artifact is not
+    # always reachable from where the run is being read.
+    for metric, value in sorted(rs.headline_metrics(report).items()):
+        summary[metric] = value
+    return summary
 
 
 def parse_args(argv=None):
@@ -146,7 +152,41 @@ def parse_args(argv=None):
     parser.add_argument("--store-root", default="analytics-data")
     parser.add_argument("--also-json", action="store_true",
                         help="Also write the machine-readable analysis object")
+    parser.add_argument("--persist", action="store_true",
+                        help=("Also store the report durably in the analytics "
+                              "bucket for future agents (see report_store.py)"))
+    parser.add_argument("--on-duplicate", default=rs.ON_DUPLICATE_REJECT,
+                        choices=list(rs.ON_DUPLICATE_CHOICES),
+                        help=("What to do if this week is already published. "
+                              "'reject' (default) protects the historical record; "
+                              "'revision' files the re-run alongside it."))
     return parser.parse_args(argv)
+
+
+def persist(store, report, markdown, now, on_duplicate=rs.ON_DUPLICATE_REJECT):
+    """Store the report durably and report precisely what happened.
+
+    Returns (exit_code, result). A pointer that could not be moved is exit 2,
+    not exit 1: the reports themselves are safely stored, and conflating the
+    two would read as data loss when it is a permission gap.
+    """
+    try:
+        result = rs.publish(store, report, markdown, now=now, on_duplicate=on_duplicate)
+    except rs.DuplicateReport as exc:
+        print(f"\nDuplicate: {exc}", file=sys.stderr)
+        return 3, None
+
+    print("\nDurable storage:")
+    for key, value in result.to_dict().items():
+        print(f"  {key}: {value}")
+
+    if result.degraded:
+        print("\nReports are stored; the pointer/index could not be updated.\n"
+              f"  {result.pointer_error}\n"
+              "  Nothing was lost — rebuild them with report_store.rebuild_pointers "
+              "once the permission exists.", file=sys.stderr)
+        return 2, result
+    return 0, result
 
 
 def main(argv=None):
@@ -176,12 +216,23 @@ def main(argv=None):
     for key, value in summary.items():
         print(f"  {key}: {value}")
 
+    exit_code = 0
+    if args.persist:
+        if args.fixture:
+            # Fixture numbers in the authoritative history would be
+            # indistinguishable from real ones a year from now.
+            print("\nRefusing to persist a fixture run into the report history. "
+                  "Use report_store_verify.py, which publishes synthetic reports "
+                  "under an isolated prefix.", file=sys.stderr)
+            return 1
+        exit_code, _ = persist(store, report, markdown, now, args.on_duplicate)
+
     # A low-volume report is a successful run. The agent declining to advise is
     # the designed behaviour, not a failure to alert on.
     if report.readiness == INSUFFICIENT_DATA:
         print("\nReadiness: insufficient data for recommendation — facts reported, "
               "actions withheld.", file=sys.stderr)
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

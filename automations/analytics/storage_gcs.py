@@ -34,17 +34,50 @@ import json
 import os
 
 from analytics_common import redact, register_secret
-from storage import SnapshotStore, StorageError
+from storage import PermissionDeniedError, SnapshotStore, StorageError
 
 CREDENTIAL_ENV = "ANALYTICS_STORAGE_SA_JSON"
 BUCKET_ENV = "ANALYTICS_BUCKET"
 
-# Only what this backend needs. Anything wider is a permissions smell.
+# Granted unconditionally, on every object in the bucket. Note what is absent:
+# no delete, no admin. Anything wider here is a permissions smell.
 REQUIRED_PERMISSIONS = (
     "storage.objects.create",
     "storage.objects.get",
     "storage.objects.list",
 )
+
+# Granted ONLY under an IAM condition matching these exact resource names.
+#
+# GCS implements replacing an object as delete-then-create, so updating the
+# weekly report pointer needs delete on those two objects — and on nothing
+# else. The condition uses equality rather than a prefix match: `startsWith`
+# on "reports/weekly/" would also cover every dated report. With this scoping
+# the Clarity ledger, the raw snapshots and every published week remain
+# undeletable by this identity.
+#
+# report_store.MUTABLE_KEYS holds the same two keys and is what the code
+# actually writes through; a test asserts the two stay in step.
+CONDITIONAL_DELETE = {
+    "permission": "storage.objects.delete",
+    "objects": (
+        "reports/weekly/latest.json",
+        "reports/weekly/index.json",
+    ),
+    "match": "equality",
+    "rationale": (
+        "GCS models object replacement as delete-then-create; these two "
+        "pointer objects are overwritten weekly and nothing else ever is."
+    ),
+}
+
+
+def conditional_delete_expression(bucket_name):
+    """The CEL condition to attach to the writer's delete binding."""
+    return " || ".join(
+        f'resource.name == "projects/_/buckets/{bucket_name}/objects/{obj}"'
+        for obj in CONDITIONAL_DELETE["objects"]
+    )
 
 
 def load_storage_credentials_info(env_var=CREDENTIAL_ENV):
@@ -142,18 +175,16 @@ class GCSStore(SnapshotStore):
 
     # -- SnapshotStore -----------------------------------------------------
 
-    def put_json(self, key, document, overwrite=False):
+    def _upload(self, key, body, content_type, overwrite):
         blob = self._bucket.blob(self._object_name(key))
-        body = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-
         try:
             if overwrite:
-                blob.upload_from_string(body, content_type="application/json")
+                blob.upload_from_string(body, content_type=content_type)
             else:
                 # Atomic create-if-absent. Fails server-side if the object
                 # exists, so two collectors racing cannot clobber a snapshot.
                 blob.upload_from_string(
-                    body, content_type="application/json", if_generation_match=0,
+                    body, content_type=content_type, if_generation_match=0,
                 )
         except Exception as exc:  # noqa: BLE001 — re-raised as StorageError
             if _is_precondition_failure(exc):
@@ -161,17 +192,44 @@ class GCSStore(SnapshotStore):
                     f"key already exists: {key}. Historical snapshots are never "
                     "overwritten silently; pass overwrite=True only for derived data."
                 ) from None
+            if overwrite and _is_permission_denied(exc):
+                # GCS models "replace an object" as delete-then-create, so an
+                # overwrite needs storage.objects.delete, which this writer
+                # holds only under a condition matching two exact object names.
+                #
+                # Report the FULL object name, not the store-relative key. A
+                # store with a prefix maps the same key to a different object,
+                # and an equality-matched condition covers one and not the
+                # other — printing only the key hides the single fact needed
+                # to tell "the grant is missing" from "this object is not the
+                # one the grant names".
+                raise PermissionDeniedError(
+                    f"overwrite denied for gs://{self.bucket_name}/"
+                    f"{self._object_name(key)} (store key {key!r}). Replacing an "
+                    "object in GCS requires storage.objects.delete alongside "
+                    "storage.objects.create. Either the writer lacks that "
+                    "permission, or it holds it under a condition whose "
+                    "resource.name does not equal this object's full name."
+                ) from None
             raise StorageError(f"GCS write failed for {key}: {redact(exc)}") from None
 
-    def get_json(self, key):
+    def put_json(self, key, document, overwrite=False):
+        self._upload(key, canonical_json(document), "application/json", overwrite)
+
+    def put_text(self, key, text, overwrite=False, content_type="text/plain"):
+        self._upload(key, str(text), f"{content_type}; charset=utf-8", overwrite)
+
+    def get_text(self, key):
         blob = self._bucket.blob(self._object_name(key))
         try:
-            body = blob.download_as_text()
+            return blob.download_as_text()
         except Exception as exc:  # noqa: BLE001
             if _is_not_found(exc):
                 raise StorageError(f"no such key: {key}") from None
             raise StorageError(f"GCS read failed for {key}: {redact(exc)}") from None
 
+    def get_json(self, key):
+        body = self.get_text(key)
         try:
             return json.loads(body)
         except ValueError as exc:
@@ -196,11 +254,29 @@ class GCSStore(SnapshotStore):
         return f"GCSStore({location}, durable=True)"
 
 
+def canonical_json(document):
+    """The exact bytes put_json writes.
+
+    Deterministic — sorted keys, fixed indent — so re-writing a document that
+    was read back unchanged produces a byte-identical object. The idempotent
+    production pointer probe depends on that property, so it lives here rather
+    than being open-coded twice and allowed to drift.
+    """
+    return json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
 def _is_precondition_failure(exc):
     if getattr(exc, "code", None) == 412:
         return True
     name = type(exc).__name__
     return "PreconditionFailed" in name or "412" in str(exc)
+
+
+def _is_permission_denied(exc):
+    if getattr(exc, "code", None) in (401, 403):
+        return True
+    name = type(exc).__name__
+    return "Forbidden" in name or "403" in str(exc)
 
 
 def _is_not_found(exc):

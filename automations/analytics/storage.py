@@ -34,6 +34,15 @@ class StorageError(RuntimeError):
     pass
 
 
+class PermissionDeniedError(StorageError):
+    """The backend refused the operation for lack of permission.
+
+    Separate from StorageError so a caller can tell "this identity may not do
+    that" apart from "the write failed", and degrade accordingly instead of
+    treating a fixable IAM gap as data loss.
+    """
+
+
 class SnapshotStore(ABC):
     """Append-oriented key/value store for JSON documents and record streams.
 
@@ -58,6 +67,19 @@ class SnapshotStore(ABC):
 
     def exists(self, key):
         return key in set(self.list_keys())
+
+    # -- plain text ---------------------------------------------------------
+    # Reports are stored as Markdown alongside their JSON. Backends that can
+    # set a content type should; the default implementations below just move
+    # bytes, so a backend only overrides these if it can do better.
+
+    @abstractmethod
+    def put_text(self, key, text, overwrite=False, content_type="text/plain"):
+        """Write one text document. Raises unless overwrite when key exists."""
+
+    @abstractmethod
+    def get_text(self, key):
+        """Read one text document. Raises StorageError if absent."""
 
     # -- record streams (JSONL) --------------------------------------------
 
@@ -104,6 +126,19 @@ class InMemoryStore(SnapshotStore):
     def exists(self, key):
         return key in self._data
 
+    def put_text(self, key, text, overwrite=False, content_type="text/plain"):
+        if key in self._data and not overwrite:
+            raise StorageError(f"key already exists: {key}")
+        self._data[key] = str(text)
+
+    def get_text(self, key):
+        if key not in self._data:
+            raise StorageError(f"no such key: {key}")
+        value = self._data[key]
+        if not isinstance(value, str):
+            raise StorageError(f"stored object is not text: {key}")
+        return value
+
 
 class LocalFileStore(SnapshotStore):
     """JSON documents under a root directory.
@@ -122,7 +157,7 @@ class LocalFileStore(SnapshotStore):
             raise StorageError(f"unsafe key: {key!r}")
         return os.path.join(self.root, *key.split("/"))
 
-    def put_json(self, key, document, overwrite=False):
+    def _atomic_write(self, key, writer, overwrite):
         path = self._path(key)
         if os.path.exists(path) and not overwrite:
             raise StorageError(f"key already exists: {key}")
@@ -132,13 +167,29 @@ class LocalFileStore(SnapshotStore):
         )
         try:
             with handle:
-                json.dump(document, handle, ensure_ascii=False, indent=2, sort_keys=True)
-                handle.write("\n")
+                writer(handle)
             os.replace(handle.name, path)
         except Exception:
             if os.path.exists(handle.name):
                 os.unlink(handle.name)
             raise
+
+    def put_json(self, key, document, overwrite=False):
+        def write(handle):
+            json.dump(document, handle, ensure_ascii=False, indent=2, sort_keys=True)
+            handle.write("\n")
+
+        self._atomic_write(key, write, overwrite)
+
+    def put_text(self, key, text, overwrite=False, content_type="text/plain"):
+        self._atomic_write(key, lambda handle: handle.write(str(text)), overwrite)
+
+    def get_text(self, key):
+        path = self._path(key)
+        if not os.path.isfile(path):
+            raise StorageError(f"no such key: {key}")
+        with open(path, "r", encoding="utf-8") as fh:
+            return fh.read()
 
     def get_json(self, key):
         path = self._path(key)

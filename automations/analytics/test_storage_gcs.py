@@ -329,6 +329,38 @@ def test_minimum_permissions_are_documented_and_narrow():
     assert not any("admin" in p.lower() for p in sg.REQUIRED_PERMISSIONS)
 
 
+def test_delete_is_never_granted_unconditionally():
+    """The whole Phase 1 guarantee is that this identity cannot destroy history.
+
+    Delete exists only under a condition naming two objects. If it ever moves
+    into REQUIRED_PERMISSIONS it becomes bucket-wide, and a bug in the weekly
+    report could erase a year of Clarity snapshots that cannot be backfilled.
+    """
+    assert sg.CONDITIONAL_DELETE["permission"] == "storage.objects.delete"
+    assert sg.CONDITIONAL_DELETE["permission"] not in sg.REQUIRED_PERMISSIONS
+    assert sg.CONDITIONAL_DELETE["match"] == "equality"
+
+
+def test_the_delete_condition_names_exactly_the_two_mutable_objects():
+    import report_store as rs
+
+    assert sg.CONDITIONAL_DELETE["objects"] == rs.MUTABLE_KEYS
+
+
+def test_the_condition_expression_matches_object_names_exactly():
+    expression = sg.conditional_delete_expression(BUCKET)
+
+    assert expression == (
+        'resource.name == "projects/_/buckets/molosoc-analytics-history/'
+        'objects/reports/weekly/latest.json" || '
+        'resource.name == "projects/_/buckets/molosoc-analytics-history/'
+        'objects/reports/weekly/index.json"'
+    )
+    # startsWith would also match every dated report under reports/weekly/.
+    assert "startsWith" not in expression
+    assert expression.count("==") == 2
+
+
 # --------------------------------------------------------------------------
 # Environment wiring
 # --------------------------------------------------------------------------
@@ -371,3 +403,105 @@ def test_storage_connection_test_catches_non_storage_errors(monkeypatch, capsys)
 
     assert sct.main([]) == 1
     assert "FAIL setup" in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------
+# Text objects and the overwrite permission
+# --------------------------------------------------------------------------
+
+class Forbidden(Exception):
+    code = 403
+
+
+def test_text_objects_round_trip_with_a_markdown_content_type(store):
+    store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md",
+                   "# Molosoc\n", content_type="text/markdown")
+
+    assert store.get_text("reports/weekly/data/2026/08/2026-08-14/report.md") == "# Molosoc\n"
+
+
+def test_a_text_write_is_create_if_absent_like_every_other_write(store):
+    store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md", "first")
+
+    with pytest.raises(StorageError) as excinfo:
+        store.put_text("reports/weekly/data/2026/08/2026-08-14/report.md", "second")
+    assert "already exists" in str(excinfo.value)
+    assert store.get_text("reports/weekly/data/2026/08/2026-08-14/report.md") == "first"
+
+
+def test_reading_a_missing_text_object_says_so(store):
+    with pytest.raises(StorageError) as excinfo:
+        store.get_text("reports/weekly/nope.md")
+    assert "no such key" in str(excinfo.value)
+
+
+def test_a_denied_overwrite_names_the_permission_that_is_missing(store, client):
+    """GCS models replacing an object as delete-then-create.
+
+    A writer scoped to create/get/list therefore gets 403 on overwrite, and the
+    generic 'write failed' message would send someone hunting for a bucket or
+    network fault that does not exist.
+    """
+    bucket = client.bucket(BUCKET)
+    original = bucket.blob
+
+    def denying_blob(name):
+        blob = original(name)
+        upload = blob.upload_from_string
+
+        def guarded(body, content_type=None, if_generation_match=None):
+            if if_generation_match is None:      # i.e. an overwrite
+                raise Forbidden("does not have storage.objects.delete access")
+            return upload(body, content_type=content_type,
+                          if_generation_match=if_generation_match)
+
+        blob.upload_from_string = guarded
+        return blob
+
+    bucket.blob = denying_blob
+
+    store.put_json("reports/weekly/index.json", {"count": 0})   # create: fine
+    with pytest.raises(sg.PermissionDeniedError) as excinfo:
+        store.put_json("reports/weekly/index.json", {"count": 1}, overwrite=True)
+
+    message = str(excinfo.value)
+    assert "storage.objects.delete" in message
+    # The FULL object name, prefix included. The delete grant matches
+    # resource.name by equality, so a store with a prefix maps this key to an
+    # object the grant does not name — and a message showing only the key
+    # hides the one fact that distinguishes that from a missing permission.
+    assert "gs://molosoc-analytics-history/reports/weekly/index.json" in message
+    assert "resource.name" in message
+
+
+def test_a_prefixed_store_reports_the_prefixed_object_name(client):
+    """A verification store writes under its own prefix, not the real path."""
+    prefixed = sg.GCSStore(BUCKET, prefix="_verification/reports/RUN", client=client)
+    bucket = client.bucket(BUCKET)
+    original = bucket.blob
+
+    def denying_blob(name):
+        blob = original(name)
+        upload = blob.upload_from_string
+
+        def guarded(body, content_type=None, if_generation_match=None):
+            if if_generation_match is None:
+                raise Forbidden("does not have storage.objects.delete access")
+            return upload(body, content_type=content_type,
+                          if_generation_match=if_generation_match)
+
+        blob.upload_from_string = guarded
+        return blob
+
+    bucket.blob = denying_blob
+    prefixed.put_json("reports/weekly/latest.json", {"a": 1})
+
+    with pytest.raises(sg.PermissionDeniedError) as excinfo:
+        prefixed.put_json("reports/weekly/latest.json", {"a": 2}, overwrite=True)
+
+    assert "_verification/reports/RUN/reports/weekly/latest.json" in str(excinfo.value)
+
+
+def test_a_denied_overwrite_is_still_a_storage_error(store):
+    """Callers that only know StorageError keep working."""
+    assert issubclass(sg.PermissionDeniedError, StorageError)
