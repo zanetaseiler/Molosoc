@@ -176,11 +176,11 @@
   .molosoc-home-header__nav > ul > li > a,
   .molosoc-home-header__nav > ul > li.menu-item-has-children {
     padding: 0.625rem 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.18);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     transition: background-color 250ms ease, border-color 250ms ease;
   }
 
@@ -189,7 +189,9 @@
     align-items: center;
     font-size: 0.9375rem;
     letter-spacing: 0.02em;
-    text-shadow: none;
+    /* Soft shadow (not the heavier base one) so the white labels stay
+       legible over the brightest parts of the hero photo. */
+    text-shadow: 0 1px 2px rgba(12, 17, 21, 0.28);
   }
 
   /* Dropdown parent: capsule moved up onto the li — strip it back off the
@@ -210,8 +212,8 @@
   /* Hover — slightly stronger fill/border only, no movement. */
   .molosoc-home-header__nav > ul > li > a:hover,
   .molosoc-home-header__nav > ul > li.menu-item-has-children:hover {
-    background: rgba(255, 255, 255, 0.22);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.62);
   }
 
   /* Neutralize the base opacity-fade hover inside capsules. */
@@ -226,8 +228,8 @@
   .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-parent,
   .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-ancestor,
   .molosoc-home-header__nav > ul > li.menu-item-has-children.current_page_ancestor {
-    background: rgba(255, 255, 255, 0.26);
-    border-color: rgba(255, 255, 255, 0.65);
+    background: rgba(255, 255, 255, 0.32);
+    border-color: rgba(255, 255, 255, 0.75);
   }
 
   /* Small breathing gap between a capsule and the dropdown it opens
@@ -242,9 +244,9 @@
      border and full radius that the base joined-chip rules remove. */
   .molosoc-home-header__nav .lang-item a {
     padding: 0.375rem 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.14);
     transition: background-color 250ms ease, border-color 250ms ease;
   }
 
@@ -253,7 +255,7 @@
   }
 
   .molosoc-home-header__nav .lang-item:not(.lang-item-first) a {
-    border-left: 1px solid rgba(255, 255, 255, 0.35);
+    border-left: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 999px;
   }
 
@@ -269,7 +271,7 @@
 
   .molosoc-home-header__nav .lang-item a:hover {
     opacity: 1;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.26);
   }
 
   .molosoc-home-header__nav .lang-item.current-lang a:hover {
