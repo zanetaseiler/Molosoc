@@ -22,3 +22,8 @@ google-cloud-storage>=2.14,<4
 # abandoned: the shared host presents its provider's internal certificate, so
 # it could never verify honestly. SSH authenticates by host key instead.
 paramiko>=3.4,<4
+# The interpretation graph (Phase 3 Stage 3) — the only component that calls a
+# model. Nothing else in the weekly run needs it, and the graph step is the
+# last thing the workflow does, so a missing or broken SDK cannot cost the
+# report, its GCS copy, the artifact, or the dashboard.
+anthropic>=0.69,<1

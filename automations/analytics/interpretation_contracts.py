@@ -360,3 +360,85 @@ def validate_synthesis(payload, allowed_finding_ids):
         "themes": normalized,
         "open_questions": questions,
     }
+
+
+# --------------------------------------------------------------------------
+# JSON Schemas for structured outputs
+# --------------------------------------------------------------------------
+#
+# These mirror the validators above and live beside them so the two cannot
+# drift: the schema is what the model is constrained to emit, the validator is
+# what the result must still satisfy. They are not the same job. A schema can
+# guarantee that `evidence_fact_ids` is a list of strings; only the validator
+# can know whether those strings name facts this node was actually shown.
+#
+# Deliberately free of minLength/minItems/pattern: structured outputs does not
+# support those constraints, and the validator enforces the real ones anyway.
+
+_FINDING_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string"},
+        "kind": {"type": "string", "enum": list(FINDING_KINDS)},
+        "statement": {"type": "string"},
+        "confidence": {"type": "string", "enum": [HIGH, MEDIUM, LOW]},
+        "severity": {"type": "string", "enum": list(SEVERITIES)},
+        "evidence_fact_ids": {"type": "array", "items": {"type": "string"}},
+        "alternative_explanations": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["id", "kind", "statement", "confidence", "severity",
+                 "evidence_fact_ids", "alternative_explanations"],
+    "additionalProperties": False,
+}
+
+
+def specialist_schema(node_name):
+    """Per-node, so the `node` field cannot come back naming a different one."""
+    return {
+        "type": "object",
+        "properties": {
+            "node": {"type": "string", "enum": [node_name]},
+            "findings": {"type": "array", "items": _FINDING_SCHEMA},
+            "unable_to_assess": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["node", "findings", "unable_to_assess"],
+        "additionalProperties": False,
+    }
+
+
+def verdict_schema(finding_id):
+    return {
+        "type": "object",
+        "properties": {
+            "finding_id": {"type": "string", "enum": [finding_id]},
+            "verdict": {"type": "string", "enum": list(VERDICTS)},
+            "reason": {"type": "string"},
+            "confidence": {"type": "string", "enum": [HIGH, MEDIUM, LOW]},
+        },
+        "required": ["finding_id", "verdict", "reason", "confidence"],
+        "additionalProperties": False,
+    }
+
+
+SYNTHESIS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "themes": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "narrative": {"type": "string"},
+                    "based_on_finding_ids": {"type": "array",
+                                             "items": {"type": "string"}},
+                },
+                "required": ["title", "narrative", "based_on_finding_ids"],
+                "additionalProperties": False,
+            },
+        },
+        "open_questions": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["themes", "open_questions"],
+    "additionalProperties": False,
+}

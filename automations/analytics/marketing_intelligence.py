@@ -176,6 +176,12 @@ def build(document, graph_result, now=None, client_slug=None):
             "graph_version": manifest["graph_version"],
             "contract_version": manifest["contract_version"],
             "budget": manifest["budget"],
+            # What the run was allowed (`budget`) and what it actually cost
+            # (`token_usage`), side by side. Null when the graph ran against a
+            # caller that reports no usage — an offline fixture — which is
+            # stated rather than filled in with zeros that would read as a
+            # free run.
+            "token_usage": manifest.get("usage"),
             "generated_from": "verified findings only; no raw API payloads",
         },
 

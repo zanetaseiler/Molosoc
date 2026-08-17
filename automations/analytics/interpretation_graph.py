@@ -309,8 +309,15 @@ def run_specialists(document, caller, budget, slices=None):
     return results, manifest
 
 
-def run_verification(specialist_results, caller, budget):
-    """Verify the judgments that matter most, within budget."""
+def run_verification(specialist_results, caller, budget, facts_by_id=None):
+    """Verify the judgments that matter most, within budget.
+
+    The cited facts travel with the finding. A verifier asked to check a claim
+    without the evidence behind it can only judge whether the sentence sounds
+    plausible, which is the failure mode verification exists to catch — so it
+    is given exactly the facts the finding cites, and nothing else.
+    """
+    facts_by_id = facts_by_id or {}
     all_findings = [f for r in specialist_results.values() for f in r["findings"]]
     selected, unselected = select_for_verification(
         all_findings, limit=budget.remaining("verifier"))
@@ -328,9 +335,11 @@ def run_verification(specialist_results, caller, budget):
     for finding in selected:
         entry = {"node": NODE_VERIFIER, "role": "verifier",
                  "finding_id": finding["id"]}
+        cited = [facts_by_id[fid] for fid in finding["evidence_fact_ids"]
+                 if fid in facts_by_id]
         result = _call_with_retry(
             caller, NODE_VERIFIER,
-            {"finding": finding, "task": "refute_or_confirm"},
+            {"finding": finding, "facts": cited, "task": "refute_or_confirm"},
             lambda raw, fid=finding["id"]: ic.validate_verdict(raw, fid),
             budget, "verifier", entry)
         manifest.append(entry)
@@ -456,7 +465,8 @@ def run_graph(document, caller, now=None, budget=None):
     specialist_results, specialist_manifest = run_specialists(
         document, caller, budget, slices)
     verified, excluded, verifier_manifest = run_verification(
-        specialist_results, caller, budget)
+        specialist_results, caller, budget,
+        facts_by_id={f.get("id"): f for f in _facts(document)})
     synthesis, synthesis_entry = run_synthesis(verified, document, caller, budget)
     manifest = build_manifest(document, specialist_manifest, verifier_manifest,
                               synthesis_entry, budget, now=now)

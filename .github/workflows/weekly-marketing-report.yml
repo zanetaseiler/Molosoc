@@ -86,6 +86,7 @@ jobs:
       # human download path; the two are independent, and the upload steps run
       # with if: always() so a storage problem can never cost the artifact.
       - name: Generate the weekly report and persist it durably
+        id: generate
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
@@ -119,7 +120,15 @@ jobs:
           # written. Anything else is a real failure and stops the run.
           if [ "$code" = "3" ]; then
             echo "::warning::This week is already published; the stored report was left untouched. Continuing to publish the dashboard."
+            # The deterministic report did not change, so there is nothing new
+            # to interpret. The dashboard still republishes; the graph does not
+            # re-run, because re-interpreting an unchanged report would spend
+            # real money to produce the document that already exists.
+            echo "report_changed=false" >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+          if [ "$code" = "0" ]; then
+            echo "report_changed=true" >> "$GITHUB_OUTPUT"
           fi
           exit "$code"
 
@@ -200,3 +209,51 @@ jobs:
             exit 1
           fi
           echo "PASS the dashboard is live at $url ($(wc -c < /tmp/live.html) bytes)"
+
+      # ---------------------------------------------------------------------
+      # Interpretation graph — the only step that calls a model, and the last
+      # thing this workflow does.
+      #
+      # By the time it runs, everything of value is already durable: the report
+      # is generated and persisted to GCS, the 90-day artifact is uploaded, and
+      # the dashboard is published and verified. `continue-on-error` means a
+      # failure here is recorded and ignored; it cannot fail the job, and it
+      # cannot reach back and affect any of the four artifacts above.
+      #
+      # It runs only when the deterministic report actually changed. A
+      # duplicate-week re-run republishes the dashboard but does not re-buy an
+      # interpretation of a report that is byte-for-byte the one already stored.
+      #
+      # No new schedule: this rides the existing weekly cron.
+      # ---------------------------------------------------------------------
+      - name: Interpret the report (bounded model calls)
+        if: success() && steps.generate.outputs.report_changed == 'true'
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+          CLIENT_SLUG: ${{ vars.CLIENT_SLUG }}
+          INTERPRETATION_ENABLED: ${{ vars.INTERPRETATION_ENABLED }}
+          INTERPRETATION_MODEL: ${{ vars.INTERPRETATION_MODEL }}
+          INTERPRETATION_EFFORT_SPECIALIST: ${{ vars.INTERPRETATION_EFFORT_SPECIALIST }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::warning::ANTHROPIC_API_KEY is not set; skipping the interpretation graph."
+            exit 0
+          fi
+          set +e
+          python3 automations/analytics/run_interpretation.py --persist \
+            --out reports/marketing_intelligence.json
+          code=$?
+          set -e
+          # 0 produced, 2 produced-but-unpersisted, 3 already published,
+          # 4 disabled. None of these are failures of this workflow.
+          case "$code" in
+            0) echo "Interpretation produced and persisted." ;;
+            2) echo "::warning::Interpretation produced but not persisted." ;;
+            3) echo "::warning::Interpretation already published for this week." ;;
+            4) echo "Interpretation disabled by INTERPRETATION_ENABLED." ;;
+            *) echo "::warning::Interpretation graph failed (exit $code). The report, GCS persistence, artifact and dashboard are unaffected." ;;
+          esac
+          exit 0
