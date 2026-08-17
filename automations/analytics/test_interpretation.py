@@ -515,7 +515,7 @@ def test_the_handoff_validates_and_carries_its_consumer_contract():
 
     assert mi.validate(handoff) == []
     assert handoff["schema_version"] == mi.SCHEMA_VERSION
-    assert handoff["kind"] == mi.KIND
+    assert handoff["kind"] == mi.document_kind()
     assert handoff["report_ref"]["json_key"]
     assert handoff["provenance"]["generated_from"].startswith("verified findings only")
     assert handoff["consumer_contract"]["never_reopen_readiness_gate"] is True
@@ -593,3 +593,115 @@ def test_the_budget_refuses_to_go_over():
     budget.spend("specialist")
     with pytest.raises(ig.BudgetExceeded):
         budget.spend("specialist")
+
+
+# --------------------------------------------------------------------------
+# Parameterised client slug (item 1)
+# --------------------------------------------------------------------------
+
+def test_the_document_kind_is_parameterised_and_defaults_to_molosoc():
+    import client_config
+    assert client_config.DEFAULT_CLIENT_SLUG == "molosoc"
+    assert mi.document_kind(env={}) == "molosoc.marketing_intelligence"
+    assert mi.document_kind(env={"CLIENT_SLUG": "acme"}) == "acme.marketing_intelligence"
+
+
+def test_a_second_client_gets_its_own_kind_end_to_end():
+    doc = document()
+    handoff = mi.build(doc, run(doc, scripted(FULL_FINDINGS)), client_slug="acme")
+    assert handoff["kind"] == "acme.marketing_intelligence"
+    assert mi.validate(handoff) == [], "a non-default slug must still validate"
+
+
+def test_a_malformed_slug_is_refused_rather_than_silently_used():
+    import client_config
+    for bad in ("Acme", "two words", "-lead", ""):
+        env = {"CLIENT_SLUG": bad}
+        if bad == "":
+            assert client_config.client_slug(env) == "molosoc"  # blank -> default
+            continue
+        with pytest.raises(client_config.ConfigError):
+            client_config.client_slug(env)
+
+
+def test_the_validator_rejects_a_kind_that_is_not_the_contract():
+    doc = document()
+    handoff = mi.build(doc, run(doc, scripted(FULL_FINDINGS)))
+    forged = copy.deepcopy(handoff)
+    forged["kind"] = "molosoc.weekly_marketing_analysis"
+    assert any("is not <client_slug>" in p for p in mi.validate(forged))
+
+
+def test_no_client_name_is_hardcoded_in_the_graph_layer():
+    import pathlib
+    for module in ("interpretation_graph.py", "interpretation_contracts.py",
+                   "marketing_intelligence.py", "interpretation_prompts.py"):
+        source = pathlib.Path(__file__).with_name(module).read_text(encoding="utf-8")
+        assert "molosoc" not in source.lower(), module
+
+
+# --------------------------------------------------------------------------
+# Specialist prompts (item 2)
+# --------------------------------------------------------------------------
+
+def test_every_node_has_a_prompt():
+    import interpretation_prompts as ip
+    assert set(ip.SPECIALIST_PROMPTS) == set(ig.SPECIALISTS)
+    assert set(ip.PROMPTS) == set(ig.SPECIALISTS) | {ig.NODE_VERIFIER, ig.NODE_SYNTHESIS}
+    assert all(p.strip() for p in ip.PROMPTS.values())
+
+
+def test_a_specialist_prompt_never_mentions_a_source_outside_its_slice():
+    """The prompt must not offer scope the input slice cannot support."""
+    import interpretation_prompts as ip
+    foreign = {
+        ig.NODE_TRAFFIC: ("search console", "clarity"),
+        ig.NODE_SEO: ("clarity", "ga4 purchase"),
+        ig.NODE_UX: ("search console", "ga4 sessions"),
+    }
+    for node, terms in foreign.items():
+        body = ip.SPECIALIST_PROMPTS[node].lower()
+        for term in terms:
+            # Naming a source it cannot see is only allowed as an explicit
+            # statement of absence.
+            for line in body.splitlines():
+                if term in line:
+                    assert ("do not have" in line or "cannot" in line
+                            or "not have" in line), f"{node}: {line!r}"
+
+
+def test_the_prompts_state_the_contract_they_are_validated_against():
+    import interpretation_prompts as ip
+    for node in ig.SPECIALISTS:
+        body = ip.SPECIALIST_PROMPTS[node]
+        assert "evidence_fact_ids" in body
+        assert "alternative_explanations" in body
+        assert ic.OBSERVATION in body and ic.JUDGMENT in body
+        assert "causal" in body.lower()
+        assert '"node": "' + node + '"' in body
+
+
+def test_the_prompts_do_not_ask_for_numbers_the_contract_forbids():
+    import interpretation_prompts as ip
+    for node, body in ip.SPECIALIST_PROMPTS.items():
+        low = body.lower()
+        assert "already been computed" in low or "already computed" in low, node
+        assert "do not compute" in low, node
+
+
+def test_the_verifier_prompt_offers_exactly_the_three_contract_verdicts():
+    import interpretation_prompts as ip
+    body = ip.VERIFIER
+    for verdict in ic.VERDICTS:
+        assert f'"{verdict}"' in body
+    assert "refute" in body.lower()
+
+
+def test_the_synthesis_prompt_honours_the_readiness_gate():
+    import interpretation_prompts as ip
+    body = " ".join(ip.SYNTHESIS.lower().split())
+    assert "recommendations_withheld" in body
+    assert "not yours to reopen" in body
+    assert "based_on_finding_ids" in ip.SYNTHESIS
+    # It must not be handed, or ask for, raw numbers.
+    assert "you are not given the underlying numbers" in body

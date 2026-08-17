@@ -31,12 +31,22 @@ Three properties a consumer can rely on:
 
 import datetime as dt
 
+import client_config
 import interpretation_contracts as ic
 import interpretation_graph as ig
 from analysis_model import READY
 
 SCHEMA_VERSION = "1.0.0"
-KIND = "molosoc.marketing_intelligence"
+
+#: The document kind is `<client_slug>.marketing_intelligence`. The suffix is
+#: the contract; the slug says whose. Resolved per call rather than frozen at
+#: import so a process serving two clients cannot leak one into the other's
+#: document.
+KIND_SUFFIX = "marketing_intelligence"
+
+
+def document_kind(slug=None, env=None):
+    return client_config.namespaced(KIND_SUFFIX, slug=slug, env=env)
 
 #: Which specialist covers which strategy domain. Used to say plainly which
 #: domains are uncovered when a node was skipped or failed.
@@ -87,7 +97,7 @@ def uncovered_domains(manifest):
     return out
 
 
-def build(document, graph_result, now=None):
+def build(document, graph_result, now=None, client_slug=None):
     """Assemble the handoff from a finished report and a completed graph run."""
     manifest = graph_result["manifest"]
     synthesis = graph_result.get("synthesis") or {}
@@ -117,7 +127,7 @@ def build(document, graph_result, now=None):
 
     return {
         "schema_version": SCHEMA_VERSION,
-        "kind": KIND,
+        "kind": document_kind(client_slug),
         "generated_at": (now or dt.datetime.now(dt.timezone.utc))
                         .replace(microsecond=0).isoformat(),
 
@@ -188,6 +198,9 @@ def validate(doc):
     problems = []
     if doc.get("schema_version") != SCHEMA_VERSION:
         problems.append("schema_version mismatch")
+    kind = doc.get("kind") or ""
+    if not kind.endswith("." + KIND_SUFFIX) or kind.startswith("."):
+        problems.append(f"kind {kind!r} is not <client_slug>.{KIND_SUFFIX}")
     for key in ("kind", "generated_at", "report_ref", "readiness",
                 "completeness", "verified_findings", "excluded_findings",
                 "themes", "priorities", "provenance"):
