@@ -1,0 +1,219 @@
+{
+  "schema_version": "1.0.0",
+  "kind": "molosoc.marketing_intelligence",
+  "generated_at": "2026-08-16T06:15:00+00:00",
+  "report_ref": {
+    "report_date": "2026-08-13",
+    "report_kind": "molosoc.weekly_marketing_analysis",
+    "report_schema_version": "1.0.0",
+    "json_key": "reports/weekly/data/2026/08/2026-08-13/report.json",
+    "period": {
+      "start": "2026-08-07",
+      "end": "2026-08-13"
+    },
+    "comparison_period": {
+      "start": "2026-07-31",
+      "end": "2026-08-06"
+    }
+  },
+  "readiness": {
+    "state": "ready",
+    "recommendations_withheld": false,
+    "note": "",
+    "meaning": "The analysis layer permitted recommendations."
+  },
+  "completeness": {
+    "status": "complete",
+    "sources_available": [
+      "clarity",
+      "ga4",
+      "gsc"
+    ],
+    "sources_missing": [],
+    "specialists_ran": [
+      "conversion",
+      "seo",
+      "traffic",
+      "ux"
+    ],
+    "specialists_skipped": [],
+    "specialists_failed": [],
+    "uncovered_domains": []
+  },
+  "verified_findings": [
+    {
+      "id": "t1",
+      "domain": "acquisition",
+      "node": "traffic",
+      "kind": "observation",
+      "statement": "Sessions moved from 1000 to 820 week over week.",
+      "confidence": "medium",
+      "severity": "medium",
+      "evidence_fact_ids": [
+        "f_ga4_sessions"
+      ],
+      "alternative_explanations": [],
+      "verification": {
+        "verdict": "not_required",
+        "reason": "observation backed by facts"
+      }
+    },
+    {
+      "id": "c1",
+      "domain": "conversion",
+      "node": "conversion",
+      "kind": "observation",
+      "statement": "Purchases moved from 20 to 12.",
+      "confidence": "medium",
+      "severity": "medium",
+      "evidence_fact_ids": [
+        "f_ga4_purchases"
+      ],
+      "alternative_explanations": [],
+      "verification": {
+        "verdict": "not_required",
+        "reason": "observation backed by facts"
+      }
+    },
+    {
+      "id": "u1",
+      "domain": "experience",
+      "node": "ux",
+      "kind": "judgment",
+      "statement": "Rage clicking is elevated relative to the prior week.",
+      "confidence": "low",
+      "severity": "high",
+      "evidence_fact_ids": [
+        "f_clarity_rage"
+      ],
+      "alternative_explanations": [
+        "seasonality"
+      ],
+      "verification": {
+        "verdict": "confirmed",
+        "reason": "independent check of u1",
+        "verifier_confidence": "medium"
+      }
+    },
+    {
+      "id": "t2",
+      "domain": "acquisition",
+      "node": "traffic",
+      "kind": "judgment",
+      "statement": "The session decline looks broad rather than page-specific.",
+      "confidence": "medium",
+      "severity": "high",
+      "evidence_fact_ids": [
+        "f_ga4_sessions"
+      ],
+      "alternative_explanations": [
+        "seasonality"
+      ],
+      "verification": {
+        "verdict": "confirmed",
+        "reason": "independent check of t2",
+        "verifier_confidence": "medium"
+      }
+    },
+    {
+      "id": "s1",
+      "domain": "search",
+      "node": "seo",
+      "kind": "judgment",
+      "statement": "Search demand held up while site sessions fell.",
+      "confidence": "high",
+      "severity": "medium",
+      "evidence_fact_ids": [
+        "f_gsc_clicks"
+      ],
+      "alternative_explanations": [
+        "seasonality"
+      ],
+      "verification": {
+        "verdict": "confirmed",
+        "reason": "independent check of s1",
+        "verifier_confidence": "medium"
+      }
+    }
+  ],
+  "excluded_findings": [],
+  "themes": [
+    {
+      "title": "Overall",
+      "narrative": "Movements observed.",
+      "based_on_finding_ids": [
+        "t1",
+        "c1",
+        "u1",
+        "t2",
+        "s1"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Is the Clarity window long enough yet?"
+  ],
+  "priorities": [
+    {
+      "finding_id": "t2",
+      "domain": "acquisition",
+      "severity": "high",
+      "confidence": "medium",
+      "statement": "The session decline looks broad rather than page-specific."
+    },
+    {
+      "finding_id": "u1",
+      "domain": "experience",
+      "severity": "high",
+      "confidence": "low",
+      "statement": "Rage clicking is elevated relative to the prior week."
+    },
+    {
+      "finding_id": "s1",
+      "domain": "search",
+      "severity": "medium",
+      "confidence": "high",
+      "statement": "Search demand held up while site sessions fell."
+    },
+    {
+      "finding_id": "c1",
+      "domain": "conversion",
+      "severity": "medium",
+      "confidence": "medium",
+      "statement": "Purchases moved from 20 to 12."
+    },
+    {
+      "finding_id": "t1",
+      "domain": "acquisition",
+      "severity": "medium",
+      "confidence": "medium",
+      "statement": "Sessions moved from 1000 to 820 week over week."
+    }
+  ],
+  "provenance": {
+    "manifest_id": "mf_a466ca697d5c",
+    "graph_version": "1.0.0",
+    "contract_version": "1.0.0",
+    "budget": {
+      "caps": {
+        "specialist": 4,
+        "verifier": 6,
+        "synthesis": 1
+      },
+      "calls_made": {
+        "specialist": 4,
+        "verifier": 3,
+        "synthesis": 1
+      },
+      "retries": {},
+      "total_calls": 8
+    },
+    "generated_from": "verified findings only; no raw API payloads"
+  },
+  "consumer_contract": {
+    "refuse_unknown_schema_version": true,
+    "never_treat_partial_as_complete": true,
+    "never_reopen_readiness_gate": true,
+    "excluded_findings_are_not_evidence": true
+  }
+}
