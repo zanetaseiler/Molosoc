@@ -64,7 +64,7 @@ def healthy():
 def test_the_page_renders_a_complete_html_document(healthy):
     page = dash.render_dashboard(healthy)
 
-    assert page.startswith("<!doctype html>")
+    assert page.startswith("<!DOCTYPE html>")
     assert page.rstrip().endswith("</html>")
     assert '<meta name="viewport"' in page
 
@@ -82,8 +82,8 @@ def test_the_page_is_self_contained(healthy):
 def test_every_required_section_is_present(healthy):
     page = dash.render_dashboard(healthy)
 
-    for heading in ("Executive summary", "Traffic — GA4", "Search Console — SEO",
-                    "Behaviour — Clarity", "Ecommerce and conversions",
+    for heading in ("Weekly Analytics", "Traffic", "Search",
+                    "Behaviour", "Ecommerce and conversions",
                     "Recommendations", "Readiness and data quality"):
         assert heading in page, heading
 
@@ -131,7 +131,7 @@ def test_the_page_renders_only_recommendations_the_engine_produced(healthy):
     for rec in healthy["recommendations"]:
         assert rec["action"][:40] in page
     # Count the rendered cards; the view must not invent an extra one.
-    assert page.count('class="ms-rec ') == len(healthy["recommendations"])
+    assert page.count('class="td-priority ') == len(healthy["recommendations"])
 
 
 def test_the_view_cannot_promote_a_monitor_recommendation(low_volume):
@@ -204,7 +204,7 @@ def test_data_quality_and_coverage_reach_the_page(healthy):
 
 def test_the_readiness_state_is_shown_as_a_badge(low_volume):
     page = dash.render_dashboard(low_volume)
-    assert "ms-badge--warn" in page
+    assert "More data needed" in page
     assert "insufficient data" in page
 
 
@@ -230,7 +230,7 @@ def test_no_trend_section_until_there_is_a_shape_to_see(healthy):
 
 def test_the_trend_section_appears_once_enough_weeks_exist(healthy):
     page = dash.render_dashboard(healthy, index=_index_with(6))
-    assert 'id="trends"' in page
+    assert 'id="trends"' in page and "td-sparkline" in page
     assert "<svg" in page and "polyline" in page
     assert "6 weekly reports" in page
 
@@ -242,7 +242,7 @@ def test_the_trend_section_appears_once_enough_weeks_exist(healthy):
 def test_the_cli_writes_a_file_from_a_fixture(tmp_path):
     out = tmp_path / "index.html"
     assert dash.main(["--fixture", "low_volume", "--out", str(out)]) == 0
-    assert out.read_text(encoding="utf-8").startswith("<!doctype html>")
+    assert out.read_text(encoding="utf-8").startswith("<!DOCTYPE html>")
 
 
 def test_the_cli_renders_a_stored_report_document(tmp_path, healthy):
@@ -253,7 +253,7 @@ def test_the_cli_renders_a_stored_report_document(tmp_path, healthy):
     out = tmp_path / "index.html"
 
     assert dash.main(["--report", str(report_path), "--out", str(out)]) == 0
-    assert "Executive summary" in out.read_text(encoding="utf-8")
+    assert "Weekly Analytics" in out.read_text(encoding="utf-8")
 
 
 def test_a_missing_index_costs_the_trend_strip_not_the_page(tmp_path):
@@ -261,7 +261,7 @@ def test_a_missing_index_costs_the_trend_strip_not_the_page(tmp_path):
     code = dash.main(["--fixture", "healthy", "--out", str(out),
                       "--index", str(tmp_path / "nope.json")])
     assert code == 0
-    assert "Executive summary" in out.read_text(encoding="utf-8")
+    assert "Weekly Analytics" in out.read_text(encoding="utf-8")
 
 
 def test_rendering_is_deterministic(healthy):
