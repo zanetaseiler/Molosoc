@@ -122,6 +122,12 @@ jobs:
           print(f"  of those, used in the page:    {len(visible)}")
           print(f"  opaque tokens the reader sees: "
                 f"{len(set(opaque.findall(reading_path)))}   (want 0)")
+          # Told apart deliberately: zero labels used means one of two very
+          # different things. Either the analysis named no measurement in its
+          # prose — nothing to relabel — or it did and the relabelling missed.
+          # This line is what separates them.
+          print(f"  references the reader sees:    "
+                f"{len(set(reference.findall(reading_path)))}   (want 0)")
           print(f"  references kept in the drawer: "
                 f"{len(set(reference.findall(drawer)))}   (want > 0)")
           PY
