@@ -80,6 +80,16 @@ DEFAULT_BASE_PATH = "/public_html/Trafficdom.com/reports"
 #: The single sub-directory this script may write to, under the base path.
 PROJECT_DIR = "molosoc"
 
+#: Sub-sections of that directory this script may write to, one level deeper.
+#: A FIXED SET, never free text: `--section` is an argparse choice, so an
+#: unknown value is rejected by the parser before any path exists. Adding one is
+#: a visible edit here, and each entry is a directory somebody has to create.
+#:
+#: The Growth report lives in `molosoc/growth/`. It is published by this same
+#: script, over the same connection, with the same guards — deliberately, rather
+#: than by a second publisher that would have to re-earn all of them.
+ALLOWED_SECTIONS = ("growth",)
+
 #: Where that directory is served from. Used only to verify the deployment.
 PUBLIC_URL = "https://trafficdom.com/reports/molosoc/"
 
@@ -98,43 +108,77 @@ class PublishError(RuntimeError):
     pass
 
 
+def public_url(section=None):
+    """The address the destination is served from. Derived, like the path."""
+    if section is None:
+        return PUBLIC_URL
+    expected_tail(section)  # refuses an unknown section before building a URL
+    return f"{PUBLIC_URL}{section}/"
+
+
 # --------------------------------------------------------------------------
 # Destination — derived, never free text
 # --------------------------------------------------------------------------
 
-def check_remote_dir(target, base):
+def expected_tail(section=None):
+    """The segments a resolved path must end with. One place, three callers."""
+    if section is None:
+        return (PROJECT_DIR,)
+    if section not in ALLOWED_SECTIONS:
+        raise PublishError(
+            f"unknown section {section!r}; expected one of "
+            f"{', '.join(ALLOWED_SECTIONS)}. Sections are a fixed set, not a "
+            "path fragment."
+        )
+    return (PROJECT_DIR, section)
+
+
+def check_remote_dir(target, base, section=None):
     """Every rule a path must satisfy before it may be written to.
 
     Kept separate from how the path was produced, so that a path derived a
     second way — see `home_relative` — has to clear exactly the same bar
     rather than a weaker one.
+
+    `section` deepens the destination by exactly one fixed segment. The tail
+    check is what makes that safe: with a section, a path ending in `molosoc`
+    is refused just as firmly as one ending anywhere else, so a run asked for
+    `growth` can never land on the Analytics report one level up.
     """
     segments = [s for s in target.split("/") if s]
+    tail = expected_tail(section)
     if any(s in ("..", ".") for s in segments):
         raise PublishError(f"refusing a remote path with relative segments: {target!r}")
     for forbidden in FORBIDDEN_SEGMENTS:
         if forbidden in segments:
             raise PublishError(
                 f"refusing a remote path inside a WordPress directory: {target!r}")
-    if segments[-1] != PROJECT_DIR:
-        raise PublishError(f"resolved path does not end in {PROJECT_DIR!r}: {target!r}")
+    if tuple(segments[-len(tail):]) != tail:
+        raise PublishError(
+            f"resolved path does not end in {'/'.join(tail)!r}: {target!r}")
     if not target.startswith(base + "/"):
         raise PublishError(f"resolved path escapes {base!r}: {target!r}")
 
     return target
 
 
-def resolve_remote_dir(base_path):
-    """`${REPORTS_BASE_PATH}/molosoc`, or refuse to produce a path at all."""
+def resolve_remote_dir(base_path, section=None):
+    """`${REPORTS_BASE_PATH}/molosoc[/<section>]`, or refuse to produce a path.
+
+    The section is appended, never substituted: the Analytics report's own
+    directory remains the parent of every sectioned path, and no argument can
+    replace `molosoc` with something else.
+    """
     base = (base_path or "").strip() or DEFAULT_BASE_PATH
     if not base.startswith("/"):
         raise PublishError(f"{BASE_PATH_ENV} must be an absolute path; got {base!r}.")
 
     base = base.rstrip("/")
-    return check_remote_dir(f"{base}/{PROJECT_DIR}", base)
+    target = "/".join((base,) + expected_tail(section))
+    return check_remote_dir(target, base, section)
 
 
-def home_relative(remote_dir, home):
+def home_relative(remote_dir, home, section=None):
     """The same derived path, read from inside the account's home directory.
 
     FTP and SSH disagree about what `/public_html/...` means on cPanel. FTP
@@ -152,10 +196,10 @@ def home_relative(remote_dir, home):
         return None
     if remote_dir.startswith(home + "/"):
         return None  # already inside the home directory; nothing to add
-    return check_remote_dir(home + remote_dir, home)
+    return check_remote_dir(home + remote_dir, home, section)
 
 
-def load_settings(env=None):
+def load_settings(env=None, section=None):
     env = os.environ if env is None else env
 
     user = (env.get(USER_ENV) or env.get(FALLBACK_USER_ENV) or "").strip()
@@ -176,7 +220,8 @@ def load_settings(env=None):
         "user": user,
         "key": key_material,
         "host_key": (env.get(HOST_KEY_ENV) or "").strip(),
-        "remote_dir": resolve_remote_dir(env.get(BASE_PATH_ENV)),
+        "remote_dir": resolve_remote_dir(env.get(BASE_PATH_ENV), section),
+        "section": section,
         "user_source": USER_ENV if (env.get(USER_ENV) or "").strip()
                        else FALLBACK_USER_ENV,
         "host_source": HOST_ENV if (env.get(HOST_ENV) or "").strip()
@@ -282,12 +327,16 @@ def connect(settings, port=SSH_PORT, out=None):
 # The upload
 # --------------------------------------------------------------------------
 
-def enter_remote_dir(sftp, remote_dir, create=True, home=None):
+def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None):
     """Change into the target directory, creating only its last segment.
 
     The base path must already exist. Building a missing tree is how a typo in
     the base path silently becomes a new folder in someone's web root — so a
     base that cannot be entered is an error, never something to create.
+
+    With a section, "the base" is `.../molosoc`, which therefore has to exist
+    already, and the one segment that may be created is `growth`. The rule is
+    unchanged; it simply applies one level deeper.
 
     `home` allows the one alternative reading of the base path: the same
     folder addressed from inside the account's home directory, which is how
@@ -297,7 +346,7 @@ def enter_remote_dir(sftp, remote_dir, create=True, home=None):
     base, _, leaf = remote_dir.rpartition("/")
 
     candidates = [base]
-    rebased = home_relative(remote_dir, home)
+    rebased = home_relative(remote_dir, home, section)
     if rebased is not None:
         candidates.append(rebased.rpartition("/")[0])
 
@@ -330,21 +379,27 @@ def enter_remote_dir(sftp, remote_dir, create=True, home=None):
     return sftp.getcwd()
 
 
-def verify_location(sftp, remote_dir):
+def verify_location(sftp, remote_dir, section=None):
     """Compare the SERVER's working directory with the one we mean to write to.
 
     A chroot, a symlink or a home-relative base path can each make a
     locally-correct path land somewhere else; only asking the server reveals
     it. Returns the server's path on success and raises otherwise.
+
+    The tail is the whole point when a section is in play: publishing the
+    Growth report must fail rather than succeed if the server has put us in
+    `molosoc` instead of `molosoc/growth`, because that directory holds the
+    live Analytics report.
     """
     actual = (sftp.getcwd() or "").rstrip("/") or "/"
     expected = remote_dir.rstrip("/")
+    tail = "/" + "/".join(expected_tail(section))
 
     # A chrooted account reports a path relative to its own root, so accept a
-    # suffix match — but require the project directory to be the final segment
+    # suffix match — but require the derived tail to be the final segment(s)
     # either way, which is the part that must never be wrong.
-    if actual == expected or (actual.endswith("/" + PROJECT_DIR)
-                              and expected.endswith("/" + PROJECT_DIR)
+    if actual == expected or (actual.endswith(tail)
+                              and expected.endswith(tail)
                               and (expected.endswith(actual)
                                    or actual.endswith(expected))):
         return actual
@@ -461,6 +516,12 @@ def parse_args(argv=None):
     parser.add_argument("--dry-run", action="store_true",
                         help="Resolve and print the destination without connecting")
     parser.add_argument("--port", type=int, default=SSH_PORT)
+    parser.add_argument("--section", choices=ALLOWED_SECTIONS, default=None,
+                        help="Publish one level deeper, into this fixed "
+                             "sub-directory of the report folder (e.g. "
+                             "'growth'). Omit for the Analytics dashboard "
+                             "itself. Not a path: unknown values are rejected "
+                             "by the parser.")
     return parser.parse_args(argv)
 
 
@@ -468,7 +529,7 @@ def main(argv=None):
     args = parse_args(argv)
 
     try:
-        settings = load_settings()
+        settings = load_settings(section=args.section)
     except PublishError as exc:
         print(f"FAIL {exc}", file=sys.stderr)
         return 1
@@ -479,7 +540,8 @@ def main(argv=None):
     print(f"User from:                 {settings['user_source']}")
     print(f"Resolved remote directory: {remote_dir}")
     print(f"Remote file:               {remote_dir}/{REMOTE_FILENAME}")
-    print(f"Public URL:                {PUBLIC_URL}")
+    print(f"Section:                   {args.section or '(none — the dashboard)'}")
+    print(f"Public URL:                {public_url(args.section)}")
 
     if args.dry_run:
         print("\nDry run — nothing was uploaded and no connection was made.")
@@ -505,10 +567,11 @@ def main(argv=None):
         if home:
             print(f"Session home:              {home}")
 
-        entered = enter_remote_dir(sftp, remote_dir, home=home)
+        entered = enter_remote_dir(sftp, remote_dir, home=home,
+                                   section=args.section)
         print(f"Entered: {entered}")
 
-        confirmed = verify_location(sftp, remote_dir)
+        confirmed = verify_location(sftp, remote_dir, args.section)
         print(f"PASS remote directory verified: {confirmed}")
 
         sent = upload(sftp, args.file)
