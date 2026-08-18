@@ -194,7 +194,10 @@ jobs:
             echo "::error::$url returned HTTP $code"
             exit 1
           fi
-          if ! grep -q "Weekly marketing analysis" /tmp/live.html; then
+          # Case-insensitive: the page's own title is "Weekly Marketing
+          # Analysis" in title case since the TrafficDom redesign. The check is
+          # unchanged in what it verifies — that the live page is this report.
+          if ! grep -qi "weekly marketing analysis" /tmp/live.html; then
             echo "::error::$url served a page, but not the dashboard"
             head -c 400 /tmp/live.html
             exit 1
