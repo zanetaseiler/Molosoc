@@ -1,0 +1,135 @@
+name: Diagnose report serving (read-only)
+
+# Why the browser sees a different page from the one on the server.
+#
+# READ-ONLY. It uploads nothing, deletes nothing, renames nothing and changes no
+# configuration. Every operation is a read: an SFTP listing, one file fetched
+# back, and a handful of HTTP GETs. It exists because the question — "is the
+# right file on disk, and is that the file being served?" — cannot be answered
+# from a laptop or from the publisher's own logs.
+#
+# MANUAL ONLY, and deliberately separate from the publisher: a diagnostic that
+# lives inside the thing it diagnoses can only tell you what that thing thinks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      section:
+        description: "Which report to inspect"
+        required: true
+        default: analytics
+        type: choice
+        options:
+          - analytics
+          - growth
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve what we are inspecting
+        env:
+          SECTION: ${{ inputs.section }}
+        run: |
+          set -eu
+          if [ "$SECTION" = "growth" ]; then
+            echo "REMOTE_DIR=/public_html/Trafficdom.com/reports/molosoc/growth" >> "$GITHUB_ENV"
+            echo "PUBLIC_URL=https://trafficdom.com/reports/molosoc/growth/" >> "$GITHUB_ENV"
+          else
+            echo "REMOTE_DIR=/public_html/Trafficdom.com/reports/molosoc" >> "$GITHUB_ENV"
+            echo "PUBLIC_URL=https://trafficdom.com/reports/molosoc/" >> "$GITHUB_ENV"
+          fi
+
+      - name: What is actually on the server
+        env:
+          SFTP_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          SFTP_USER: ${{ secrets.REPORTS_SSH_USER }}
+          SFTP_FALLBACK_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+        run: |
+          # A listing and one download. No put, no rm, no rename, no mkdir.
+          set -eu
+          umask 077
+          KEY="$RUNNER_TEMP/key"; printf '%s\n' "$SSH_KEY" > "$KEY"; chmod 600 "$KEY"
+          HOST="${SFTP_HOST:-p3plmcpnl502709.prod.phx3.secureserver.net}"
+          USER="${SFTP_USER:-$SFTP_FALLBACK_USER}"
+
+          cat > "$RUNNER_TEMP/batch" <<EOF
+          ls -la $REMOTE_DIR
+          get $REMOTE_DIR/index.html $RUNNER_TEMP/on-disk.html
+          bye
+          EOF
+
+          echo "--- directory listing and fetch (read-only) ---"
+          sftp -b "$RUNNER_TEMP/batch" \
+               -o StrictHostKeyChecking=no \
+               -o UserKnownHostsFile=/dev/null \
+               -o IdentitiesOnly=yes -o BatchMode=yes \
+               -i "$KEY" "$USER@$HOST" 2>&1 | grep -v "Warning: Permanently added" || true
+          shred -u "$KEY" 2>/dev/null || rm -f "$KEY"
+
+          echo
+          echo "--- the file on disk ---"
+          ls -l "$RUNNER_TEMP/on-disk.html" | awk '{print "bytes:", $5}'
+          echo "sha256: $(sha256sum "$RUNNER_TEMP/on-disk.html" | cut -d' ' -f1)"
+          echo "design markers present:"
+          for marker in td-wrap td-conclusion td-metrics td-technical ms-metric ms-section; do
+            printf '  %-16s %s\n' "$marker" "$(grep -c "$marker" "$RUNNER_TEMP/on-disk.html" || true)"
+          done
+          echo "title: $(grep -o '<title>[^<]*</title>' "$RUNNER_TEMP/on-disk.html" | head -1)"
+
+      - name: What the public URL actually serves
+        run: |
+          set -eu
+          echo "--- response headers ---"
+          curl -sSI --max-time 30 "$PUBLIC_URL" | sed 's/^/  /' || true
+
+          echo
+          echo "--- plain GET ---"
+          code=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/served.html" \
+                      -w "%{http_code}" "$PUBLIC_URL" || echo 000)
+          echo "  HTTP $code, $(wc -c < "$RUNNER_TEMP/served.html" 2>/dev/null || echo 0) bytes"
+
+          echo
+          echo "--- cache-busted GET (?v=$GITHUB_RUN_ID) ---"
+          busted=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/busted.html" \
+                        -w "%{http_code}" "${PUBLIC_URL}?v=$GITHUB_RUN_ID" || echo 000)
+          echo "  HTTP $busted, $(wc -c < "$RUNNER_TEMP/busted.html" 2>/dev/null || echo 0) bytes"
+
+          echo
+          echo "--- explicit index.html rather than the directory ---"
+          direct=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/direct.html" \
+                        -w "%{http_code}" "${PUBLIC_URL}index.html" || echo 000)
+          echo "  HTTP $direct, $(wc -c < "$RUNNER_TEMP/direct.html" 2>/dev/null || echo 0) bytes"
+
+          echo
+          echo "--- with a browser user agent ---"
+          ua=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/ua.html" -w "%{http_code}" \
+                    -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36" \
+                    "$PUBLIC_URL" || echo 000)
+          echo "  HTTP $ua, $(wc -c < "$RUNNER_TEMP/ua.html" 2>/dev/null || echo 0) bytes"
+
+          for name in served busted direct ua; do
+            file="$RUNNER_TEMP/$name.html"
+            [ -s "$file" ] || continue
+            echo
+            echo "--- $name ---"
+            echo "  sha256:  $(sha256sum "$file" | cut -d' ' -f1)"
+            echo "  matches on-disk file: $(cmp -s "$file" "$RUNNER_TEMP/on-disk.html" && echo YES || echo NO)"
+            echo "  new design (td-wrap): $(grep -c 'td-wrap' "$file" || true)"
+            echo "  old design (ms-metric): $(grep -c 'ms-metric' "$file" || true)"
+            echo "  title: $(grep -o '<title>[^<]*</title>' "$file" | head -1)"
+          done
+
+      - name: Say what this proves
+        if: always()
+        run: |
+          echo "Read-only throughout: one SFTP listing, one file fetched back,"
+          echo "four HTTP GETs. Nothing was uploaded, deleted, renamed or changed."
