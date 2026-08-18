@@ -39,11 +39,16 @@ jobs:
           SECTION: ${{ inputs.section }}
         run: |
           set -eu
+          # RELATIVE to the account home. SFTP lands in /home/<user>, where the
+          # publisher's own base path is an absolute path that does not exist —
+          # which is exactly why publish_dashboard.py carries a home-relative
+          # fallback. This diagnostic takes the shorter route and asks for the
+          # path the session is already standing in.
           if [ "$SECTION" = "growth" ]; then
-            echo "REMOTE_DIR=/public_html/Trafficdom.com/reports/molosoc/growth" >> "$GITHUB_ENV"
+            echo "REMOTE_DIR=public_html/Trafficdom.com/reports/molosoc/growth" >> "$GITHUB_ENV"
             echo "PUBLIC_URL=https://trafficdom.com/reports/molosoc/growth/" >> "$GITHUB_ENV"
           else
-            echo "REMOTE_DIR=/public_html/Trafficdom.com/reports/molosoc" >> "$GITHUB_ENV"
+            echo "REMOTE_DIR=public_html/Trafficdom.com/reports/molosoc" >> "$GITHUB_ENV"
             echo "PUBLIC_URL=https://trafficdom.com/reports/molosoc/" >> "$GITHUB_ENV"
           fi
 
@@ -61,6 +66,8 @@ jobs:
           HOST="${SFTP_HOST:-p3plmcpnl502709.prod.phx3.secureserver.net}"
           USER="${SFTP_USER:-$SFTP_FALLBACK_USER}"
 
+          # The listing shows size, mtime and any variant that might be served
+          # instead — index.htm, Index.html, index.php, a stale .html.
           cat > "$RUNNER_TEMP/batch" <<EOF
           ls -la $REMOTE_DIR
           get $REMOTE_DIR/index.html $RUNNER_TEMP/on-disk.html
