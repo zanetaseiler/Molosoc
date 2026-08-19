@@ -157,6 +157,12 @@ function molosoc_enqueue_assets() {
 	// living in one of the per-page branches below.
 	wp_enqueue_script( 'molosoc-nav-toggle', $theme_uri . '/assets/js/nav-toggle.js', array(), $theme_version, true );
 
+	// Header cart badge ↔ block cart sync (see the file's header comment).
+	// Unconditional like nav-toggle: it self-noops on pages without the
+	// wc/store/cart data store, and gating it on is_cart()/is_checkout()
+	// would miss any future page embedding a cart/checkout block.
+	wp_enqueue_script( 'molosoc-cart-badge-sync', $theme_uri . '/assets/js/cart-badge-sync.js', array(), $theme_version, true );
+
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
