@@ -75,6 +75,8 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 		'container_class'  => 'molosoc-home-header__nav',
 		'fallback_cb'      => false,
 	) );
+
+	molosoc_cart_link();
 	?>
 </header>
 

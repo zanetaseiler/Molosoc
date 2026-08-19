@@ -169,6 +169,14 @@
    it). Translucent white + backdrop blur so the hero photo still reads
    through the pills. */
 @media (min-width: 761px) {
+  /* Same reasoning as .molosoc-site-header__nav in components.css: with
+     the cart link as a third in-flow header child, space-between would
+     strand the nav mid-header — the auto margin keeps nav + cart pinned
+     right together instead. */
+  .molosoc-home-header__nav {
+    margin-left: auto;
+  }
+
   .molosoc-home-header__nav > ul {
     align-items: center;
   }
@@ -1182,6 +1190,17 @@
      Bumped to match the sitewide 30px standard. */
   .molosoc-home-header__logo img {
     height: 30px;
+  }
+
+  /* Cart-link accommodation, mirroring .molosoc-site-header__logo's
+     rule in components.css: on the very narrowest phones the 30px
+     wordmark + cart pill + hamburger overflow the row, so the logo
+     alone steps down a size. Lives here (not components.css) because
+     this file loads later and the 30px rule above would otherwise win. */
+  @media (max-width: 380px) {
+    .molosoc-home-header__logo img {
+      height: 24px;
+    }
   }
 
   /* No object-position was set at all (defaults to center center), so

@@ -1992,3 +1992,52 @@ function molosoc_dequeue_unused_homepage_assets() {
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_dequeue_unused_homepage_assets', 100 );
+
+/**
+ * Header cart link — rendered by both header.php and front-page.php as a
+ * direct child of the header row, after the nav (so it stays visible on
+ * mobile instead of collapsing into the hamburger panel). Styled in
+ * components.css (.molosoc-cart-link).
+ *
+ * Everything WooCommerce-facing is canonical: wc_get_cart_url() for the
+ * destination (survives a cart-page slug change), get_cart_contents_count()
+ * for the badge, and the count <span> registered as a cart fragment below
+ * so any add-to-cart AJAX (and the fragments script's sessionStorage replay
+ * on page-cached loads) keeps it fresh. No custom cart logic anywhere.
+ */
+
+/**
+ * The count badge on its own — shared between the initial render and the
+ * cart-fragment refresh so both always emit identical markup. Deliberately
+ * renders an EMPTY span (not "0") when the cart is empty: the CSS shows/
+ * hides the badge purely via :empty. Only the count lives in the fragment
+ * (not the whole link) so the AJAX-refreshed markup never has to know the
+ * page language — the aria-label on the link itself is untouched.
+ */
+function molosoc_cart_count_html() {
+	$count = ( function_exists( 'WC' ) && WC()->cart instanceof WC_Cart )
+		? WC()->cart->get_cart_contents_count()
+		: 0;
+	return '<span class="molosoc-cart-link__count" aria-hidden="true">' . ( $count > 0 ? (int) $count : '' ) . '</span>';
+}
+
+function molosoc_cart_link() {
+	if ( ! function_exists( 'wc_get_cart_url' ) ) {
+		return; // WooCommerce inactive — no cart to link to.
+	}
+
+	// Same hardcoded-Czech-gated-on-Polylang pattern the templates use.
+	$molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
+	$label         = $molosoc_is_cz ? 'Zobrazit košík' : __( 'View cart', 'molosoc' );
+	?>
+	<a class="molosoc-cart-link" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 8.5h13.2l1 11a1.9 1.9 0 0 1-1.9 2.1H6.3a1.9 1.9 0 0 1-1.9-2.1Z"/><path d="M9 11V6.8A3 3 0 0 1 12 4a3 3 0 0 1 3 2.8V11"/></svg><?php echo molosoc_cart_count_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- builds its own escaped markup. ?>
+	</a>
+	<?php
+}
+
+function molosoc_cart_link_fragment( $fragments ) {
+	$fragments['span.molosoc-cart-link__count'] = molosoc_cart_count_html();
+	return $fragments;
+}
+add_filter( 'woocommerce_add_to_cart_fragments', 'molosoc_cart_link_fragment' );

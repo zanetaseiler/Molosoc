@@ -654,6 +654,117 @@
   }
 }
 
+/* ---------- Header cart link ----------
+   Shared between .molosoc-site-header (header.php) and .molosoc-home-header
+   (front-page.php) — both render it via molosoc_cart_link() in functions.php
+   as a direct header child AFTER the nav, so it never collapses into the
+   mobile hamburger panel. One deliberate colorway everywhere (warm off-white
+   pill, charcoal ink icon) rather than mirroring the home header's
+   glass-over-photo state: the cart is a utility control that has to stay
+   equally legible over the hero photo, beige sections and white sections,
+   and the opaque chip matches the language switcher's active-language pill. */
+.molosoc-cart-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.625rem;
+  height: 2.625rem;
+  border: 1px solid rgba(36, 29, 23, 0.28);
+  border-radius: 999px;
+  background: rgba(252, 251, 248, 0.92);
+  color: var(--color-ink-warm);
+  transition: background-color 250ms ease, border-color 250ms ease;
+}
+
+.molosoc-cart-link svg {
+  display: block;
+}
+
+.molosoc-cart-link:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(36, 29, 23, 0.4);
+  color: var(--color-ink-warm);
+}
+
+/* Count badge — server-rendered by molosoc_cart_count_html() and kept
+   fresh by the same markup being registered as a WooCommerce cart
+   fragment. Rendered empty (not "0") when the cart is empty, so :empty
+   is the whole show/hide mechanism. */
+.molosoc-cart-link__count {
+  position: absolute;
+  top: -0.3125rem;
+  right: -0.3125rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-cta-bg);
+  color: var(--color-cta-text);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.molosoc-cart-link__count:empty {
+  display: none;
+}
+
+@media (min-width: 761px) {
+  /* The header is justify-content: space-between; with the cart as a
+     third in-flow child that would strand the nav in the middle. The
+     auto margin absorbs the free space instead, keeping nav + cart
+     hugging the right edge together, cart just right of the language
+     switcher. (.molosoc-home-header__nav gets the same treatment in
+     homepage.css.) */
+  .molosoc-site-header__nav {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  /* Compact pill sized to the 2.25rem hamburger so the header row
+     doesn't grow, pushed right against the toggle (nav itself is
+     absolute/out of flow here, so flex order only has to sort
+     logo | cart | toggle). */
+  .molosoc-cart-link {
+    width: 2.25rem;
+    height: 2.25rem;
+    margin-left: auto;
+  }
+
+  .molosoc-nav-toggle {
+    order: 1;
+  }
+
+  /* The 2rem desktop gap between header children is only a minimum on
+     mobile (space-between/auto margins do the real spreading), but with
+     the ~204px wordmark + cart + hamburger it's exactly what pushes the
+     row past a 375px viewport. Tightened only below the hamburger
+     breakpoint; .molosoc-home-header gets the same value here because
+     the cart sizing above is shared too. */
+  .molosoc-site-header,
+  .molosoc-home-header {
+    gap: var(--space-xs);
+  }
+}
+
+/* Wordmark + cart + hamburger only overflows on the very narrowest
+   phones (≤~350px viewport); a slightly smaller logo there keeps all
+   three on one row. (.molosoc-home-header__logo has its own copy of
+   this rule in homepage.css — it must live there to out-cascade the
+   30px mobile height homepage.css sets, since that file loads after
+   this one.) */
+@media (max-width: 380px) {
+  .molosoc-site-header__logo img {
+    height: 24px;
+  }
+}
+
 /* ---------- Site footer (every template except front-page.php) ---------- */
 
 .molosoc-site-footer {

@@ -38,5 +38,7 @@ defined( 'ABSPATH' ) || exit;
 		'container_class' => 'molosoc-site-header__nav',
 		'fallback_cb'     => false,
 	) );
+
+	molosoc_cart_link();
 	?>
 </header>
