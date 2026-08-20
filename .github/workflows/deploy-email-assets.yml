@@ -78,19 +78,11 @@ jobs:
           # internal certificate, which cannot be verified against the site
           # hostname. Same host, same credentials, same protocol as
           # production.yml -- only the target directory differs.
-          lftp -u "$FTPUSER,$FTPPASS" -e "
-            set ftp:ssl-force true;
-            set ssl:verify-certificate no;
-            mkdir -p /wp-content/uploads/email;
-            cd /wp-content/uploads/email;
-            put -O . out/molosoc-logo.png;
-            put -O . out/molosoc-founders.jpg;
-            put -O . out/molosoc-product-hero-beige.jpg;
-            put -O . out/molosoc-product-cream.jpg;
-            put -O . out/molosoc-product-cotton.jpg;
-            put -O . out/molosoc-product-brush.jpg;
-            cls -l .;
-            bye" "$HOST"
+          # One line: lftp -e takes a single command line. A multi-line
+          # string makes it swallow the trailing host argument, so nothing
+          # ever connects. This matches the working form already used by
+          # staging-ftp-diagnose.yml in this repo.
+          lftp -u "$FTPUSER,$FTPPASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; mkdir -pf /wp-content/uploads/email; cd /wp-content/uploads/email; put out/molosoc-logo.png -o molosoc-logo.png; put out/molosoc-founders.jpg -o molosoc-founders.jpg; put out/molosoc-product-hero-beige.jpg -o molosoc-product-hero-beige.jpg; put out/molosoc-product-cream.jpg -o molosoc-product-cream.jpg; put out/molosoc-product-cotton.jpg -o molosoc-product-cotton.jpg; put out/molosoc-product-brush.jpg -o molosoc-product-brush.jpg; cls -l .; bye" "$HOST"
 
       - name: Verify the six public URLs
         run: |
