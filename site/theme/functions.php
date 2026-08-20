@@ -142,7 +142,7 @@ function molosoc_enqueue_assets() {
 
 	wp_enqueue_style(
 		'molosoc-fonts',
-		'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Mulish:wght@400;600;700&family=Nunito:wght@400;600;700&display=swap',
+		'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Mulish:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap',
 		array(),
 		null
 	);
@@ -162,6 +162,11 @@ function molosoc_enqueue_assets() {
 	// wc/store/cart data store, and gating it on is_cart()/is_checkout()
 	// would miss any future page embedding a cart/checkout block.
 	wp_enqueue_script( 'molosoc-cart-badge-sync', $theme_uri . '/assets/js/cart-badge-sync.js', array(), $theme_version, true );
+
+	// Floating back-to-top button (see the file's header comment for why
+	// it jumps instantly instead of smooth-scrolling back through the
+	// scroll animations). Unconditional: every page benefits.
+	wp_enqueue_script( 'molosoc-back-to-top', $theme_uri . '/assets/js/back-to-top.js', array(), $theme_version, true );
 
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
@@ -2037,7 +2042,7 @@ function molosoc_cart_link() {
 	$label         = $molosoc_is_cz ? 'Zobrazit košík' : __( 'View cart', 'molosoc' );
 	?>
 	<a class="molosoc-cart-link" href="<?php echo esc_url( wc_get_cart_url() ); ?>" aria-label="<?php echo esc_attr( $label ); ?>">
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 8.5h13.2l1 11a1.9 1.9 0 0 1-1.9 2.1H6.3a1.9 1.9 0 0 1-1.9-2.1Z"/><path d="M9 11V6.8A3 3 0 0 1 12 4a3 3 0 0 1 3 2.8V11"/></svg><?php echo molosoc_cart_count_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- builds its own escaped markup. ?>
+		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5.4 8.5h13.2l1 11a1.9 1.9 0 0 1-1.9 2.1H6.3a1.9 1.9 0 0 1-1.9-2.1Z"/><path d="M9 11V6.8A3 3 0 0 1 12 4a3 3 0 0 1 3 2.8V11"/></svg><?php echo molosoc_cart_count_html(); // phpcs:ignore WordPress.Security.EscapeOutput -- builds its own escaped markup. ?>
 	</a>
 	<?php
 }

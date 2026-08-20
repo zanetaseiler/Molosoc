@@ -445,7 +445,8 @@
   .molosoc-site-header__nav > ul > li > a {
     display: inline-flex;
     align-items: center;
-    font-size: 0.9375rem;
+    font-size: 1rem;
+    font-weight: 500;
     letter-spacing: 0.02em;
   }
 
@@ -493,6 +494,8 @@
      border and full radius that the base joined-chip rules remove. */
   .molosoc-site-header__nav .lang-item a {
     padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     border: 1px solid rgba(36, 29, 23, 0.28);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.75);
@@ -671,9 +674,9 @@
   flex-shrink: 0;
   width: 2.625rem;
   height: 2.625rem;
-  border: 1px solid rgba(36, 29, 23, 0.28);
+  border: 1px solid rgba(36, 29, 23, 0.38);
   border-radius: 999px;
-  background: rgba(252, 251, 248, 0.92);
+  background: rgba(252, 251, 248, 0.96);
   color: var(--color-ink-warm);
   transition: background-color 250ms ease, border-color 250ms ease;
 }
@@ -684,7 +687,7 @@
 
 .molosoc-cart-link:hover {
   background: rgba(255, 255, 255, 0.98);
-  border-color: rgba(36, 29, 23, 0.4);
+  border-color: rgba(36, 29, 23, 0.5);
   color: var(--color-ink-warm);
 }
 
@@ -712,6 +715,69 @@
 
 .molosoc-cart-link__count:empty {
   display: none;
+}
+
+/* ---------- Back-to-top button ----------
+   Injected on every page by assets/js/back-to-top.js (no template
+   markup). Same warm off-white chip language as .molosoc-cart-link so
+   it reads as part of the same utility family; hidden until the
+   visitor is ~1.5 viewports down (.is-visible toggled by the JS). */
+.molosoc-back-to-top {
+  position: fixed;
+  right: var(--space-s);
+  bottom: var(--space-s);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid rgba(36, 29, 23, 0.38);
+  border-radius: 999px;
+  background: rgba(252, 251, 248, 0.96);
+  color: var(--color-ink-warm);
+  box-shadow: var(--shadow-soft);
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition: opacity 250ms ease, transform 250ms ease,
+    visibility 0s linear 250ms, background-color 250ms ease,
+    border-color 250ms ease;
+}
+
+.molosoc-back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 250ms ease, transform 250ms ease,
+    visibility 0s, background-color 250ms ease, border-color 250ms ease;
+}
+
+.molosoc-back-to-top:hover {
+  background: rgba(255, 255, 255, 0.98);
+  border-color: rgba(36, 29, 23, 0.5);
+}
+
+.molosoc-back-to-top svg {
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .molosoc-back-to-top {
+    width: 2.5rem;
+    height: 2.5rem;
+    right: var(--space-xs);
+    bottom: var(--space-xs);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-back-to-top {
+    transition: none;
+    transform: none;
+  }
 }
 
 @media (min-width: 761px) {
