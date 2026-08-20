@@ -1,0 +1,31 @@
+name: Clean up test order 976
+
+# Cancels and then trashes WooCommerce order 976, the test order placed to prove
+# the Brevo order_completed event fires. Manual dispatch only.
+#
+# Logic in scripts/cleanup_test_order.py so it can be reviewed rather than buried
+# in YAML. It refuses to touch the order unless it matches the known test order
+# (total 0, coupon freemolosoc, one line of product 364 / variation 424), records
+# stock before and after, checks WooCommerce restored inventory correctly, and
+# stops before trashing if it did not. Trash only -- never a force delete.
+#
+# Touches order 976 alone: no other order, no pricing, no shipping, no payment
+# gateway, no Brevo, no coupon beyond WooCommerce's own usage reconciliation.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cancel, verify inventory, then trash
+        env:
+          PROD_WP_URL: ${{ secrets.PROD_WP_URL }}
+          PROD_WP_USER: ${{ secrets.PROD_WP_USER }}
+          PROD_WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: python3 scripts/cleanup_test_order.py
