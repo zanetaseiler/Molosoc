@@ -31,12 +31,10 @@ reconciles when an order is cancelled.
 Credentials come from the environment and are never printed.
 """
 
-import base64
 import json
 import os
+import subprocess
 import sys
-import urllib.error
-import urllib.request
 
 WP_URL = os.environ.get("PROD_WP_URL", "").rstrip("/")
 WP_USER = os.environ.get("PROD_WP_USER", "")
@@ -52,28 +50,47 @@ record = {"order_id": ORDER_ID}
 
 
 def call(method, path, payload=None):
+    """One WooCommerce REST call, over curl.
+
+    curl rather than urllib deliberately: Cloudflare rejects the default
+    Python-urllib user-agent on this host with error 1010, while curl is the
+    client this repo already uses against the same endpoint with the same
+    credentials. Credentials go in through a stdin config so they never appear
+    in the process argument list.
+    """
     url = "%s/wp-json/wc/v3%s" % (WP_URL, path)
-    req = urllib.request.Request(url, method=method)
-    token = base64.b64encode(("%s:%s" % (WP_USER, WP_PASS)).encode()).decode()
-    req.add_header("Authorization", "Basic " + token)
-    req.add_header("Accept", "application/json")
-    body = None
+    cmd = ["curl", "-sS", "-K", "-", "-o", "/tmp/wc_body.json",
+           "-w", "%{http_code}", "-X", method, "--max-time", "90",
+           "-H", "Accept: application/json"]
     if payload is not None:
-        body = json.dumps(payload).encode("utf-8")
-        req.add_header("Content-Type", "application/json")
+        cmd += ["-H", "Content-Type: application/json",
+                "--data-raw", json.dumps(payload)]
+    cmd.append(url)
+
+    config = 'user = "%s:%s"\n' % (WP_USER, WP_PASS)
     try:
-        with urllib.request.urlopen(req, body, timeout=90) as resp:
-            raw = resp.read().decode("utf-8")
-            return resp.status, (json.loads(raw) if raw.strip() else {})
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", "replace")
-        try:
-            parsed = json.loads(raw)
-        except ValueError:
-            parsed = {"raw": raw[:400]}
-        return exc.code, parsed
+        proc = subprocess.run(cmd, input=config, capture_output=True,
+                              text=True, timeout=120)
     except Exception as exc:
         return 0, {"transport_error": type(exc).__name__ + ": " + str(exc)[:200]}
+    if proc.returncode != 0:
+        return 0, {"curl_error": (proc.stderr or "")[:300]}
+    try:
+        code = int((proc.stdout or "0").strip() or 0)
+    except ValueError:
+        code = 0
+    raw = ""
+    try:
+        with open("/tmp/wc_body.json", encoding="utf-8") as fh:
+            raw = fh.read()
+    except OSError:
+        return code, {"error": "no response body written"}
+    if not raw.strip():
+        return code, {}
+    try:
+        return code, json.loads(raw)
+    except ValueError:
+        return code, {"unparsed_body": raw[:400]}
 
 
 def emit():
