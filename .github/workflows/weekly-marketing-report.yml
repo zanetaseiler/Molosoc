@@ -85,6 +85,62 @@ jobs:
       # reads it from. The GitHub artifact below is unchanged and remains the
       # human download path; the two are independent, and the upload steps run
       # with if: always() so a storage problem can never cost the artifact.
+      # ---------------------------------------------------------------------
+      # The Email Marketing card's evidence.
+      #
+      # A SECOND producer publishes it — the email orchestrator in the client's
+      # private repository — into this same bucket under its own feed. Two
+      # reads, no listing: the pointer, and the one document it names, whose
+      # key is validated against the email prefix before it is requested
+      # because it arrived inside a document.
+      #
+      # `continue-on-error`: a missing or unreadable email document costs the
+      # Email card and nothing else. A weekly report that failed because a
+      # second channel was quiet would be a worse report than one whose Email
+      # card says the channel is not yet publishing evidence.
+      # ---------------------------------------------------------------------
+      - name: Fetch the published email evidence (optional)
+        id: email
+        continue-on-error: true
+        env:
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          sys.path.insert(0, "automations/analytics")
+          import email_summary as es
+          import storage_gcs
+
+          out = os.path.join(os.environ.get("RUNNER_TEMP", "/tmp"), "email.json")
+          try:
+              store = storage_gcs.store_from_env()
+              document = es.fetch(store)
+          except es.PointerRefused as exc:
+              # A pointer naming an object outside the email feed is a security
+              # event, not a missing-data condition. It is reported loudly and
+              # the card is left empty.
+              print(f"::error::{exc}")
+              raise SystemExit(1)
+          except Exception as exc:                       # noqa: BLE001
+              print(f"::warning::email evidence could not be read: "
+                    f"{type(exc).__name__}")
+              raise SystemExit(1)
+
+          if not document:
+              print("::warning::no email evidence has been published yet; the "
+                    "Email card will say so")
+              raise SystemExit(1)
+
+          with open(out, "w", encoding="utf-8") as handle:
+              json.dump(document, handle, ensure_ascii=False)
+          period = document.get("period", {})
+          print(f"email evidence: {period.get('start')} to {period.get('end')}")
+          PY
+
       - name: Generate the weekly report and persist it durably
         env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
@@ -100,14 +156,19 @@ jobs:
           # the latest/index pointer could not be updated, 3 this week is
           # already published and was not overwritten.
           set +e
+          EMAIL_ARG=""
+          if [ -s "$RUNNER_TEMP/email.json" ]; then
+            EMAIL_ARG="--email-evidence $RUNNER_TEMP/email.json"
+          fi
+
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
               --out-dir reports --also-json --persist \
-              --dashboard-out site/index.html --today "$REPORT_TODAY"
+              --dashboard-out site/index.html --today "$REPORT_TODAY" $EMAIL_ARG
           else
             python3 automations/analytics/weekly_report.py \
               --out-dir reports --also-json --persist \
-              --dashboard-out site/index.html
+              --dashboard-out site/index.html $EMAIL_ARG
           fi
           code=$?
           set -e

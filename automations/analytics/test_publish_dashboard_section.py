@@ -39,14 +39,16 @@ from test_dashboard import FakeSFTP  # noqa: E402
 BASE = "/public_html/Trafficdom.com/reports"
 ANALYTICS_DIR = f"{BASE}/molosoc"
 GROWTH_DIR = f"{BASE}/molosoc/growth"
+EMAIL_DIR = f"{BASE}/molosoc/email-marketing"
 
 
 # --------------------------------------------------------------------------
 # The section is a closed set, not a path
 # --------------------------------------------------------------------------
 
-def test_growth_is_the_only_section_there_is():
-    assert pub.ALLOWED_SECTIONS == ("growth",)
+def test_the_sections_are_exactly_the_two_reports_that_exist():
+    """Growth and Email Marketing. The list grows only by a visible edit."""
+    assert pub.ALLOWED_SECTIONS == ("growth", "email-marketing")
 
 
 def test_the_section_appears_in_the_cli_as_a_fixed_choice():
@@ -54,7 +56,19 @@ def test_the_section_appears_in_the_cli_as_a_fixed_choice():
     with pytest.raises(SystemExit):
         pub.parse_args(["--section", "molosoc"])
     assert pub.parse_args(["--section", "growth"]).section == "growth"
+    assert pub.parse_args(["--section", "email-marketing"]).section == "email-marketing"
     assert pub.parse_args([]).section is None
+
+
+def test_the_email_section_resolves_to_its_own_sibling_directory():
+    assert pub.expected_tail("email-marketing") == ("molosoc", "email-marketing")
+    assert pub.public_url("email-marketing") == (
+        "https://trafficdom.com/reports/molosoc/email-marketing/")
+
+
+def test_the_two_sections_can_never_be_the_same_directory():
+    """Publishing one must not be able to replace the other."""
+    assert pub.expected_tail("growth") != pub.expected_tail("email-marketing")
 
 
 def test_an_unknown_section_is_refused_by_the_derivation_too(): 

@@ -12,6 +12,11 @@ recommendation the engine withheld. It renders `report["recommendations"]` and
 nothing else, so the readiness gate holds here for free rather than by being
 re-implemented and kept in sync.
 
+The Email Marketing card is the one section fed by a second producer. It reads
+the normalized email evidence document — the same artifact the dedicated email
+report and the Growth Engine read — and never the rendered email page. Its
+absence costs the card and nothing else.
+
 Self-contained by design — brand tokens, layout and charts are inlined, so the
 file opens with no network, no CDN, no build step and no JS framework. It is
 one artefact you can upload, email or archive.
@@ -35,6 +40,7 @@ import html
 import json
 import sys
 
+import email_summary
 import render
 import trafficdom_design as td
 from analysis_model import (
@@ -355,8 +361,21 @@ def quality_drawer(document, generated):
 # The page
 # --------------------------------------------------------------------------
 
-def render_dashboard(document, index=None, generated_at=None):
-    """Return the complete self-contained HTML page as a string."""
+#: Where the dedicated Email Marketing report is served from. Used only to link
+#: to it. Committed rather than read from the email document, because a URL
+#: that arrived inside an artifact would be untrusted input pointing wherever
+#: it liked — and this page is what a client opens.
+EMAIL_REPORT_URL = "https://trafficdom.com/reports/molosoc/email-marketing/"
+
+
+def render_dashboard(document, index=None, generated_at=None, email=None):
+    """Return the complete self-contained HTML page as a string.
+
+    ``email`` is the normalized email evidence document, or ``None`` when none
+    has been published. It is the ARTIFACT, never the rendered email report: a
+    dashboard that scraped another page for numbers would empty itself the
+    first time that page's layout changed.
+    """
     generated = generated_at or document.get("generated_at", "")
 
     ga4 = site_facts(document, GA4_METRICS)
@@ -381,7 +400,8 @@ def render_dashboard(document, index=None, generated_at=None):
             facts=[
                 ("Report date", document.get("report_date", "")),
                 ("Schema", document.get("schema_version", "")),
-                ("Sources", "GA4, Search Console, Clarity"),
+                ("Sources", "GA4, Search Console, Clarity"
+                            + (", Email" if email else "")),
             ],
             wordmark="TrafficDom Analytics",
         ),
@@ -410,6 +430,7 @@ def render_dashboard(document, index=None, generated_at=None):
                                  conversion_note
                                  or "No conversion metrics in this period."),
                    eyebrow="Conversions", anchor="ecommerce"),
+        email_summary.email_section(email, EMAIL_REPORT_URL),
         trends_section(index),
         recommendations_section(document),
         quality_drawer(document, generated),
@@ -441,6 +462,9 @@ def parse_args(argv=None):
     source.add_argument("--fixture", choices=("low_volume", "healthy", "broken"),
                         help="Deterministic fixture instead of a real report")
     parser.add_argument("--index", help="Path to index.json, for the trend section")
+    parser.add_argument("--email", default=None,
+                        help="Path to the normalized email evidence document. "
+                             "Its absence costs the Email card, not the page.")
     parser.add_argument("--out", default="index.html", help="Output path (default: index.html)")
     parser.add_argument("--today", default="2026-08-17", help="Fixture date override")
     return parser.parse_args(argv)
@@ -463,8 +487,13 @@ def main(argv=None):
         except (OSError, ValueError):
             index = None  # a missing index costs the trend strip, not the page
 
+    # A missing or unreadable email document costs the Email card and nothing
+    # else. A weekly report that failed because a second channel was quiet
+    # would be a worse report than one with a card that says so.
+    email = email_summary.load(args.email)
+
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
-    page = render_dashboard(document, index=index, generated_at=now)
+    page = render_dashboard(document, index=index, generated_at=now, email=email)
     with open(args.out, "w", encoding="utf-8") as handle:
         handle.write(page)
 

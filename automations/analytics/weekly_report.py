@@ -160,19 +160,30 @@ def parse_args(argv=None):
                         help=("What to do if this week is already published. "
                               "'reject' (default) protects the historical record; "
                               "'revision' files the re-run alongside it."))
+    parser.add_argument("--email-evidence", default=None,
+                        help=("Path to the normalized email evidence document, "
+                              "for the Email Marketing card. Its absence costs "
+                              "the card, not the report."))
     parser.add_argument("--dashboard-out", default=None,
                         help=("Also render the self-contained HTML dashboard to "
                               "this path, from the same analysis run"))
     return parser.parse_args(argv)
 
 
-def write_dashboard(report, path, store=None, now=None):
+def write_dashboard(report, path, store=None, now=None, email_evidence=None):
     """Render the HTML view from the run already in hand.
 
     Same analysis object as the Markdown and the JSON, so the three views
     cannot disagree, and no source is queried a second time.
+
+    ``email_evidence`` is the path to the normalized email document published
+    by the client's own email orchestrator — a SECOND producer, read through
+    its published contract exactly as this system's own reports are. It feeds
+    one card. Its absence costs that card and nothing else, which is why it is
+    loaded defensively rather than required.
     """
     import dashboard as dash
+    import email_summary
 
     index = None
     if store is not None:
@@ -183,7 +194,8 @@ def write_dashboard(report, path, store=None, now=None):
 
     stamp = (now or dt.datetime.now(dt.timezone.utc)).replace(microsecond=0).isoformat()
     page = dash.render_dashboard(rs.build_document(report), index=index,
-                                 generated_at=stamp)
+                                 generated_at=stamp,
+                                 email=email_summary.load(email_evidence))
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
         handle.write(page)
@@ -257,7 +269,8 @@ def main(argv=None):
     # After persisting, so this week is already in the index the trend reads.
     if args.dashboard_out:
         size = write_dashboard(report, args.dashboard_out,
-                               store=None if args.fixture else store, now=now)
+                               store=None if args.fixture else store, now=now,
+                               email_evidence=args.email_evidence)
         print(f"\nWrote {args.dashboard_out} ({size:,} bytes)")
 
     # A low-volume report is a successful run. The agent declining to advise is
