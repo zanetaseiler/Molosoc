@@ -1,0 +1,80 @@
+name: Deploy MU-Plugins to Production
+
+# Syncs site/mu-plugins/ to prod /wp-content/mu-plugins/ over FTPS.
+# Currently holds only brevo-checkout-capture-shim.php — the TEMPORARY
+# Brevo for WooCommerce 4.0.54–4.0.58 checkout-capture regression shim.
+# Uses its own state file, so mu-plugins already on the server that this
+# repo doesn't track are never touched or deleted.
+#
+# Dispatch with action=remove to delete the shim (and this workflow's
+# state file) from the server once Brevo ships an upstream fix — then
+# delete the file from site/mu-plugins/ in the repo too.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/mu-plugins/**"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "deploy = sync site/mu-plugins/; remove = delete the Brevo shim from the server"
+        required: true
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - remove
+
+jobs:
+  deploy:
+    if: github.event_name == 'push' || inputs.action == 'deploy'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload mu-plugins via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.PROD_SFTP_HOST }}
+          username: ${{ secrets.PROD_SFTP_USER }}
+          password: ${{ secrets.PROD_SFTP_PASS }}
+          protocol: ftps
+          local-dir: site/mu-plugins/
+          server-dir: /wp-content/mu-plugins/
+          state-name: .molosoc-mu-plugins-state.json
+
+      - name: Verify shim file landed on the server
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            "ftp://$HOST/wp-content/mu-plugins/" > /tmp/listing.txt
+          cat /tmp/listing.txt
+          grep -q "brevo-checkout-capture-shim.php" /tmp/listing.txt \
+            && echo "shim present on server" \
+            || { echo "::error::shim missing from server listing"; exit 1; }
+
+  remove:
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'remove'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Brevo checkout shim via FTPS
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          # curl -Q issues DELE on the FTPS control connection only — no
+          # data channel to hang on. || true on the state file: it may not
+          # exist and that's fine.
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE /wp-content/mu-plugins/brevo-checkout-capture-shim.php" \
+            "ftp://$HOST/" -o /dev/null
+          echo "shim deleted"
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE /wp-content/mu-plugins/.molosoc-mu-plugins-state.json" \
+            "ftp://$HOST/" -o /dev/null || echo "(state file already absent)"
+          echo "removal complete"
