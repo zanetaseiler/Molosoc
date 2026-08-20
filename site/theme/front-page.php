@@ -50,6 +50,49 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<?php if ( ! $molosoc_is_cz ) : ?>
+<script id="molosoc-home-lang-redirect">
+/* Client-side replacement for Polylang's "Detect browser language"
+   redirect on the bare site home, moved here so the EN homepage can be
+   page-cached (Polylang defines DONOTCACHEPAGE on `/` whenever its
+   server-side detection is on — see PLL_Cache_Compat — which forced a
+   full 1-4s PHP render on every visit; the option is now OFF in
+   Languages > Settings and must stay off or `/` stops caching again).
+
+   Mirrors Polylang's exact server-side semantics (choose-lang.php
+   get_home_language): only the bare `/` with no query string, only on
+   direct entries (any same-site referrer means in-site navigation —
+   e.g. the EN language switcher — and always stays EN), preferring the
+   pll_language cookie, falling back to the browser language. Inline and
+   pre-wp_head so it beats Polylang's own footer cookie script and runs
+   before first paint. */
+(function () {
+	try {
+		if ( window.location.pathname !== "/" || window.location.search ) {
+			return;
+		}
+		var ref    = document.referrer;
+		var origin = window.location.origin;
+		if ( ref && ( ref === origin || ref.indexOf( origin + "/" ) === 0 ) ) {
+			return;
+		}
+		var lang;
+		var m = document.cookie.match( /(?:^|; )pll_language=([^;]*)/ );
+		if ( m ) {
+			lang = m[1];
+		} else {
+			var nav = ( ( navigator.languages && navigator.languages[0] ) || navigator.language || "" ).toLowerCase();
+			lang = nav.indexOf( "cs" ) === 0 ? "cz" : "en";
+		}
+		if ( lang === "cz" ) {
+			window.location.replace( "https://molosoc.com/cz/molosoc-home-cestina/" );
+		}
+	} catch ( e ) {
+		/* Never let the redirect helper break the page. */
+	}
+})();
+</script>
+<?php endif; ?>
 <?php wp_head(); ?>
 </head>
 <body <?php body_class( 'molosoc-front-page' ); ?>>
