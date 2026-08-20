@@ -1,0 +1,133 @@
+name: Deploy Email Assets to Production
+
+# Publishes the six MOLOSOC email images to /wp-content/uploads/email/ on
+# production, so the Brevo email templates have permanent <img src> targets.
+# Manual dispatch only.
+#
+# Reuses the production transport this repo already uses: FTPS with the
+# PROD_SFTP_* secrets, exactly as production.yml does. It deliberately does
+# NOT use FTP-Deploy-Action -- that action mirrors a directory and can delete
+# remote files that are absent locally. Here each of the six files is put by
+# name, so nothing else under uploads/ can be touched and no sync-state file
+# is left behind in a publicly served directory. lftp is already the FTPS
+# client used by staging-ftp-diagnose.yml in this repo.
+#
+# Sources are the Google Drive originals, pinned by file id and checked
+# against both a byte size and a SHA-256 before anything is uploaded. A wrong
+# or truncated download fails the job rather than shipping a broken image.
+#
+# Touches nothing else: no WordPress settings, no media library, no theme,
+# plugins, WooCommerce, Brevo or DNS. Only the six filenames below.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the six originals from Drive and verify integrity
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          cat > manifest.txt <<'LIST'
+          1jwxBwIhb_PmHTBpEVb6bSHYvh9Jm4dSQ|molosoc-logo.png|35205|c282977c8dcc037a7b9aeab006511ea32fb7a5d75f56b0e68329914127cd2251
+          1CQMMOvbyH7VVLNrYBMKrrkW8J3zMoGTv|molosoc-founders.jpg|243093|1cfef26303d876c8d5759fa1954535c7e6141602802566c1000128a3c2a3a676
+          1wozTWXybSDAOGu6ldcE_hhHw8pb0WsZb|molosoc-product-hero-beige.jpg|187039|e057383a94628ae22ba4f118b30e5122eebfcefeae9a9212c231442466c5ffd8
+          1Jeg3A3XA9NucBh4IXPbVsGgGaQ2foeVI|molosoc-product-cream.jpg|350252|85130b2f0add2ecb88651500a63690bcd165e4d7c7ce2812a7b06a0be576011a
+          1xHNkkZXpNscApDPxXud-DlpzhzB9dr0P|molosoc-product-cotton.jpg|209622|d32bd56cd04c1ade348e77739eb6890ef3e88754d416fb8518f2c2631da86a82
+          1KOiKI5AB4gdwGQSLojdR-pF2DetqJh1s|molosoc-product-brush.jpg|110224|65b7b50fece346f701cbc906d94a2304c829df7cf8b5cd398a34ffbca859cf05
+          LIST
+          sed -i 's/^[[:space:]]*//' manifest.txt
+          fail=0
+          while IFS='|' read -r id name want_bytes want_sha; do
+            [ -z "$id" ] && continue
+            curl -sSL --retry 3 --retry-delay 2 --max-time 120 \
+              -o "out/$name" "https://drive.google.com/uc?export=download&id=$id"
+            got_bytes=$(wc -c < "out/$name" | tr -d ' ')
+            got_sha=$(sha256sum "out/$name" | cut -d' ' -f1)
+            if [ "$got_bytes" != "$want_bytes" ]; then
+              echo "::error::$name size mismatch: expected $want_bytes, got $got_bytes"
+              fail=1; continue
+            fi
+            if [ "$got_sha" != "$want_sha" ]; then
+              echo "::error::$name sha256 mismatch: expected $want_sha, got $got_sha"
+              fail=1; continue
+            fi
+            echo "verified  $name  $got_bytes bytes  sha256 $got_sha"
+          done < manifest.txt
+          if [ "$fail" != "0" ]; then
+            echo "::error::integrity check failed - nothing was uploaded"
+            exit 1
+          fi
+          echo "All six verified against expected size and SHA-256."
+          ls -l out/
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Publish the six files via FTPS
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          FTPUSER: ${{ secrets.PROD_SFTP_USER }}
+          FTPPASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          set -euo pipefail
+          # ssl:verify-certificate no matches the posture already in use for
+          # this host in this repo: the shared host presents its provider's
+          # internal certificate, which cannot be verified against the site
+          # hostname. Same host, same credentials, same protocol as
+          # production.yml -- only the target directory differs.
+          lftp -u "$FTPUSER,$FTPPASS" -e "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            mkdir -p /wp-content/uploads/email;
+            cd /wp-content/uploads/email;
+            put -O . out/molosoc-logo.png;
+            put -O . out/molosoc-founders.jpg;
+            put -O . out/molosoc-product-hero-beige.jpg;
+            put -O . out/molosoc-product-cream.jpg;
+            put -O . out/molosoc-product-cotton.jpg;
+            put -O . out/molosoc-product-brush.jpg;
+            cls -l .;
+            bye" "$HOST"
+
+      - name: Verify the six public URLs
+        run: |
+          set -uo pipefail
+          BASE="https://molosoc.com/wp-content/uploads/email"
+          fail=0
+          while IFS='|' read -r id name want_bytes want_sha; do
+            [ -z "$id" ] && continue
+            url="$BASE/$name"
+            code=$(curl -s -o "chk-$name" -w '%{http_code}' -L --max-time 60 "$url")
+            final=$(curl -s -o /dev/null -w '%{url_effective}' -L --max-time 60 "$url")
+            ctype=$(curl -sI -L --max-time 60 "$url" | tr -d '\r' \
+              | awk -F': ' 'tolower($1)=="content-type"{print $2}' | tail -1)
+            got_bytes=$(wc -c < "chk-$name" | tr -d ' ')
+            got_sha=$(sha256sum "chk-$name" | cut -d' ' -f1)
+            ok=1
+            [ "$code" = "200" ] || { echo "::error::$name HTTP $code"; ok=0; }
+            case "$ctype" in
+              image/*) ;;
+              *) echo "::error::$name content-type '$ctype'"; ok=0 ;;
+            esac
+            [ "$got_bytes" = "$want_bytes" ] || { echo "::error::$name served $got_bytes bytes, expected $want_bytes"; ok=0; }
+            [ "$got_sha" = "$want_sha" ] || { echo "::error::$name served sha256 $got_sha, expected $want_sha"; ok=0; }
+            case "$final" in
+              *wp-login*|*/login*) echo "::error::$name redirected to login: $final"; ok=0 ;;
+            esac
+            [ "$final" = "$url" ] || echo "::warning::$name final URL differs: $final"
+            if [ "$ok" = "1" ]; then
+              echo "PASS  $url  200  $ctype  $got_bytes bytes  sha256 ok"
+            else
+              fail=1
+            fi
+          done < manifest.txt
+          echo
+          if [ "$fail" = "0" ]; then
+            echo "ALL SIX VERIFIED LIVE"
+          else
+            echo "::error::public verification failed"
+            exit 1
+          fi
