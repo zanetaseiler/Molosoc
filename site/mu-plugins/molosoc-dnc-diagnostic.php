@@ -38,7 +38,10 @@ foreach ( array(
 	array( 'init', PHP_INT_MIN, 'init:first' ),
 	array( 'init', PHP_INT_MAX, 'init:last' ),
 	array( 'wp_loaded', PHP_INT_MAX, 'wp_loaded' ),
-	array( 'wp', PHP_INT_MAX, 'wp' ),
+	array( 'wp', PHP_INT_MIN, 'wp:first' ),
+	array( 'wp', 9, 'wp:pri<10' ),
+	array( 'wp', 11, 'wp:pri10 (WC_Cache_Helper::prevent_caching runs here)' ),
+	array( 'wp', PHP_INT_MAX, 'wp:last' ),
 	array( 'template_redirect', PHP_INT_MIN, 'template_redirect:first' ),
 	array( 'template_redirect', PHP_INT_MAX, 'template_redirect:last' ),
 	array( 'wp_head', PHP_INT_MIN, 'wp_head:first' ),
@@ -80,6 +83,16 @@ add_action( 'shutdown', function () {
 	echo "\n<!-- molosoc-dnc\n";
 	echo 'DONOTCACHEPAGE: ' . ( defined( 'DONOTCACHEPAGE' ) ? 'DEFINED, first seen at [' . esc_html( $first ) . ']' : 'never defined' ) . "\n";
 	echo 'front_page: ' . ( function_exists( 'is_front_page' ) && is_front_page() ? 'yes' : 'no' ) . "\n";
+	echo 'queried_object_id: ' . (int) get_queried_object_id() . "\n";
+	if ( function_exists( 'wc_get_page_id' ) ) {
+		foreach ( array( 'cart', 'checkout', 'myaccount', 'shop', 'terms' ) as $wc_page ) {
+			echo 'wc_page_id[' . $wc_page . ']: ' . (int) wc_get_page_id( $wc_page ) . "\n";
+		}
+		echo 'is_cart/is_checkout/is_account_page: '
+			. ( is_cart() ? 'y' : 'n' ) . '/'
+			. ( is_checkout() ? 'y' : 'n' ) . '/'
+			. ( is_account_page() ? 'y' : 'n' ) . "\n";
+	}
 	echo "active_plugins:\n";
 	foreach ( $plugins as $plugin ) {
 		echo '  ' . esc_html( $plugin ) . "\n";
