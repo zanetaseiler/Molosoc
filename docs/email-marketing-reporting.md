@@ -94,13 +94,28 @@ Actions: Read-only on the Growth Engine repository, which is exactly what
 downloading the email report artifact needs. No new credential is required in
 this repository.
 
+## The IAM this depends on
+
+Two conditioned grants have to exist before any of this runs, and both are
+specified in `molosoc-private/docs/email-evidence-identity.md`:
+
+| Identity | Needs | Why |
+| --- | --- | --- |
+| The email evidence **writer** (new, keyless, in `molosoc-private`) | `objects.create` + `objects.get` under `reports/email/`, and `objects.delete` on **exactly** `reports/email/latest.json` | to publish the document and advance the pointer, and nothing else |
+| The evidence **reader** (existing, used by the Growth Engine) | its existing `objects.get` condition widened to name `reports/email/latest.json` and `reports/email/data/**` | the Growth Engine reads email as a second feed; without this its email channel reports unavailable |
+| **This repository's** existing storage identity | `objects.get` on `reports/email/` added | the Email card on the weekly dashboard reads the same document. Read only — this repository never writes the email feed |
+
+No service-account JSON key is involved in the first two. `objects.list` is
+absent everywhere: every read here follows a pointer, and an identity that can
+list can enumerate the whole bucket.
+
 ## Nothing here can send email
 
 Worth saying plainly for a set of workflows with "email" in their names.
 
 | Repository | Holds a Brevo key | Can send |
 | --- | --- | --- |
-| `molosoc-private` | yes | **no** — its client class has one method and it hard-codes `GET` |
+| `molosoc-private` | yes — and it is the **only** secret that workflow reads | **no** — its client class has one method and it hard-codes `GET` |
 | `trafficdom-growth-engine` | no | no — it imports no SMTP or platform SDK, and does not know the credential's name |
 | this repository | no | no — it downloads an HTML file and uploads it over SFTP |
 
@@ -128,6 +143,7 @@ and only the second one is true.
 | Step | Where | Trigger |
 | --- | --- | --- |
 | Collect and publish evidence | `molosoc-private` → **Email intelligence** | Wednesdays 07:00 UTC, or manual |
+| — its cloud credential | keyless (Workload Identity Federation) | no key exists to rotate |
 | Render the report | Growth Engine → **Email Marketing Report** | Manual, type `render` |
 | Publish the page | here → **Publish Email Marketing Report** | Manual, type `publish` |
 | Email card on the overall report | here → **Weekly Marketing Analysis** | Automatic, Wednesdays 06:15 UTC |
