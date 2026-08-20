@@ -1,0 +1,247 @@
+name: Publish Email Marketing Report (manual only)
+
+# Publish the TrafficDom Email Marketing report that the Growth Engine rendered.
+#
+#   download   one artifact from a named Growth Engine run: index.html
+#   verify     that it is one file, that it is HTML, and that it is the Email
+#              report rather than the Analytics dashboard or the Growth report
+#   publish    automations/analytics/publish_dashboard.py
+#                  --section email-marketing
+#
+# MANUAL ONLY. No schedule, no push trigger, no workflow_run trigger — this
+# changes what a client sees, so a person starts it and types a confirmation.
+#
+# NO EMAIL IS SENT BY THIS JOB
+#
+# Worth saying plainly for a workflow with "email" in its name. This job
+# downloads an HTML file and uploads it to a web host over SFTP. It holds no
+# Brevo credential, calls no email platform, and has no SMTP capability. The
+# only thing it publishes is a page about email.
+#
+# WHY HERE AND NOT IN THE GROWTH ENGINE
+#
+# This repository already has the proven SFTP path to the report host and the
+# credentials for it. Those same credentials can write reports/molosoc/index.html
+# — the live Analytics dashboard — so they stay in the one repository that
+# already needs them rather than being copied to a second one. The Growth Engine
+# holds no report-host credential of any kind and has no transport at all.
+#
+# NO SECOND PUBLISHER
+#
+# The existing publish_dashboard.py does the upload, over the same connection,
+# with the same guards: a derived destination, a WordPress-directory refusal, a
+# server-side working-directory check, one file named index.html, and no
+# deletion or rename. `--section email-marketing` deepens the destination by one
+# fixed segment from a closed set; it cannot be pointed anywhere else.
+#
+#   /public_html/Trafficdom.com/reports/molosoc/email-marketing/index.html
+#
+# The Analytics report one level up is never touched: with a section set, the
+# path check REFUSES a destination ending in `molosoc`, and the server's own
+# working directory is compared before anything is sent. The Growth report
+# beside it is untouched for the same reason — a different fixed segment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Growth Engine workflow run id that produced the report"
+        required: true
+        type: string
+      artifact:
+        description: "Artifact name from that run"
+        required: true
+        default: email-report-molosoc
+        type: string
+      sha256:
+        description: "Optional: the sha256 that run printed, to check the bytes"
+        required: false
+        type: string
+      confirm:
+        description: 'Type "publish" — this changes what the client sees'
+        required: true
+        type: string
+
+# Read-only against this repository. Nothing is committed, and the job needs no
+# write scope of any kind.
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-email-report
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Confirm this run was intended
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -eu
+          if [ "$CONFIRM" != "publish" ]; then
+            echo "::error::confirmation not given — type 'publish' to proceed."
+            echo "Nothing was downloaded and nothing was uploaded."
+            exit 1
+          fi
+          echo "Confirmation given."
+
+      - uses: actions/checkout@v4
+
+      - name: Check the required secrets are present
+        env:
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          ARTIFACT_TOKEN: ${{ secrets.GROWTH_ENGINE_ARTIFACT_TOKEN }}
+        run: |
+          # Presence only — no value is ever echoed. Checked before the
+          # download, so a missing value costs nothing.
+          set -eu
+          missing=0
+          if [ -z "${REPORTS_SSH_KEY:-}" ]; then
+            echo "::error::REPORTS_SSH_KEY is not set"
+            missing=1
+          fi
+          if [ -z "${REPORTS_SSH_USER:-}${REPORTS_SFTP_USER:-}" ]; then
+            echo "::error::neither REPORTS_SSH_USER nor REPORTS_SFTP_USER is set"
+            missing=1
+          fi
+          if [ -z "${ARTIFACT_TOKEN:-}" ]; then
+            echo "::error::GROWTH_ENGINE_ARTIFACT_TOKEN is not set."
+            echo "Downloading an artifact from another repository needs a"
+            echo "fine-grained token scoped to that ONE repository with"
+            echo "Actions: Read-only. See docs/growth-report-publishing.md."
+            missing=1
+          fi
+          [ "$missing" = "0" ] || exit 1
+          echo "All required secrets present (values never printed)."
+
+      - name: Download the one artifact from the Growth Engine run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          repository: zanetaseiler/trafficdom-growth-engine
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GROWTH_ENGINE_ARTIFACT_TOKEN }}
+          path: incoming
+
+      - name: Verify what arrived before trusting it
+        env:
+          EXPECTED_SHA: ${{ inputs.sha256 }}
+        run: |
+          # An artifact is attacker-shaped input in the general case: it comes
+          # from another repository's run. Check the shape before it is
+          # uploaded to a live website.
+          set -eu
+          COUNT="$(find incoming -type f | wc -l | tr -d ' ')"
+          if [ "$COUNT" != "1" ]; then
+            echo "::error::expected exactly one file in the artifact, found $COUNT"
+            find incoming -type f
+            exit 1
+          fi
+          if [ ! -s incoming/index.html ]; then
+            echo "::error::the artifact does not contain a non-empty index.html"
+            find incoming -type f
+            exit 1
+          fi
+
+          # It must be the Email report — not the Analytics dashboard and not
+          # the Growth report. All three publish to different directories, and
+          # confusing them would put the wrong page in front of the client.
+          if ! grep -q "Email Marketing Report" incoming/index.html; then
+            echo "::error::index.html does not look like a TrafficDom Email Marketing report"
+            head -c 400 incoming/index.html
+            exit 1
+          fi
+          if grep -q "Weekly marketing analysis" incoming/index.html; then
+            echo "::error::this looks like the Analytics dashboard, not the Email report"
+            exit 1
+          fi
+          if grep -q "Growth Report" incoming/index.html; then
+            echo "::error::this looks like the Growth report, not the Email report"
+            exit 1
+          fi
+
+          ACTUAL="$(sha256sum incoming/index.html | cut -d' ' -f1)"
+          echo "sha256: $ACTUAL"
+          if [ -n "${EXPECTED_SHA:-}" ] && [ "$ACTUAL" != "$EXPECTED_SHA" ]; then
+            echo "::error::checksum mismatch — expected $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "One file, $(wc -c < incoming/index.html) bytes, verified."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run the publisher's offline tests
+        run: python3 -m pytest automations/analytics/test_publish_dashboard_section.py -q
+
+      - name: Verify the resolved remote path (no connection)
+        env:
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --section email-marketing --file incoming/index.html --dry-run
+
+      - name: Publish over SFTP, one level deeper
+        env:
+          REPORTS_SSH_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          # The same publisher, the same credentials, the same guards. The only
+          # difference from the weekly dashboard is one fixed extra segment.
+          python3 automations/analytics/publish_dashboard.py \
+            --section email-marketing --file incoming/index.html
+
+      - name: Verify the page is live
+        run: |
+          url="https://trafficdom.com/reports/molosoc/email-marketing/"
+          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
+          echo "HTTP $code from $url"
+          if [ "$code" != "200" ]; then
+            echo "::error::$url returned HTTP $code"
+            exit 1
+          fi
+          if ! grep -q "Email Marketing Report" /tmp/live.html; then
+            echo "::error::$url served a page, but not the Email Marketing report"
+            head -c 400 /tmp/live.html
+            exit 1
+          fi
+          echo "PASS the Email report is live at $url ($(wc -c < /tmp/live.html) bytes)"
+
+      - name: Confirm the other two reports are untouched
+        run: |
+          # The failure this whole design exists to prevent, checked from the
+          # outside afterwards rather than only asserted beforehand.
+          set -eu
+          for pair in "https://trafficdom.com/reports/molosoc/|Weekly marketing analysis" \
+                      "https://trafficdom.com/reports/molosoc/growth/|Growth Report"; do
+            url="${pair%%|*}"
+            marker="${pair##*|}"
+            code=$(curl -sS -L --max-time 30 -o /tmp/other.html -w "%{http_code}" "$url" || echo 000)
+            if [ "$code" != "200" ]; then
+              echo "::warning::$url returned HTTP $code — it may not be published yet"
+              continue
+            fi
+            if ! grep -qi "$marker" /tmp/other.html; then
+              echo "::error::$url is no longer serving its own report"
+              exit 1
+            fi
+            echo "PASS $url is unchanged"
+          done

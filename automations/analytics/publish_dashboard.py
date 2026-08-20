@@ -85,10 +85,15 @@ PROJECT_DIR = "molosoc"
 #: unknown value is rejected by the parser before any path exists. Adding one is
 #: a visible edit here, and each entry is a directory somebody has to create.
 #:
-#: The Growth report lives in `molosoc/growth/`. It is published by this same
-#: script, over the same connection, with the same guards — deliberately, rather
-#: than by a second publisher that would have to re-earn all of them.
-ALLOWED_SECTIONS = ("growth",)
+#: The Growth report lives in `molosoc/growth/` and the Email Marketing report
+#: in `molosoc/email-marketing/`. Both are published by this same script, over
+#: the same connection, with the same guards — deliberately, rather than by a
+#: second publisher that would have to re-earn all of them.
+#:
+#: They are siblings of each other and children of the Analytics report, which
+#: sits one level up and is never written by a sectioned run: with `--section`
+#: set, the path check REFUSES a destination ending in `molosoc`.
+ALLOWED_SECTIONS = ("growth", "email-marketing")
 
 #: Where that directory is served from. Used only to verify the deployment.
 PUBLIC_URL = "https://trafficdom.com/reports/molosoc/"

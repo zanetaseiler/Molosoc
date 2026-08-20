@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint fb924ba52767fb23.
+Generated from the Growth Engine at fingerprint 631893774867b19e.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "fb924ba52767fb23"
+DESIGN_FINGERPRINT = "631893774867b19e"
 
 """
 Brand configuration — deliberately separate from the design system.
@@ -644,6 +644,25 @@ body {
   padding: 2rem; color: var(--td-ink-soft); max-width: 60ch;
 }
 
+/* -------------------------------------------------------------- onward -- */
+
+/* The only link the system draws, and it is drawn as a destination rather
+   than as a button. A report is a document; a button in one implies something
+   will happen, and the only thing that happens here is that a different
+   document opens. */
+.td-onward {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.75rem 1.25rem;
+  margin: 1.5rem 0 0;
+}
+.td-onward a {
+  color: var(--td-accent-ink); font-weight: 600; text-decoration: none;
+  border-bottom: 1px solid var(--td-accent); padding-bottom: 0.15rem;
+}
+.td-onward a:hover, .td-onward a:focus { border-bottom-width: 2px; }
+.td-onward p {
+  margin: 0; color: var(--td-ink-soft); font-size: 0.875rem; max-width: 60ch;
+}
+
 /* ---------------------------------------------------------- disclosure -- */
 
 .td-technical {
@@ -1130,6 +1149,26 @@ def empty_state(text):
     return f'<div class="td-empty">{escape(text)}</div>'
 
 
+def onward_link(label, href, note=None):
+    """A link to the report that continues this one.
+
+    The only link component in the system, and deliberately not a button. A
+    button promises that something will happen; the only thing that happens
+    here is that another document opens, and a summary card that looked
+    clickable-into-an-action would be making a promise the page cannot keep.
+
+    ``href`` is escaped like any other value. A report's own composition
+    supplies it, never a document — a URL that arrived inside an artifact would
+    be untrusted input pointing wherever it liked.
+    """
+    if not (label or "").strip() or not (href or "").strip():
+        return ""
+    return ('<div class="td-onward">'
+            f'<a href="{escape(href)}">{escape(label)}</a>'
+            + (f"<p>{escape(note)}</p>" if note else "")
+            + "</div>")
+
+
 # --------------------------------------------------------------------------
 # The drawer
 # --------------------------------------------------------------------------
@@ -1182,4 +1221,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "baa37921eef522aa"
+CONTENT_HASH = "a640e8cb62bbfcda"

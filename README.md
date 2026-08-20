@@ -25,7 +25,7 @@ Read `docs/00-build-playbook.md` first — it's the ordered build sequence (Phas
 ## Folder guide
 - `docs/` — standing project knowledge: ICP, brand architecture, SEO/GEO plan, site structure, build playbook.
 - `automations/content-sync/` — script + setup guide that pushes markdown drafts into WordPress as drafts via the REST API.
-- `automations/analytics/` — read-only connection tests for GA4, Search Console (`GOOGLE_SERVICE_ACCOUNT_JSON`) and Microsoft Clarity (`CLARITY_API_TOKEN`). Clarity is capped at 10 API calls/project/day — read that README before touching it.
+- `automations/analytics/` — read-only connection tests for GA4, Search Console (`GOOGLE_SERVICE_ACCOUNT_JSON`) and Microsoft Clarity (`CLARITY_API_TOKEN`). Clarity is capped at 10 API calls/project/day — read that README before touching it. Also the weekly analysis, the HTML dashboard, and the Email Marketing card that reads the email orchestrator's published evidence — see `docs/email-marketing-reporting.md`.
 - `.github/workflows/content-sync.yml` — auto-runs content push on every commit to `staging` touching `seo/` or `content/`.
 - `seo/pillars/`, `seo/spokes/` — TOFU content drafts. Copy `_template.md`, fill in frontmatter + body, commit.
 - `content/` — homepage/category/product page drafts. Same template pattern.
