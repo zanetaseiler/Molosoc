@@ -40,7 +40,8 @@ foreach ( array(
 	array( 'wp_loaded', PHP_INT_MAX, 'wp_loaded' ),
 	array( 'wp', PHP_INT_MIN, 'wp:first' ),
 	array( 'wp', 9, 'wp:pri<10' ),
-	array( 'wp', 11, 'wp:pri10 (WC_Cache_Helper::prevent_caching runs here)' ),
+	array( 'wp', 10, 'wp:pri10-start (mu-plugin registers first within 10)' ),
+	array( 'wp', 11, 'wp:after-pri10' ),
 	array( 'wp', PHP_INT_MAX, 'wp:last' ),
 	array( 'template_redirect', PHP_INT_MIN, 'template_redirect:first' ),
 	array( 'template_redirect', PHP_INT_MAX, 'template_redirect:last' ),
@@ -59,7 +60,11 @@ foreach ( array(
 }
 
 function molosoc_dnc_enabled() {
-	return isset( $_GET['molosoc_dnc'] ) && '1' === $_GET['molosoc_dnc']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only diagnostic flag.
+	// GET param, or an X-Molosoc-Dnc request header for probing WITHOUT a
+	// query string (a GET param itself changes caching-related behavior,
+	// so header-triggered runs see the same conditions as real traffic).
+	return ( isset( $_GET['molosoc_dnc'] ) && '1' === $_GET['molosoc_dnc'] ) // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only diagnostic flag.
+		|| ( isset( $_SERVER['HTTP_X_MOLOSOC_DNC'] ) && '1' === $_SERVER['HTTP_X_MOLOSOC_DNC'] );
 }
 
 // Header carries the state as of send_headers (pre-template); the
@@ -92,6 +97,29 @@ add_action( 'shutdown', function () {
 			. ( is_cart() ? 'y' : 'n' ) . '/'
 			. ( is_checkout() ? 'y' : 'n' ) . '/'
 			. ( is_account_page() ? 'y' : 'n' ) . "\n";
+	}
+	global $wp_filter;
+	if ( isset( $wp_filter['wp'] ) ) {
+		echo "wp-hook callbacks (priorities 5-15):\n";
+		foreach ( $wp_filter['wp']->callbacks as $pri => $cbs ) {
+			if ( $pri < 5 || $pri > 15 ) {
+				continue;
+			}
+			foreach ( $cbs as $cb ) {
+				$f = $cb['function'];
+				if ( is_array( $f ) ) {
+					$name = ( is_object( $f[0] ) ? get_class( $f[0] ) : (string) $f[0] ) . '::' . $f[1];
+				} elseif ( is_string( $f ) ) {
+					$name = $f;
+				} elseif ( $f instanceof Closure ) {
+					$r    = new ReflectionFunction( $f );
+					$name = 'closure@' . basename( (string) $r->getFileName() ) . ':' . $r->getStartLine();
+				} else {
+					$name = 'object:' . get_class( $f );
+				}
+				echo '  wp@' . (int) $pri . ': ' . esc_html( $name ) . "\n";
+			}
+		}
 	}
 	echo "active_plugins:\n";
 	foreach ( $plugins as $plugin ) {
