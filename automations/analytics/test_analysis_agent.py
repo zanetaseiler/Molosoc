@@ -268,6 +268,47 @@ def test_script_error_spike_is_instrumentation():
     assert found and found[0].is_instrumentation
 
 
+def test_an_error_level_with_no_baseline_is_reported_but_does_not_suppress():
+    """The false positive this rule used to produce.
+
+    A double-digit share of sessions touching one JavaScript error is ordinary
+    on a site with third-party tags. With no prior period there is nothing to
+    say it changed, so it is reported — and reported clearly — but it does not
+    void every measurement in the report.
+    """
+    found = an.detect_script_error_spike(0.113)
+    assert found, "the level is still surfaced, not silently dropped"
+    assert not found[0].is_instrumentation
+    assert found[0].suppresses == ()
+    assert not an.suppressed_entities(found)
+    assert "no prior period" in found[0].description
+
+
+def test_a_flat_error_level_says_so_rather_than_implying_a_jump():
+    found = an.detect_script_error_spike(0.113, 0.11)
+    assert found and not found[0].is_instrumentation
+    assert "unchanged from 11.0%" in found[0].description
+
+
+def test_an_overwhelming_error_level_is_instrumentation_without_a_baseline():
+    """The level bar still exists — it is set where the claim is defensible."""
+    found = an.detect_script_error_spike(an.SCRIPT_ERROR_UNUSABLE)
+    assert found and found[0].is_instrumentation
+    assert found[0].suppresses == ("site",)
+
+
+def test_a_real_spike_still_trips_at_the_unchanged_threshold():
+    """No detection is weakened: the spike bar and its behaviour are as before."""
+    assert an.SCRIPT_ERROR_SPIKE == 0.10
+    assert an.detect_script_error_spike(0.11, 0.005)[0].is_instrumentation
+    assert an.detect_script_error_spike(0.09, 0.0) == []
+
+
+def test_a_spike_still_names_the_period_it_rose_from():
+    found = an.detect_script_error_spike(0.15, 0.01)
+    assert "(from 1.0%)" in found[0].description
+
+
 def test_robust_z_ignores_short_series():
     assert an.robust_z(100, [1, 2, 3]) is None
 
