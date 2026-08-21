@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 631893774867b19e.
+Generated from the Growth Engine at fingerprint 2ee02c296757d3ce.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "631893774867b19e"
+DESIGN_FINGERPRINT = "2ee02c296757d3ce"
 
 """
 Brand configuration — deliberately separate from the design system.
@@ -137,6 +137,7 @@ one place and out of the markup.
 """
 
 import html as _html
+import re as _re
 
 
 #: The five tones a component may carry. A tone is a *meaning*, not a colour:
@@ -278,6 +279,57 @@ body {
 
 .td-wordmark--mark span {
   padding-left: 0.875rem; border-left: 1px solid var(--td-rule);
+}
+
+/* -------------------------------------------------------- report nav -- */
+
+/* One row, and it SCROLLS rather than wraps. A second line of tabs reads as a
+   second navigation, and on a phone a wrapped seven-item grid is the thing
+   that makes a considered report look assembled. The fades at the edges are
+   the only affordance that says there is more to the right — a scrollbar on a
+   client report is furniture nobody wants to see. */
+
+.td-nav {
+  position: relative;
+  border-top: 1px solid var(--td-rule-soft);
+  border-bottom: 1px solid var(--td-rule);
+  margin: 1.75rem 0 0;
+}
+
+.td-nav-scroll {
+  display: flex; gap: 0.25rem; overflow-x: auto; scrollbar-width: none;
+  -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+}
+
+.td-nav-scroll::-webkit-scrollbar { display: none; }
+
+.td-nav a, .td-nav span {
+  flex: none; scroll-snap-align: start;
+  padding: 0.9375rem 0.9375rem 0.8125rem;
+  font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em;
+  white-space: nowrap; text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.td-nav a { color: var(--td-ink-soft); }
+.td-nav a:hover { color: var(--td-ink); border-bottom-color: var(--td-rule); }
+
+/* The active report. The accent is spent here and nowhere else in this bar. */
+.td-nav a[aria-current="page"] {
+  color: var(--td-ink); border-bottom-color: var(--td-accent);
+}
+
+/* Not connected yet: present, so the reader can see the shape of the whole
+   programme, and plainly not a link. Muted rather than struck through or
+   badged — a row of "soon" pills is noise, and this says the same thing. */
+.td-nav span {
+  color: var(--td-off); cursor: default;
+}
+
+.td-nav-note {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
 /* ---------------------------------------------------------- conclusion -- */
@@ -717,6 +769,11 @@ body {
 @media (max-width: 48rem) {
   .td-wrap { padding: 0 1.25rem; }
   .td-header { padding: 2.5rem 0 1.5rem; }
+  .td-nav { margin-top: 1.25rem; }
+  .td-nav a, .td-nav span { padding: 0.8125rem 0.75rem 0.6875rem; }
+  /* The bar runs to both edges of a phone screen; the wrapper's gutter would
+     otherwise clip the first and last tab out of reach. */
+  .td-nav-scroll { padding: 0 1.25rem; margin: 0 -1.25rem; }
   .td-section { padding: 2.75rem 0 0; }
   .td-conclusion { padding: 1.75rem 1.5rem; }
   .td-metrics { grid-template-columns: repeat(2, 1fr); }
@@ -842,12 +899,20 @@ def brand_mark(theme=TRAFFICDOM, wordmark=None):
 
 
 def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
-                  wordmark=None):
-    """Masthead: brand mark, report title, and the facts that date it.
+                  wordmark=None, client=None, report=None):
+    """Masthead: brand mark, report title, the facts that date it, and the bar.
 
     ``wordmark`` names which report this is — "Growth Engine", "Weekly
     Analytics" — under the same mark. That is the whole trick to making two
     reports feel like one suite: identical furniture, one line of difference.
+
+    ``client`` and ``report`` add the navigation, inside the masthead where it
+    belongs: the tabs are part of the identity of the page, not a widget under
+    it. Both are needed or neither — a bar without a client id has no routes to
+    offer, and one without a report type cannot say which tab you are on.
+
+    The header takes the two facts and builds the bar itself rather than
+    accepting rendered markup, so no report can hand it a different navigation.
     """
     rows = "".join(
         f"<li>{escape(label)} <b>{escape(value)}</b></li>"
@@ -859,8 +924,100 @@ def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
         f'<h1 class="td-title">{escape(title)}</h1>'
         + (f'<p class="td-lede">{escape(eyebrow)}</p>' if eyebrow else "")
         + (f'<ul class="td-facts">{rows}</ul>' if rows else "")
+        + (report_nav(client, report) if client and report else "")
         + "</header>"
     )
+
+
+#: Every report in a TrafficDom client suite, in the order the bar shows them.
+#:
+#: ``key`` is the report's own type — what a renderer calls itself, and what
+#: decides which tab is active. ``segment`` is the URL segment beneath the
+#: client, and ``None`` means the suite root: Analytics is the report a client
+#: lands on, so it lives at ``/reports/<client>/`` rather than one level down.
+#:
+#: The table is here, in the shared system, for the same reason the components
+#: are: two repositories render these reports, and a navigation bar that
+#: disagrees with itself between tabs is worse than none. Adding a channel is
+#: one edit in one place, and both reports gain the tab on the next export.
+REPORTS = (
+    ("analytics", None, "Analytics"),
+    ("growth", "growth", "Growth"),
+    # The segment the Analytics repository's publisher already writes to for
+    # this report — `--section email-marketing`, not `email`. The table follows
+    # the route that exists rather than the one that reads more tidily: a tab
+    # is only worth anything if it lands somewhere.
+    ("email", "email-marketing", "Email Marketing"),
+    ("social", "social", "Social"),
+    ("paid", "paid", "Paid"),
+    ("cro", "cro", "CRO"),
+    ("retention", "retention", "Retention"),
+)
+
+#: Which of them a client can actually open today. Everything else is rendered
+#: as present-but-not-connected: a tab that links to a page that does not exist
+#: is worse than one that says it is not there yet.
+LIVE_REPORTS = ("analytics", "growth")
+
+#: Where a client's reports live. One prefix, joined to a client id at render
+#: time — no client name appears anywhere in this system.
+REPORT_ROOT = "/reports"
+
+#: A client id safe to put in a path: lowercase, digits, hyphen, underscore.
+#: Anything else is refused rather than escaped, because a client id that needs
+#: escaping to sit in a URL is a configuration mistake, and a quietly mangled
+#: link is harder to notice than a failed render.
+_CLIENT_ID = _re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def report_path(client, report):
+    """The route for one report of one client.
+
+    ``/reports/<client>/`` for the suite root, ``/reports/<client>/<segment>/``
+    for everything else. Trailing slash throughout, because these are
+    directories on the report host and a link without one costs a redirect.
+    """
+    client = str(client or "").strip()
+    if not _CLIENT_ID.match(client):
+        raise ValueError(
+            f"{client!r} is not usable as a client id in a URL. Expected "
+            "lowercase letters, digits, hyphen or underscore."
+        )
+    for key, segment, _label in REPORTS:
+        if key == report:
+            tail = f"{segment}/" if segment else ""
+            return f"{REPORT_ROOT}/{client}/{tail}"
+    raise ValueError(f"no such report: {report!r}")
+
+
+def report_nav(client, active, live=LIVE_REPORTS, reports=REPORTS):
+    """The bar that moves a client between their reports.
+
+    One implementation, rendered by every report, so the tabs cannot disagree
+    about what exists or what a route is. The caller supplies only which report
+    it is; the routes are derived from the client id and the table above.
+
+    ``active`` is the report's own type, so a report cannot mislabel itself by
+    passing a URL it guessed. An unknown ``active`` renders the bar with nothing
+    marked current rather than raising: a navigation bar is not worth failing a
+    client report over.
+    """
+    tabs = []
+    for key, _segment, label in reports:
+        if key in live:
+            current = ' aria-current="page"' if key == active else ""
+            tabs.append(f'<a href="{escape(report_path(client, key))}"'
+                        f"{current}>{escape(label)}</a>")
+        else:
+            # Not a link, and said so twice: muted for the eye, and stated for
+            # a screen reader, which cannot see that it is grey.
+            tabs.append(f'<span aria-disabled="true" title="Not connected yet">'
+                        f'{escape(label)}'
+                        f'<i class="td-nav-note"> — not connected yet</i>'
+                        "</span>")
+    return ('<nav class="td-nav" aria-label="Reports">'
+            f'<div class="td-nav-scroll">{"".join(tabs)}</div>'
+            "</nav>")
 
 
 def conclusion_card(status_label, tone, period, statement, directives=()):
@@ -1221,4 +1378,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "a640e8cb62bbfcda"
+CONTENT_HASH = "74a47e13946c4ca4"
