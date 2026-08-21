@@ -52,6 +52,14 @@
 
   gsap.registerPlugin(ScrollTrigger);
 
+  // Same atomic-enhancement guard as merge-transition.js: if anything below
+  // throws mid-setup, the catch at the bottom kills the pin and clears every
+  // inline transform so the stage falls back to its settled CSS state
+  // (homepage.css already renders that state correctly with no JS) instead
+  // of leaving invisible cards or an undriven full-viewport pin behind.
+  var pinTrigger = null;
+  try {
+
   // --- Card entrances: measure once, before any transform is applied ---
   // Each card's CSS already places it at its real, final resting spot
   // (homepage.css) — read that now, work out the offset back to the
@@ -119,7 +127,7 @@
       : CARD_START + (i * (CARD_END - CARD_START)) / (cards.length - 1);
   });
 
-  ScrollTrigger.create({
+  pinTrigger = ScrollTrigger.create({
     trigger: stage,
     start: "top top",
     end: "+=" + window.innerHeight * 1.5,
@@ -138,4 +146,13 @@
       });
     },
   });
+
+  } catch (err) {
+    try {
+      if (pinTrigger) pinTrigger.kill(true);
+      gsap.set(cards, { clearProps: "all" });
+    } catch (cleanupErr) {
+      /* even a failed cleanup must never take down the rest of the page */
+    }
+  }
 })();

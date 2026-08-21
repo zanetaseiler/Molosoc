@@ -55,43 +55,62 @@
 
   gsap.registerPlugin(ScrollTrigger);
 
-  // "Before merge" starting state — matches docs/references/reference-1.1.png:
-  // two tiles pulled apart with a gap, visibly smaller than full scale so the
-  // merge phase reads as both closing the gap AND growing into place.
-  gsap.set(tileLeft, { xPercent: -12, scale: 0.7, transformOrigin: "right center" });
-  gsap.set(tileRight, { xPercent: 12, scale: 0.7, transformOrigin: "left center" });
-  // Overlay stays fully transparent through merge + settle — it only appears
-  // together with the text, not before it.
-  gsap.set(scrim, { opacity: 0 });
-  gsap.set(textEls, { opacity: 0, scale: 0.92, y: 24 });
+  // Everything from the first gsap.set() on is one atomic enhancement: if any
+  // step throws (a GSAP/plugin version mismatch, a CSSPlugin quirk on an
+  // exotic browser), a bare failure would leave the tiles pulled apart, the
+  // text invisible, or — worst — a created pin holding a full-viewport fixed
+  // layer over the page with nothing left to drive it. The catch below tears
+  // all of that back down to the settled CSS state, which this section
+  // already renders correctly with no JS at all (see the header comment).
+  var tl = null;
+  try {
+    // "Before merge" starting state — matches docs/references/reference-1.1.png:
+    // two tiles pulled apart with a gap, visibly smaller than full scale so the
+    // merge phase reads as both closing the gap AND growing into place.
+    gsap.set(tileLeft, { xPercent: -12, scale: 0.7, transformOrigin: "right center" });
+    gsap.set(tileRight, { xPercent: 12, scale: 0.7, transformOrigin: "left center" });
+    // Overlay stays fully transparent through merge + settle — it only appears
+    // together with the text, not before it.
+    gsap.set(scrim, { opacity: 0 });
+    gsap.set(textEls, { opacity: 0, scale: 0.92, y: 24 });
 
-  var tl = gsap.timeline({
-    scrollTrigger: {
-      trigger: section,
-      start: "top top",
-      end: "+=150%",
-      pin: true,
-      scrub: 1,
-      anticipatePin: 1,
-    },
-  });
+    tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: section,
+        start: "top top",
+        end: "+=150%",
+        pin: true,
+        scrub: 1,
+        anticipatePin: 1,
+      },
+    });
 
-  // 0 -> 0.4: MERGE — tiles grow from 70% and close the gap, aligning into one image.
-  tl.to(tileLeft, { xPercent: 0, scale: 1, duration: 0.4, ease: "power2.inOut" }, 0)
-    .to(tileRight, { xPercent: 0, scale: 1, duration: 0.4, ease: "power2.inOut" }, 0)
-    // 0.4 -> 0.6: SETTLE — merged image pulls back slightly. Overlay is NOT part
-    // of this phase (see below) — it stays at 0 through settle too.
-    .to(mergeGroup, { scale: 0.98, duration: 0.2, ease: "power1.out" }, 0.4)
-    // 0.6 -> 1.0: TEXT EMERGENCE — overlay and text fade in together, headline +
-    // pillars staggered. NOTE: a staggered tween's effective span is
-    // duration + (targets-1)*stagger, not just `duration` — with 6 text targets
-    // and stagger 0.06 that's +0.3, which would otherwise push this phase past
-    // 1.0 and skew every percentage above. Shrinking textEls' duration to 0.1
-    // keeps the whole staggered group landing exactly in the 0.6 -> 1.0 window.
-    .to(scrim, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.6)
-    .to(
-      textEls,
-      { opacity: 1, scale: 1, y: 0, duration: 0.1, stagger: 0.06, ease: "power2.out" },
-      0.6
-    );
+    // 0 -> 0.4: MERGE — tiles grow from 70% and close the gap, aligning into one image.
+    tl.to(tileLeft, { xPercent: 0, scale: 1, duration: 0.4, ease: "power2.inOut" }, 0)
+      .to(tileRight, { xPercent: 0, scale: 1, duration: 0.4, ease: "power2.inOut" }, 0)
+      // 0.4 -> 0.6: SETTLE — merged image pulls back slightly. Overlay is NOT part
+      // of this phase (see below) — it stays at 0 through settle too.
+      .to(mergeGroup, { scale: 0.98, duration: 0.2, ease: "power1.out" }, 0.4)
+      // 0.6 -> 1.0: TEXT EMERGENCE — overlay and text fade in together, headline +
+      // pillars staggered. NOTE: a staggered tween's effective span is
+      // duration + (targets-1)*stagger, not just `duration` — with 6 text targets
+      // and stagger 0.06 that's +0.3, which would otherwise push this phase past
+      // 1.0 and skew every percentage above. Shrinking textEls' duration to 0.1
+      // keeps the whole staggered group landing exactly in the 0.6 -> 1.0 window.
+      .to(scrim, { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.6)
+      .to(
+        textEls,
+        { opacity: 1, scale: 1, y: 0, duration: 0.1, stagger: 0.06, ease: "power2.out" },
+        0.6
+      );
+  } catch (err) {
+    try {
+      if (tl && tl.scrollTrigger) tl.scrollTrigger.kill(true);
+      if (tl) tl.kill();
+      gsap.set([tileLeft, tileRight, mergeGroup, scrim], { clearProps: "all" });
+      gsap.set(textEls, { clearProps: "all" });
+    } catch (cleanupErr) {
+      /* even a failed cleanup must never take down the rest of the page */
+    }
+  }
 })();

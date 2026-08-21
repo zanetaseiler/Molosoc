@@ -35,6 +35,19 @@
   "use strict";
 
   var refreshQueued = false;
+  // Height of the document as of the last completed refresh. Every image on
+  // these pages carries width/height attributes, so most image loads don't
+  // change layout at all — but the standing per-image listener below still
+  // fired a full ScrollTrigger.refresh() for each one. On a COLD first visit
+  // that meant one forced re-layout of the whole 13k-px page (pins reverted
+  // and re-applied) per arriving image, repeatedly, exactly while a
+  // first-time visitor is trying to scroll — warm repeat visits never fire
+  // any of them, which is why the resulting jank was only ever reported by
+  // first-time visitors and never reproducible afterwards. Skipping the
+  // refresh whenever the document height is unchanged keeps the correctness
+  // net (a load that DOES grow the page still refreshes) while making the
+  // no-op case actually a no-op.
+  var lastRefreshedHeight = null;
   function molosocRefreshScrollTrigger() {
     if (refreshQueued || !window.ScrollTrigger) return;
     refreshQueued = true;
@@ -47,6 +60,9 @@
         return;
       }
       refreshQueued = false;
+      var height = document.documentElement.scrollHeight;
+      if (height === lastRefreshedHeight) return;
+      lastRefreshedHeight = height;
       ScrollTrigger.refresh();
     })();
   }
