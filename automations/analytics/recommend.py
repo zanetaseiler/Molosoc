@@ -94,6 +94,22 @@ TEMPLATES = {
 NON_ACTIONABLE_SIGNALS = (sg.SOURCE_DISAGREEMENT,)
 
 
+def entity_label(entity_id):
+    """How an entity id reads inside a sentence a client is meant to follow.
+
+    The templates are written as instructions — "Watch a sample of Clarity
+    session recordings for {entity}" — and the site-level id is the literal
+    string "site", which rendered as "recordings for site". A noun needs its
+    article.
+
+    Presentation only, and safe for tracking: recommendation fingerprints are
+    hashed from `entity_id` itself, so how its sentence reads has no bearing on
+    whether a recommendation is recognised again next week.
+    """
+    text = str(entity_id or "").strip()
+    return "the site" if not text or text == "site" else text
+
+
 def estimate_impact_share(inference, index, site_totals):
     """How much of the site's total this entity represents.
 
@@ -175,7 +191,8 @@ def build_recommendation(inference, index, site_totals, readiness_ready,
         fingerprint=fingerprint,
         priority=priority,
         area=template.area,
-        action=template.action.format(entity=inference.entity_id),
+        action=template.action.format(
+            entity=entity_label(inference.entity_id)),
         rationale=" ".join(rationale_parts),
         supporting_facts=tuple(inference.based_on),
         supporting_inferences=(inference.id,),

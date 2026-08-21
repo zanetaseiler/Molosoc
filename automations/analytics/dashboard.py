@@ -212,6 +212,19 @@ def entity_table(facts, heading, empty_message):
         ((heading, False), ("Period", True), ("Change", True)), rows)
 
 
+def sentence(text):
+    """A producer's clause, presented as a sentence. Capital, full stop, done.
+
+    Deliberately not a rewrite: this is the readiness verdict, and paraphrasing
+    it would put a second author between the measurement and the reader.
+    """
+    text = str(text or "").strip()
+    if not text:
+        return ""
+    text = text[0].upper() + text[1:]
+    return text if text[-1] in ".!?" else text + "."
+
+
 def summary_section(document, headline, counts_text):
     """What happened this week, in one card — the Growth report's own opening.
 
@@ -220,7 +233,9 @@ def summary_section(document, headline, counts_text):
     """
     readiness = document.get("readiness", "")
     tone = "waiting" if readiness == INSUFFICIENT_DATA else "ready"
-    label = ("More data needed" if readiness == INSUFFICIENT_DATA
+    # One phrase for this state across every TrafficDom report — the Growth
+    # report's readiness gate says the same words for the same situation.
+    label = ("More evidence needed" if readiness == INSUFFICIENT_DATA
              else "Measurement healthy")
     period = document.get("period") or {}
     comparison = document.get("comparison_period") or {}
@@ -235,7 +250,11 @@ def summary_section(document, headline, counts_text):
     card = td.conclusion_card(
         status_label=label, tone=tone,
         period=f"Week to {document.get('report_date', '')}",
-        statement=document.get("readiness_note", ""),
+        # The producer writes its note as a clause — "insufficient data for
+        # recommendation: 21 sessions..." — which is correct and reads as an
+        # error string at the top of a client report. Capitalised for display
+        # only; not a word of it is changed.
+        statement=sentence(document.get("readiness_note", "")),
         directives=directives,
     )
     return card + metric_grid(headline, "No site-level metrics in this period.")

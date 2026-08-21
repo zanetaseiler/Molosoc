@@ -70,8 +70,9 @@ def test_growth_is_reachable_from_here():
 def test_nothing_that_is_not_connected_is_a_link():
     bar = _bar()
     linked = {label for _href, _attrs, label in LINK.findall(bar)}
-    assert linked == {"Analytics", "Growth"}
-    assert bar.count('aria-disabled="true"') == len(td.REPORTS) - 2
+    assert linked == {"Analytics", "Growth", "Email Marketing"}
+    assert bar.count('aria-disabled="true"') == (
+        len(td.REPORTS) - len(td.LIVE_REPORTS))
 
 
 def test_there_is_exactly_one_navigation_on_the_page():
