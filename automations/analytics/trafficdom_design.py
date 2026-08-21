@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 802050ecaeb9a284.
+Generated from the Growth Engine at fingerprint 3edf0d7eee81b07f.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "802050ecaeb9a284"
+DESIGN_FINGERPRINT = "3edf0d7eee81b07f"
 
 """
 The heading typeface, carried in the page rather than fetched by it.
@@ -924,10 +924,12 @@ TOKENS = {
     #: Analytics report composes the same component from the vendored copy and
     #: the two must not be able to disagree about how big a section reads.
     #:
-    #: It sits deliberately below the masthead title and deliberately above a
-    #: card heading; those two are unchanged, and this is the middle step of a
-    #: three-step scale rather than a free measurement.
-    "--td-section-title": "1.625rem",
+    #: Set by explicit direction at 1.8x its previous size. It now exceeds the
+    #: masthead title, which was left unchanged on the same instruction — so a
+    #: section heading is the largest type on the page and the scale no longer
+    #: descends from the masthead down. Recorded here because it is a decision,
+    #: not a drift: a later reader should know it was asked for.
+    "--td-section-title": "2.925rem",
     "--td-radius": "5px",
     #: Two layers, both warm-black rather than blue, and both weak enough that
     #: the card still sits ON the page rather than above it: a one-pixel
@@ -2227,4 +2229,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "44515ab408b48f38"
+CONTENT_HASH = "54a1331e92bf0391"
