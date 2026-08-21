@@ -1,0 +1,55 @@
+name: Staging - sync product price to 229 CZK
+
+# One-shot: uploads the temporary mu-plugin automations/staging/
+# staging-price-229.php to STAGING's mu-plugins over FTPS, triggers it once
+# (sets Woo product 364 + variations 424/425 to 229 CZK, matching prod),
+# verifies via the public Store API, then deletes the mu-plugin from the
+# server again. Staging only — no production secrets are used.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  sync-price:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Upload mu-plugin to staging
+        env:
+          HOST: ${{ secrets.STAGING_SFTP_HOST }}
+          USER: ${{ secrets.STAGING_SFTP_USER }}
+          PASS: ${{ secrets.STAGING_SFTP_PASS }}
+        run: |
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; put -O /wp-content/mu-plugins/ automations/staging/staging-price-229.php; bye" "$HOST"
+
+      - name: Trigger the one-shot sync
+        run: |
+          for i in 1 2 3; do
+            BODY=$(curl -s -m 60 "https://staging.molosoc.com/?molosoc_price_sync=molosoc-staging-229")
+            echo "attempt $i: $BODY"
+            echo "$BODY" | grep -q '"ok":true' && exit 0
+            sleep 5
+          done
+          echo "::error::sync trigger never returned ok:true"
+          exit 1
+
+      - name: Verify price via public Store API
+        run: |
+          PRICE=$(curl -s -m 30 "https://staging.molosoc.com/wp-json/wc/store/v1/products/364" | python3 -c "import json,sys; print(json.load(sys.stdin)['prices']['price'])")
+          echo "staging product 364 price: $PRICE (expect 22900)"
+          [ "$PRICE" = "22900" ] || { echo "::error::price is $PRICE, not 22900"; exit 1; }
+
+      - name: Remove mu-plugin from staging (always)
+        if: always()
+        env:
+          HOST: ${{ secrets.STAGING_SFTP_HOST }}
+          USER: ${{ secrets.STAGING_SFTP_USER }}
+          PASS: ${{ secrets.STAGING_SFTP_PASS }}
+        run: |
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; rm /wp-content/mu-plugins/staging-price-229.php; bye" "$HOST" || true
+          echo "mu-plugins listing after cleanup:"
+          lftp -u "$USER,$PASS" -e "set ftp:ssl-force true; set ssl:verify-certificate no; cls -1 /wp-content/mu-plugins; bye" "$HOST" || true
