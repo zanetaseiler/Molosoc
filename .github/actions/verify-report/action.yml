@@ -1,0 +1,53 @@
+name: Verify a published report
+description: >-
+  Fetch one published client report from behind HTTP Basic Auth and assert it is
+  live (200), authentic (contains its marker) and, where a hash is supplied,
+  byte-identical to what was uploaded. A 401 is a failure.
+
+# Client-agnostic on purpose. The credentials are inputs, not hard-coded secret
+# names, so a second protected client folder needs a new secret pair at the call
+# site and no change here.
+
+inputs:
+  url:
+    description: The page to fetch.
+    required: true
+  marker:
+    description: Text the page must contain, matched case-insensitively.
+    required: false
+    default: ""
+  user:
+    description: Basic Auth user for the realm protecting this directory.
+    required: true
+  password:
+    description: Basic Auth password for that realm.
+    required: true
+  expect-sha256:
+    description: >-
+      Optional. When set, the bytes served must hash to this — end-to-end proof
+      that what is being served is what was published, rather than trusting the
+      upload's own report of success.
+    required: false
+    default: ""
+  label:
+    description: Human-readable name for log messages. Defaults to the URL.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Verify over an authenticated request
+      shell: bash
+      # Every value arrives as an environment variable. Nothing is interpolated
+      # into the command line, so no credential can reach argv — and none of
+      # these is interpolated into the script body either, so a value containing
+      # shell metacharacters is data rather than code.
+      env:
+        VERIFY_URL: ${{ inputs.url }}
+        VERIFY_MARKER: ${{ inputs.marker }}
+        VERIFY_USER: ${{ inputs.user }}
+        VERIFY_PASSWORD: ${{ inputs.password }}
+        VERIFY_EXPECT_SHA256: ${{ inputs.expect-sha256 }}
+        VERIFY_LABEL: ${{ inputs.label }}
+      run: bash "${{ github.workspace }}/automations/analytics/verify_published_report.sh"

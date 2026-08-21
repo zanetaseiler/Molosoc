@@ -246,21 +246,17 @@ jobs:
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
         run: python3 automations/analytics/publish_dashboard.py --file site/index.html
 
+      # Authenticated: the reports directory is password-protected on purpose.
+      # A 401 remains a failure.
+      #
+      # The marker is matched case-insensitively, as it was here before: the
+      # page's own title became "Weekly Marketing Analysis" in title case at
+      # the TrafficDom redesign, and a case-sensitive check broke on it once.
       - name: Verify the page is live
-        run: |
-          url="https://trafficdom.com/reports/molosoc/"
-          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
-          echo "HTTP $code from $url"
-          if [ "$code" != "200" ]; then
-            echo "::error::$url returned HTTP $code"
-            exit 1
-          fi
-          # Case-insensitive: the page's own title is "Weekly Marketing
-          # Analysis" in title case since the TrafficDom redesign. The check is
-          # unchanged in what it verifies — that the live page is this report.
-          if ! grep -qi "weekly marketing analysis" /tmp/live.html; then
-            echo "::error::$url served a page, but not the dashboard"
-            head -c 400 /tmp/live.html
-            exit 1
-          fi
-          echo "PASS the dashboard is live at $url ($(wc -c < /tmp/live.html) bytes)"
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/
+          marker: weekly marketing analysis
+          label: the dashboard
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}

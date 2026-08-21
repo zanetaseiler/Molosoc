@@ -197,34 +197,25 @@ jobs:
           python3 automations/analytics/publish_dashboard.py \
             --section growth --file incoming/index.html
 
+      # Authenticated: the reports directory is password-protected on purpose.
+      # A 401 remains a failure.
       - name: Verify the page is live
-        run: |
-          url="https://trafficdom.com/reports/molosoc/growth/"
-          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
-          echo "HTTP $code from $url"
-          if [ "$code" != "200" ]; then
-            echo "::error::$url returned HTTP $code"
-            exit 1
-          fi
-          if ! grep -q "Growth Report" /tmp/live.html; then
-            echo "::error::$url served a page, but not the Growth report"
-            head -c 400 /tmp/live.html
-            exit 1
-          fi
-          echo "PASS the Growth report is live at $url ($(wc -c < /tmp/live.html) bytes)"
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/growth/
+          marker: Growth Report
+          label: the Growth report
+          expect-sha256: ${{ inputs.sha256 }}
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
 
+      # The failure this whole design exists to prevent, checked from the
+      # outside afterwards rather than only asserted beforehand.
       - name: Confirm the Analytics report is untouched
-        run: |
-          # The failure this whole design exists to prevent, checked from the
-          # outside afterwards rather than only asserted beforehand.
-          url="https://trafficdom.com/reports/molosoc/"
-          code=$(curl -sS -L --max-time 30 -o /tmp/analytics.html -w "%{http_code}" "$url" || echo 000)
-          if [ "$code" != "200" ]; then
-            echo "::error::$url returned HTTP $code — the Analytics report may have been affected"
-            exit 1
-          fi
-          if ! grep -q "Weekly marketing analysis" /tmp/analytics.html; then
-            echo "::error::$url is no longer serving the Analytics dashboard"
-            exit 1
-          fi
-          echo "PASS the Analytics report is unchanged at $url"
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/
+          marker: Weekly marketing analysis
+          label: the Analytics report
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
