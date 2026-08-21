@@ -28,7 +28,17 @@ BOT_SHARE_CRITICAL = 0.50
 
 # Script errors are an instrumentation signal: a deploy regression that breaks
 # measurement looks exactly like a behaviour change otherwise.
+#
+# Two bars, for the same reason bot share has two. A *change* of this size is
+# evidence of a regression, because the site is its own baseline. A *level*
+# says much less: a share of sessions touching at least one JavaScript error is
+# normal on any site carrying third-party tags, and without a prior period
+# there is nothing to say it moved. So the level bar is set where the errors
+# are widespread enough that the behavioural numbers underneath them really
+# cannot be believed, and everything between the two is reported as an
+# observation rather than asserted as broken measurement.
 SCRIPT_ERROR_SPIKE = 0.10
+SCRIPT_ERROR_UNUSABLE = 0.50
 
 MAD_TO_SIGMA = 0.6745
 
@@ -181,22 +191,68 @@ def detect_bot_share_anomaly(bot_share_now, bot_share_prior=None, entity_id="sit
 
 
 def detect_script_error_spike(rate_now, rate_prior=None, entity_id="site"):
-    """A jump in Clarity script errors — a deploy-regression candidate."""
+    """Clarity script errors: a regression, an unusable level, or an observation.
+
+    Three outcomes, and which one applies is decided by what the evidence can
+    actually support:
+
+    * a **jump** of ``SCRIPT_ERROR_SPIKE`` or more over the prior period is a
+      deploy-regression candidate. The site is its own baseline, so a move of
+      that size is a real signal — instrumentation, and it suppresses;
+    * a **level** at or above ``SCRIPT_ERROR_UNUSABLE`` is instrumentation too,
+      baseline or not: when errors touch that share of sessions, the behaviour
+      recorded underneath them cannot be believed;
+    * anything else at or above ``SCRIPT_ERROR_SPIKE`` is **reported, not
+      asserted**. A double-digit share of sessions touching one JavaScript
+      error is ordinary on a site with third-party tags, and with no prior
+      period there is nothing to say it changed. Calling that broken
+      measurement voids every figure in the report on a reading the evidence
+      does not support — so it is a performance anomaly: visible, named, and
+      not suppressing.
+
+    Nothing detected before is dropped: a genuine spike still trips exactly as
+    it did, and the threshold for it is unchanged.
+    """
     if rate_now is None or rate_now < SCRIPT_ERROR_SPIKE:
         return []
-    if rate_prior is not None and rate_now - rate_prior < SCRIPT_ERROR_SPIKE:
-        return []
-    prior_text = f" (from {rate_prior:.1%})" if rate_prior is not None else ""
+
+    spiked = (rate_prior is not None
+              and rate_now - rate_prior >= SCRIPT_ERROR_SPIKE)
+    unusable = rate_now >= SCRIPT_ERROR_UNUSABLE
+
+    if spiked:
+        detail = (f"Script errors affect {rate_now:.1%} of Clarity sessions "
+                  f"(from {rate_prior:.1%}). Check recent deploys: broken "
+                  "JavaScript can distort every other behavioural metric on "
+                  "the page.")
+    elif unusable:
+        detail = (f"Script errors affect {rate_now:.1%} of Clarity sessions. At "
+                  "that share the behavioural figures underneath them cannot be "
+                  "treated as a record of what users did.")
+    else:
+        baseline = (f"unchanged from {rate_prior:.1%} the period before"
+                    if rate_prior is not None
+                    else "no prior period is available to compare against")
+        return [Anomaly(
+            id=_anomaly_id("scripterror", entity_id, "clarity_script_error_rate"),
+            anomaly_class=PERFORMANCE_ANOMALY,
+            entity_id=entity_id, entity_type="site",
+            metric="clarity_script_error_rate",
+            method="script_error_level", score=round(rate_now, 3),
+            description=(
+                f"Script errors affect {rate_now:.1%} of Clarity sessions — "
+                f"{baseline}. Worth checking in Clarity's error detail, but on "
+                "its own this is not evidence that measurement is broken."
+            ),
+        )]
+
     return [Anomaly(
         id=_anomaly_id("scripterror", entity_id, "clarity_script_error_rate"),
         anomaly_class=INSTRUMENTATION_ANOMALY,
         entity_id=entity_id, entity_type="site", metric="clarity_script_error_rate",
-        method="script_error_spike", score=round(rate_now, 3),
-        description=(
-            f"Script errors affect {rate_now:.1%} of Clarity sessions{prior_text}. "
-            "Check recent deploys: broken JavaScript can distort every other "
-            "behavioural metric on the page."
-        ),
+        method="script_error_spike" if spiked else "script_error_level",
+        score=round(rate_now, 3),
+        description=detail,
         suppresses=(entity_id,),
     )]
 
