@@ -82,7 +82,7 @@ def test_it_imports_nothing_but_the_standard_library():
             imported.append(node.module or "")
     assert imported
     for name in imported:
-        assert name.split(".")[0] in {"html", "dataclasses"}, name
+        assert name.split(".")[0] in {"html", "dataclasses", "re"}, name
 
 
 def test_the_dashboard_writes_no_style_of_its_own():

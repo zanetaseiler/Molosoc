@@ -367,6 +367,14 @@ def quality_drawer(document, generated):
 #: it liked — and this page is what a client opens.
 EMAIL_REPORT_URL = "https://trafficdom.com/reports/molosoc/email-marketing/"
 
+#: This client's segment in the report URL, and the only thing the shared
+#: navigation needs in order to derive every route in the suite. It has to be
+#: the directory the publisher actually writes to — `publish_dashboard
+#: .PROJECT_DIR` — or the tabs point at a folder nobody publishes; a test pins
+#: the two together. Named here rather than imported because importing the
+#: publisher would pull an SSH client into a render that must work offline.
+CLIENT = "molosoc"
+
 
 def render_dashboard(document, index=None, generated_at=None, email=None):
     """Return the complete self-contained HTML page as a string.
@@ -404,6 +412,12 @@ def render_dashboard(document, index=None, generated_at=None, email=None):
                             + (", Email" if email else "")),
             ],
             wordmark="TrafficDom Analytics",
+            # The shared bar, from the shared table. This report contributes
+            # only which client it is and which report it is; the routes, the
+            # labels and which channels are live all come from the design
+            # system, so the two reports cannot disagree about any of them.
+            client=CLIENT,
+            report="analytics",
         ),
         summary_section(document, headline, counts_text),
         td.section("Traffic", metric_grid(ga4, "No GA4 metrics in this period.")

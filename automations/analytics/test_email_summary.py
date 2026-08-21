@@ -21,6 +21,8 @@ import json
 import sys
 from pathlib import Path
 
+import re
+
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -320,7 +322,13 @@ def test_the_page_stays_self_contained():
     assert "<script" not in page
     assert "<link" not in page
     assert "src=" not in page
-    # The one <a href> is the link to the sibling report, which is the point of
-    # the card. It is a destination, not a resource the page loads.
-    assert page.count("href=") == 1
+    # The hrefs are destinations, not resources the page loads: the card's link
+    # to the sibling report, and the tabs in the report navigation. Counting
+    # them pinned the wrong thing — the navigation legitimately added two — so
+    # this checks the property that actually matters, on every one of them.
+    hrefs = re.findall(r'href="([^"]*)"', page)
+    assert hrefs
+    for href in hrefs:
+        assert href.startswith("/reports/") or href.startswith(
+            "https://trafficdom.com/reports/"), href
     assert f'href="{REPORT_URL}"' in page
