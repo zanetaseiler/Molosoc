@@ -83,7 +83,11 @@ get_header();
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už doma máte, konečně funguje' : __( 'The cream you already own, finally working', 'molosoc' ) ); ?></h2>
 				</div>
 				<div class="molosoc-orbit-drawer__buy">
-					<span class="molosoc-price-group">
+					<?php // translate="no" on every price group/note: browser auto-translate
+					      // (e.g. Chrome for Czech visitors on the EN page) garbles the
+					      // currency code — "229 CZK" was observed rendered as "229 CZH".
+					      // Prices and ISO codes must survive machine translation verbatim. ?>
+					<span class="molosoc-price-group" translate="no">
 						<span class="molosoc-orbit-drawer__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
 						<?php if ( ! $molosoc_is_cz ) : ?>
 							<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
@@ -297,7 +301,7 @@ get_header();
 				<div class="molosoc-product-buy">
 					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní — 229 Kč' : __( 'Order Now — €10', 'molosoc' ) ); ?></a>
 					<?php if ( ! $molosoc_is_cz ) : ?>
-						<p class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></p>
+						<p class="molosoc-price-note" translate="no"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></p>
 					<?php endif; ?>
 				</div>
 			</section>
@@ -309,7 +313,7 @@ get_header();
 <!-- Sticky mobile buy bar — see product.css for why this exists only at
      mobile widths. -->
 <div class="molosoc-sticky-buy">
-	<span class="molosoc-price-group">
+	<span class="molosoc-price-group" translate="no">
 		<span class="molosoc-sticky-buy__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
 		<?php if ( ! $molosoc_is_cz ) : ?>
 			<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
