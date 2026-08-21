@@ -41,6 +41,24 @@ on:
         description: "Override today's date (YYYY-MM-DD) to re-run a past week"
         required: false
         type: string
+      on_duplicate:
+        # The store already has this policy and documents it as the way to
+        # re-run a week that is already filed: "Re-run with the revision policy
+        # to file this run alongside it without replacing it." It was reachable
+        # from the CLI and not from here, so a re-run that needed to correct a
+        # published week could not be made from a workflow at all.
+        #
+        # `reject` stays the default, so the schedule behaves exactly as before
+        # and the historical record is still written once. `revision` files the
+        # re-run beside the original and moves the pointer to it — it does not
+        # overwrite, and cannot: the store writes create-if-absent.
+        description: "Already-published week: protect it (reject) or file a revision"
+        required: false
+        default: reject
+        type: choice
+        options:
+          - reject
+          - revision
 
 permissions:
   contents: read
@@ -151,6 +169,7 @@ jobs:
           # Committed default is 2026-08-16; the variable overrides it if set.
           ECOMMERCE_TRACKING_START: ${{ vars.ECOMMERCE_TRACKING_START }}
           REPORT_TODAY: ${{ inputs.today }}
+          ON_DUPLICATE: ${{ inputs.on_duplicate }}
         run: |
           # Exit codes: 0 ok, 1 generation/storage failure, 2 reports stored but
           # the latest/index pointer could not be updated, 3 this week is
@@ -161,13 +180,20 @@ jobs:
             EMAIL_ARG="--email-evidence $RUNNER_TEMP/email.json"
           fi
 
+          # Absent on a scheduled run, where the CLI's own default (reject)
+          # applies — the policy for the schedule is unchanged.
+          DUPLICATE_ARG=""
+          if [ -n "$ON_DUPLICATE" ]; then
+            DUPLICATE_ARG="--on-duplicate $ON_DUPLICATE"
+          fi
+
           if [ -n "$REPORT_TODAY" ]; then
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist \
+              --out-dir reports --also-json --persist $DUPLICATE_ARG \
               --dashboard-out site/index.html --today "$REPORT_TODAY" $EMAIL_ARG
           else
             python3 automations/analytics/weekly_report.py \
-              --out-dir reports --also-json --persist \
+              --out-dir reports --also-json --persist $DUPLICATE_ARG \
               --dashboard-out site/index.html $EMAIL_ARG
           fi
           code=$?
