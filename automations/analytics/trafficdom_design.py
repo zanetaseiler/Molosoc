@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 0ff253c55ea61236.
+Generated from the Growth Engine at fingerprint 802050ecaeb9a284.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "0ff253c55ea61236"
+DESIGN_FINGERPRINT = "802050ecaeb9a284"
 
 """
 The heading typeface, carried in the page rather than fetched by it.
@@ -919,6 +919,15 @@ TOKENS = {
     #: two means a section can breathe more without its own header drifting
     #: away from the content it labels.
     "--td-section-gap": "1.25rem",
+    #: The size of a major section heading — "Traffic", "Channel health",
+    #: "Next actions". A token rather than a literal in the rule, because the
+    #: Analytics report composes the same component from the vendored copy and
+    #: the two must not be able to disagree about how big a section reads.
+    #:
+    #: It sits deliberately below the masthead title and deliberately above a
+    #: card heading; those two are unchanged, and this is the middle step of a
+    #: three-step scale rather than a free measurement.
+    "--td-section-title": "1.625rem",
     "--td-radius": "5px",
     #: Two layers, both warm-black rather than blue, and both weak enough that
     #: the card still sits ON the page rather than above it: a one-pixel
@@ -991,7 +1000,7 @@ body {
 .td-section-title {
   font-family: var(--td-display);
   font-weight: 400;
-  font-size: 1.4375rem;
+  font-size: var(--td-section-title);
   line-height: 1.25;
   letter-spacing: -0.02em;
   margin: 0.625rem 0 0;
@@ -2218,4 +2227,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "a2c6057fb819dc21"
+CONTENT_HASH = "44515ab408b48f38"
