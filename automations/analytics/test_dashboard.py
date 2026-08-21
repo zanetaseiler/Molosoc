@@ -204,8 +204,10 @@ def test_data_quality_and_coverage_reach_the_page(healthy):
 
 def test_the_readiness_state_is_shown_as_a_badge(low_volume):
     page = dash.render_dashboard(low_volume)
-    assert "More data needed" in page
-    assert "insufficient data" in page
+    assert "More evidence needed" in page
+    # Case-insensitive: the note is the producer's own clause, capitalised for
+    # display so it does not open the report looking like an error string.
+    assert "insufficient data" in page.lower()
 
 
 # --------------------------------------------------------------------------

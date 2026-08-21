@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 2ee02c296757d3ce.
+Generated from the Growth Engine at fingerprint 67797212c07392a3.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "2ee02c296757d3ce"
+DESIGN_FINGERPRINT = "67797212c07392a3"
 
 """
 Brand configuration — deliberately separate from the design system.
@@ -151,6 +151,9 @@ TOKENS = {
     "--td-page": "#f7f6f3",
     "--td-surface": "#fffefc",
     "--td-surface-sunk": "#f2f1ed",
+    #: A half-step between the page and a card: warm, barely there, and the
+    #: thing that lets a module read as a module without a border doing it.
+    "--td-surface-warm": "#faf9f6",
     "--td-ink": "#1b1c1a",
     "--td-ink-soft": "#55574f",
     "--td-ink-faint": "#8d8f86",
@@ -175,6 +178,10 @@ TOKENS = {
     # ---- rhythm ----------------------------------------------------------
     "--td-measure": "68rem",
     "--td-section": "4rem",
+    #: Air BETWEEN modules, on top of the padding inside them. Separating the
+    #: two means a section can breathe more without its own header drifting
+    #: away from the content it labels.
+    "--td-section-gap": "1.25rem",
     "--td-radius": "4px",
     "--td-shadow": "0 1px 2px rgba(27, 28, 26, .04)",
 }
@@ -372,14 +379,24 @@ body {
 
 /* ------------------------------------------------------------- metrics -- */
 
+/* The hairline mesh is drawn by the CELLS, not by a coloured ground showing
+   through the gaps. A band holds however many figures a report has, and with
+   the ground doing the work the last row's unused cells showed up as grey
+   rectangles — furniture that says "missing" about nothing at all. Outlines
+   overlap into a single line and take no space, so the mesh is unchanged and
+   an empty cell is simply empty. */
 .td-metrics {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-  gap: 1px; margin: 1.25rem 0 0;
-  background: var(--td-rule); border: 1px solid var(--td-rule);
+  gap: 0; margin: 1.25rem 0 0;
+  background: var(--td-surface); border: 1px solid var(--td-rule);
   border-radius: var(--td-radius); overflow: hidden;
+  box-shadow: var(--td-shadow);
 }
 
-.td-metric { background: var(--td-surface); padding: 1.5rem 1.5rem 1.25rem; }
+.td-metric {
+  background: var(--td-surface); padding: 1.5rem 1.5rem 1.25rem;
+  outline: 1px solid var(--td-rule);
+}
 
 .td-metric-value {
   font-family: var(--td-display); font-size: 2.5rem; line-height: 1;
@@ -465,8 +482,37 @@ body {
 
 /* ------------------------------------------------------------ sections -- */
 
-.td-section { padding: var(--td-section) 0 0; }
-.td-section-head { margin: 0 0 1.5rem; }
+/* Each section is a MODULE, and the eye should find its edges without being
+   shown a box. Three quiet things do that: a hairline where one module ends,
+   more air than a paragraph break, and a header band that belongs to the
+   section rather than floating above it. */
+
+.td-section {
+  padding: var(--td-section) 0 0;
+  margin: var(--td-section-gap) 0 0;
+  border-top: 1px solid var(--td-rule-soft);
+}
+
+/* The first section after the conclusion needs no rule: the card above it is
+   already an edge, and two edges in a row reads as a mistake. */
+.td-section:first-of-type { border-top: 0; margin-top: 0; }
+
+.td-section-head {
+  margin: 0 0 1.75rem; padding: 0 0 1.125rem;
+  border-bottom: 1px solid var(--td-rule-soft);
+}
+
+/* The marker. The same accent tick the masthead wordmark carries, so a section
+   label and the brand line are visibly the same system — one restrained mark,
+   never an icon set. */
+.td-section-head .td-eyebrow {
+  display: flex; align-items: center; gap: 0.625rem;
+}
+
+.td-section-head .td-eyebrow::before {
+  content: ""; width: 1.125rem; height: 2px; flex: none;
+  background: var(--td-accent); opacity: 0.55;
+}
 
 /* ------------------------------------------------------------ channels -- */
 
@@ -481,11 +527,13 @@ body {
 .td-channel {
   background: var(--td-surface); padding: 1.375rem 1.375rem 1.25rem;
   border: 1px solid var(--td-rule); border-radius: var(--td-radius);
+  box-shadow: var(--td-shadow);
   display: flex; flex-direction: column; gap: 0.75rem;
 }
 
+/* A channel with nothing to say sits ON the page rather than above it. */
 .td-channel--off {
-  background: transparent; border-style: dashed; box-shadow: none;
+  background: var(--td-surface-warm); border-style: dashed; box-shadow: none;
 }
 
 .td-channel-top {
@@ -521,11 +569,25 @@ body {
 
 .td-priorities { border-top: 1px solid var(--td-rule); }
 
+/* The ranked list is one object, not a run of rules across the page: a
+   container with its own ground, and hairlines only between the rows inside
+   it. The recommended row is tinted rather than outlined — the same trick the
+   status chips use, at panel scale. */
+.td-priorities {
+  background: var(--td-surface); border: 1px solid var(--td-rule);
+  border-radius: var(--td-radius); box-shadow: var(--td-shadow);
+  overflow: hidden;
+}
+
 .td-priority {
   display: grid; gap: 0.375rem 1.75rem; align-items: start;
   grid-template-columns: 3.5rem 1fr auto;
-  padding: 1.75rem 0; border-bottom: 1px solid var(--td-rule);
+  padding: 1.75rem 1.75rem; border-bottom: 1px solid var(--td-rule-soft);
 }
+
+.td-priority:last-child { border-bottom: 0; }
+.td-priority--opportunity { background: var(--td-accent-soft); }
+.td-priority--monitoring { background: transparent; }
 
 .td-priority-rank {
   font-family: var(--td-display); font-size: 1.75rem; line-height: 1;
@@ -563,7 +625,7 @@ body {
 
 .td-card--idea {
   border: 1px dashed var(--td-rule); border-radius: var(--td-radius);
-  padding: 1.5rem 1.625rem; background: transparent;
+  padding: 1.5rem 1.625rem; background: var(--td-surface-warm);
 }
 
 .td-card--idea h3 {
@@ -717,9 +779,15 @@ body {
 
 /* ---------------------------------------------------------- disclosure -- */
 
+/* The drawer is a module like the others, closed. Same ground, same border,
+   same radius — so "there is more here" reads as part of the system rather
+   than as a footnote someone appended. */
 .td-technical {
-  margin: var(--td-section) 0 0; border-top: 1px solid var(--td-rule);
-  padding: 1.25rem 0 0;
+  margin: var(--td-section) 0 0;
+  background: var(--td-surface-warm);
+  border: 1px solid var(--td-rule);
+  border-radius: var(--td-radius);
+  padding: 0.25rem 1.75rem 0.5rem;
 }
 
 .td-technical summary {
@@ -957,7 +1025,7 @@ REPORTS = (
 #: Which of them a client can actually open today. Everything else is rendered
 #: as present-but-not-connected: a tab that links to a page that does not exist
 #: is worse than one that says it is not there yet.
-LIVE_REPORTS = ("analytics", "growth")
+LIVE_REPORTS = ("analytics", "growth", "email")
 
 #: Where a client's reports live. One prefix, joined to a client id at render
 #: time — no client name appears anywhere in this system.
@@ -1378,4 +1446,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "74a47e13946c4ca4"
+CONTENT_HASH = "5e6298a6bf8b883b"
