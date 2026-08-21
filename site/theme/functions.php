@@ -129,6 +129,29 @@ add_filter( 'wp_robots', function ( $robots ) {
 	return $robots;
 } );
 
+// hreflang x-default, pointing unmatched-language searchers at the EN
+// version. Free Polylang emits the en/cs alternate pair itself but never
+// an x-default, so this fills only that gap: it prints ONLY on pages that
+// actually have both a published EN and CZ translation — exactly the
+// pages where Polylang already prints the pair — and never rewrites or
+// duplicates Polylang's own tags. Language slugs are 'en'/'cz' (locales
+// en_US/cs_CZ).
+add_action( 'wp_head', function () {
+	if ( ! function_exists( 'pll_get_post' ) || ! is_singular() ) {
+		return;
+	}
+	$id = get_queried_object_id();
+	if ( ! $id ) {
+		return;
+	}
+	$en = pll_get_post( $id, 'en' );
+	$cz = pll_get_post( $id, 'cz' );
+	if ( ! $en || ! $cz || 'publish' !== get_post_status( $en ) || 'publish' !== get_post_status( $cz ) ) {
+		return;
+	}
+	printf( '<link rel="alternate" href="%s" hreflang="x-default" />' . "\n", esc_url( get_permalink( $en ) ) );
+} );
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
