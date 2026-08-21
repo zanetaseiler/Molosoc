@@ -133,32 +133,62 @@ jobs:
           PY
 
       - name: What the public URL actually serves
+        env:
+          AUTH_USER: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          AUTH_PASSWORD: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
         run: |
           set -eu
+          # This is a DIAGNOSTIC, not a check: every request here is a probe
+          # whose status code is the finding, so it deliberately does not use
+          # the verify-report action — that action's job is to fail, and a tool
+          # you reach for when serving looks wrong must be able to report a 401
+          # rather than exit on one.
+          #
+          # It does need the credentials, though. Without them, a
+          # password-protected directory answers 401 to all four probes and the
+          # diagnostic can tell you nothing at all about what is being served.
+          #
+          # Credentials go into a mode-600 curl config, never onto a command
+          # line, for the same reason as everywhere else: `ps` can read argv.
+          if [ -n "${AUTH_USER:-}" ] && [ -n "${AUTH_PASSWORD:-}" ]; then
+            ( umask 077
+              printf 'user = "%s:%s"\n' "$AUTH_USER" "$AUTH_PASSWORD" \
+                > "$RUNNER_TEMP/curlrc" )
+            AUTH=(--config "$RUNNER_TEMP/curlrc")
+            echo "Authenticating to the protected reports directory."
+          else
+            AUTH=()
+            echo "::warning::REPORT_BASIC_AUTH_USER / REPORT_BASIC_AUTH_PASSWORD"
+            echo "::warning::are not set. Against a protected directory every"
+            echo "::warning::probe below will report 401 and tell you nothing"
+            echo "::warning::about what is actually being served."
+          fi
+          trap 'rm -f "$RUNNER_TEMP/curlrc"' EXIT INT TERM
+
           echo "--- response headers ---"
-          curl -sSI --max-time 30 "$PUBLIC_URL" | sed 's/^/  /' || true
+          curl -sSI --max-time 30 "${AUTH[@]}" "$PUBLIC_URL" | sed 's/^/  /' || true
 
           echo
           echo "--- plain GET ---"
-          code=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/served.html" \
+          code=$(curl -sS -L --max-time 30 "${AUTH[@]}" -o "$RUNNER_TEMP/served.html" \
                       -w "%{http_code}" "$PUBLIC_URL" || echo 000)
           echo "  HTTP $code, $(wc -c < "$RUNNER_TEMP/served.html" 2>/dev/null || echo 0) bytes"
 
           echo
           echo "--- cache-busted GET (?v=$GITHUB_RUN_ID) ---"
-          busted=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/busted.html" \
+          busted=$(curl -sS -L --max-time 30 "${AUTH[@]}" -o "$RUNNER_TEMP/busted.html" \
                         -w "%{http_code}" "${PUBLIC_URL}?v=$GITHUB_RUN_ID" || echo 000)
           echo "  HTTP $busted, $(wc -c < "$RUNNER_TEMP/busted.html" 2>/dev/null || echo 0) bytes"
 
           echo
           echo "--- explicit index.html rather than the directory ---"
-          direct=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/direct.html" \
+          direct=$(curl -sS -L --max-time 30 "${AUTH[@]}" -o "$RUNNER_TEMP/direct.html" \
                         -w "%{http_code}" "${PUBLIC_URL}index.html" || echo 000)
           echo "  HTTP $direct, $(wc -c < "$RUNNER_TEMP/direct.html" 2>/dev/null || echo 0) bytes"
 
           echo
           echo "--- with a browser user agent ---"
-          ua=$(curl -sS -L --max-time 30 -o "$RUNNER_TEMP/ua.html" -w "%{http_code}" \
+          ua=$(curl -sS -L --max-time 30 "${AUTH[@]}" -o "$RUNNER_TEMP/ua.html" -w "%{http_code}" \
                     -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36" \
                     "$PUBLIC_URL" || echo 000)
           echo "  HTTP $ua, $(wc -c < "$RUNNER_TEMP/ua.html" 2>/dev/null || echo 0) bytes"

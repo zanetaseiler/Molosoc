@@ -209,39 +209,44 @@ jobs:
           python3 automations/analytics/publish_dashboard.py \
             --section email-marketing --file incoming/index.html
 
+      # The reports directory is password-protected on purpose, so an
+      # unauthenticated GET returns 401 whether the report is perfect, corrupt
+      # or absent. Verification goes through the realm; a 401 is still a
+      # failure. When the run supplied a sha256, the bytes served are compared
+      # to the bytes published — end-to-end, rather than trusting the upload's
+      # own report of success.
       - name: Verify the page is live
-        run: |
-          url="https://trafficdom.com/reports/molosoc/email-marketing/"
-          code=$(curl -sS -L --max-time 30 -o /tmp/live.html -w "%{http_code}" "$url" || echo 000)
-          echo "HTTP $code from $url"
-          if [ "$code" != "200" ]; then
-            echo "::error::$url returned HTTP $code"
-            exit 1
-          fi
-          if ! grep -q "Email Marketing Report" /tmp/live.html; then
-            echo "::error::$url served a page, but not the Email Marketing report"
-            head -c 400 /tmp/live.html
-            exit 1
-          fi
-          echo "PASS the Email report is live at $url ($(wc -c < /tmp/live.html) bytes)"
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/email-marketing/
+          marker: Email Marketing Report
+          label: the Email report
+          expect-sha256: ${{ inputs.sha256 }}
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
 
-      - name: Confirm the other two reports are untouched
-        run: |
-          # The failure this whole design exists to prevent, checked from the
-          # outside afterwards rather than only asserted beforehand.
-          set -eu
-          for pair in "https://trafficdom.com/reports/molosoc/|Weekly marketing analysis" \
-                      "https://trafficdom.com/reports/molosoc/growth/|Growth Report"; do
-            url="${pair%%|*}"
-            marker="${pair##*|}"
-            code=$(curl -sS -L --max-time 30 -o /tmp/other.html -w "%{http_code}" "$url" || echo 000)
-            if [ "$code" != "200" ]; then
-              echo "::warning::$url returned HTTP $code — it may not be published yet"
-              continue
-            fi
-            if ! grep -qi "$marker" /tmp/other.html; then
-              echo "::error::$url is no longer serving its own report"
-              exit 1
-            fi
-            echo "PASS $url is unchanged"
-          done
+      # The failure this whole design exists to prevent, checked from the
+      # outside afterwards rather than only asserted beforehand.
+      #
+      # These were previously a loop that downgraded any non-200 to a warning
+      # and continued. Behind a password that would have silently verified
+      # nothing while printing nothing alarming — a check that cannot fail
+      # reads as a check that passed, which is worse than no check at all.
+      # They are now two ordinary steps, and they fail.
+      - name: Confirm the Analytics report is untouched
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/
+          marker: Weekly marketing analysis
+          label: the Analytics report
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
+
+      - name: Confirm the Growth report is untouched
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/growth/
+          marker: Growth Report
+          label: the Growth report
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}

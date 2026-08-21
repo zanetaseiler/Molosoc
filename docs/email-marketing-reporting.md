@@ -152,3 +152,58 @@ The collection runs 45 minutes after the weekly analysis so both describe the
 same Monday–Sunday week and can be read side by side. The card picks up whatever
 evidence exists at that moment; on the first week it will correctly say the
 channel is not yet publishing.
+
+## Verifying a password-protected report
+
+The MOLOSOC reports directory is protected by HTTP Basic Auth
+(`Protected 'public_html/Trafficdom.com/reports/molosoc'`), deliberately and
+permanently. Client reports are not public.
+
+That makes an unauthenticated GET useless as a check: it returns 401 whether the
+report is perfect, corrupt or absent. Every live verification therefore goes
+through the realm, and **a 401 remains a failure** — it is never accepted as
+"protected, therefore fine".
+
+### The one mechanism
+
+`automations/analytics/verify_published_report.sh`, wrapped by the composite
+action `.github/actions/verify-report`. One implementation, five call sites:
+
+| Workflow | What it verifies |
+| --- | --- |
+| `publish-email-report.yml` | the Email report, plus Analytics and Growth untouched |
+| `publish-growth-report.yml` | the Growth report, plus Analytics untouched |
+| `weekly-marketing-report.yml` | the overall dashboard |
+
+`diagnose-report-serving.yml` authenticates too, but deliberately does **not**
+use the action: its requests are probes whose status code is the finding, and a
+tool you reach for when serving looks wrong has to be able to report a 401
+rather than exit on one.
+
+### What it asserts, in order
+
+1. **Credentials are configured** — exit **2**, distinct from a failure. An
+   unset secret and a wrong password are indistinguishable on the wire, and
+   reporting the first as the second sends you to cPanel to debug a GitHub
+   setting.
+2. **HTTP 200.** A 401 fails, and says the realm rejected the credentials
+   rather than implying the protection should be removed.
+3. **The marker** — case-insensitive, because a title-case change has broken
+   this check before.
+4. **SHA256, where known.** The email and growth publishers pass the artifact
+   hash, so the bytes *served* are compared to the bytes *published* — rather
+   than trusting the upload's own report of success.
+
+### Credentials
+
+`REPORT_BASIC_AUTH_USER` and `REPORT_BASIC_AUTH_PASSWORD`, from Actions secrets
+only. They are written to a mode-600 curl config under `RUNNER_TEMP` and removed
+on exit; nothing passes a credential on a command line, where `ps` could read it
+and `set -x` would echo it. `--location-trusted` is deliberately unused, so
+credentials are never replayed to another host on a redirect.
+
+### Adding another protected client folder
+
+The action names no client and no secret. Add a secret pair — for example
+`REPORT_BASIC_AUTH_USER_CLIENTX` — and pass it at the call site. No change to
+the action or the script.
