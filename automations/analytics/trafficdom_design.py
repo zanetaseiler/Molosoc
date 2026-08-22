@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 3edf0d7eee81b07f.
+Generated from the Growth Engine at fingerprint 2dd327fe7c33e297.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "3edf0d7eee81b07f"
+DESIGN_FINGERPRINT = "2dd327fe7c33e297"
 
 """
 The heading typeface, carried in the page rather than fetched by it.
@@ -931,13 +931,26 @@ TOKENS = {
     #: not a drift: a later reader should know it was asked for.
     "--td-section-title": "2.925rem",
     "--td-radius": "5px",
-    #: Two layers, both warm-black rather than blue, and both weak enough that
-    #: the card still sits ON the page rather than above it: a one-pixel
-    #: contact edge, and a wide, very light spread that reads as air.
-    "--td-shadow": ("0 1px 1px rgba(43, 38, 28, .04), "
-                    "0 6px 16px -8px rgba(43, 38, 28, .10)"),
+    #: Two layers, both warm-black rather than blue. Deliberately BOLD rather
+    #: than restrained — a direct response to a reference the client liked for
+    #: how sharply its panels lifted off the page, with its dark palette
+    #: rejected but its depth kept: a wide, dark-enough ambient layer under a
+    #: firmer contact edge, so a card reads as an object sitting on the page
+    #: rather than a region loosely divided from it.
+    "--td-shadow": ("0 2px 2px rgba(43, 38, 28, .08), "
+                    "0 18px 44px -14px rgba(43, 38, 28, .24)"),
     #: For modules that are deliberately quieter than the decisions above them.
-    "--td-shadow-soft": "0 1px 2px rgba(43, 38, 28, .04)",
+    #: Raised in proportion to the card shadow above, so the gap between
+    #: "decision" and "quiet" is preserved rather than closed by the bold pass.
+    "--td-shadow-soft": ("0 2px 3px rgba(43, 38, 28, .05), "
+                         "0 10px 24px -12px rgba(43, 38, 28, .10)"),
+    #: The edge of a card, as distinct from `--td-rule`, which divides content
+    #: WITHIN a card (a table row, a nav underline). The reference's panels
+    #: read as cut out partly because of a real edge, not shadow alone — so a
+    #: decision module's outer border is this, darker and more defined than an
+    #: internal divider; a quiet module (the technical drawer, an idea card)
+    #: keeps `--td-rule` and stays visually secondary.
+    "--td-card-border": "#c7bfae",
 }
 
 
@@ -1113,7 +1126,7 @@ body {
 
 .td-conclusion {
   background: var(--td-surface);
-  border: 1px solid var(--td-rule);
+  border: 1px solid var(--td-card-border);
   border-radius: var(--td-radius);
   box-shadow: var(--td-shadow);
   padding: 2.5rem 2.75rem 2.25rem;
@@ -1163,7 +1176,7 @@ body {
 .td-metrics {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 0; margin: 1.25rem 0 0;
-  background: var(--td-surface); border: 1px solid var(--td-rule);
+  background: var(--td-surface); border: 1px solid var(--td-card-border);
   border-radius: var(--td-radius); overflow: hidden;
   box-shadow: var(--td-shadow);
 }
@@ -1206,7 +1219,7 @@ body {
 /* --------------------------------------------------------------- tables -- */
 
 .td-table-wrap {
-  overflow-x: auto; border: 1px solid var(--td-rule);
+  overflow-x: auto; border: 1px solid var(--td-card-border);
   border-radius: var(--td-radius); background: var(--td-surface);
   box-shadow: var(--td-shadow);
 }
@@ -1303,7 +1316,7 @@ body {
 
 .td-channel {
   background: var(--td-surface); padding: 1.375rem 1.375rem 1.25rem;
-  border: 1px solid var(--td-rule); border-radius: var(--td-radius);
+  border: 1px solid var(--td-card-border); border-radius: var(--td-radius);
   box-shadow: var(--td-shadow);
   display: flex; flex-direction: column; gap: 0.75rem;
 }
@@ -1351,7 +1364,7 @@ body {
    it. The recommended row is tinted rather than outlined — the same trick the
    status chips use, at panel scale. */
 .td-priorities {
-  background: var(--td-surface); border: 1px solid var(--td-rule);
+  background: var(--td-surface); border: 1px solid var(--td-card-border);
   border-radius: var(--td-radius); box-shadow: var(--td-shadow);
   overflow: hidden;
 }
@@ -1420,7 +1433,7 @@ body {
 .td-actions {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: 1px; background: var(--td-rule);
-  border: 1px solid var(--td-rule); border-radius: var(--td-radius);
+  border: 1px solid var(--td-card-border); border-radius: var(--td-radius);
   overflow: hidden; box-shadow: var(--td-shadow);
 }
 
@@ -1461,7 +1474,7 @@ body {
 }
 
 .td-insight {
-  background: var(--td-surface); border: 1px solid var(--td-rule);
+  background: var(--td-surface); border: 1px solid var(--td-card-border);
   border-radius: var(--td-radius); padding: 1.5rem 1.625rem;
   box-shadow: var(--td-shadow);
 }
@@ -2229,4 +2242,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "54a1331e92bf0391"
+CONTENT_HASH = "d36063ddf82cca55"
