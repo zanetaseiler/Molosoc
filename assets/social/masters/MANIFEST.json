@@ -1,0 +1,15 @@
+{
+  "_comment": "Read-only source masters. Never edit, crop, resize, recompress, or overwrite the files listed here — re-download from Drive if a master needs to change. This manifest exists so the renderer (and reviewers) can verify a master hasn't drifted from its approved source.",
+  "driveFolder": "https://drive.google.com/drive/folders/1FbiYmcjB7eGMxgZzanFGWZu66dHimCXD",
+  "files": [
+    {
+      "filename": "MOL_IMG_001_floor-journaling.png",
+      "driveFileId": "1kV41s0NHw9pzhlOnUMx84QWkBJa5JEFe",
+      "sha256": "db6dab1377fded46dc09d5b39d882cf3e047e0bb169181af9d07cd00aa98d5f3",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-22",
+      "note": "Byte-identical copy of the Drive master, per MOLOSOC_Approved_Image_Masters_Inventory.md. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    }
+  ]
+}

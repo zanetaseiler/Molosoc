@@ -1,0 +1,16 @@
+{
+  "name": "molosoc-social-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic SVG/Sharp renderer for MOLOSOC 4:5 social posts.",
+  "type": "module",
+  "scripts": {
+    "render": "node src/render.mjs"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "fontkit": "^2.0.4",
+    "sharp": "^0.35.3"
+  }
+}

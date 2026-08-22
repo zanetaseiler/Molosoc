@@ -1,0 +1,46 @@
+name: Render Social Posts
+
+# Cloud-first, deterministic build: turns assets/social/config/posts.json +
+# the read-only masters in assets/social/masters/ into finished 4:5 PNGs via
+# SVG/Sharp text compositing (no generative AI, no dependency on a local
+# machine). Runs on every push that touches the renderer, and on demand.
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_id:
+        description: "Render a single post id (blank = render everything in posts.json)"
+        required: false
+        default: ""
+  push:
+    branches: [staging, main]
+    paths:
+      - "assets/social/**"
+      - ".github/workflows/social-render.yml"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: assets/social
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies (locked, reproducible)
+        run: npm ci
+
+      - name: Render posts
+        run: node src/render.mjs ${{ github.event.inputs.post_id }}
+
+      - name: Upload rendered posts as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: molosoc-social-posts
+          path: assets/social/output/*.png
+          if-no-files-found: error

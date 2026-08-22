@@ -1,0 +1,16 @@
+[
+  {
+    "id": "MOL_POST_001_EN",
+    "master": "MOL_IMG_001_floor-journaling.png",
+    "locale": "en",
+    "headline": ["Care that", "fits real", "life."],
+    "supporting": "Cream on. MOLOSOC on. Carry on.",
+    "layout": {
+      "xFrac": 0.0535,
+      "yFrac": 0.7703,
+      "widthFrac": 0.5259,
+      "heightFrac": 0.1926,
+      "align": "left"
+    }
+  }
+]
