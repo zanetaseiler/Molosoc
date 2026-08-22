@@ -86,8 +86,8 @@ async function assertInkPresent(postId, overlayPng, canvasWidth, inkRegions) {
 }
 
 async function renderPost(imgId, variantId, outputName) {
-  const copy = copyConfig[imgId];
-  if (!copy) {
+  const baseCopy = copyConfig[imgId];
+  if (!baseCopy) {
     throw new Error(`${imgId}: no entry in config/copy.json. Every post must use its own assigned copy.`);
   }
   const imageLayouts = layoutsConfig[imgId];
@@ -101,6 +101,14 @@ async function renderPost(imgId, variantId, outputName) {
   if (!layout) {
     throw new Error(`${imgId}: no variant "${variantId}" in config/layouts.json (have: ${Object.keys(imageLayouts).filter((k) => !k.startsWith('_') && k !== 'master').join(', ')}).`);
   }
+  // A variant may test a different line-break of the SAME assigned copy (not
+  // different words) — e.g. comparing a 4-line stacked treatment against the
+  // 3-line default. copy.json stays the one source of truth for the words.
+  const copy = {
+    ...baseCopy,
+    headline: layout.headlineLinesOverride ?? baseCopy.headline,
+    accentLineIndex: layout.accentLineIndexOverride ?? baseCopy.accentLineIndex,
+  };
 
   assertFontFilesExist();
 
