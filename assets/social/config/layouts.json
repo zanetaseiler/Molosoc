@@ -1,39 +1,276 @@
 {
-  "_comment": "Manually authored per-image layout. Every coordinate here was chosen by looking at that specific photo's actual negative space (see the crops taken during authoring) — nothing here is computed by the renderer. x/y are the top-left corner of each element's visual box (not an SVG baseline). Only images with an entry here can be rendered; render.mjs fails for any image id missing from this file.",
-
+  "_comment": "Manually authored per-image, per-variant layout. Every crop and text position here was chosen by gridding/cropping that specific photo and measuring its actual negative space and product/model boundaries — nothing is computed by the renderer. `crop` is {x,y,width,height} in the ORIGINAL MASTER's pixel coordinates (a lossless sharp .extract(), never a resize/distort — width/height are always exactly 4:5). All other coordinates (textBox, supportPosition, dividerPosition, brandPosition) are in the CROPPED canvas's own coordinates (top-left of the crop = 0,0), since that crop is the actual output canvas.",
   "MOL_IMG_001": {
-    "master": "MOL_IMG_001_floor-journaling.png",
-    "textBox": { "x": 55, "y": 1065, "width": 480, "maxHeight": 225 },
-    "headlineFontSize": 84,
-    "headlineLineHeight": 0.88,
-    "supportFontSize": 26,
-    "supportPosition": { "x": 55, "y": 1295 },
-    "dividerPosition": { "x": 55, "y": 1327 },
-    "brandPosition": { "x": 55, "y": 1334 },
-    "_rationale": "Jute rug is the only clean negative space on this photo. y=1065 is verified clear of the hip/pants curve (measurement lines drawn directly on the master); textBox right edge (535) and support/wordmark stay well clear of the sock/feet product (starts ~x700)."
+    "_photo_notes": "Seated, journaling on a rug. Head ~y150, product (socks) ~x750-1100,y1000-1260 — both near-full frame height, so crop tightening is modest (~5-10%) without cutting either. Rug is banned as a text surface (busy weave); the only genuinely clean zone is the soft out-of-focus curtain/wall at top-right (x910-1067 in the original), which is narrow (~150-310px depending on how close to the blurred picture frame we're willing to sit) but tall. All 3 variants use that same zone (fixed local x/y) with differing crop tightness.",
+    "V1": {
+      "crop": {
+        "x": 94,
+        "y": 0,
+        "width": 1028,
+        "height": 1285
+      },
+      "textBox": {
+        "x": 656,
+        "y": 55,
+        "width": 310,
+        "maxHeight": 180
+      },
+      "headlineFontSize": 68,
+      "headlineLineHeight": 0.85,
+      "supportFontSize": 18,
+      "supportPosition": {
+        "x": 656,
+        "y": 236
+      },
+      "dividerPosition": {
+        "x": 656,
+        "y": 260
+      },
+      "brandPosition": {
+        "x": 656,
+        "y": 267
+      }
+    },
+    "V2": {
+      "crop": {
+        "x": 150,
+        "y": 55,
+        "width": 972,
+        "height": 1215
+      },
+      "textBox": {
+        "x": 600,
+        "y": 55,
+        "width": 310,
+        "maxHeight": 180
+      },
+      "headlineFontSize": 68,
+      "headlineLineHeight": 0.85,
+      "supportFontSize": 18,
+      "supportPosition": {
+        "x": 600,
+        "y": 236
+      },
+      "dividerPosition": {
+        "x": 600,
+        "y": 260
+      },
+      "brandPosition": {
+        "x": 600,
+        "y": 267
+      }
+    },
+    "V3": {
+      "crop": {
+        "x": 120,
+        "y": 25,
+        "width": 1002,
+        "height": 1252
+      },
+      "textBox": {
+        "x": 630,
+        "y": 55,
+        "width": 310,
+        "maxHeight": 180
+      },
+      "headlineFontSize": 68,
+      "headlineLineHeight": 0.85,
+      "supportFontSize": 18,
+      "supportPosition": {
+        "x": 630,
+        "y": 236
+      },
+      "dividerPosition": {
+        "x": 630,
+        "y": 260
+      },
+      "brandPosition": {
+        "x": 630,
+        "y": 267
+      }
+    },
+    "master": "MOL_IMG_001_floor-journaling.png"
   },
-
   "MOL_IMG_005": {
-    "master": "MOL_IMG_005_kitchen-prep.png",
-    "textBox": { "x": 55, "y": 650, "width": 350, "maxHeight": 170 },
-    "headlineFontSize": 62,
-    "headlineLineHeight": 0.88,
-    "supportFontSize": 16,
-    "supportPosition": { "x": 55, "y": 822 },
-    "dividerPosition": { "x": 55, "y": 844 },
-    "brandPosition": { "x": 55, "y": 851 },
-    "_rationale": "The flat cabinet-front wood panel to her left (x0-~380) is the only usable negative space; it's narrower than IMG_001's rug, which is why the headline is smaller here — sized to what this photo actually offers, not forced to match another post. Box stops at y=1050 well above her socks (~y1150) and the block's actual bottom (862) lands nowhere near either boundary."
+    "_photo_notes": "Standing at a kitchen counter, product (socks) ~x330-560,y1150-1300. Head ~y30 (almost no top headroom). Crop trims only the right side (window/counter clutter); left cabinet-front column (the clean zone) is untouched by the trim. Text zone is the flat cabinet-front wood panel, x55-405,y~630-862 depending on variant.",
+    "V1": {
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1080,
+        "height": 1350
+      },
+      "textBox": {
+        "x": 55,
+        "y": 650,
+        "width": 350,
+        "maxHeight": 170
+      },
+      "headlineFontSize": 62,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 16,
+      "supportPosition": {
+        "x": 55,
+        "y": 822
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 844
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 851
+      }
+    },
+    "V2": {
+      "crop": {
+        "x": 0,
+        "y": 8,
+        "width": 1056,
+        "height": 1320
+      },
+      "textBox": {
+        "x": 55,
+        "y": 642,
+        "width": 350,
+        "maxHeight": 170
+      },
+      "headlineFontSize": 62,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 16,
+      "supportPosition": {
+        "x": 55,
+        "y": 814
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 836
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 843
+      }
+    },
+    "V3": {
+      "crop": {
+        "x": 0,
+        "y": 20,
+        "width": 1040,
+        "height": 1300
+      },
+      "textBox": {
+        "x": 55,
+        "y": 630,
+        "width": 350,
+        "maxHeight": 170
+      },
+      "headlineFontSize": 62,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 16,
+      "supportPosition": {
+        "x": 55,
+        "y": 802
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 824
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 831
+      }
+    },
+    "master": "MOL_IMG_005_kitchen-prep.png"
   },
-
   "MOL_IMG_019": {
-    "master": "MOL_IMG_019_watering-plants.png",
-    "textBox": { "x": 55, "y": 55, "width": 430, "maxHeight": 225 },
-    "headlineFontSize": 84,
-    "headlineLineHeight": 0.88,
-    "supportFontSize": 20,
-    "supportPosition": { "x": 55, "y": 285 },
-    "dividerPosition": { "x": 55, "y": 311 },
-    "brandPosition": { "x": 55, "y": 318 },
-    "_rationale": "This photo's negative space is the plain wall in the top-left, not the bottom — placed there instead of forcing a bottom-anchored layout that doesn't exist in this frame. Box stops well above the plant leaves (~y540) and well left of her watering-can hand (~x420)."
+    "_photo_notes": "Standing, watering plants. Head ~y40, product (socks) ~x530-870,y1150-1300. Crop trims only the right side (chair/window); the large plain-wall zone top-left (x55-485,y55+) is untouched by the trim, so text layout is identical across variants — the variation here is purely crop tightness/product prominence.",
+    "V1": {
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 1068,
+        "height": 1335
+      },
+      "textBox": {
+        "x": 55,
+        "y": 55,
+        "width": 430,
+        "maxHeight": 225
+      },
+      "headlineFontSize": 84,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 20,
+      "supportPosition": {
+        "x": 55,
+        "y": 285
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 311
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 318
+      }
+    },
+    "V2": {
+      "crop": {
+        "x": 0,
+        "y": 10,
+        "width": 1056,
+        "height": 1320
+      },
+      "textBox": {
+        "x": 55,
+        "y": 55,
+        "width": 430,
+        "maxHeight": 225
+      },
+      "headlineFontSize": 84,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 20,
+      "supportPosition": {
+        "x": 55,
+        "y": 285
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 311
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 318
+      }
+    },
+    "V3": {
+      "crop": {
+        "x": 0,
+        "y": 20,
+        "width": 1044,
+        "height": 1305
+      },
+      "textBox": {
+        "x": 55,
+        "y": 55,
+        "width": 430,
+        "maxHeight": 225
+      },
+      "headlineFontSize": 84,
+      "headlineLineHeight": 0.88,
+      "supportFontSize": 20,
+      "supportPosition": {
+        "x": 55,
+        "y": 285
+      },
+      "dividerPosition": {
+        "x": 55,
+        "y": 311
+      },
+      "brandPosition": {
+        "x": 55,
+        "y": 318
+      }
+    },
+    "master": "MOL_IMG_019_watering-plants.png"
   }
 }

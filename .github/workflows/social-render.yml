@@ -5,9 +5,10 @@ name: Render Social Posts
 # SVG/Sharp text compositing (no generative AI, no dependency on a local
 # machine). Runs on every push that touches the renderer, and on demand.
 #
-# Each render target below is explicit (`IMG_ID:output.png`) rather than
-# derived automatically — add a line here only once that image has a
-# manually-authored entry in config/layouts.json (see assets/social/README.md).
+# Each render target below is explicit (`IMG_ID:VARIANT:output.png`) rather
+# than derived automatically — add a line here only once that image/variant
+# has a manually-authored entry in config/layouts.json (see
+# assets/social/README.md).
 
 on:
   workflow_dispatch:
@@ -37,9 +38,15 @@ jobs:
       - name: Render posts with manually-authored layouts
         run: |
           node src/render.mjs \
-            MOL_IMG_001:MOL_POST_001_EN_TEST.png \
-            MOL_IMG_005:MOL_POST_005_EN_TEST.png \
-            MOL_IMG_019:MOL_POST_019_EN_TEST.png
+            MOL_IMG_001:V1:MOL_POST_001_EN_TEST_V1.png \
+            MOL_IMG_001:V2:MOL_POST_001_EN_TEST_V2.png \
+            MOL_IMG_001:V3:MOL_POST_001_EN_TEST_V3.png \
+            MOL_IMG_005:V1:MOL_POST_005_EN_TEST_V1.png \
+            MOL_IMG_005:V2:MOL_POST_005_EN_TEST_V2.png \
+            MOL_IMG_005:V3:MOL_POST_005_EN_TEST_V3.png \
+            MOL_IMG_019:V1:MOL_POST_019_EN_TEST_V1.png \
+            MOL_IMG_019:V2:MOL_POST_019_EN_TEST_V2.png \
+            MOL_IMG_019:V3:MOL_POST_019_EN_TEST_V3.png
 
       - name: Upload rendered posts as a build artifact
         uses: actions/upload-artifact@v4

@@ -45,15 +45,15 @@ function checkMasterIntegrity(filename, buffer) {
   }
 }
 
-function checkAspect(width, height) {
+function checkAspect(label, width, height) {
   const [aw, ah] = designSystem.canvas.aspect;
   const actual = width / height;
   const expected = aw / ah;
   const drift = Math.abs(actual - expected) / expected;
   if (drift > designSystem.canvas.aspectTolerance) {
     throw new Error(
-      `Master is ${width}x${height} (ratio ${actual.toFixed(4)}), which drifts ${(drift * 100).toFixed(1)}% ` +
-        `from the required ${aw}:${ah}. Refusing to crop or stretch a master.`,
+      `${label} is ${width}x${height} (ratio ${actual.toFixed(4)}), which drifts ${(drift * 100).toFixed(1)}% ` +
+        `from the required ${aw}:${ah}.`,
     );
   }
 }
@@ -85,34 +85,59 @@ async function assertInkPresent(postId, overlayPng, canvasWidth, inkRegions) {
   }
 }
 
-async function renderPost(postId, outputName) {
-  const copy = copyConfig[postId];
+async function renderPost(imgId, variantId, outputName) {
+  const copy = copyConfig[imgId];
   if (!copy) {
-    throw new Error(`${postId}: no entry in config/copy.json. Every post must use its own assigned copy.`);
+    throw new Error(`${imgId}: no entry in config/copy.json. Every post must use its own assigned copy.`);
   }
-  const layout = layoutsConfig[postId];
-  if (!layout) {
+  const imageLayouts = layoutsConfig[imgId];
+  if (!imageLayouts) {
     throw new Error(
-      `${postId}: no entry in config/layouts.json. Layout is never calculated automatically — add a manually ` +
-        `authored entry (textBox, font sizes, divider/brand position) before rendering this post.`,
+      `${imgId}: no entry in config/layouts.json. Layout is never calculated automatically — add a manually ` +
+        `authored entry before rendering this post.`,
     );
+  }
+  const layout = imageLayouts[variantId];
+  if (!layout) {
+    throw new Error(`${imgId}: no variant "${variantId}" in config/layouts.json (have: ${Object.keys(imageLayouts).filter((k) => !k.startsWith('_') && k !== 'master').join(', ')}).`);
   }
 
   assertFontFilesExist();
 
-  const masterPath = path.join(socialDir, 'masters', layout.master);
+  const postId = `${imgId}:${variantId}`;
+  const masterPath = path.join(socialDir, 'masters', imageLayouts.master);
   const masterBuffer = fs.readFileSync(masterPath);
-  checkMasterIntegrity(layout.master, masterBuffer);
-  const metadata = await sharp(masterBuffer).metadata();
-  checkAspect(metadata.width, metadata.height);
+  checkMasterIntegrity(imageLayouts.master, masterBuffer);
+  const masterMeta = await sharp(masterBuffer).metadata();
+  checkAspect('Master', masterMeta.width, masterMeta.height);
+
+  // Derived 4:5 social crop — a lossless, in-memory extract of the untouched
+  // master buffer. The master file on disk is never written to; this crop
+  // exists only as pixels in this process, composited straight into the
+  // output file below.
+  const { x: cx, y: cy, width: cw, height: ch } = layout.crop;
+  if (cx < 0 || cy < 0 || cx + cw > masterMeta.width || cy + ch > masterMeta.height) {
+    throw new Error(
+      `${postId}: crop {x:${cx},y:${cy},w:${cw},h:${ch}} falls outside the master's ${masterMeta.width}x${masterMeta.height} bounds.`,
+    );
+  }
+  checkAspect(`${postId} crop`, cw, ch);
+  // .png() here is load-bearing: without it, sharp re-encodes the extracted
+  // buffer in the SOURCE format (several masters are baseline JPEG despite
+  // their .png filename), silently reintroducing lossy compression across
+  // the whole derived crop before we've even composited text onto it.
+  const croppedBuffer = await sharp(masterBuffer)
+    .extract({ left: cx, top: cy, width: cw, height: ch })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
 
   const { svg, fontFiles, report, inkRegions } = buildOverlaySvg({
     postId,
     copy,
     layout,
     designSystem,
-    canvasWidth: metadata.width,
-    canvasHeight: metadata.height,
+    canvasWidth: cw,
+    canvasHeight: ch,
     socialDir,
   });
 
@@ -126,17 +151,18 @@ async function renderPost(postId, outputName) {
   });
   const overlayPng = resvg.render().asPng();
 
-  await assertInkPresent(postId, overlayPng, metadata.width, inkRegions);
+  await assertInkPresent(postId, overlayPng, cw, inkRegions);
 
   const outPath = path.join(socialDir, 'output', outputName);
-  await sharp(masterBuffer)
+  await sharp(croppedBuffer)
     .composite([{ input: overlayPng, left: 0, top: 0 }])
     .png({ compressionLevel: 9 })
     .withMetadata()
     .toFile(outPath);
 
   console.log(`\n${postId} -> ${outputName}`);
-  console.log(`  master: ${layout.master} (${metadata.width}x${metadata.height}, sha256 verified)`);
+  console.log(`  master: ${imageLayouts.master} (untouched on disk, sha256 verified)`);
+  console.log(`  crop: x=${cx} y=${cy} w=${cw} h=${ch} -> derived canvas ${cw}x${ch} (4:5)`);
   console.log(
     `  headline: ${report.headlineFontSize}px / lineHeight ${report.headlineLineHeight} ` +
       `-> block ${report.headlineBlockWidth.toFixed(1)}x${report.headlineBlockHeight.toFixed(1)}px ` +
@@ -157,15 +183,15 @@ async function renderPost(postId, outputName) {
 
 const requested = process.argv.slice(2);
 if (!requested.length) {
-  console.error('Usage: node src/render.mjs <IMG_ID>:<output.png> [<IMG_ID>:<output.png> ...]');
+  console.error('Usage: node src/render.mjs <IMG_ID>:<VARIANT>:<output.png> [...]');
   process.exit(1);
 }
 
 for (const arg of requested) {
-  const [postId, outputName] = arg.split(':');
-  if (!postId || !outputName) {
-    console.error(`Bad argument "${arg}" — expected IMG_ID:output.png`);
+  const [imgId, variantId, outputName] = arg.split(':');
+  if (!imgId || !variantId || !outputName) {
+    console.error(`Bad argument "${arg}" — expected IMG_ID:VARIANT:output.png`);
     process.exit(1);
   }
-  await renderPost(postId, outputName);
+  await renderPost(imgId, variantId, outputName);
 }
