@@ -29,8 +29,11 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
 
   const hDef = template.defaults.headline;
   const sDef = template.defaults.supporting;
+  const dDef = template.defaults.divider;
   const wDef = template.defaults.wordmark;
-  const showWordmark = post.brandMark !== false && Boolean(wDef);
+  const showBrandMark = post.brandMark !== false;
+  const showDivider = showBrandMark && Boolean(dDef);
+  const showWordmark = showBrandMark && Boolean(wDef);
 
   const serifPath = path.join(socialDir, template.fonts.serif.files[0]);
   const sansFiles = template.fonts.sans.files.map((f) => path.join(socialDir, f));
@@ -75,14 +78,22 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
   // --- Guard 2: the full lockup must not overflow the safe zone (that's ---
   // --- what would risk covering the model or the product). ---
   const gapToSupport = headlineSize * sDef.gapFactor;
-  const gapToWordmark = showWordmark ? headlineSize * wDef.gapFactor : 0;
+  const dividerBlockHeight = showDivider
+    ? headlineSize * (dDef.marginTopFactor + dDef.thicknessFactor + dDef.marginBottomFactor)
+    : 0;
+  const gapToWordmark = showWordmark && !showDivider ? headlineSize * wDef.gapFactor : 0;
   const naturalWidth = Math.max(
     headlineBlockWidth,
     measureWidth(sansFiles[0], post.supporting, supportingSize, sDef.letterSpacing),
     showWordmark ? measureWidth(sansFiles[0], wDef.text, wordmarkSize, wDef.letterSpacing) : 0,
   );
   const naturalHeight =
-    headlineBlockHeight + gapToSupport + supportLineHeight + gapToWordmark + wordmarkSize * (showWordmark ? 1.1 : 0);
+    headlineBlockHeight +
+    gapToSupport +
+    supportLineHeight +
+    dividerBlockHeight +
+    gapToWordmark +
+    wordmarkSize * (showWordmark ? 1.1 : 0);
   if (naturalWidth > boxWidth) {
     throw new Error(
       `${post.id}: text lockup is ${naturalWidth.toFixed(1)}px wide, wider than its ${boxWidth.toFixed(1)}px ` +
@@ -114,6 +125,17 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
     `<text x="${boxX.toFixed(2)}" y="${supportBaseline.toFixed(2)}" font-family="${sDef.fontFamily}" font-weight="${sDef.fontWeight}" font-size="${supportingSize.toFixed(2)}" letter-spacing="${sDef.letterSpacing}em" fill="${resolveColor(sDef.color)}">${escapeXml(post.supporting)}</text>`,
   );
   cursorY += supportLineHeight;
+
+  if (showDivider) {
+    cursorY += headlineSize * dDef.marginTopFactor;
+    const dividerThickness = headlineSize * dDef.thicknessFactor;
+    const dividerWidth = headlineSize * dDef.widthFactor;
+    const dividerY = cursorY + dividerThickness / 2;
+    textEls.push(
+      `<line x1="${boxX.toFixed(2)}" y1="${dividerY.toFixed(2)}" x2="${(boxX + dividerWidth).toFixed(2)}" y2="${dividerY.toFixed(2)}" stroke="${resolveColor(dDef.color)}" stroke-width="${dividerThickness.toFixed(2)}"/>`,
+    );
+    cursorY += dividerThickness + headlineSize * dDef.marginBottomFactor;
+  }
 
   if (showWordmark) {
     cursorY += gapToWordmark;

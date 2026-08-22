@@ -33,7 +33,7 @@
       "fontFamily": "DM Serif Display",
       "fontWeight": 400,
       "fontSizeFrac": 0.098039,
-      "lineHeightFactor": 0.885,
+      "lineHeightFactor": 0.88,
       "color": "ink",
       "accentColor": "gold",
       "letterSpacing": 0
@@ -41,17 +41,24 @@
     "supporting": {
       "fontFamily": "Mulish",
       "fontWeight": 600,
-      "fontSizeFrac": 0.024956,
+      "fontSizeFrac": 0.024064,
       "lineHeightFactor": 1.0,
       "color": "ink",
       "letterSpacing": 0.015,
       "gapFactor": 0.015
     },
+    "divider": {
+      "color": "gold",
+      "thicknessFactor": 0.012,
+      "widthFactor": 0.7,
+      "marginTopFactor": 0.035,
+      "marginBottomFactor": 0.03
+    },
     "wordmark": {
       "text": "MOLOSOC",
       "fontFamily": "Mulish",
       "fontWeight": 700,
-      "sizeFactor": 0.07,
+      "sizeFactor": 0.062,
       "gapFactor": 0.06,
       "letterSpacing": 0.22,
       "color": "ink"
