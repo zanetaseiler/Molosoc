@@ -1,17 +1,16 @@
 name: Render Social Posts
 
-# Cloud-first, deterministic build: turns assets/social/config/posts.json +
-# the read-only masters in assets/social/masters/ into finished 4:5 PNGs via
+# Cloud-first, deterministic build: turns assets/social/config/{copy,layouts}.json
+# + the read-only masters in assets/social/masters/ into finished 4:5 PNGs via
 # SVG/Sharp text compositing (no generative AI, no dependency on a local
 # machine). Runs on every push that touches the renderer, and on demand.
+#
+# Each render target below is explicit (`IMG_ID:output.png`) rather than
+# derived automatically — add a line here only once that image has a
+# manually-authored entry in config/layouts.json (see assets/social/README.md).
 
 on:
   workflow_dispatch:
-    inputs:
-      post_id:
-        description: "Render a single post id (blank = render everything in posts.json)"
-        required: false
-        default: ""
   push:
     branches: [staging, main]
     paths:
@@ -35,8 +34,12 @@ jobs:
       - name: Install dependencies (locked, reproducible)
         run: npm ci
 
-      - name: Render posts
-        run: node src/render.mjs ${{ github.event.inputs.post_id }}
+      - name: Render posts with manually-authored layouts
+        run: |
+          node src/render.mjs \
+            MOL_IMG_001:MOL_POST_001_EN_TEST.png \
+            MOL_IMG_005:MOL_POST_005_EN_TEST.png \
+            MOL_IMG_019:MOL_POST_019_EN_TEST.png
 
       - name: Upload rendered posts as a build artifact
         uses: actions/upload-artifact@v4

@@ -1,0 +1,104 @@
+{
+  "_comment": "Image-specific copy only — no layout/position/size here. Keyed by image id so a post's copy can only ever come from its own matching id; render.mjs fails if a layout entry's id has no matching copy entry, or vice versa. accentLineIndex is the 0-based headline line rendered in the locked accent color instead of the locked headline color.",
+
+  "MOL_IMG_001": {
+    "headline": ["Care that", "fits real", "life."],
+    "accentLineIndex": 2,
+    "supporting": "Cream on. MOLOSOC on. Carry on."
+  },
+  "MOL_IMG_002": {
+    "headline": ["Care that", "keeps up", "with you."],
+    "accentLineIndex": 2,
+    "supporting": "Your routine doesn’t have to stop."
+  },
+  "MOL_IMG_003": {
+    "headline": ["A little care.", "A little", "quiet."],
+    "accentLineIndex": 2,
+    "supporting": "Some routines are worth slowing down for."
+  },
+  "MOL_IMG_004": {
+    "headline": ["Self-care", "while life", "happens."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC fits into the day you already have."
+  },
+  "MOL_IMG_005": {
+    "headline": ["Self-care", "doesn’t need", "a timeout."],
+    "accentLineIndex": 2,
+    "supporting": "Wear MOLOSOC while life keeps moving."
+  },
+  "MOL_IMG_006": {
+    "headline": ["Your feet", "work all", "day too."],
+    "accentLineIndex": 2,
+    "supporting": "Give them a little attention while you work."
+  },
+  "MOL_IMG_007": {
+    "headline": ["Slow down.", "Your feet", "can too."],
+    "accentLineIndex": 2,
+    "supporting": "A simple moment of everyday care."
+  },
+  "MOL_IMG_008": {
+    "headline": ["Care can", "live inside", "the ordinary."],
+    "accentLineIndex": 2,
+    "supporting": "Small routines. Real life."
+  },
+  "MOL_IMG_009": {
+    "headline": ["Your cream.", "More time", "where it belongs."],
+    "accentLineIndex": 2,
+    "supporting": "Apply your favorite cream. Slip on MOLOSOC. Relax."
+  },
+  "MOL_IMG_010": {
+    "headline": ["Make room", "for the", "small things."],
+    "accentLineIndex": 2,
+    "supporting": "A few quiet minutes can become a ritual."
+  },
+  "MOL_IMG_011": {
+    "headline": ["Make care", "part of the", "ritual."],
+    "accentLineIndex": 2,
+    "supporting": "A simple routine for the feet that carry you all day."
+  },
+  "MOL_IMG_012": {
+    "headline": ["Simple care.", "Nothing", "complicated."],
+    "accentLineIndex": 2,
+    "supporting": "Your cream. MOLOSOC. Your day."
+  },
+  "MOL_IMG_013": {
+    "headline": ["Start with", "the cream", "you love."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC helps keep it where you put it."
+  },
+  "MOL_IMG_014": {
+    "headline": ["Good mornings", "start with", "small rituals."],
+    "accentLineIndex": 2,
+    "supporting": "A little time for you — and your feet."
+  },
+  "MOL_IMG_015": {
+    "headline": ["Care should", "feel this", "easy."],
+    "accentLineIndex": 2,
+    "supporting": "Slip on. Settle in. Let the routine happen."
+  },
+  "MOL_IMG_016": {
+    "headline": ["Nothing to do", "but let your", "cream stay put."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC makes the waiting part easier."
+  },
+  "MOL_IMG_017": {
+    "headline": ["Made for", "the cream", "you already use."],
+    "accentLineIndex": 2,
+    "supporting": "A simple cover for a familiar routine."
+  },
+  "MOL_IMG_018": {
+    "headline": ["Put your", "feet up.", "Literally."],
+    "accentLineIndex": 2,
+    "supporting": "Cream on. MOLOSOC on. Time to relax."
+  },
+  "MOL_IMG_019": {
+    "headline": ["Care that", "moves with", "you."],
+    "accentLineIndex": 2,
+    "supporting": "Cream on. MOLOSOC on. Back to your day."
+  },
+  "MOL_IMG_020": {
+    "headline": ["Care doesn’t", "have to feel", "like work."],
+    "accentLineIndex": 2,
+    "supporting": "Make it part of the moments you already enjoy."
+  }
+}

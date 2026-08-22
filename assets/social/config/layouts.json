@@ -1,0 +1,39 @@
+{
+  "_comment": "Manually authored per-image layout. Every coordinate here was chosen by looking at that specific photo's actual negative space (see the crops taken during authoring) — nothing here is computed by the renderer. x/y are the top-left corner of each element's visual box (not an SVG baseline). Only images with an entry here can be rendered; render.mjs fails for any image id missing from this file.",
+
+  "MOL_IMG_001": {
+    "master": "MOL_IMG_001_floor-journaling.png",
+    "textBox": { "x": 55, "y": 1065, "width": 480, "maxHeight": 225 },
+    "headlineFontSize": 84,
+    "headlineLineHeight": 0.88,
+    "supportFontSize": 26,
+    "supportPosition": { "x": 55, "y": 1295 },
+    "dividerPosition": { "x": 55, "y": 1327 },
+    "brandPosition": { "x": 55, "y": 1334 },
+    "_rationale": "Jute rug is the only clean negative space on this photo. y=1065 is verified clear of the hip/pants curve (measurement lines drawn directly on the master); textBox right edge (535) and support/wordmark stay well clear of the sock/feet product (starts ~x700)."
+  },
+
+  "MOL_IMG_005": {
+    "master": "MOL_IMG_005_kitchen-prep.png",
+    "textBox": { "x": 55, "y": 650, "width": 350, "maxHeight": 170 },
+    "headlineFontSize": 62,
+    "headlineLineHeight": 0.88,
+    "supportFontSize": 16,
+    "supportPosition": { "x": 55, "y": 822 },
+    "dividerPosition": { "x": 55, "y": 844 },
+    "brandPosition": { "x": 55, "y": 851 },
+    "_rationale": "The flat cabinet-front wood panel to her left (x0-~380) is the only usable negative space; it's narrower than IMG_001's rug, which is why the headline is smaller here — sized to what this photo actually offers, not forced to match another post. Box stops at y=1050 well above her socks (~y1150) and the block's actual bottom (862) lands nowhere near either boundary."
+  },
+
+  "MOL_IMG_019": {
+    "master": "MOL_IMG_019_watering-plants.png",
+    "textBox": { "x": 55, "y": 55, "width": 430, "maxHeight": 225 },
+    "headlineFontSize": 84,
+    "headlineLineHeight": 0.88,
+    "supportFontSize": 20,
+    "supportPosition": { "x": 55, "y": 285 },
+    "dividerPosition": { "x": 55, "y": 311 },
+    "brandPosition": { "x": 55, "y": 318 },
+    "_rationale": "This photo's negative space is the plain wall in the top-left, not the bottom — placed there instead of forcing a bottom-anchored layout that doesn't exist in this frame. Box stops well above the plant leaves (~y540) and well left of her watering-can hand (~x420)."
+  }
+}

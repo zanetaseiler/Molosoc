@@ -1,0 +1,46 @@
+{
+  "_comment": "Locked, global, production design system. Every value here applies to every post identically. Nothing in this file is derived from an image, computed automatically, or sampled from a photo — it is fixed by hand and stays fixed. Per-post layout (position, sizes) lives in config/layouts.json.",
+
+  "canvas": {
+    "aspect": [4, 5],
+    "aspectTolerance": 0.02,
+    "_note": "Each master's own dimensions are preserved exactly. This is only a sanity check that a master is still ~4:5 — never a resize/crop target."
+  },
+
+  "minEdgePadding": 55,
+
+  "fonts": {
+    "headline": { "family": "DM Serif Display", "file": "fonts/DMSerifDisplay-Regular.ttf" },
+    "support": { "family": "Mulish", "files": ["fonts/Mulish-Regular.ttf", "fonts/Mulish-Medium.ttf", "fonts/Mulish-SemiBold.ttf"] },
+    "wordmark": { "family": "Mulish", "file": "fonts/Mulish-SemiBold.ttf" }
+  },
+
+  "headlineFontWeight": 400,
+  "supportFontWeight": 600,
+  "supportLetterSpacing": 0.015,
+  "wordmarkFontWeight": 700,
+  "wordmarkText": "MOLOSOC",
+  "wordmarkFontSize": 10,
+  "wordmarkLetterSpacing": 0.22,
+  "dividerThickness": 2,
+  "dividerWidth": 60,
+
+  "colors": {
+    "headline": "#171719",
+    "accent": "#E8D1A6",
+    "support": "#171719",
+    "wordmark": "#171719",
+    "divider": "#E8D1A6"
+  },
+
+  "locked": {
+    "noBlur": true,
+    "noGradient": true,
+    "noBackgroundPanel": true,
+    "noShadow": true,
+    "noAutomaticColorSampling": true,
+    "noAutomaticFontSubstitution": true,
+    "noAutomaticSafeZoneCalculation": true,
+    "noAutoShrinkOnOverflow": true
+  }
+}
