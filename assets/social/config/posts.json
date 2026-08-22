@@ -14,5 +14,21 @@
       "heightFrac": 0.24036,
       "align": "left"
     }
+  },
+  {
+    "id": "MOL_POST_001_EN_v2",
+    "master": "MOL_IMG_001_floor-journaling.png",
+    "locale": "en",
+    "headline": ["Care that", "fits real", "life."],
+    "accentLineIndex": 2,
+    "supporting": "Cream on. MOLOSOC on. Carry on.",
+    "brandMark": true,
+    "layout": {
+      "xFrac": 0.02853,
+      "yFrac": 0.75963,
+      "widthFrac": 0.42157,
+      "heightFrac": 0.24036,
+      "align": "left"
+    }
   }
 ]
