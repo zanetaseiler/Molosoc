@@ -32,8 +32,8 @@
     "headline": {
       "fontFamily": "DM Serif Display",
       "fontWeight": 400,
-      "fontSizeFrac": 0.098039,
-      "lineHeightFactor": 0.88,
+      "fontSizeFrac": 0.120321,
+      "lineHeightFactor": 0.85,
       "color": "ink",
       "accentColor": "gold",
       "letterSpacing": 0
