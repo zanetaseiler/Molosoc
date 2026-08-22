@@ -33,9 +33,14 @@ enforced, not just promised.
    Copy and layout never touch `src/*.mjs` — a new post is a new JSON entry.
 4. `src/textMetrics.mjs` measures real glyph advances (via `fontkit`, reading
    the actual font files) so line widths are exact, not estimated.
-5. `src/buildSvg.mjs` lays the headline + supporting line out inside the
-   post's safe-zone box, shrinking font size first to fit the box width, then
-   further to fit the box height, and emits a transparent-background SVG.
+5. `src/buildSvg.mjs` lays the headline + supporting line + wordmark out
+   inside the post's safe-zone box at their **configured sizes — fixed, not
+   auto-shrunk**. It only measures (via real glyph metrics) to validate: the
+   headline block must clear `template.guards.minHeadlineBlockWidth/Height`,
+   and the full lockup must not exceed the safe-zone box. Either failing
+   throws instead of silently shrinking the type — a too-small safe zone or
+   too-long copy is a config bug to fix, not something to paper over by
+   quietly rendering a smaller headline than the brief calls for.
 6. `src/render.mjs` rasterizes that SVG with `@resvg/resvg-js` (a
    deterministic Rust SVG renderer, not a browser) and composites it over the
    untouched master with `sharp`. Compositing only writes pixels where the

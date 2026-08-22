@@ -74,8 +74,15 @@ async function renderPost(post) {
   console.log(`${post.id}: ${metadata.width}x${metadata.height} <- ${post.master}`);
   console.log(
     `  headline ${meta.headlineSize.toFixed(1)}px / supporting ${meta.supportingSize.toFixed(1)}px ` +
-      `(widthScale ${meta.widthScale.toFixed(3)}, heightScale ${meta.heightScale.toFixed(3)}) ` +
       `-> ${outPath}`,
+  );
+  console.log(
+    `  headline block ${meta.headlineBlockWidth.toFixed(1)}x${meta.headlineBlockHeight.toFixed(1)}px ` +
+      `(guard: >= ${template.guards?.minHeadlineBlockWidth ?? 0}x${template.guards?.minHeadlineBlockHeight ?? 0}px)`,
+  );
+  console.log(
+    `  full lockup ${meta.lockupWidth.toFixed(1)}x${meta.lockupHeight.toFixed(1)}px ` +
+      `within safe zone ${meta.boxWidth.toFixed(1)}x${meta.boxHeight.toFixed(1)}px`,
   );
 }
 

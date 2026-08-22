@@ -14,10 +14,14 @@ function escapeXml(str) {
 
 /**
  * Lays out the headline + supporting line (and, when the post opts in, a
- * divider rule + small wordmark below it) inside the post's configured
- * safe-zone box, shrinking to fit (width first, then height) using real
- * font metrics. Returns a transparent-background SVG overlay to composite
- * over the master photo — this module never touches the photo itself.
+ * small wordmark below it) inside the post's configured safe-zone box.
+ *
+ * Sizes are FIXED from config (fontSizeFrac * canvasWidth) — there is no
+ * shrink-to-fit here. A too-small safe zone, or copy that doesn't fit it,
+ * is a config bug and must fail the render loudly (see the guard checks
+ * below), not silently produce a smaller headline than the brief calls for.
+ * Returns a transparent-background SVG overlay to composite over the
+ * master photo — this module never touches the photo itself.
  */
 export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, socialDir }) {
   const colors = template.colors;
@@ -25,9 +29,8 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
 
   const hDef = template.defaults.headline;
   const sDef = template.defaults.supporting;
-  const dDef = template.defaults.divider;
   const wDef = template.defaults.wordmark;
-  const showBrandMark = post.brandMark !== false && Boolean(dDef) && Boolean(wDef);
+  const showWordmark = post.brandMark !== false && Boolean(wDef);
 
   const serifPath = path.join(socialDir, template.fonts.serif.files[0]);
   const sansFiles = template.fonts.sans.files.map((f) => path.join(socialDir, f));
@@ -41,43 +44,60 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
   const headlineLines = post.headline;
   const accentIndex = Number.isInteger(post.accentLineIndex) ? post.accentLineIndex : -1;
 
-  // 1) Preferred sizes, in px, before any shrink-to-fit.
-  let headlineSize = hDef.fontSizeFrac * canvasWidth;
-  let supportingSize = sDef.fontSizeFrac * canvasWidth;
-
-  // 2) Shrink to fit box width (widest headline line wins).
-  const maxLineWidthAt = (size) =>
-    Math.max(...headlineLines.map((l) => measureWidth(serifPath, l, size, hDef.letterSpacing)));
-  const widthScale = Math.min(1, boxWidth / maxLineWidthAt(headlineSize));
-  headlineSize *= widthScale;
-  supportingSize *= widthScale;
-
-  // 3) Shrink further to fit box height — headline block + gap + support
-  // line, plus the divider + wordmark when the post uses a brand mark. The
-  // divider/wordmark are sized as factors of the headline size so they scale
-  // together with it rather than needing their own independent fit pass.
-  const brandMarkHeightAt = (hSize) => {
-    if (!showBrandMark) return 0;
-    const dividerBlock = hSize * (dDef.marginTopFactor + dDef.thicknessFactor + dDef.marginBottomFactor);
-    const wordmarkLine = hSize * wDef.sizeFactor * 1.1;
-    return dividerBlock + wordmarkLine;
-  };
-  const blockHeightAt = (hSize, sSize) => {
-    const lineHeight = hSize * hDef.lineHeightFactor;
-    const gap = hSize * sDef.gapFactor;
-    const supportLineHeight = sSize * sDef.lineHeightFactor;
-    return headlineLines.length * lineHeight + gap + supportLineHeight + brandMarkHeightAt(hSize);
-  };
-  const naturalHeight = blockHeightAt(headlineSize, supportingSize);
-  const heightScale = Math.min(1, boxHeight / naturalHeight);
-  headlineSize *= heightScale;
-  supportingSize *= heightScale;
-
-  // 4) Position elements top-down from the box origin.
+  // Fixed sizes — driven only by config, never scaled down to fit.
+  const headlineSize = hDef.fontSizeFrac * canvasWidth;
+  const supportingSize = sDef.fontSizeFrac * canvasWidth;
   const lineHeight = headlineSize * hDef.lineHeightFactor;
-  const gap = headlineSize * sDef.gapFactor;
   const supportLineHeight = supportingSize * sDef.lineHeightFactor;
+  const wordmarkSize = showWordmark ? headlineSize * wDef.sizeFactor : 0;
 
+  // --- Guard 1: headline block must clear the requested minimum size. ---
+  const headlineBlockWidth = Math.max(
+    ...headlineLines.map((l) => measureWidth(serifPath, l, headlineSize, hDef.letterSpacing)),
+  );
+  const headlineBlockHeight = headlineLines.length * lineHeight;
+  const guards = template.guards ?? {};
+  if (guards.minHeadlineBlockWidth && headlineBlockWidth < guards.minHeadlineBlockWidth) {
+    throw new Error(
+      `${post.id}: headline block is ${headlineBlockWidth.toFixed(1)}px wide, below the required minimum ` +
+        `${guards.minHeadlineBlockWidth}px. Fix the safe-zone/copy/font size in config — do not let this ` +
+        `silently shrink.`,
+    );
+  }
+  if (guards.minHeadlineBlockHeight && headlineBlockHeight < guards.minHeadlineBlockHeight) {
+    throw new Error(
+      `${post.id}: headline block is ${headlineBlockHeight.toFixed(1)}px tall, below the required minimum ` +
+        `${guards.minHeadlineBlockHeight}px. Fix the safe-zone/copy/font size in config — do not let this ` +
+        `silently shrink.`,
+    );
+  }
+
+  // --- Guard 2: the full lockup must not overflow the safe zone (that's ---
+  // --- what would risk covering the model or the product). ---
+  const gapToSupport = headlineSize * sDef.gapFactor;
+  const gapToWordmark = showWordmark ? headlineSize * wDef.gapFactor : 0;
+  const naturalWidth = Math.max(
+    headlineBlockWidth,
+    measureWidth(sansFiles[0], post.supporting, supportingSize, sDef.letterSpacing),
+    showWordmark ? measureWidth(sansFiles[0], wDef.text, wordmarkSize, wDef.letterSpacing) : 0,
+  );
+  const naturalHeight =
+    headlineBlockHeight + gapToSupport + supportLineHeight + gapToWordmark + wordmarkSize * (showWordmark ? 1.1 : 0);
+  if (naturalWidth > boxWidth) {
+    throw new Error(
+      `${post.id}: text lockup is ${naturalWidth.toFixed(1)}px wide, wider than its ${boxWidth.toFixed(1)}px ` +
+        `safe zone — it would overflow into the rest of the photo. Narrow the copy/font size or widen the zone.`,
+    );
+  }
+  if (naturalHeight > boxHeight) {
+    throw new Error(
+      `${post.id}: text lockup is ${naturalHeight.toFixed(1)}px tall, taller than its ${boxHeight.toFixed(1)}px ` +
+        `safe zone — it would overflow past the zone (risking the model/product). Shorten the lockup or ` +
+        `enlarge the zone.`,
+    );
+  }
+
+  // --- Position elements top-down from the box origin. ---
   let cursorY = boxY;
   const textEls = [];
   headlineLines.forEach((line, i) => {
@@ -88,24 +108,15 @@ export function buildOverlaySvg({ post, template, canvasWidth, canvasHeight, soc
     );
     cursorY += lineHeight;
   });
-  cursorY += gap;
+  cursorY += gapToSupport;
   const supportBaseline = cursorY + supportingSize * BASELINE_OFFSET_FACTOR;
   textEls.push(
     `<text x="${boxX.toFixed(2)}" y="${supportBaseline.toFixed(2)}" font-family="${sDef.fontFamily}" font-weight="${sDef.fontWeight}" font-size="${supportingSize.toFixed(2)}" letter-spacing="${sDef.letterSpacing}em" fill="${resolveColor(sDef.color)}">${escapeXml(post.supporting)}</text>`,
   );
   cursorY += supportLineHeight;
 
-  if (showBrandMark) {
-    cursorY += headlineSize * dDef.marginTopFactor;
-    const dividerThickness = headlineSize * dDef.thicknessFactor;
-    const dividerWidth = headlineSize * dDef.widthFactor;
-    const dividerY = cursorY + dividerThickness / 2;
-    textEls.push(
-      `<line x1="${boxX.toFixed(2)}" y1="${dividerY.toFixed(2)}" x2="${(boxX + dividerWidth).toFixed(2)}" y2="${dividerY.toFixed(2)}" stroke="${resolveColor(dDef.color)}" stroke-width="${dividerThickness.toFixed(2)}"/>`,
-    );
-    cursorY += dividerThickness + headlineSize * dDef.marginBottomFactor;
-
-    const wordmarkSize = headlineSize * wDef.sizeFactor;
+  if (showWordmark) {
+    cursorY += gapToWordmark;
     const wordmarkBaseline = cursorY + wordmarkSize * BASELINE_OFFSET_FACTOR;
     textEls.push(
       `<text x="${boxX.toFixed(2)}" y="${wordmarkBaseline.toFixed(2)}" font-family="${wDef.fontFamily}" font-weight="${wDef.fontWeight}" font-size="${wordmarkSize.toFixed(2)}" letter-spacing="${wDef.letterSpacing}em" fill="${resolveColor(wDef.color)}">${escapeXml(wDef.text)}</text>`,
@@ -123,10 +134,12 @@ ${textEls.join('\n')}
     meta: {
       headlineSize,
       supportingSize,
-      widthScale,
-      heightScale,
-      blockHeightUsed: cursorY - boxY,
-      blockHeightAvailable: boxHeight,
+      headlineBlockWidth,
+      headlineBlockHeight,
+      lockupWidth: naturalWidth,
+      lockupHeight: naturalHeight,
+      boxWidth,
+      boxHeight,
     },
   };
 }
