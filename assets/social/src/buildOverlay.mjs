@@ -34,6 +34,13 @@ function fail(postId, message) {
  * violated, this throws instead of adjusting anything. That is the point:
  * a layout that doesn't fit is a layout to fix by hand in config, not a
  * render to quietly degrade.
+ *
+ * A headline's lines normally share one `headlineFontSize`. A layout may
+ * instead set `headlineLineSizes` (one size per line) for a deliberate
+ * editorial size contrast (a small "kicker" lead-in building to one large
+ * emphasis line) — and `headlineLineGaps` (length = lines.length - 1) to add
+ * extra breathing room before specific lines. Both are hand-authored per
+ * layout, never derived.
  */
 export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidth, canvasHeight, socialDir }) {
   const pad = designSystem.minEdgePadding;
@@ -43,14 +50,20 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
   const wordmarkFontPath = path.join(socialDir, designSystem.fonts.wordmark.file);
 
   const { headline, accentLineIndex, supporting } = copy;
-  const { textBox, headlineFontSize, headlineLineHeight, supportFontSize, supportPosition, dividerPosition, brandPosition } =
-    layout;
+  const { textBox, headlineLineHeight, supportFontSize, supportPosition, dividerPosition, brandPosition } = layout;
+
+  const lineSizes = layout.headlineLineSizes ?? headline.map(() => layout.headlineFontSize);
+  const lineGaps = layout.headlineLineGaps ?? headline.map(() => 0); // gaps[i] = extra px before line i+1
+  if (lineSizes.length !== headline.length) {
+    fail(postId, `headlineLineSizes has ${lineSizes.length} entries but headline has ${headline.length} lines.`);
+  }
 
   // ---- 1. Headline must fit inside its own configured text box. ----
-  const lineHeight = headlineFontSize * headlineLineHeight;
-  const headlineBlockHeight = headline.length * lineHeight;
-  const headlineLineWidths = headline.map((l) => measureWidth(headlineFontPath, l, headlineFontSize, 0));
+  const headlineLineWidths = headline.map((l, i) => measureWidth(headlineFontPath, l, lineSizes[i], 0));
   const headlineBlockWidth = Math.max(...headlineLineWidths);
+  const lineAdvances = lineSizes.map((s) => s * headlineLineHeight);
+  const headlineBlockHeight =
+    lineAdvances.reduce((a, b) => a + b, 0) + lineGaps.slice(0, headline.length - 1).reduce((a, b) => a + b, 0);
 
   headline.forEach((line, i) => {
     if (headlineLineWidths[i] > textBox.width) {
@@ -66,8 +79,8 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
     fail(
       postId,
       `headline block is ${headlineBlockHeight.toFixed(1)}px tall, taller than its configured maxHeight ` +
-        `(${textBox.maxHeight}px). Increase maxHeight or reduce headlineFontSize/headlineLineHeight in layouts.json ` +
-        `— never silently shrink the headline to make this pass.`,
+        `(${textBox.maxHeight}px). Increase maxHeight or reduce headline font sizes in layouts.json — never ` +
+        `silently shrink the headline to make this pass.`,
     );
   }
 
@@ -117,14 +130,18 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
 
   // ---- 3. Render. Every position below is the config value verbatim. ----
   const textEls = [];
+  const headlineInkRegions = [];
   let cursorY = textBox.y;
   headline.forEach((line, i) => {
-    const baseline = cursorY + headlineFontSize * BASELINE_OFFSET_FACTOR;
+    if (i > 0) cursorY += lineGaps[i - 1] ?? 0;
+    const size = lineSizes[i];
+    const baseline = cursorY + size * BASELINE_OFFSET_FACTOR;
     const color = i === accentLineIndex ? colors.accent : colors.headline;
     textEls.push(
-      `<text x="${textBox.x}" y="${baseline.toFixed(2)}" font-family="${designSystem.fonts.headline.family}" font-weight="${designSystem.headlineFontWeight}" font-size="${headlineFontSize}" fill="${color}">${escapeXml(line)}</text>`,
+      `<text x="${textBox.x}" y="${baseline.toFixed(2)}" font-family="${designSystem.fonts.headline.family}" font-weight="${designSystem.headlineFontWeight}" font-size="${size}" fill="${color}">${escapeXml(line)}</text>`,
     );
-    cursorY += lineHeight;
+    headlineInkRegions.push({ x: textBox.x, y: cursorY, width: headlineLineWidths[i], height: lineAdvances[i] });
+    cursorY += lineAdvances[i];
   });
 
   const supportBaseline = supportPosition.y + supportFontSize * BASELINE_OFFSET_FACTOR;
@@ -150,7 +167,7 @@ ${textEls.join('\n')}
     svg,
     fontFiles: [headlineFontPath, ...supportFontPaths, wordmarkFontPath],
     report: {
-      headlineFontSize,
+      headlineLineSizes: lineSizes,
       headlineLineHeight,
       headlineBlockWidth,
       headlineBlockHeight,
@@ -165,9 +182,10 @@ ${textEls.join('\n')}
     // Regions with actual ink, for the post-render "did our font really draw
     // something" sanity check in render.mjs (guards against a silent font
     // substitution/load failure producing blank text that would otherwise
-    // pass every geometric check above).
+    // pass every geometric check above). One region per headline line (sizes
+    // can differ a lot between lines) plus support and wordmark.
     inkRegions: [
-      { x: textBox.x, y: textBox.y, width: headlineBlockWidth, height: headlineBlockHeight },
+      ...headlineInkRegions,
       { x: supportPosition.x, y: supportPosition.y, width: supportWidth, height: supportHeight },
       { x: brandPosition.x, y: brandPosition.y, width: wordmarkWidth, height: wordmarkHeight },
     ],

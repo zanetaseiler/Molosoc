@@ -172,7 +172,7 @@ async function renderPost(imgId, variantId, outputName) {
   console.log(`  master: ${imageLayouts.master} (untouched on disk, sha256 verified)`);
   console.log(`  crop: x=${cx} y=${cy} w=${cw} h=${ch} -> derived canvas ${cw}x${ch} (4:5)`);
   console.log(
-    `  headline: ${report.headlineFontSize}px / lineHeight ${report.headlineLineHeight} ` +
+    `  headline: [${report.headlineLineSizes.join('/')}]px / lineHeight ${report.headlineLineHeight} ` +
       `-> block ${report.headlineBlockWidth.toFixed(1)}x${report.headlineBlockHeight.toFixed(1)}px ` +
       `at (${report.textBox.x}, ${report.textBox.y}), box ${report.textBox.width}x${report.textBox.maxHeight}px`,
   );

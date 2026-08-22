@@ -37,40 +37,45 @@
   },
 
   "MOL_IMG_005": {
-    "_photo_notes": "REVISED round 2: goal was a much bigger headline, via the 4-line stacked treatment (Self-care / doesn't / need / a timeout.) the brief preferred. Shorter lines mean a bigger font fits the same ~350px-wide cabinet-front column: 74px vs the old 62px (+19%), block height 252px — the zone has ~500px of clear height available (cabinet front runs from ~y600 to the socks at ~y1150), so height was never the constraint, width was. V1/V2 use the 4-line treatment at the same 74px (V2 on a tighter crop, to check it still reads fine with less surrounding context); V3 renders the 3-line fallback (Self-care / doesn't need / a timeout.) at 62px for a direct side-by-side against the old size.",
+    "_photo_notes": "REVISED round 3: prior round's 4-line/3-line blocks were criticized as 'too flat' — every line at one uniform size reads as a paragraph dropped in place, not a designed headline. This round keeps the same copy and crop but gives each variant a genuine editorial size CONTRAST: 2-3 short 'kicker' lines at a small size, then the emphasis line (the part of the sentence that carries the meaning — 'timeout') set dramatically larger and in the accent color, with real breathing room (an extra gap, not just normal leading) before it. headlineLineSizes/headlineLineGaps (new, hand-authored per line) drive this — buildOverlay.mjs has no per-line logic of its own, it only places what's specified. All 3 test one of the three requested line-breaks (A/B/C) with this same crescendo idea, at the largest size each break's longest line allows within a slightly widened 370px zone (verified still ~10-30px clear of her leg/pants edge).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
-      "textBox": { "x": 55, "y": 630, "width": 350, "maxHeight": 260 },
+      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 210 },
       "headlineLinesOverride": ["Self-care", "doesn't", "need", "a timeout."],
       "accentLineIndexOverride": 3,
-      "headlineFontSize": 74,
+      "headlineLineSizes": [44, 44, 44, 79],
+      "headlineLineGaps": [0, 0, 20],
       "headlineLineHeight": 0.85,
       "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 890 },
-      "dividerPosition": { "x": 55, "y": 916 },
-      "brandPosition": { "x": 55, "y": 923 }
+      "supportPosition": { "x": 55, "y": 843 },
+      "dividerPosition": { "x": 55, "y": 871 },
+      "brandPosition": { "x": 55, "y": 879 }
     },
     "V2": {
-      "crop": { "x": 0, "y": 8, "width": 1060, "height": 1325 },
-      "textBox": { "x": 55, "y": 622, "width": 350, "maxHeight": 260 },
-      "headlineLinesOverride": ["Self-care", "doesn't", "need", "a timeout."],
-      "accentLineIndexOverride": 3,
-      "headlineFontSize": 74,
+      "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
+      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 185 },
+      "headlineLinesOverride": ["Self-care", "doesn't need", "a timeout."],
+      "accentLineIndexOverride": 2,
+      "headlineLineSizes": [50, 50, 79],
+      "headlineLineGaps": [0, 20],
       "headlineLineHeight": 0.85,
       "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 882 },
-      "dividerPosition": { "x": 55, "y": 908 },
-      "brandPosition": { "x": 55, "y": 915 }
+      "supportPosition": { "x": 55, "y": 816 },
+      "dividerPosition": { "x": 55, "y": 844 },
+      "brandPosition": { "x": 55, "y": 852 }
     },
     "V3": {
-      "crop": { "x": 0, "y": 15, "width": 1040, "height": 1300 },
-      "textBox": { "x": 55, "y": 615, "width": 350, "maxHeight": 170 },
-      "headlineFontSize": 62,
-      "headlineLineHeight": 0.88,
-      "supportFontSize": 16,
-      "supportPosition": { "x": 55, "y": 787 },
-      "dividerPosition": { "x": 55, "y": 809 },
-      "brandPosition": { "x": 55, "y": 816 }
+      "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
+      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 200 },
+      "headlineLinesOverride": ["Self-care", "doesn't need a", "timeout."],
+      "accentLineIndexOverride": 2,
+      "headlineLineSizes": [48, 48, 95],
+      "headlineLineGaps": [0, 24],
+      "headlineLineHeight": 0.85,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 830 },
+      "dividerPosition": { "x": 55, "y": 858 },
+      "brandPosition": { "x": 55, "y": 866 }
     },
     "master": "MOL_IMG_005_kitchen-prep.png"
   },
