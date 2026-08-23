@@ -55,6 +55,51 @@
       "height": 1152,
       "importedAt": "2026-08-23",
       "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_002_yoga-mat-roll.png",
+      "driveFileId": "1XJH1ETol1iKqsQWjqseHWyMcjhfVlJl_",
+      "sha256": "a3637eaebbe87b638c8dc8ef167e9fe26a2f9d1528893682170bc567c131ad69",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_003_reading-chair.png",
+      "driveFileId": "1DXBXfE-g86ecyigx75Us4IlWTtjQx7tA",
+      "sha256": "6c96d7d70b42aab77f57ba5db0c5501baa7e94adeacb37f2ed505e8caf1df56a",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_004_vacuuming-living-room.png",
+      "driveFileId": "1POC0nwG8Eveq9LYz8OzLUJu-DCG7bQ5B",
+      "sha256": "83f919fa912021aea0a976d056c66b4c0272502c80a18b66cf0402a94c5a6e96",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_006_home-office.png",
+      "driveFileId": "1mzYXK0_iygW8Y4k8Ulo-xKPTcXJpnepl",
+      "sha256": "1193da3147f306759b134a2f334c6f21e40364c4c51a12c3583750ac53bfb5a2",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_007_armchair-coffee-book.png",
+      "driveFileId": "13ZB23tEF4BzChkg_g5nYF-sJRtPilUpH",
+      "sha256": "bd9f1d7ed70e6af3eb3918c3bf944972022a8f6b3e1a24d59155a3c4e345a45a",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
     }
   ]
 }
