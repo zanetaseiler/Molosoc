@@ -88,5 +88,62 @@
       "brandPosition": { "x": 55, "y": 318 }
     },
     "master": "MOL_IMG_019_watering-plants.png"
+  },
+
+  "MOL_IMG_012": {
+    "_photo_notes": "Standing/kitchen preview (next-3 batch). Full master used as canvas (no crop). Her sleeve/leg sits at a fairly consistent x~300-320 from y340 (arm) down through y700-1100+ (leg), so the left cabinet strip is narrower here than MOL_IMG_005's — textBox width capped at 260 (right edge 315, ~15-25px clear of x300-320) rather than 005's 300, which is why the headline (40px) is smaller than 005's 74px: this photo's own negative space, not a fixed template size. Support wraps 3 ways (same supportLinesOverride mechanism as 005) since the one-line sentence at 28px (442px) is far too wide for this narrower zone.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 400, "width": 260, "maxHeight": 150 },
+      "headlineFontSize": 40,
+      "headlineLineHeight": 1.15,
+      "supportFontSize": 28,
+      "supportPosition": { "x": 55, "y": 568 },
+      "supportLinesOverride": ["Your cream.", "MOLOSOC.", "Your day."],
+      "supportLineHeight": 1.15,
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 690 },
+      "brandPosition": { "x": 55, "y": 712 },
+      "wordmarkFontSize": 22
+    },
+    "master": "MOL_IMG_012_kitchen-island-slicing.png"
+  },
+
+  "MOL_IMG_018": {
+    "_photo_notes": "Relaxed/sofa preview (next-3 batch). Full master used as canvas (no crop). The whole upper-left is clean sheer curtain, but a narrow column (x55-150) stays clean far deeper (past y500) than the wider block does (her hair reaches x180-250 by y390-420) — so the whole 4-part stack (headline/support/divider/brand) is kept inside the fully-clean band above y~380 rather than risking the diagonal hairline, which keeps every size more compact than MOL_IMG_005's: headline 58px, support 20px wrapped 3 ways, wordmark 16px.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 928, "height": 1152 },
+      "textBox": { "x": 55, "y": 55, "width": 250, "maxHeight": 210 },
+      "headlineFontSize": 58,
+      "headlineLineHeight": 1.15,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 273 },
+      "supportLinesOverride": ["Cream on.", "MOLOSOC on.", "Time to relax."],
+      "supportLineHeight": 1.0,
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 345 },
+      "brandPosition": { "x": 55, "y": 357 },
+      "wordmarkFontSize": 16
+    },
+    "master": "MOL_IMG_018_sofa-relaxing.png"
+  },
+
+  "MOL_IMG_020": {
+    "_photo_notes": "Seated/floor preview (next-3 batch). Full master used as canvas (no crop). Same diagonal-hairline shape as MOL_IMG_018 (she's seated against the sofa, leaning her head down/right onto the book) — headline (60px) fits in the fully-clean band above y~260, but the support line ('Make it part of the moments you already enjoy.' — the longest supporting line of any post so far) would need ~245px+ at any comfortable size, which crosses into her hairline once positioned below the headline. Wrapped into 4 short lines at 22px (widest 144.5px) to stay inside the narrow x55-200 column that stays clean to y~400.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 928, "height": 1152 },
+      "textBox": { "x": 55, "y": 55, "width": 340, "maxHeight": 200 },
+      "headlineFontSize": 60,
+      "headlineLineHeight": 1.05,
+      "supportFontSize": 22,
+      "supportPosition": { "x": 55, "y": 269 },
+      "supportLinesOverride": ["Make it", "part of the", "moments you", "already enjoy."],
+      "supportLineHeight": 1.15,
+      "dividerWidth": 70,
+      "dividerPosition": { "x": 55, "y": 382 },
+      "brandPosition": { "x": 55, "y": 396 },
+      "wordmarkFontSize": 20
+    },
+    "master": "MOL_IMG_020_floor-reading-sheepskin.png"
   }
 }

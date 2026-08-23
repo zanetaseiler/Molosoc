@@ -28,6 +28,33 @@
       "height": 1402,
       "importedAt": "2026-08-22",
       "note": "Byte-identical copy of the current Drive file. NOTE: the stale MOLOSOC_Approved_Image_Masters_Inventory.md describes MOL_IMG_019 as 'MOL_IMG_019_standing-window-legs.png' (landscape, 1344x768, flagged for replacement) — that no longer matches what's actually in the Drive folder. The file currently there is 'MOL_IMG_019_watering-plants.png' at 1122x1402 (4:5), which is what this manifest and layouts.json reference. Re-verify against the live Drive folder before trusting the inventory doc for this id."
+    },
+    {
+      "filename": "MOL_IMG_012_kitchen-island-slicing.png",
+      "driveFileId": "1KP37C0dPuTJX8SrFln4NCNBKgUN8xuPn",
+      "sha256": "5aa85230f3d9a999e2c4b33b2c013c20f9df86203fba10e78868e62d2aca3f35",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_018_sofa-relaxing.png",
+      "driveFileId": "1w4w1N8PR2NVU2MBNNbHl7jihP_G_VwXY",
+      "sha256": "b99da312db2a9fc2f39efac1eb67c94505447784a767cc869ea2ea9b48dec3f6",
+      "width": 928,
+      "height": 1152,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_020_floor-reading-sheepskin.png",
+      "driveFileId": "1i4SlVXUZXvvRdibNN2ODhaVn_LpYSLs-",
+      "sha256": "66cbe250b9dc98fd16a124980d9b7724a05ee25470cb28b53ee509133114d0b0",
+      "width": 928,
+      "height": 1152,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
     }
   ]
 }
