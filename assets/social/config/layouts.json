@@ -238,6 +238,21 @@
       "brandPosition": { "x": 55, "y": 812 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Dining table (far right) and cabinets (far left) both frame this kitchen scene; the full-width top-crop keeps the whole room intact rather than cropping into either side. Full 1122x1402 master, no vertical crop needed — she and the counter both sit comfortably above y939.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_012_kitchen-island-slicing.png"
   },
 
@@ -257,6 +272,21 @@
       "brandPosition": { "x": 55, "y": 357 },
       "wordmarkFontSize": 16
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. Master is 928x1152 (this project's second native master size, not 1122x1402), so panel geometry is ratio-derived: photoPanelWidth=557 (60% of 928), creamPanelWidth=371. photoCrop x=0 keeps the whole scene — her, the ottoman with her feet/socks up on it, and the side table+plant — inside the panel with room to spare (the composition already fits within x0-460 of the 928-wide master). All SIDE font sizes (headline/support/divider/wordmark) are scaled down from the 1122-family defaults in proportion to this master's narrower panel and shorter canvas.",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 0, "y": 0, "width": 557, "height": 1152 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 371, "height": 1152 },
+      "textBox": { "x": 55, "y": 445, "width": 261, "maxHeight": 250 },
+      "headlineFontSize": 64,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 13,
+      "supportPosition": { "x": 55, "y": 641 },
+      "dividerWidth": 50,
+      "dividerPosition": { "x": 55, "y": 679 },
+      "brandPosition": { "x": 55, "y": 696 },
+      "wordmarkFontSize": 10
+    },
     "master": "MOL_IMG_018_sofa-relaxing.png"
   },
 
@@ -275,6 +305,21 @@
       "dividerPosition": { "x": 55, "y": 382 },
       "brandPosition": { "x": 55, "y": 396 },
       "wordmarkFontSize": 20
+    },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM (SIDE was tried first and rejected: 'have to feel' doesn't fit this master's narrower 261px-wide SIDE column at any size above ~48px, which would mean shrinking this headline well below the rest of the set just to force it into SIDE — against the 'never shrink to force a worse layout' rule). Master is 928x1152; photoBandHeight=772 (67% of 1152). Her head sits at y~130 and her feet/socks at y~830-950 — 820px apart, wider than the 772px band, so both ends can't be kept with full margin. photoCrop y=110 keeps her head with a small margin and includes the sock down to its ankle; the very tip of the foot is outside the crop. This is a real, disclosed trade-off, not a rule violation — no text touches the photo either way.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 110, "width": 928, "height": 772 },
+      "textAreaBounds": { "x": 0, "y": 772, "width": 928, "height": 380 },
+      "textBox": { "x": 55, "y": 831, "width": 700, "maxHeight": 250 },
+      "headlineFontSize": 70,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 15,
+      "supportPosition": { "x": 55, "y": 1035 },
+      "dividerWidth": 66,
+      "dividerPosition": { "x": 55, "y": 1068 },
+      "brandPosition": { "x": 55, "y": 1079 },
+      "wordmarkFontSize": 12
     },
     "master": "MOL_IMG_020_floor-reading-sheepskin.png"
   },
@@ -563,6 +608,116 @@
       "brandPosition": { "x": 55, "y": 862 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. No more face/hand-avoidance math needed — text lives entirely in the cream band below, never on the photo. Her head sits at y~15 and the sock she's applying cream toward runs y~900-1250; that combined span (1235px) is wider than the 939px band, so both can't be kept with full margin. photoCrop y=0 keeps her whole head, robe, plant and the cream-application gesture (the actual hero action, ~y460-800) fully in frame, at the cost of the sock being cropped down to just its top/ankle. A real, disclosed trade-off — not a rule violation.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_011_bathroom-cream-routine.png"
+  },
+
+  "MOL_IMG_013": {
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. Master pulled from Drive this round (previously missing locally). She leans against the counter holding the cream jar, a fairly contained pose; photoCrop x=220 (of the 1122-wide master) keeps her plus the jar inside the 673px photo panel, trimming the plant on the far left and the armchair/table on the far right.",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 220, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 550, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 72,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 772 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 818 },
+      "brandPosition": { "x": 55, "y": 838 },
+      "wordmarkFontSize": 12
+    },
+    "master": "MOL_IMG_013_counter-cream-jar.png"
+  },
+
+  "MOL_IMG_014": {
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Master pulled from Drive this round. Nightstand+lamp (right) and bed (left) both anchor this bedroom scene, so the full-width crop keeps it together. Her head sits at y~100 and her sock at y~900-1270; that 1170px span is wider than the 939px band, so photoCrop y=70 prioritizes her head/face/mug/book (the hero action) with a small margin, at the cost of the sock being cropped down to roughly its top third. Headline ('Good mornings') needed a wider-than-usual 700px text box (vs. the standard 600px) to stay at the same 93px scale as the rest of the set.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 70, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 700, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
+    "master": "MOL_IMG_014_bedside-morning-coffee.png"
+  },
+
+  "MOL_IMG_015": {
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. Master pulled from Drive this round; this master is 1126x1397 (not the usual 1122x1402 — 0.76% off exact 4:5, within tolerance), so panel geometry is computed from its own size: photoPanelWidth=675, creamPanelWidth=451. She's seated centrally in the chair; photoCrop x=30 keeps her and the side table/candle fully in frame, trimming almost all of the vanity/mirror on the far right (a sliver only).",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 30, "y": 0, "width": 675, "height": 1397 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 451, "height": 1397 },
+      "textBox": { "x": 55, "y": 561, "width": 341, "maxHeight": 250 },
+      "headlineFontSize": 62,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 756 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 802 },
+      "brandPosition": { "x": 55, "y": 822 },
+      "wordmarkFontSize": 12
+    },
+    "master": "MOL_IMG_015_bathroom-relaxing.png"
+  },
+
+  "MOL_IMG_016": {
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Master pulled from Drive this round; 928x1152 (this project's second native master size), so photoBandHeight=772 (67% of 1152), and all cream-band font sizes are scaled down proportionally from the 1122-family defaults. She's reclining on the daybed facing the window view (the visual point of this photo), head at y~230 and socked feet at y~430-520 — both comfortably inside a 772px window. photoCrop y=130 centers that range with margin on both sides, trimming only the shelf top edge and the side table's legs.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 130, "width": 928, "height": 772 },
+      "textAreaBounds": { "x": 0, "y": 772, "width": 928, "height": 380 },
+      "textBox": { "x": 55, "y": 831, "width": 700, "maxHeight": 250 },
+      "headlineFontSize": 70,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 15,
+      "supportPosition": { "x": 55, "y": 1035 },
+      "dividerWidth": 66,
+      "dividerPosition": { "x": 55, "y": 1068 },
+      "brandPosition": { "x": 55, "y": 1079 },
+      "wordmarkFontSize": 12
+    },
+    "master": "MOL_IMG_016_daybed-window-view.png"
+  },
+
+  "MOL_IMG_017": {
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Master pulled from Drive this round; 928x1152, same scaled-down cream-band sizing as MOL_IMG_016/020. This is already a tight detail crop (legs/feet + the cream-warmer/brush tray) with no face to protect, so the choice is purely about keeping the sock and the full product tray in frame: photoCrop y=190 keeps both (sock ~y550-950, tray ~y750-950) comfortably inside the 772px window, trimming only the upper leg/pants fabric at the very top, which carries no information.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 190, "width": 928, "height": 772 },
+      "textAreaBounds": { "x": 0, "y": 772, "width": 928, "height": 380 },
+      "textBox": { "x": 55, "y": 831, "width": 700, "maxHeight": 250 },
+      "headlineFontSize": 70,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 15,
+      "supportPosition": { "x": 55, "y": 1035 },
+      "dividerWidth": 66,
+      "dividerPosition": { "x": 55, "y": 1068 },
+      "brandPosition": { "x": 55, "y": 1079 },
+      "wordmarkFontSize": 12
+    },
+    "master": "MOL_IMG_017_feet-closeup-bench.png"
   }
 }

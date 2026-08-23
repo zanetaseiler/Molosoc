@@ -48,27 +48,17 @@
   },
 
   "templates": {
-    "_comment": "3 deterministic, reusable 4:5 templates (canvas fixed at 1122x1402, matching every master's own dimensions so a template's photo region can be a lossless in-memory crop with no resize). A post's layout entry sets `template: \"A\"|\"B\"|\"C\"` and, for A/C, `photoCrop` (the region extracted from the master, in the MASTER's own pixel coordinates) — its width/height must exactly equal the geometry below so no scaling is ever needed. Master files are never touched; only this derived, in-memory crop is composited onto a flat cream canvas.",
+    "_comment": "3 deterministic, reusable 4:5 templates. The canvas is always the MASTER's own width/height (never resized/upscaled) — masters in this project come in a few different native sizes (1122x1402, 928x1152, 1126x1397, ...), so A/C panel geometry is stored as a RATIO of the master's own dimensions, not a fixed pixel size. A post's layout entry sets `template: \"A\"|\"B\"|\"C\"` and, for A/C, `photoCrop` (the region extracted from the master, in the MASTER's own pixel coordinates) — its width/height must exactly equal that master's own computed panel size (canvasWidth*photoPanelWidthRatio for A, canvasHeight*photoBandHeightRatio for C, each rounded) so no scaling is ever needed. Master files are never touched; only this derived, in-memory crop is composited onto a flat cream canvas.",
     "A": {
       "_description": "Editorial split — a solid cream text panel on the left, the photo (cropped to fill) on the right. Text never touches the photo at all.",
-      "canvasWidth": 1122,
-      "canvasHeight": 1402,
-      "creamPanelWidth": 449,
-      "photoPanelWidth": 673,
-      "photoPanelX": 449
+      "photoPanelWidthRatio": 0.59982175
     },
     "B": {
-      "_description": "Full image — text overlaid directly on the full photo. Only for a photo with genuinely large clean negative space; never forced.",
-      "canvasWidth": 1122,
-      "canvasHeight": 1402
+      "_description": "Full image — text overlaid directly on the full photo. Only for a photo with genuinely large clean negative space; never forced."
     },
     "C": {
       "_description": "Photo top / text bottom — the photo (cropped to fill) on top, a solid cream text band below it. Text never touches the photo at all.",
-      "canvasWidth": 1122,
-      "canvasHeight": 1402,
-      "photoBandHeight": 939,
-      "creamBandHeight": 463,
-      "creamBandY": 939
+      "photoBandHeightRatio": 0.66975749
     }
   }
 }

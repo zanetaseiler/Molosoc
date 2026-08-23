@@ -156,27 +156,34 @@ async function renderPost(imgId, variantId, outputName) {
   } else {
     const tmpl = designSystem.templates[template];
     if (!tmpl) throw new Error(`${postId}: unknown template "${template}" (expected A, B, or C).`);
-    canvasWidth = tmpl.canvasWidth;
-    canvasHeight = tmpl.canvasHeight;
+    // The canvas is always the master's own dimensions — masters in this
+    // project come in more than one native size (1122x1402, 928x1152,
+    // 1126x1397, ...), so panel geometry is a RATIO of that size, computed
+    // fresh per master, never a fixed pixel value assumed from one size.
+    canvasWidth = masterMeta.width;
+    canvasHeight = masterMeta.height;
+    const photoPanelWidth = template === 'A' ? Math.round(canvasWidth * tmpl.photoPanelWidthRatio) : undefined;
+    const photoPanelX = template === 'A' ? canvasWidth - photoPanelWidth : undefined;
+    const photoBandHeight = template === 'C' ? Math.round(canvasHeight * tmpl.photoBandHeightRatio) : undefined;
     const { x: px, y: py, width: pw, height: ph } = layout.photoCrop;
     if (px < 0 || py < 0 || px + pw > masterMeta.width || py + ph > masterMeta.height) {
       throw new Error(
         `${postId}: photoCrop {x:${px},y:${py},w:${pw},h:${ph}} falls outside the master's ${masterMeta.width}x${masterMeta.height} bounds.`,
       );
     }
-    const expectedW = template === 'A' ? tmpl.photoPanelWidth : tmpl.canvasWidth;
-    const expectedH = template === 'A' ? tmpl.canvasHeight : tmpl.photoBandHeight;
+    const expectedW = template === 'A' ? photoPanelWidth : canvasWidth;
+    const expectedH = template === 'A' ? canvasHeight : photoBandHeight;
     if (pw !== expectedW || ph !== expectedH) {
       throw new Error(
-        `${postId}: template ${template}'s photoCrop must be exactly ${expectedW}x${expectedH} (this template's photo ` +
-          `panel size, so it composites with zero scaling) — got ${pw}x${ph}.`,
+        `${postId}: template ${template}'s photoCrop must be exactly ${expectedW}x${expectedH} for this master's own ` +
+          `${canvasWidth}x${canvasHeight} size (so it composites with zero scaling) — got ${pw}x${ph}.`,
       );
     }
     const photoBuffer = await sharp(masterBuffer)
       .extract({ left: px, top: py, width: pw, height: ph })
       .png({ compressionLevel: 9 })
       .toBuffer();
-    const photoOffset = template === 'A' ? { left: tmpl.photoPanelX, top: 0 } : { left: 0, top: 0 };
+    const photoOffset = template === 'A' ? { left: photoPanelX, top: 0 } : { left: 0, top: 0 };
     baseBuffer = await sharp({
       create: {
         width: canvasWidth,

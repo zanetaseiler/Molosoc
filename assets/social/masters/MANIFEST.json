@@ -136,6 +136,51 @@
       "height": 1402,
       "importedAt": "2026-08-23",
       "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_013_counter-cream-jar.png",
+      "driveFileId": "1u_9QWI6QzPaUHS0nwv2wRqv-t8tHo5q6",
+      "sha256": "9422e346d1e83d78c91dd1d471968b84997dac49d67ee25cfa1efecbc27079e7",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master (verified: local file size matches Drive's reported fileSize exactly). Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_014_bedside-morning-coffee.png",
+      "driveFileId": "1OtA_B9vpX_LdkvqzEaP0CZeV3_axi52g",
+      "sha256": "e2583a9c8a17c29d8ed29d91659b3c19526f1cd599669bdde3f85cd2426ac84c",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master (verified: local file size matches Drive's reported fileSize exactly). Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_015_bathroom-relaxing.png",
+      "driveFileId": "1Iona0mWuwvNoQM_ZzgSdC8jiBT4Wm1h2",
+      "sha256": "b36b4a6d80ac84e53e16a76b7b94b321a572ec51ffcfa2d9d2c3b905992b3af1",
+      "width": 1126,
+      "height": 1397,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master (verified: local file size matches Drive's reported fileSize exactly). Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded. Dimensions are 1126x1397 (0.76% off exact 4:5), within the locked aspectTolerance."
+    },
+    {
+      "filename": "MOL_IMG_016_daybed-window-view.png",
+      "driveFileId": "1Ma4yShS-j38i7P_xvOxdl2HGvP92UMIe",
+      "sha256": "9f0fbd871b16aeb1e0fc0b33e363a4504a81e562f1f16ff2feef4e254efc840d",
+      "width": 928,
+      "height": 1152,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master (verified: local file size matches Drive's reported fileSize exactly). Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_017_feet-closeup-bench.png",
+      "driveFileId": "16x2223OFM8m_6Zzjz2sXhUtjAxyC_XFQ",
+      "sha256": "a1ca0c59a11432f646a13707c603d2735e21ce515d68b4f6a31234766a401b7c",
+      "width": 928,
+      "height": 1152,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master (verified: local file size matches Drive's reported fileSize exactly). Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
     }
   ]
 }
