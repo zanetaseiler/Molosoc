@@ -37,20 +37,18 @@
   },
 
   "MOL_IMG_005": {
-    "_photo_notes": "REVISED round 5 — same photo, same crop, headline re-broken to 4 lines ('Self-care'/'doesn't'/'need a'/'timeout.') and every element re-measured against a full pixel-grid pass of the master (not eyeballed), because round 4's request to move the whole composition to the 'upper-left clean wall' turned out not to be physically possible: an objective largest-clean-rectangle scan (color-distance from confirmed wall pixels) of x0-650,y0-650 found the biggest pocket clearing the picture frame, potted plant, jar shelf, utensil canister/cutting boards/lemon bowl, and the model's head/hair is either ~391x51px or ~140x71px — neither tall enough for a 4-line headline at any legible size. The only run in this whole photo with both enough width and height is the lower cabinet-front strip used in rounds 3-4, confirmed with the user before proceeding. Within that strip: the model's hip/pants/leg edge is NOT confined to the y700-730 pinch (~x360) as previously documented — it runs continuously down the whole crop, sitting at roughly x360-400 all the way from y~630 to past y1190 (it's her leg, not just her hip), which the first render of this round missed and produced a support line overlapping her pants. Headline: the 4 shorter lines are each individually narrower than round 4's 'doesn't need', so the same ~x355 right-edge budget now allows a much bigger 72px font (up from 51px), widest line 'Self-care' at 280.5px, ~25px clear of the leg. Support: at the required 28px-minimum, 'Wear MOLOSOC while life keeps moving.' measures 546.8px as one line — far too wide to fit left of her leg at any y — so it's wrapped (supportLinesOverride, same rule as headline overrides: reconstructs the exact copy.json sentence, never different words) to 'Wear MOLOSOC' / 'while life' / 'keeps moving.', widest line only 223.3px, comfortably clear. The dark shadowed toe-kick recess under the cabinet (~y1000-1060, RGB brightness ~30-65) sits right where this 3-line support block now starts, but there's no cleaner alternative band before the rug (~y1150) and the actual MOLOSOC socks (confirmed by precise crop: ankle visible from ~y1190, white sock fabric from ~y1230-1250) — the whole support/divider/brand block ends at y1190.4, still 40+px clear of the socks. REVISED round 6: whole block nudged up (headline top 630->615, clear of the lemon bowl which was re-checked and only reaches down to ~y590) and every size stepped up slightly — headline 72->74, support 28->32, wordmark 24->27 — spacing between elements kept the same proportions. Re-verified: widest headline line 'Self-care' at 74px is 288.3px, still ~17px clear of the leg edge; support/divider/brand (now ending y~1201) still ~30px clear of the socks (~y1230).",
+    "_photo_notes": "REPLACED — new copy ('Simple care'/'fits right'/'in.'), rebuilt from scratch on the current locked design system (135px single rigid headline block, no per-line gaps) rather than the old 74px cabinet-strip layout from many rounds ago. Full master used as canvas (no crop, unlike the old version's 1080x1350 crop). Her face runs from hair-bun-top ~y30 to chin ~y300 (head/hair x-range ~450-680); she's chopping vegetables with both hands on a knife at ~x580-750,y480-650. Y=310 puts the block's real ink at 280.8-708.9: clears her chin (10px+), and line 1 (the only line wide enough to reach the hand's x-range) ends its ink at ~437 — well above the hand's y480 start, so no line crosses it. Support/divider/brand follow at y710+, and (support's widest at 648px) still stay ~480px clear of the knife/hands and 380px+ clear of the socks (~x350-480,y1190+).",
     "V1": {
-      "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
-      "textBox": { "x": 55, "y": 615, "width": 300, "maxHeight": 345 },
-      "headlineFontSize": 74,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 32,
-      "supportPosition": { "x": 55, "y": 995 },
-      "supportLinesOverride": ["Wear MOLOSOC", "while life", "keeps moving."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 110,
-      "dividerPosition": { "x": 55, "y": 1135 },
-      "brandPosition": { "x": 55, "y": 1172 },
-      "wordmarkFontSize": 27
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 310, "width": 710, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 710 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 762 },
+      "brandPosition": { "x": 55, "y": 784 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_005_kitchen-prep.png"
   },
@@ -277,5 +275,73 @@
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_007_armchair-coffee-book.png"
+  },
+
+  "MOL_IMG_008": {
+    "_photo_notes": "Next-5 batch, current locked design system (135px single rigid block). Full master, no crop. Face runs to chin ~y300-320; she's arranging flowers with both hands at ~x580-750,y400-580 — closer to her chin than in most of this batch, so a single line can't sit between them (only ~80-100px gap vs. ~185px needed). Block instead starts at Y=625, clearing the hands (ink top ~596, 16px past y580) and finishing (ink bottom ~1024) well above the sock (~x330-620,y1140+). Support/divider/brand follow at y1025+, ending ~15px clear of the sock.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 625, "width": 760, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 1025 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 1077 },
+      "brandPosition": { "x": 55, "y": 1099 },
+      "wordmarkFontSize": 24
+    },
+    "master": "MOL_IMG_008_kitchen-flowers.png"
+  },
+
+  "MOL_IMG_009": {
+    "_photo_notes": "FLAGGED CONFLICT, same as MOL_IMG_004/006 in the previous round — could not fully avoid her hands while also clearing chin and sock. Her chin ends ~y360, she's applying cream with both hands at ~x400-620,y480-650, and her sock (feet up on the ottoman) starts unusually high at ~y1010 (not ~1150 like most of this set). The three gaps this could sit in — chin-to-hand (360-480, 120px), hand-to-sock (650-1010, 360px) — are both well short of the 428px a rigid 3-line 135px block needs, so no Y clears all three. Placed at Y=600 (ink 570.8-964.4) to clear her chin and the sock, the two rules weighted heaviest elsewhere in this project; the block's own ink does cross her hands. Support/divider/brand (a much shorter line at 30px, only 495px wide) never reach the sock's x-range (650-1050) regardless of y, so they follow with normal spacing and no further conflict.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 600, "width": 970, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 1000 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 1052 },
+      "brandPosition": { "x": 55, "y": 1074 },
+      "wordmarkFontSize": 24
+    },
+    "master": "MOL_IMG_009_armchair-cream.png"
+  },
+
+  "MOL_IMG_010": {
+    "_photo_notes": "Next-5 batch, current locked design system. Full master, no crop. Face runs to chin ~y230-250; she's writing with both hands at ~x350-500,y400-540. Block starts at Y=585 (ink 555.8-983.9), clearing her hands with margin. None of the 3 headline lines are wide enough to reach the raised sock (~x600-820,y880-1030) — the widest, 'moment', only reaches x558. The support line IS wide enough (edge 641), so it's held at y1040 — in the ~110px gap between the raised sock (ends ~1030) and the other foot's sock (starts ~1140) — rather than following immediately after the headline.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 585, "width": 510, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 1040 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 1085 },
+      "brandPosition": { "x": 55, "y": 1102 },
+      "wordmarkFontSize": 24
+    },
+    "master": "MOL_IMG_010_window-bench-journaling.png"
+  },
+
+  "MOL_IMG_011": {
+    "_photo_notes": "FLAGGED CONFLICT, same shape as MOL_IMG_004/009 — the densest obstacle stack in this batch. Chin ends ~y300; she applies cream in two separate motions, one hand+jar at ~x480-620,y460-580 and the other rubbing it into her leg at ~x400-620,y650-800; her sock appears right after, at ~y900. Three gaps (chin-hand1 160px, hand1-hand2 70px, hand2-sock 100px) are all far short of the 428px block. Placed at Y=400 (ink 370.8-798.9) to clear her chin (70px) and the sock (101px) — the block's own ink crosses both hand positions. Support is pushed to y800 (clearing hand2's tail) and the whole lockup ends ~12px above the sock at y900.",
+    "V1": {
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 400, "width": 800, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 800 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 845 },
+      "brandPosition": { "x": 55, "y": 862 },
+      "wordmarkFontSize": 24
+    },
+    "master": "MOL_IMG_011_bathroom-cream-routine.png"
   }
 }

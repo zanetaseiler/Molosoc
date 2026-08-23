@@ -100,6 +100,42 @@
       "height": 1402,
       "importedAt": "2026-08-23",
       "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_008_kitchen-flowers.png",
+      "driveFileId": "1ljfqxdk3FyA024zn6e-exyhbJg_pbU8b",
+      "sha256": "0e75d974794a789553766198450f2a6f08aecff974256dfbec8a7f9855b80a0a",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_009_armchair-cream.png",
+      "driveFileId": "1ih26Fz5_9RRbgtvvlHzwrGv17tnaVGrN",
+      "sha256": "32d3a79bffa29dcc8379c0558cdeb2a494aee5f5784a763778149a7eabe2417b",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_010_window-bench-journaling.png",
+      "driveFileId": "1WYqszotjc_JYZzXB5WG-gt32PePZSt9H",
+      "sha256": "87f85dde5bc8941ef3e60b96f88e73f219e6cc06ec995e7bd6826d00ceb6412b",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
+    },
+    {
+      "filename": "MOL_IMG_011_bathroom-cream-routine.png",
+      "driveFileId": "156bSb26GhywWRUEjg0ApUILsuAQhILol",
+      "sha256": "89c2242087d30f5bed229a0f3f348bb1566f39e194d4e3907c1bd409ee489f04",
+      "width": 1122,
+      "height": 1402,
+      "importedAt": "2026-08-23",
+      "note": "Byte-identical copy of the Drive master. Actual bytes are baseline JPEG despite the .png name/extension in Drive — copied as-is, not re-encoded."
     }
   ]
 }
