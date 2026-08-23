@@ -195,75 +195,79 @@
   },
 
   "MOL_IMG_002": {
-    "_photo_notes": "REVISED — locked typography rule (headline 115-140px, never smaller). This supersedes the whole 'find the narrow clean gap and shrink to fit' approach used earlier: at 115px+, no image in this set has a clean margin wide enough to avoid the model entirely, so the rule set now only forbids covering the MOLOSOC socks and running off-canvas, not covering her. Headline 135px (preferred range), exact 3-line break, lineHeight 0.90 -> block 558.6x364.5px (26% of this 1122x1402 canvas's height, in the 25-35% target; width is inherently copy-dependent, see MOL_IMG_003). Support at full single-line copy (no wrap needed now that width isn't the constraint), 30px. Socks are down at her feet (y~950+); this block (y55-~530) is nowhere near them.",
+    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her face sits almost immediately below the top padding (hair bun top ~y110, eyes/nose/mouth ~y280-360, chin ~y400), leaving no room for even one 135px line above it, so line 1 ('Care that') necessarily grazes only the very top of her hair bun (not her hairline/forehead) before a large inserted gap (headlineLineGaps[0]=233) jumps lines 2-3 down to y410+, past her chin, where they fall across her sweater/shoulder (allowed). Support/divider/brand follow at y820+, still well above her hands and the mat (~y900+) and the socks (~x150-350,y900-1000).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 570, "maxHeight": 370 },
+      "textBox": { "x": 70, "y": 55, "width": 570, "maxHeight": 610 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
+      "headlineLineGaps": [233, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 55, "y": 455 },
+      "supportPosition": { "x": 70, "y": 820 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 55, "y": 507 },
-      "brandPosition": { "x": 55, "y": 529 },
+      "dividerPosition": { "x": 70, "y": 872 },
+      "brandPosition": { "x": 70, "y": 894 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_002_yoga-mat-roll.png"
   },
 
   "MOL_IMG_003": {
-    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. 'A little care.' is a longer line than the other four images' longest lines, so at the mandated 115px+ minimum its width (727.5px at 135px) runs past the 'roughly 35-45% of canvas width' guidance (45% would be ~505px) — there's no way to satisfy both the 115px floor and that width guidance for this specific copy without violating one of them, and the floor is the hard rule (explicit FAIL condition; the width/height proportion is a 'roughly' guideline, not listed as a FAIL condition). It still fits fully on-canvas with ~215px to spare before the right padding, and nowhere near her (feet are up in the air, further right and much lower, y~950+).",
+    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her hair/face runs from the very top of the frame (bun ~y50) to her chin ~y300, and she's holding an open book with both hands at roughly x600-780,y480-620 — a single 135px line (visible ink span ~185px including ascent/descent) doesn't fit in the ~180px gap between her chin and her hands, so line 1 starts at y340 (just below her chin; its descender may graze the book's own pages, which aren't a restricted surface) and a large inserted gap (headlineLineGaps[0]=199) carries lines 2-3 to y660+, clear of her hands, landing across her sweater/jeans (allowed). Her feet/sock are further right (~x800+) and out of this block's horizontal reach entirely.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 740, "maxHeight": 370 },
+      "textBox": { "x": 55, "y": 340, "width": 740, "maxHeight": 570 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
+      "headlineLineGaps": [199, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 55, "y": 455 },
+      "supportPosition": { "x": 55, "y": 938 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 55, "y": 507 },
-      "brandPosition": { "x": 55, "y": 529 },
+      "dividerPosition": { "x": 55, "y": 990 },
+      "brandPosition": { "x": 55, "y": 1012 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_003_reading-chair.png"
   },
 
   "MOL_IMG_004": {
-    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. Her socks/feet are at the bottom of the frame while vacuuming (y~1100+); this block (y55-~530) is nowhere close.",
+    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her face sits close to the top (chin ~y250), so line 1 ('Self-care') grazes only her hair-bun top before a first inserted gap (headlineLineGaps[0]=113.5) carries line 2 to y290+, past her chin, across her sweater. She's gripping the vacuum with both hands — one on the canister (~x330-420,y490-570), one on the handle further down (~x480-560,y620-720) — both inside line 3's horizontal reach, so a second inserted gap (headlineLineGaps[1]=178.5) pushes line 3 down to y740+, clear of both. Support/divider/brand follow at y897+, past everything, still well above her socks at the floor (~y1150+).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 555, "maxHeight": 370 },
+      "textBox": { "x": 55, "y": 55, "width": 555, "maxHeight": 810 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
+      "headlineLineGaps": [113.5, 178.5],
       "supportFontSize": 30,
-      "supportPosition": { "x": 55, "y": 455 },
+      "supportPosition": { "x": 55, "y": 897 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 55, "y": 507 },
-      "brandPosition": { "x": 55, "y": 529 },
+      "dividerPosition": { "x": 55, "y": 949 },
+      "brandPosition": { "x": 55, "y": 971 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_004_vacuuming-living-room.png"
   },
 
   "MOL_IMG_006": {
-    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch, but still shifted to x=160: this is the one photo where the padding-minimum x=55 sits directly on a large sharp-focus framed print (a bold black circle on tan), and even under the new 'covering the model is fine' rule, dark headline text crossing a bold high-contrast graphic would be a genuine legibility problem, not just a style preference — x=160 clears its right border. Her socks/feet are down at the desk (y~1150+), nowhere near this block.",
+    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only; still shifted to x=160 (sharp-focus framed print sits at x0-145). Line 1 ('Your feet') grazes only her hair-bun top before a large inserted gap (headlineLineGaps[0]=513.5) carries lines 2-3 down to y690+ — past both her chin (~y300) and her hands on the laptop/desk (~x550-720,y560-680), landing on the desk/notebook (furniture, allowed). Support/divider/brand follow at y968+, well above her feet at the desk (~y1150+).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 160, "y": 55, "width": 545, "maxHeight": 370 },
+      "textBox": { "x": 160, "y": 55, "width": 545, "maxHeight": 890 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
+      "headlineLineGaps": [513.5, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 160, "y": 455 },
+      "supportPosition": { "x": 160, "y": 968 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 160, "y": 507 },
-      "brandPosition": { "x": 160, "y": 529 },
+      "dividerPosition": { "x": 160, "y": 1020 },
+      "brandPosition": { "x": 160, "y": 1042 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_006_home-office.png"
   },
 
   "MOL_IMG_007": {
-    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. She's seated with no socks/feet visible low in this frame at all (book and mug in her hands, mid-frame); nothing near this block regardless.",
+    "_photo_notes": "REVISED again — same 135px/0.90 typography and same position as the previous round (kept per 'close to current look'): this was already the best-behaved of the five, with line 3 clearing her entirely and only a ~10px graze of the left edge of her hair from line 2 ('Your feet') — a soft hair edge, not her face/hairline proper, so left as-is.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
       "textBox": { "x": 55, "y": 55, "width": 700, "maxHeight": 370 },
