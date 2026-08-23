@@ -37,45 +37,16 @@
   },
 
   "MOL_IMG_005": {
-    "_photo_notes": "REVISED round 3: prior round's 4-line/3-line blocks were criticized as 'too flat' — every line at one uniform size reads as a paragraph dropped in place, not a designed headline. This round keeps the same copy and crop but gives each variant a genuine editorial size CONTRAST: 2-3 short 'kicker' lines at a small size, then the emphasis line (the part of the sentence that carries the meaning — 'timeout') set dramatically larger and in the accent color, with real breathing room (an extra gap, not just normal leading) before it. headlineLineSizes/headlineLineGaps (new, hand-authored per line) drive this — buildOverlay.mjs has no per-line logic of its own, it only places what's specified. All 3 test one of the three requested line-breaks (A/B/C) with this same crescendo idea, at the largest size each break's longest line allows within a slightly widened 370px zone (verified still ~10-30px clear of her leg/pants edge).",
+    "_photo_notes": "REVISED round 4 (bug fix — this is now the ONE locked composition, not a set of variants). Round 3's per-line 'crescendo' (headlineLineSizes/headlineLineGaps: small kicker lines jumping to one huge emphasis line at a 0.85 lineHeight) is what produced the reported 'messy/broken letters, not aligned cleanly' result: 0.85 is tighter than this font's own metrics (DM Serif Display: ascent 1.036em + descent 0.335em = 1.371em of natural vertical extent per line) support even for same-size stacked lines, and jumping 50px->79px lines with uneven per-line gaps reads as an uneven ragged block rather than one deliberate shape, especially left-aligned. Fix: dropped the per-line override mechanism entirely — back to plain headlineFontSize + headlineLineHeight (same schema as MOL_IMG_001/019) so every line is one uniform size, one uniform advance, one left edge. Also re-measured the safe zone precisely (pixel-grid crop of the master, not eyeballing): the model's hip/pants edge is NOT a flat ~x385-425 as previously assumed — it's a curve that pinches to its tightest point around x360 at y~700-730, then eases back out to ~x385-400 by y~800-900. That pinch, not the wider points above/below it, is what actually bounds a left-aligned text block spanning y630-806. textBox.width was cut from 370 to 300 (right edge x355, ~20px clear of the x360 pinch) to respect that. The old supportFontSize 20 (~391px wide, right edge x446) was independently found to run well past this same curve at y800-840 (edge ~x385-390 there) — i.e. the old support line was already overlapping the model's clothing, uncaught because boundary validation only checks the canvas edge, not the subject. Fixed by matching MOL_IMG_001 V1's supportFontSize (16px, ~312px wide, right edge x367 — clear of the ~x385-390 boundary at that y).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
-      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 210 },
-      "headlineLinesOverride": ["Self-care", "doesn't", "need", "a timeout."],
-      "accentLineIndexOverride": 3,
-      "headlineLineSizes": [44, 44, 44, 79],
-      "headlineLineGaps": [0, 0, 20],
-      "headlineLineHeight": 0.85,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 843 },
-      "dividerPosition": { "x": 55, "y": 871 },
-      "brandPosition": { "x": 55, "y": 879 }
-    },
-    "V2": {
-      "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
-      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 185 },
-      "headlineLinesOverride": ["Self-care", "doesn't need", "a timeout."],
-      "accentLineIndexOverride": 2,
-      "headlineLineSizes": [50, 50, 79],
-      "headlineLineGaps": [0, 20],
-      "headlineLineHeight": 0.85,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 816 },
-      "dividerPosition": { "x": 55, "y": 844 },
-      "brandPosition": { "x": 55, "y": 852 }
-    },
-    "V3": {
-      "crop": { "x": 0, "y": 0, "width": 1080, "height": 1350 },
-      "textBox": { "x": 55, "y": 630, "width": 370, "maxHeight": 200 },
-      "headlineLinesOverride": ["Self-care", "doesn't need a", "timeout."],
-      "accentLineIndexOverride": 2,
-      "headlineLineSizes": [48, 48, 95],
-      "headlineLineGaps": [0, 24],
-      "headlineLineHeight": 0.85,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 830 },
-      "dividerPosition": { "x": 55, "y": 858 },
-      "brandPosition": { "x": 55, "y": 866 }
+      "textBox": { "x": 55, "y": 630, "width": 300, "maxHeight": 180 },
+      "headlineFontSize": 51,
+      "headlineLineHeight": 1.15,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 832 },
+      "dividerPosition": { "x": 55, "y": 860 },
+      "brandPosition": { "x": 55, "y": 868 }
     },
     "master": "MOL_IMG_005_kitchen-prep.png"
   },

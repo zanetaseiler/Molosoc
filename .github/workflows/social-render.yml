@@ -41,9 +41,7 @@ jobs:
             MOL_IMG_001:V1:MOL_POST_001_EN_TEST_V1.png \
             MOL_IMG_001:V2:MOL_POST_001_EN_TEST_V2.png \
             MOL_IMG_001:V3:MOL_POST_001_EN_TEST_V3.png \
-            MOL_IMG_005:V1:MOL_POST_005_EN_TEST_V1.png \
-            MOL_IMG_005:V2:MOL_POST_005_EN_TEST_V2.png \
-            MOL_IMG_005:V3:MOL_POST_005_EN_TEST_V3.png \
+            MOL_IMG_005:V1:MOL_POST_005_EN_TEST.png \
             MOL_IMG_019:V1:MOL_POST_019_EN_TEST_V1.png \
             MOL_IMG_019:V2:MOL_POST_019_EN_TEST_V2.png \
             MOL_IMG_019:V3:MOL_POST_019_EN_TEST_V3.png

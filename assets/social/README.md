@@ -136,8 +136,10 @@ land in `output/`.
    layout entry, don't work around the check.
 
 As of this writing, `config/layouts.json` has `V1`/`V2`/`V3` entries for
-`MOL_IMG_001`, `MOL_IMG_005`, and `MOL_IMG_019` only (manually-configured
-prototypes, one crop-tightness progression each). `config/copy.json` has all
+`MOL_IMG_001` and `MOL_IMG_019` (manually-configured prototypes, one
+crop-tightness progression each), and a single locked `V1` for `MOL_IMG_005`
+(its headline copy/composition is finalized — see its `_photo_notes` — so
+it isn't kept as a set of competing variants). `config/copy.json` has all
 20 images' copy ready, but the other 17 need layout entries authored the
 same way before they can render.
 
