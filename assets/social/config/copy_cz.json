@@ -1,0 +1,104 @@
+{
+  "_comment": "Czech translations of config/copy.json, same structure and keys. Meaning/tone preserved, not literal word-for-word. accentLineIndex kept at 2 (last line accented) to match the EN hierarchy for every post. Uses the same locked fonts as EN (font files were upgraded from a Latin-only subset to the full Google Fonts release of the same families — DM Serif Display / Mulish — solely to add Czech glyph coverage; zero metric change to any Latin glyph, verified byte-identical on existing EN renders).",
+
+  "MOL_IMG_001": {
+    "headline": ["Péče, která", "zapadá do", "běžných dní."],
+    "accentLineIndex": 2,
+    "supporting": "Krém naneste. MOLOSOC natáhněte. Jde se dál."
+  },
+  "MOL_IMG_002": {
+    "headline": ["Péče, která", "drží krok", "s vámi."],
+    "accentLineIndex": 2,
+    "supporting": "Vaše rutina nemusí čekat."
+  },
+  "MOL_IMG_003": {
+    "headline": ["Trocha péče.", "Trocha", "klidu."],
+    "accentLineIndex": 2,
+    "supporting": "Některé rituály stojí za zpomalení."
+  },
+  "MOL_IMG_004": {
+    "headline": ["Péče o sebe,", "i když", "život nečeká."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC zapadne do dne, který už máte."
+  },
+  "MOL_IMG_005": {
+    "headline": ["Jednoduchá péče", "zapadne", "přesně tam."],
+    "accentLineIndex": 2,
+    "supporting": "Noste MOLOSOC, zatímco život jede dál."
+  },
+  "MOL_IMG_006": {
+    "headline": ["I vaše nohy", "pracují", "celý den."],
+    "accentLineIndex": 2,
+    "supporting": "Věnujte jim chvilku pozornosti při práci."
+  },
+  "MOL_IMG_007": {
+    "headline": ["Zpomalte.", "I vaše nohy", "si odpočinou."],
+    "accentLineIndex": 2,
+    "supporting": "Krátká chvilka běžné péče."
+  },
+  "MOL_IMG_008": {
+    "headline": ["Malé rituály", "mají", "význam."],
+    "accentLineIndex": 2,
+    "supporting": "I trocha péče má v dni své místo."
+  },
+  "MOL_IMG_009": {
+    "headline": ["Dopřejte si chvíli.", "Pak", "pokračujte."],
+    "accentLineIndex": 2,
+    "supporting": "Krém naneste. MOLOSOC natáhněte. Jde se dál."
+  },
+  "MOL_IMG_010": {
+    "headline": ["Tichá chvíle", "má", "svou hodnotu."],
+    "accentLineIndex": 2,
+    "supporting": "Jednoduchá péče pro chvíle mezi tím."
+  },
+  "MOL_IMG_011": {
+    "headline": ["Péče, která", "ladí s vaší", "rutinou."],
+    "accentLineIndex": 2,
+    "supporting": "Natáhněte MOLOSOC a nechte péči zapadnout do života."
+  },
+  "MOL_IMG_012": {
+    "headline": ["Jednoduchá péče.", "Nic", "složitého."],
+    "accentLineIndex": 2,
+    "supporting": "Váš krém. MOLOSOC. Váš den."
+  },
+  "MOL_IMG_013": {
+    "headline": ["Začněte", "krémem, který", "máte rádi."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC pomáhá, aby zůstal tam, kam patří."
+  },
+  "MOL_IMG_014": {
+    "headline": ["Dobré ráno", "začíná", "malým rituálem."],
+    "accentLineIndex": 2,
+    "supporting": "Chvilka pro vás — i pro vaše nohy."
+  },
+  "MOL_IMG_015": {
+    "headline": ["Péče by měla", "být", "takhle snadná."],
+    "accentLineIndex": 2,
+    "supporting": "Natáhněte. Usaďte se. Nechte to plynout."
+  },
+  "MOL_IMG_016": {
+    "headline": ["Nezbývá nic", "než nechat", "krém působit."],
+    "accentLineIndex": 2,
+    "supporting": "MOLOSOC usnadňuje čekání."
+  },
+  "MOL_IMG_017": {
+    "headline": ["Vytvořeno pro", "krém, který", "už používáte."],
+    "accentLineIndex": 2,
+    "supporting": "Jednoduchý společník k vaší rutině."
+  },
+  "MOL_IMG_018": {
+    "headline": ["Dejte nohy", "nahoru.", "Doslova."],
+    "accentLineIndex": 2,
+    "supporting": "Krém naneste. MOLOSOC natáhněte. Čas na odpočinek."
+  },
+  "MOL_IMG_019": {
+    "headline": ["Péče, která", "jde s vámi", "dál."],
+    "accentLineIndex": 2,
+    "supporting": "Krém naneste. MOLOSOC natáhněte. Zpátky do dne."
+  },
+  "MOL_IMG_020": {
+    "headline": ["Péče nemusí", "být", "žádná dřina."],
+    "accentLineIndex": 2,
+    "supporting": "Udělejte z ní součást chvil, které už máte rádi."
+  }
+}

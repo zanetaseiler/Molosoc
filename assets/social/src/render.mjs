@@ -10,9 +10,16 @@ const socialDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const readJson = (p) => JSON.parse(fs.readFileSync(path.join(socialDir, p), 'utf8'));
 
 const designSystem = readJson('config/design-system.json');
-const copyConfig = readJson('config/copy.json');
 const layoutsConfig = readJson('config/layouts.json');
 const manifest = readJson('masters/MANIFEST.json');
+
+// Locale copy file: defaults to config/copy.json (EN). Pass --copy=<path>
+// once, before any IMG:VARIANT:output args, to render a translated set
+// (e.g. --copy=config/copy_cz.json) — layout/template/crop are untouched,
+// only which copy file supplies headline/supporting text.
+const copyFlagIndex = process.argv.findIndex((a) => a.startsWith('--copy='));
+const copyPath = copyFlagIndex === -1 ? 'config/copy.json' : process.argv[copyFlagIndex].slice('--copy='.length);
+const copyConfig = readJson(copyPath);
 
 function assertFontFilesExist() {
   const files = [
@@ -261,9 +268,9 @@ async function renderPost(imgId, variantId, outputName) {
   console.log(`  -> ${outPath}`);
 }
 
-const requested = process.argv.slice(2);
+const requested = process.argv.slice(2).filter((a) => !a.startsWith('--copy='));
 if (!requested.length) {
-  console.error('Usage: node src/render.mjs <IMG_ID>:<VARIANT>:<output.png> [...]');
+  console.error('Usage: node src/render.mjs [--copy=config/copy_XX.json] <IMG_ID>:<VARIANT>:<output.png> [...]');
   process.exit(1);
 }
 
