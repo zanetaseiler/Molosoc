@@ -119,33 +119,87 @@ async function renderPost(imgId, variantId, outputName) {
   const masterMeta = await sharp(masterBuffer).metadata();
   checkAspect('Master', masterMeta.width, masterMeta.height);
 
-  // Derived 4:5 social crop — a lossless, in-memory extract of the untouched
-  // master buffer. The master file on disk is never written to; this crop
-  // exists only as pixels in this process, composited straight into the
-  // output file below.
-  const { x: cx, y: cy, width: cw, height: ch } = layout.crop;
-  if (cx < 0 || cy < 0 || cx + cw > masterMeta.width || cy + ch > masterMeta.height) {
-    throw new Error(
-      `${postId}: crop {x:${cx},y:${cy},w:${cw},h:${ch}} falls outside the master's ${masterMeta.width}x${masterMeta.height} bounds.`,
-    );
+  // Template B (default, for backward compatibility): the derived canvas IS
+  // a lossless in-memory crop of the master — full-bleed photo, text
+  // composited straight on top of it.
+  // Templates A/C: the derived canvas is a flat cream rectangle (locked
+  // creamBackground color) with a lossless in-memory crop of the master
+  // composited into ONLY its photo region (left panel for A, top band for
+  // C) — text never touches that photo region at all (enforced by
+  // buildOverlay's textAreaBounds check, not just by visual convention).
+  // Either way, the master file on disk is never written to.
+  const template = layout.template ?? 'B';
+  let baseBuffer;
+  let canvasWidth;
+  let canvasHeight;
+  let cropLog;
+
+  if (template === 'B') {
+    const { x: cx, y: cy, width: cw, height: ch } = layout.crop;
+    if (cx < 0 || cy < 0 || cx + cw > masterMeta.width || cy + ch > masterMeta.height) {
+      throw new Error(
+        `${postId}: crop {x:${cx},y:${cy},w:${cw},h:${ch}} falls outside the master's ${masterMeta.width}x${masterMeta.height} bounds.`,
+      );
+    }
+    checkAspect(`${postId} crop`, cw, ch);
+    // .png() here is load-bearing: without it, sharp re-encodes the extracted
+    // buffer in the SOURCE format (several masters are baseline JPEG despite
+    // their .png filename), silently reintroducing lossy compression across
+    // the whole derived crop before we've even composited text onto it.
+    baseBuffer = await sharp(masterBuffer)
+      .extract({ left: cx, top: cy, width: cw, height: ch })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    canvasWidth = cw;
+    canvasHeight = ch;
+    cropLog = `crop: x=${cx} y=${cy} w=${cw} h=${ch} -> derived canvas ${cw}x${ch} (4:5)`;
+  } else {
+    const tmpl = designSystem.templates[template];
+    if (!tmpl) throw new Error(`${postId}: unknown template "${template}" (expected A, B, or C).`);
+    canvasWidth = tmpl.canvasWidth;
+    canvasHeight = tmpl.canvasHeight;
+    const { x: px, y: py, width: pw, height: ph } = layout.photoCrop;
+    if (px < 0 || py < 0 || px + pw > masterMeta.width || py + ph > masterMeta.height) {
+      throw new Error(
+        `${postId}: photoCrop {x:${px},y:${py},w:${pw},h:${ph}} falls outside the master's ${masterMeta.width}x${masterMeta.height} bounds.`,
+      );
+    }
+    const expectedW = template === 'A' ? tmpl.photoPanelWidth : tmpl.canvasWidth;
+    const expectedH = template === 'A' ? tmpl.canvasHeight : tmpl.photoBandHeight;
+    if (pw !== expectedW || ph !== expectedH) {
+      throw new Error(
+        `${postId}: template ${template}'s photoCrop must be exactly ${expectedW}x${expectedH} (this template's photo ` +
+          `panel size, so it composites with zero scaling) — got ${pw}x${ph}.`,
+      );
+    }
+    const photoBuffer = await sharp(masterBuffer)
+      .extract({ left: px, top: py, width: pw, height: ph })
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    const photoOffset = template === 'A' ? { left: tmpl.photoPanelX, top: 0 } : { left: 0, top: 0 };
+    baseBuffer = await sharp({
+      create: {
+        width: canvasWidth,
+        height: canvasHeight,
+        channels: 3,
+        background: designSystem.colors.creamBackground,
+      },
+    })
+      .composite([{ input: photoBuffer, ...photoOffset }])
+      .png({ compressionLevel: 9 })
+      .toBuffer();
+    cropLog =
+      `template ${template}: photoCrop x=${px} y=${py} w=${pw} h=${ph} -> placed at (${photoOffset.left},${photoOffset.top}) ` +
+      `on a ${canvasWidth}x${canvasHeight} cream (${designSystem.colors.creamBackground}) canvas`;
   }
-  checkAspect(`${postId} crop`, cw, ch);
-  // .png() here is load-bearing: without it, sharp re-encodes the extracted
-  // buffer in the SOURCE format (several masters are baseline JPEG despite
-  // their .png filename), silently reintroducing lossy compression across
-  // the whole derived crop before we've even composited text onto it.
-  const croppedBuffer = await sharp(masterBuffer)
-    .extract({ left: cx, top: cy, width: cw, height: ch })
-    .png({ compressionLevel: 9 })
-    .toBuffer();
 
   const { svg, fontFiles, report, inkRegions } = buildOverlaySvg({
     postId,
     copy,
     layout,
     designSystem,
-    canvasWidth: cw,
-    canvasHeight: ch,
+    canvasWidth,
+    canvasHeight,
     socialDir,
   });
 
@@ -159,10 +213,10 @@ async function renderPost(imgId, variantId, outputName) {
   });
   const overlayPng = resvg.render().asPng();
 
-  await assertInkPresent(postId, overlayPng, cw, inkRegions);
+  await assertInkPresent(postId, overlayPng, canvasWidth, inkRegions);
 
   const outPath = path.join(socialDir, 'output', outputName);
-  await sharp(croppedBuffer)
+  await sharp(baseBuffer)
     .composite([{ input: overlayPng, left: 0, top: 0 }])
     .png({ compressionLevel: 9 })
     .withMetadata()
@@ -170,7 +224,7 @@ async function renderPost(imgId, variantId, outputName) {
 
   console.log(`\n${postId} -> ${outputName}`);
   console.log(`  master: ${imageLayouts.master} (untouched on disk, sha256 verified)`);
-  console.log(`  crop: x=${cx} y=${cy} w=${cw} h=${ch} -> derived canvas ${cw}x${ch} (4:5)`);
+  console.log(`  ${cropLog}`);
   console.log(
     `  headline: [${report.headlineLineSizes.join('/')}]px / lineHeight ${report.headlineLineHeight} ` +
       `-> block ${report.headlineBlockWidth.toFixed(1)}x${report.headlineBlockHeight.toFixed(1)}px ` +

@@ -38,6 +38,7 @@
 
   "MOL_IMG_005": {
     "_photo_notes": "REPLACED — new copy ('Simple care'/'fits right'/'in.'), rebuilt from scratch on the current locked design system (135px single rigid headline block, no per-line gaps) rather than the old 74px cabinet-strip layout from many rounds ago. Full master used as canvas (no crop, unlike the old version's 1080x1350 crop). Her face runs from hair-bun-top ~y30 to chin ~y300 (head/hair x-range ~450-680); she's chopping vegetables with both hands on a knife at ~x580-750,y480-650. Y=310 puts the block's real ink at 280.8-708.9: clears her chin (10px+), and line 1 (the only line wide enough to reach the hand's x-range) ends its ink at ~437 — well above the hand's y480 start, so no line crosses it. Support/divider/brand follow at y710+, and (support's widest at 648px) still stay ~480px clear of the knife/hands and 380px+ clear of the socks (~x350-480,y1190+).",
+    "_template_test_notes": "TEST ONLY (pivot to templates A/B/C) — templateA/templateC added this round. B skipped: this photo has no genuinely clean negative space (she + counter + produce span nearly the full frame), so forcing a full-image overlay here is exactly the failure mode the pivot is meant to eliminate. photoCrop x=250 (of the 1122-wide master) keeps her fully inside the 673px photo panel (body spans ~x360-840) while cropping only the left shelving and a sliver of the right-edge basil pot. Template A's 339px-wide cream column caps the headline at 64px (width-bound, not a face/hand workaround — this is simply what a 40%-wide panel allows); the support line ('Wear MOLOSOC while real life keeps moving.') doesn't fit even at 16px in that column, so it's wrapped via supportLinesOverride into 'Wear MOLOSOC while' / 'real life keeps moving.', unchanged words. Template C's photoCrop is the master's top 939px (y0) for all three test images, uncropped horizontally; its wider, shorter cream band supports 93px (height-bound instead of width-bound, and constrained by needing room below the headline for support/divider/brand, not by headline width alone — an earlier width-only estimate of ~125px was wrong because it ignored that shared budget).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
       "textBox": { "x": 55, "y": 310, "width": 710, "maxHeight": 370 },
@@ -50,11 +51,42 @@
       "brandPosition": { "x": 55, "y": 784 },
       "wordmarkFontSize": 24
     },
+    "templateA": {
+      "template": "A",
+      "photoCrop": { "x": 250, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 552, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 64,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportLinesOverride": ["Wear MOLOSOC while", "real life keeps moving."],
+      "supportLineHeight": 1.15,
+      "supportPosition": { "x": 55, "y": 753 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 820 },
+      "brandPosition": { "x": 55, "y": 840 },
+      "wordmarkFontSize": 12
+    },
+    "templateC": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_005_kitchen-prep.png"
   },
 
   "MOL_IMG_019": {
     "_photo_notes": "Approved as-is this round — unchanged from the prior round. Standing, watering plants. Head ~y40, product (socks) ~x530-870,y1150-1300. Crop trims only the right side (chair/window); the large plain-wall zone top-left (x55-485,y55+) is untouched by the trim, so text layout is identical across variants — the variation here is purely crop tightness/product prominence.",
+    "_template_test_notes": "TEST ONLY (pivot to templates A/B/C) — templateA/templateB/templateC added this round. This is the one image of the three test subjects with genuinely large clean negative space (the plain wall top-left, confirmed empty from x0-500,y0-~430 before the watering can/hand enter frame), so it's the only one of the three getting a Template B render. templateB reuses the full master (already ~4:5, no crop) with the headline widened to a 480px-wide box (vs the old V1/V2/V3's 430px) since the clean zone extends further right than previously used — headline lands at 92px, essentially the same ceiling as the old approved V1 (84px was already width-bound on 'moves with' at 430px; 92px is what the same word allows once the box is honestly widened to match the real clean span, not a re-measurement of the same box). templateA's photoCrop x=280 keeps her body (~x500-860) and the nearer foreground plants inside the 673px photo panel while trimming the far-left background plants and some right-side window/chair. templateC's photoCrop is the master's top 939px (y0), same as the other two test images, at the same shared 93px headline size for cross-image consistency.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1068, "height": 1335 },
       "textBox": { "x": 55, "y": 55, "width": 430, "maxHeight": 225 },
@@ -84,6 +116,46 @@
       "supportPosition": { "x": 55, "y": 285 },
       "dividerPosition": { "x": 55, "y": 311 },
       "brandPosition": { "x": 55, "y": 318 }
+    },
+    "templateA": {
+      "template": "A",
+      "photoCrop": { "x": 280, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 561, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 65,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 765 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 811 },
+      "brandPosition": { "x": 55, "y": 831 },
+      "wordmarkFontSize": 12
+    },
+    "templateB": {
+      "template": "B",
+      "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
+      "textBox": { "x": 55, "y": 55, "width": 480, "maxHeight": 300 },
+      "headlineFontSize": 92,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 22,
+      "supportPosition": { "x": 55, "y": 315 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 352 },
+      "brandPosition": { "x": 55, "y": 368 }
+    },
+    "templateC": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
     },
     "master": "MOL_IMG_019_watering-plants.png"
   },
@@ -211,6 +283,7 @@
 
   "MOL_IMG_003": {
     "_photo_notes": "REVISED again — one rigid 3-line block, per the locked-headline rule. Her face runs to the very top of frame (chin ~y300) and she holds an open book with both hands at ~x600-780,y480-620; the block's own ink span at Y=310 runs 280.8-708.9 — clears her chin (5-15px) and clears her hands by ~19px (line 1's descender reaches only to ~471, well short of 480). The other two lines are narrow enough ('A little' / 'quiet.') that they don't reach her hands' x-range at all regardless of y. Her feet/sock are further right (~x650+) and never enter this block's horizontal reach. Support/divider/brand follow with normal spacing at y710+, more than 200px clear of the sock (~y960+).",
+    "_template_test_notes": "TEST ONLY (pivot to templates A/B/C) — templateA/templateC added this round. B skipped: her face/book/hands and legs/socks together span nearly the entire frame (~x240-920 of the 1122-wide master), leaving no genuinely clean zone large enough for the headline without the same face/hand-avoidance problem the pivot exists to solve. photoCrop x=300 keeps her face, book and legs inside the 673px photo panel, trimming only the side table/mug on the far left and a sliver of garden-door glass on the right. Template A's 339px-wide cream column caps the headline at 61px — a width-bound ceiling from the 40%-wide panel itself, not a reduction made to dodge a face or hand. Template C's photoCrop is the master's top 939px (y0), trimming only the lower legs/floor; its wider band supports 93px, sized to leave room below the headline for support/divider/brand rather than to the width limit alone.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
       "textBox": { "x": 55, "y": 310, "width": 740, "maxHeight": 370 },
@@ -222,6 +295,34 @@
       "dividerPosition": { "x": 55, "y": 762 },
       "brandPosition": { "x": 55, "y": 784 },
       "wordmarkFontSize": 24
+    },
+    "templateA": {
+      "template": "A",
+      "photoCrop": { "x": 300, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 566, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 61,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 759 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 805 },
+      "brandPosition": { "x": 55, "y": 825 },
+      "wordmarkFontSize": 12
+    },
+    "templateC": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
     },
     "master": "MOL_IMG_003_reading-chair.png"
   },

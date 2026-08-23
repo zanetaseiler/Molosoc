@@ -91,14 +91,20 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
   }
 
   // ---- 2. The text box itself, and every other element, must clear the ----
-  // ---- global minimum edge padding on all four sides of the canvas. ----
+  // ---- global minimum edge padding — on all four sides of the canvas for ----
+  // ---- Template B, or on all four sides of the cream text area for A/C. ----
+  // Templates A/C set `textAreaBounds` (the cream panel/band's own rect, in
+  // canvas coordinates) so text is validated against ITS area, not the whole
+  // canvas — this is what guarantees text can never reach the photo region:
+  // the check fails before the photo panel's edge, not just the canvas edge.
+  const area = layout.textAreaBounds ?? { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
   const checkPadding = (label, left, top, right, bottom) => {
-    if (left < pad) fail(postId, `${label} is ${(pad - left).toFixed(1)}px inside the left ${pad}px padding limit.`);
-    if (top < pad) fail(postId, `${label} is ${(pad - top).toFixed(1)}px inside the top ${pad}px padding limit.`);
-    if (right > canvasWidth - pad)
-      fail(postId, `${label} overflows the right edge by ${(right - (canvasWidth - pad)).toFixed(1)}px (min ${pad}px padding).`);
-    if (bottom > canvasHeight - pad)
-      fail(postId, `${label} overflows the bottom edge by ${(bottom - (canvasHeight - pad)).toFixed(1)}px (min ${pad}px padding).`);
+    if (left < area.x + pad) fail(postId, `${label} is ${(area.x + pad - left).toFixed(1)}px inside the left ${pad}px padding limit.`);
+    if (top < area.y + pad) fail(postId, `${label} is ${(area.y + pad - top).toFixed(1)}px inside the top ${pad}px padding limit.`);
+    if (right > area.x + area.width - pad)
+      fail(postId, `${label} overflows the text area's right edge by ${(right - (area.x + area.width - pad)).toFixed(1)}px (min ${pad}px padding).`);
+    if (bottom > area.y + area.height - pad)
+      fail(postId, `${label} overflows the text area's bottom edge by ${(bottom - (area.y + area.height - pad)).toFixed(1)}px (min ${pad}px padding).`);
   };
 
   checkPadding('headline text box', textBox.x, textBox.y, textBox.x + textBox.width, textBox.y + headlineBlockHeight);

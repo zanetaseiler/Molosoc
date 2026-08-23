@@ -30,7 +30,8 @@
     "accent": "#E8D1A6",
     "support": "#171719",
     "wordmark": "#171719",
-    "divider": "#E8D1A6"
+    "divider": "#E8D1A6",
+    "creamBackground": "#F8F7F4"
   },
 
   "locked": {
@@ -42,5 +43,30 @@
     "noAutomaticFontSubstitution": true,
     "noAutomaticSafeZoneCalculation": true,
     "noAutoShrinkOnOverflow": true
+  },
+
+  "templates": {
+    "_comment": "3 deterministic, reusable 4:5 templates (canvas fixed at 1122x1402, matching every master's own dimensions so a template's photo region can be a lossless in-memory crop with no resize). A post's layout entry sets `template: \"A\"|\"B\"|\"C\"` and, for A/C, `photoCrop` (the region extracted from the master, in the MASTER's own pixel coordinates) — its width/height must exactly equal the geometry below so no scaling is ever needed. Master files are never touched; only this derived, in-memory crop is composited onto a flat cream canvas.",
+    "A": {
+      "_description": "Editorial split — a solid cream text panel on the left, the photo (cropped to fill) on the right. Text never touches the photo at all.",
+      "canvasWidth": 1122,
+      "canvasHeight": 1402,
+      "creamPanelWidth": 449,
+      "photoPanelWidth": 673,
+      "photoPanelX": 449
+    },
+    "B": {
+      "_description": "Full image — text overlaid directly on the full photo. Only for a photo with genuinely large clean negative space; never forced.",
+      "canvasWidth": 1122,
+      "canvasHeight": 1402
+    },
+    "C": {
+      "_description": "Photo top / text bottom — the photo (cropped to fill) on top, a solid cream text band below it. Text never touches the photo at all.",
+      "canvasWidth": 1122,
+      "canvasHeight": 1402,
+      "photoBandHeight": 939,
+      "creamBandHeight": 463,
+      "creamBandY": 939
+    }
   }
 }
