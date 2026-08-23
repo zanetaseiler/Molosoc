@@ -195,96 +195,86 @@
   },
 
   "MOL_IMG_002": {
-    "_photo_notes": "Next-5 batch, built on the approved MOL_IMG_012 V4 template (3-line headline, vertically-styled hierarchy, generous multi-line support wrap, same colors). Full master used as canvas (no crop). The console/frame/plant vignette top-left is softly out-of-focus (shallow depth of field), so text is allowed to sit over it the way it would over plain wall — the hard edge to respect is her shoulder, which is sharp and starts at ~x310,y360. textBox width 230 keeps a real ~40px clear of that. First render used supportLineHeight 1.0, which read as genuinely cramped (lines almost touching) — raised to 1.15 (matching the headline's own ratio) and widened the gaps between sections, trading a few px of font size for real breathing room.",
+    "_photo_notes": "REVISED — locked typography rule (headline 115-140px, never smaller). This supersedes the whole 'find the narrow clean gap and shrink to fit' approach used earlier: at 115px+, no image in this set has a clean margin wide enough to avoid the model entirely, so the rule set now only forbids covering the MOLOSOC socks and running off-canvas, not covering her. Headline 135px (preferred range), exact 3-line break, lineHeight 0.90 -> block 558.6x364.5px (26% of this 1122x1402 canvas's height, in the 25-35% target; width is inherently copy-dependent, see MOL_IMG_003). Support at full single-line copy (no wrap needed now that width isn't the constraint), 30px. Socks are down at her feet (y~950+); this block (y55-~530) is nowhere near them.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 230, "maxHeight": 165 },
-      "headlineFontSize": 46,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 236 },
-      "supportLinesOverride": ["Your routine", "doesn’t have", "to stop."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 80,
-      "dividerPosition": { "x": 55, "y": 321 },
-      "brandPosition": { "x": 55, "y": 339 },
-      "wordmarkFontSize": 16
+      "textBox": { "x": 55, "y": 55, "width": 570, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 455 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 507 },
+      "brandPosition": { "x": 55, "y": 529 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_002_yoga-mat-roll.png"
   },
 
   "MOL_IMG_003": {
-    "_photo_notes": "Next-5 batch, same template as MOL_IMG_002 (including the supportLineHeight 1.15 fix — see its note). Full master used as canvas (no crop). The blurred console/frame/plant vignette occupies x0-280 down to about y320, below which a wicker chair (sharp, in focus) begins — the whole 4-part text stack is kept above y~320 to clear the chair. Her own head/hair (also sharp) is further right (x300+) and doesn't intrude on this x0-280 column at all. 'A little care.' is this copy's widest line, capping the headline at 34px within a 225px box — the tightest vertical budget of the five, hence the smallest headline.",
+    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. 'A little care.' is a longer line than the other four images' longest lines, so at the mandated 115px+ minimum its width (727.5px at 135px) runs past the 'roughly 35-45% of canvas width' guidance (45% would be ~505px) — there's no way to satisfy both the 115px floor and that width guidance for this specific copy without violating one of them, and the floor is the hard rule (explicit FAIL condition; the width/height proportion is a 'roughly' guideline, not listed as a FAIL condition). It still fits fully on-canvas with ~215px to spare before the right padding, and nowhere near her (feet are up in the air, further right and much lower, y~950+).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 225, "maxHeight": 125 },
-      "headlineFontSize": 34,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 194 },
-      "supportLinesOverride": ["Some routines", "are worth", "slowing down for."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 80,
-      "dividerPosition": { "x": 55, "y": 279 },
-      "brandPosition": { "x": 55, "y": 297 },
-      "wordmarkFontSize": 16
+      "textBox": { "x": 55, "y": 55, "width": 740, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 455 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 507 },
+      "brandPosition": { "x": 55, "y": 529 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_003_reading-chair.png"
   },
 
   "MOL_IMG_004": {
-    "_photo_notes": "Next-5 batch, same template (including the supportLineHeight 1.15 fix). Full master used as canvas (no crop). This is the narrowest of the five: a softly blurred shelf vignette (frame/plant, safe to sit text over) runs from y~95 to y~330, but her shoulder — sharp, in focus — starts at x~230 from y~250 down, and a round coffee table fills the lower-left below y~680, so there's no wider or taller alternative zone anywhere on the left. textBox capped at 175px wide, and the support line ('MOLOSOC fits into the day you already have.' — one of the longer supporting lines) needed a wrap that keeps its middle line ('into the day you') under that same 175px rather than the more even-looking split, to actually clear her shoulder.",
+    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. Her socks/feet are at the bottom of the frame while vacuuming (y~1100+); this block (y55-~530) is nowhere close.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 175, "maxHeight": 135 },
-      "headlineFontSize": 37,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 55, "y": 205 },
-      "supportLinesOverride": ["MOLOSOC fits", "into the day you", "already have."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 80,
-      "dividerPosition": { "x": 55, "y": 290 },
-      "brandPosition": { "x": 55, "y": 308 },
-      "wordmarkFontSize": 16
+      "textBox": { "x": 55, "y": 55, "width": 555, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 455 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 507 },
+      "brandPosition": { "x": 55, "y": 529 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_004_vacuuming-living-room.png"
   },
 
   "MOL_IMG_006": {
-    "_photo_notes": "Next-5 batch, same template (including the supportLineHeight 1.15 fix) — but the one photo in this set where x=55 genuinely isn't usable: a large sharp-focus framed print sits at x0-145 from y0-430, directly under the padding-minimum left edge every other post uses. Shifted the whole block's left edge to x=160 (15px clear of the frame's right border) instead of overlapping a sharp, high-contrast object — still left-aligned, just not at this photo's padding minimum, per 'adapt text placement to the actual negative space.' From there the wall is clean out to past x350 and down to ~y330 (a thin plant branch grazes x160-200 around y240-300 but doesn't reach the text).",
+    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch, but still shifted to x=160: this is the one photo where the padding-minimum x=55 sits directly on a large sharp-focus framed print (a bold black circle on tan), and even under the new 'covering the model is fine' rule, dark headline text crossing a bold high-contrast graphic would be a genuine legibility problem, not just a style preference — x=160 clears its right border. Her socks/feet are down at the desk (y~1150+), nowhere near this block.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 160, "y": 55, "width": 175, "maxHeight": 135 },
-      "headlineFontSize": 37,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 20,
-      "supportPosition": { "x": 160, "y": 205 },
-      "supportLinesOverride": ["Give them a", "little attention", "while you work."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 80,
-      "dividerPosition": { "x": 160, "y": 290 },
-      "brandPosition": { "x": 160, "y": 308 },
-      "wordmarkFontSize": 16
+      "textBox": { "x": 160, "y": 55, "width": 545, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 160, "y": 455 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 160, "y": 507 },
+      "brandPosition": { "x": 160, "y": 529 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_006_home-office.png"
   },
 
   "MOL_IMG_007": {
-    "_photo_notes": "Next-5 batch, same template (including the supportLineHeight 1.15 fix). Full master used as canvas (no crop). Generous soft-focus console/candle/plant vignette top-left, clear of her (she's seated further right, book/mug at x430+) all the way down to y~400 — the most room of any of the five, so headline goes to 52px and support/wordmark step up to 24/20 to match.",
+    "_photo_notes": "REVISED — locked typography rule. Same 135px/0.90 as the rest of this batch. She's seated with no socks/feet visible low in this frame at all (book and mug in her hands, mid-frame); nothing near this block regardless.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 280, "maxHeight": 185 },
-      "headlineFontSize": 52,
-      "headlineLineHeight": 1.15,
-      "supportFontSize": 24,
-      "supportPosition": { "x": 55, "y": 256 },
-      "supportLinesOverride": ["A simple moment", "of everyday", "care."],
-      "supportLineHeight": 1.15,
-      "dividerWidth": 80,
-      "dividerPosition": { "x": 55, "y": 355 },
-      "brandPosition": { "x": 55, "y": 373 },
-      "wordmarkFontSize": 20
+      "textBox": { "x": 55, "y": 55, "width": 700, "maxHeight": 370 },
+      "headlineFontSize": 135,
+      "headlineLineHeight": 0.90,
+      "supportFontSize": 30,
+      "supportPosition": { "x": 55, "y": 455 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 507 },
+      "brandPosition": { "x": 55, "y": 529 },
+      "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_007_armchair-coffee-book.png"
   }
