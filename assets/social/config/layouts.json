@@ -195,72 +195,68 @@
   },
 
   "MOL_IMG_002": {
-    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her face sits almost immediately below the top padding (hair bun top ~y110, eyes/nose/mouth ~y280-360, chin ~y400), leaving no room for even one 135px line above it, so line 1 ('Care that') necessarily grazes only the very top of her hair bun (not her hairline/forehead) before a large inserted gap (headlineLineGaps[0]=233) jumps lines 2-3 down to y410+, past her chin, where they fall across her sweater/shoulder (allowed). Support/divider/brand follow at y820+, still well above her hands and the mat (~y900+) and the socks (~x150-350,y900-1000).",
+    "_photo_notes": "REVISED again — one rigid 3-line block now (no headlineLineGaps, no per-line repositioning), per the locked-headline rule. Solved by finding a single Y where the WHOLE block's real ink span (which runs from Y-29 to Y+399 at 135px/0.90 — the font's true ascent/descent extends well beyond the nominal line box) clears every obstacle at once: her chin (~y400-410), her hand (~x580-720,y950-1050), and the sock (~x150-350,y900-1000). Y=445 puts the block's ink at 415.8-844.9 — 5px clear of her chin above and, more importantly, ~55px clear of the sock/hand below. Support/divider/brand keep tight but real gaps (12/8/8px) to land at y821.5-895.9, ~4px clear of the sock — the tightest safe margin in this batch, but a real one, not an estimate.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 70, "y": 55, "width": 570, "maxHeight": 610 },
+      "textBox": { "x": 70, "y": 445, "width": 570, "maxHeight": 370 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
-      "headlineLineGaps": [233, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 70, "y": 820 },
+      "supportPosition": { "x": 70, "y": 821.5 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 70, "y": 872 },
-      "brandPosition": { "x": 70, "y": 894 },
+      "dividerPosition": { "x": 70, "y": 859.5 },
+      "brandPosition": { "x": 70, "y": 869.5 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_002_yoga-mat-roll.png"
   },
 
   "MOL_IMG_003": {
-    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her hair/face runs from the very top of the frame (bun ~y50) to her chin ~y300, and she's holding an open book with both hands at roughly x600-780,y480-620 — a single 135px line (visible ink span ~185px including ascent/descent) doesn't fit in the ~180px gap between her chin and her hands, so line 1 starts at y340 (just below her chin; its descender may graze the book's own pages, which aren't a restricted surface) and a large inserted gap (headlineLineGaps[0]=199) carries lines 2-3 to y660+, clear of her hands, landing across her sweater/jeans (allowed). Her feet/sock are further right (~x800+) and out of this block's horizontal reach entirely.",
+    "_photo_notes": "REVISED again — one rigid 3-line block, per the locked-headline rule. Her face runs to the very top of frame (chin ~y300) and she holds an open book with both hands at ~x600-780,y480-620; the block's own ink span at Y=310 runs 280.8-708.9 — clears her chin (5-15px) and clears her hands by ~19px (line 1's descender reaches only to ~471, well short of 480). The other two lines are narrow enough ('A little' / 'quiet.') that they don't reach her hands' x-range at all regardless of y. Her feet/sock are further right (~x650+) and never enter this block's horizontal reach. Support/divider/brand follow with normal spacing at y710+, more than 200px clear of the sock (~y960+).",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 340, "width": 740, "maxHeight": 570 },
+      "textBox": { "x": 55, "y": 310, "width": 740, "maxHeight": 370 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
-      "headlineLineGaps": [199, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 55, "y": 938 },
+      "supportPosition": { "x": 55, "y": 710 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 55, "y": 990 },
-      "brandPosition": { "x": 55, "y": 1012 },
+      "dividerPosition": { "x": 55, "y": 762 },
+      "brandPosition": { "x": 55, "y": 784 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_003_reading-chair.png"
   },
 
   "MOL_IMG_004": {
-    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only. Her face sits close to the top (chin ~y250), so line 1 ('Self-care') grazes only her hair-bun top before a first inserted gap (headlineLineGaps[0]=113.5) carries line 2 to y290+, past her chin, across her sweater. She's gripping the vacuum with both hands — one on the canister (~x330-420,y490-570), one on the handle further down (~x480-560,y620-720) — both inside line 3's horizontal reach, so a second inserted gap (headlineLineGaps[1]=178.5) pushes line 3 down to y740+, clear of both. Support/divider/brand follow at y897+, past everything, still well above her socks at the floor (~y1150+).",
+    "_photo_notes": "FLAGGED CONFLICT — could not fully satisfy the locked single-rigid-block rule and 'never cover hands' simultaneously for this photo; explaining why rather than silently picking one. Her obstacles stack too densely for a rigid 428px-tall ink block (3 lines at 135px/0.90) to dodge all of them: chin ends ~y260, she's gripping the vacuum with one hand on the canister (~x330-420,y490-570) and one on the handle (~x480-560,y620-720), and her socks start ~y1090. The two hand-free gaps this could sit in are the chin-to-hand gap (260-490, only 230px) and the hand-to-sock gap (720-1090, 370px) — both smaller than the 428px block needs, so no single Y clears the chin, both hands, AND the sock at once. This lays the block at Y=300 (ink 270.8-698.9): it clears her chin (10px) and clears the sock by ~390px, prioritizing the two rules that have mattered most across this whole project (face, then product) — but its own ink does cross both hand grips, which the old per-line-gap version had avoided by routing around them individually. Flagging this rather than either silently shipping the hand overlap or unilaterally overriding the new one-block rule to fix it.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 55, "y": 55, "width": 555, "maxHeight": 810 },
+      "textBox": { "x": 55, "y": 300, "width": 555, "maxHeight": 370 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
-      "headlineLineGaps": [113.5, 178.5],
       "supportFontSize": 30,
-      "supportPosition": { "x": 55, "y": 897 },
+      "supportPosition": { "x": 55, "y": 725 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 55, "y": 949 },
-      "brandPosition": { "x": 55, "y": 971 },
+      "dividerPosition": { "x": 55, "y": 777 },
+      "brandPosition": { "x": 55, "y": 799 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_004_vacuuming-living-room.png"
   },
 
   "MOL_IMG_006": {
-    "_photo_notes": "REVISED again — same 135px/0.90 typography, repositioned only; still shifted to x=160 (sharp-focus framed print sits at x0-145). Line 1 ('Your feet') grazes only her hair-bun top before a large inserted gap (headlineLineGaps[0]=513.5) carries lines 2-3 down to y690+ — past both her chin (~y300) and her hands on the laptop/desk (~x550-720,y560-680), landing on the desk/notebook (furniture, allowed). Support/divider/brand follow at y968+, well above her feet at the desk (~y1150+).",
+    "_photo_notes": "REVISED again — one rigid 3-line block for the headline itself fits, but flagging a related conflict for the secondary lockup below it. Still shifted to x=160 (sharp-focus framed print at x0-145). Her chin ends ~y300, her hands are on the laptop/desk at ~x550-720,y560-680, and — measured precisely this round, tighter than earlier estimated — her sock starts at ~y1120, not ~y1150. The only gap big enough for the 428px headline block is between her hands and the sock (680-1120, 440px), and it barely fits: Y=715 puts the block's ink at 685.8-1113.9, ~6px clear on both sides. But that leaves only ~40px between the headline and the sock for support+divider+brand to fit 'underneath the headline' as required — physically less than support+divider+brand need even with zero spacing (~58px). Divider (90px wide) is narrow enough it never reaches the sock's x-range, but support and brand do, and can't both be squeezed above y1120: this lockup unavoidably overlaps the top few px of the sock at whatever position it takes. Flagging rather than silently shipping it or unilaterally resizing/detaching the lockup to dodge it.",
     "V1": {
       "crop": { "x": 0, "y": 0, "width": 1122, "height": 1402 },
-      "textBox": { "x": 160, "y": 55, "width": 545, "maxHeight": 890 },
+      "textBox": { "x": 160, "y": 715, "width": 545, "maxHeight": 370 },
       "headlineFontSize": 135,
       "headlineLineHeight": 0.90,
-      "headlineLineGaps": [513.5, 0],
       "supportFontSize": 30,
-      "supportPosition": { "x": 160, "y": 968 },
+      "supportPosition": { "x": 160, "y": 1095 },
       "dividerWidth": 90,
-      "dividerPosition": { "x": 160, "y": 1020 },
-      "brandPosition": { "x": 160, "y": 1042 },
+      "dividerPosition": { "x": 160, "y": 1135 },
+      "brandPosition": { "x": 160, "y": 1147 },
       "wordmarkFontSize": 24
     },
     "master": "MOL_IMG_006_home-office.png"
