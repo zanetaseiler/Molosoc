@@ -180,9 +180,9 @@ async function renderPost(imgId, variantId, outputName) {
     `  supporting: ${report.supportFontSize}px, ${report.supportWidth.toFixed(1)}px wide, at ` +
       `(${report.supportPosition.x}, ${report.supportPosition.y})`,
   );
-  console.log(`  divider: at (${report.dividerPosition.x}, ${report.dividerPosition.y})`);
+  console.log(`  divider: ${report.dividerWidth}px wide, at (${report.dividerPosition.x}, ${report.dividerPosition.y})`);
   console.log(
-    `  brand: ${designSystem.wordmarkFontSize}px, ${report.wordmarkWidth.toFixed(1)}px wide, at ` +
+    `  brand: ${report.wordmarkFontSize}px, ${report.wordmarkWidth.toFixed(1)}px wide, at ` +
       `(${report.brandPosition.x}, ${report.brandPosition.y})`,
   );
   console.log(`  boundary checks: PASSED (min ${designSystem.minEdgePadding}px edge padding, headline within textBox)`);

@@ -41,6 +41,12 @@ function fail(postId, message) {
  * emphasis line) — and `headlineLineGaps` (length = lines.length - 1) to add
  * extra breathing room before specific lines. Both are hand-authored per
  * layout, never derived.
+ *
+ * The supporting line is normally one line. A layout may set
+ * `supportLinesOverride` to wrap it across several instead (e.g. a photo
+ * whose clean zone is too narrow for the full sentence at its required
+ * minimum size) — it must reconstruct the exact copy.json sentence, just
+ * broken differently, never different words.
  */
 export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidth, canvasHeight, socialDir }) {
   const pad = designSystem.minEdgePadding;
@@ -97,8 +103,30 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
 
   checkPadding('headline text box', textBox.x, textBox.y, textBox.x + textBox.width, textBox.y + headlineBlockHeight);
 
-  const supportWidth = measureWidth(supportFontPaths[0], supporting, supportFontSize, designSystem.supportLetterSpacing);
-  const supportHeight = supportFontSize; // single line, no internal leading needed
+  // A layout may set `supportLinesOverride` to wrap the supporting copy across
+  // several lines (e.g. when one photo's clean zone isn't wide enough for it
+  // as a single line) — same idea as headlineLinesOverride: it must
+  // reconstruct the exact copy.json sentence, just broken differently, never
+  // different words.
+  const supportLines = layout.supportLinesOverride ?? [supporting];
+  const normalizedJoin = supportLines.join(' ').replace(/\s+/g, ' ').trim();
+  const normalizedSupporting = supporting.replace(/\s+/g, ' ').trim();
+  if (normalizedJoin !== normalizedSupporting) {
+    fail(
+      postId,
+      `supportLinesOverride ("${normalizedJoin}") does not reconstruct the exact supporting copy ` +
+        `("${normalizedSupporting}") — it may only change where it wraps, not the words.`,
+    );
+  }
+  const supportLineHeight = layout.supportLineHeight ?? 1.15;
+  const supportLineWidths = supportLines.map((l) =>
+    measureWidth(supportFontPaths[0], l, supportFontSize, designSystem.supportLetterSpacing),
+  );
+  const supportWidth = Math.max(...supportLineWidths);
+  const supportLineAdvance = supportFontSize * supportLineHeight;
+  // Single line keeps the original height (no internal leading needed) so
+  // every existing single-line layout's boundary check is unaffected.
+  const supportHeight = supportLines.length === 1 ? supportFontSize : supportLineAdvance * supportLines.length;
   checkPadding(
     'supporting text',
     supportPosition.x,
@@ -107,7 +135,7 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
     supportPosition.y + supportHeight,
   );
 
-  const dividerWidth = designSystem.dividerWidth;
+  const dividerWidth = layout.dividerWidth ?? designSystem.dividerWidth;
   const dividerThickness = designSystem.dividerThickness;
   checkPadding(
     'divider',
@@ -117,7 +145,7 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
     dividerPosition.y + dividerThickness,
   );
 
-  const wordmarkFontSize = designSystem.wordmarkFontSize;
+  const wordmarkFontSize = layout.wordmarkFontSize ?? designSystem.wordmarkFontSize;
   const wordmarkWidth = measureWidth(wordmarkFontPath, designSystem.wordmarkText, wordmarkFontSize, designSystem.wordmarkLetterSpacing);
   const wordmarkHeight = wordmarkFontSize * 1.1;
   checkPadding(
@@ -144,10 +172,17 @@ export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidt
     cursorY += lineAdvances[i];
   });
 
-  const supportBaseline = supportPosition.y + supportFontSize * BASELINE_OFFSET_FACTOR;
-  textEls.push(
-    `<text x="${supportPosition.x}" y="${supportBaseline.toFixed(2)}" font-family="${designSystem.fonts.support.family}" font-weight="${designSystem.supportFontWeight}" font-size="${supportFontSize}" letter-spacing="${designSystem.supportLetterSpacing}em" fill="${colors.support}">${escapeXml(supporting)}</text>`,
-  );
+  const supportInkRegions = [];
+  let supportCursorY = supportPosition.y;
+  supportLines.forEach((line, i) => {
+    const baseline = supportCursorY + supportFontSize * BASELINE_OFFSET_FACTOR;
+    textEls.push(
+      `<text x="${supportPosition.x}" y="${baseline.toFixed(2)}" font-family="${designSystem.fonts.support.family}" font-weight="${designSystem.supportFontWeight}" font-size="${supportFontSize}" letter-spacing="${designSystem.supportLetterSpacing}em" fill="${colors.support}">${escapeXml(line)}</text>`,
+    );
+    const lineAdvance = supportLines.length === 1 ? supportFontSize : supportLineAdvance;
+    supportInkRegions.push({ x: supportPosition.x, y: supportCursorY, width: supportLineWidths[i], height: lineAdvance });
+    supportCursorY += lineAdvance;
+  });
 
   const dividerY = dividerPosition.y + dividerThickness / 2;
   textEls.push(
@@ -176,7 +211,9 @@ ${textEls.join('\n')}
       supportPosition,
       supportWidth,
       dividerPosition,
+      dividerWidth,
       brandPosition,
+      wordmarkFontSize,
       wordmarkWidth,
     },
     // Regions with actual ink, for the post-render "did our font really draw
@@ -186,7 +223,7 @@ ${textEls.join('\n')}
     // can differ a lot between lines) plus support and wordmark.
     inkRegions: [
       ...headlineInkRegions,
-      { x: supportPosition.x, y: supportPosition.y, width: supportWidth, height: supportHeight },
+      ...supportInkRegions,
       { x: brandPosition.x, y: brandPosition.y, width: wordmarkWidth, height: wordmarkHeight },
     ],
   };
