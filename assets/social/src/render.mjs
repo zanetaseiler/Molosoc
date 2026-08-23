@@ -215,9 +215,20 @@ async function renderPost(imgId, variantId, outputName) {
 
   await assertInkPresent(postId, overlayPng, canvasWidth, inkRegions);
 
-  const outPath = path.join(socialDir, 'output', outputName);
-  await sharp(baseBuffer)
+  // Rounded outer corners: a white rounded-rect mask clipped onto the
+  // composited image via 'dest-in' (keep pixels where the mask is opaque,
+  // make transparent where it isn't) — the corners themselves, not a border
+  // drawn on top, so nothing is added over the photo/text.
+  const r = designSystem.cornerRadius;
+  const cornerMaskSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasWidth}" height="${canvasHeight}"><rect x="0" y="0" width="${canvasWidth}" height="${canvasHeight}" rx="${r}" ry="${r}" fill="#fff"/></svg>`;
+  const composited = await sharp(baseBuffer)
     .composite([{ input: overlayPng, left: 0, top: 0 }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+
+  const outPath = path.join(socialDir, 'output', outputName);
+  await sharp(composited)
+    .composite([{ input: Buffer.from(cornerMaskSvg), blend: 'dest-in' }])
     .png({ compressionLevel: 9 })
     .withMetadata()
     .toFile(outPath);

@@ -33,6 +33,21 @@
       "dividerPosition": { "x": 643, "y": 225 },
       "brandPosition": { "x": 643, "y": 232 }
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Sideboard (left) and coffee table (right) span nearly the full frame, so a narrow side panel would crop into one or the other; the full-width top-crop keeps the whole scene (sideboard, her, table with mug/bowl) intact and lets the cream band below hold the headline at full size.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_001_floor-journaling.png"
   },
 
@@ -278,6 +293,21 @@
       "brandPosition": { "x": 70, "y": 869.5 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Water bottle (far left) and sofa (far right) both frame the activity; a side panel would lose one or the other, so the full-width top-crop keeps the whole scene together.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_002_yoga-mat-roll.png"
   },
 
@@ -341,6 +371,21 @@
       "brandPosition": { "x": 55, "y": 799 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. The vacuum wand extends diagonally across most of the frame's width (dining table left, sofa right); a narrow side panel would cut the wand or one of the flanking pieces, so the full-width top-crop keeps the whole action intact.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_004_vacuuming-living-room.png"
   },
 
@@ -357,6 +402,21 @@
       "dividerPosition": { "x": 160, "y": 1135 },
       "brandPosition": { "x": 160, "y": 1147 },
       "wordmarkFontSize": 24
+    },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. She's a fairly contained vertical figure leaning over the desk; photoCrop x=280 keeps her plus the laptop/desk/mug inside the 673px photo panel, trimming only the far-left bookshelf and far-right window/lamp. No face/hand-avoidance math needed anymore — text lives entirely in the cream panel, never on the photo.",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 280, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 537, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 82,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 786 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 832 },
+      "brandPosition": { "x": 55, "y": 852 },
+      "wordmarkFontSize": 12
     },
     "master": "MOL_IMG_006_home-office.png"
   },
@@ -375,6 +435,21 @@
       "brandPosition": { "x": 55, "y": 529 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. She's seated centrally in the armchair with book+coffee; photoCrop x=250 centers her in the 673px photo panel, trimming the cabinet on the far left and the small side table on the far right. 'Slow down.' is this copy's widest line and caps the headline at 62px in the 335px-wide cream column — a width-bound ceiling from the panel geometry, not a shrink to dodge an obstacle (there is no obstacle to dodge anymore).",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 250, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 564, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 62,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 759 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 805 },
+      "brandPosition": { "x": 55, "y": 825 },
+      "wordmarkFontSize": 12
+    },
     "master": "MOL_IMG_007_armchair-coffee-book.png"
   },
 
@@ -391,6 +466,21 @@
       "dividerPosition": { "x": 55, "y": 1077 },
       "brandPosition": { "x": 55, "y": 1099 },
       "wordmarkFontSize": 24
+    },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM. Dining set (far left) and stove/shelving (far right) both anchor this kitchen scene; the full-width top-crop keeps the whole room intact rather than cropping into either side.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 998, "width": 600, "maxHeight": 300 },
+      "headlineFontSize": 93,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1269 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1313 },
+      "brandPosition": { "x": 55, "y": 1327 },
+      "wordmarkFontSize": 14
     },
     "master": "MOL_IMG_008_kitchen-flowers.png"
   },
@@ -409,6 +499,21 @@
       "brandPosition": { "x": 55, "y": 1074 },
       "wordmarkFontSize": 24
     },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_BOTTOM (not SIDE): 'Take a moment.' is long enough that it doesn't fit at a large size in the 335px-wide SIDE column (even at 64px it overflows to 456.9px) — forcing SIDE here would mean shrinking this specific headline well below the rest of the set's scale just to make it fit, which the brief explicitly rules out. The wide cream band gives this exact copy the room a large headline needs; textBox widened to 700px (vs. the usual 600px) and headline set to 88px, still fitting comfortably within that band.",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1122, "height": 939 },
+      "textAreaBounds": { "x": 0, "y": 939, "width": 1122, "height": 463 },
+      "textBox": { "x": 55, "y": 1005, "width": 700, "maxHeight": 300 },
+      "headlineFontSize": 88,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 20,
+      "supportPosition": { "x": 55, "y": 1263 },
+      "dividerWidth": 80,
+      "dividerPosition": { "x": 55, "y": 1307 },
+      "brandPosition": { "x": 55, "y": 1321 },
+      "wordmarkFontSize": 14
+    },
     "master": "MOL_IMG_009_armchair-cream.png"
   },
 
@@ -425,6 +530,21 @@
       "dividerPosition": { "x": 55, "y": 1085 },
       "brandPosition": { "x": 55, "y": 1102 },
       "wordmarkFontSize": 24
+    },
+    "_final_en_notes": "FINAL EN SET — TEMPLATE_SIDE. She's seated on the window bench, contained enough for a vertical crop; photoCrop x=250 keeps her and most of the round side table (mug, flowers) inside the 673px photo panel, trimming only the far-left cushion/blanket and the table's far right edge.",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 250, "y": 0, "width": 673, "height": 1402 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 449, "height": 1402 },
+      "textBox": { "x": 55, "y": 531, "width": 335, "maxHeight": 250 },
+      "headlineFontSize": 86,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 16,
+      "supportPosition": { "x": 55, "y": 791 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 837 },
+      "brandPosition": { "x": 55, "y": 857 },
+      "wordmarkFontSize": 12
     },
     "master": "MOL_IMG_010_window-bench-journaling.png"
   },

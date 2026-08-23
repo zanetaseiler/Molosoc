@@ -9,6 +9,8 @@
 
   "minEdgePadding": 55,
 
+  "cornerRadius": 32,
+
   "fonts": {
     "headline": { "family": "DM Serif Display", "file": "fonts/DMSerifDisplay-Regular.ttf" },
     "support": { "family": "Mulish", "files": ["fonts/Mulish-Regular.ttf", "fonts/Mulish-Medium.ttf", "fonts/Mulish-SemiBold.ttf"] },
