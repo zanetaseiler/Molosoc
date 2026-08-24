@@ -4,8 +4,12 @@ name: Meta Connection Test (read-only)
 # and read, per language (CZ / EN):
 #   /me            -> token identity
 #   /{page-id}     -> Page reachability, page tasks, linked Instagram account
-#   /debug_token   -> granted permission scopes (only when META_APP_ID and
-#                      META_APP_SECRET are both set)
+#   /debug_token   -> granted permission scopes (only when that language's
+#                      META_APP_ID_*/META_APP_SECRET_* are both set)
+#
+# CZ and EN are two separate Meta apps — separate App ID, App Secret, and
+# system-user token each — so every secret below is per-language. There is
+# no shared META_APP_ID/META_APP_SECRET/META_ACCESS_TOKEN fallback.
 #
 # Read-only throughout: every call is a GET, and none of them touch a write
 # endpoint (/media, /photos, /videos, /video_reels, /feed). Nothing is ever
@@ -51,11 +55,13 @@ jobs:
 
       - name: Run the read-only Meta connection test
         env:
-          META_APP_ID: ${{ secrets.META_APP_ID }}
-          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_APP_ID_CZ: ${{ secrets.META_APP_ID_CZ }}
+          META_APP_SECRET_CZ: ${{ secrets.META_APP_SECRET_CZ }}
           META_FB_PAGE_ID_CZ: ${{ secrets.META_FB_PAGE_ID_CZ }}
           META_ACCESS_TOKEN_CZ: ${{ secrets.META_ACCESS_TOKEN_CZ }}
           META_IG_ACCOUNT_ID_CZ: ${{ secrets.META_IG_ACCOUNT_ID_CZ }}
+          META_APP_ID_EN: ${{ secrets.META_APP_ID_EN }}
+          META_APP_SECRET_EN: ${{ secrets.META_APP_SECRET_EN }}
           META_FB_PAGE_ID_EN: ${{ secrets.META_FB_PAGE_ID_EN }}
           META_ACCESS_TOKEN_EN: ${{ secrets.META_ACCESS_TOKEN_EN }}
           META_IG_ACCOUNT_ID_EN: ${{ secrets.META_IG_ACCOUNT_ID_EN }}

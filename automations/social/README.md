@@ -15,9 +15,9 @@ call fails the suite rather than silently posting something.
 
 **Proves:** the stored token authenticates, can read the named Facebook
 Page, that Page's linked Instagram professional account matches what's
-expected (Page ↔ Instagram pairing), and — when `META_APP_ID`/
-`META_APP_SECRET` are also set — exactly which permissions the token was
-granted.
+expected (Page ↔ Instagram pairing), and — when that language's
+`META_APP_ID_*`/`META_APP_SECRET_*` are also set — exactly which
+permissions the token was granted.
 
 **Does not prove:** that an actual image or Reels upload will succeed. Reels
 specifically go through a multi-step upload-and-poll flow (create a video
@@ -26,23 +26,33 @@ failure modes — wrong aspect ratio, duration limits, encoding issues — no
 read-only call can catch. Confirming that end-to-end requires an actual test
 upload, which is explicitly out of scope until publishing is approved.
 
-## Why CZ and EN are separate credentials
+## Why CZ and EN are fully separate — separate apps, not just separate tokens
 
-Each language gets its own Facebook Page, its own linked Instagram
-professional account, and its own access token/secret set — never a shared
-token. That's what makes "support separate CZ and EN accounts" and "the
-Google Drive publishing schedule as the source of truth" actually work later:
+CZ and EN are **two entirely separate Meta apps**, each with its own App ID,
+App Secret, and system-user token — not one shared app used for both. There
+is no `META_APP_ID`/`META_APP_SECRET`/`META_ACCESS_TOKEN` fallback anywhere
+in this code; every credential is looked up with a `_CZ` or `_EN` suffix and
+nothing else. Confirmed identities:
+
+| | CZ | EN |
+|---|---|---|
+| Facebook Page ID | `670138019527343` | `1225373770662335` |
+| Meta App ID | `1811329706700638` | `1537667540920982` |
+| System-user token | separate, per language | separate, per language |
+
+(Page IDs and App IDs are not secrets — they're visible on the Page/App
+dashboard to anyone with access — but they're still stored as GitHub
+secrets alongside the real secrets, `META_APP_SECRET_*` and
+`META_ACCESS_TOKEN_*`, for consistency and so nothing is hard-coded in this
+repo. Nothing in `meta_connection_test.py` hard-codes any of the four
+values above — everything above is documentation, not defaults; the script
+reads all eight secrets from the environment only.)
+
+This is what makes "support separate CZ and EN accounts" and "the Google
+Drive publishing schedule as the source of truth" actually work later:
 `MOLOSOC_Master_Publishing_Schedule` tags every row with a `Language` column
 (CZ/EN) and each row needs to land on that language's own Page/Instagram
-account, not on a shared one.
-
-**Before wiring up secrets, confirm in Meta Business Suite whether MOLOSOC
-already has two separate Facebook Pages + Instagram accounts (one CZ, one
-EN), or a single shared Page/Instagram pair.** The live site currently links
-to exactly one of each — `facebook.com/molosoc` and `instagram.com/molosoc_`
-(see `site/theme/footer.php`) — so if a second CZ or EN pair doesn't exist
-yet in Business Suite, that's a decision (and Business Suite setup step) for
-a person, not something this script can discover or create.
+account, through that language's own app credentials — not a shared one.
 
 ## Authentication approach: System User token, not a personal login
 
@@ -76,32 +86,36 @@ you. Repeat the Page/Instagram/System-User steps once per language (CZ, EN).
    the Instagram app first (Settings → Account type) and link it to the
    right Page from Business Suite.
 
-2. **Create (or reuse) a Meta Developer App.** At
-   [developers.facebook.com/apps](https://developers.facebook.com/apps),
-   create an app of type "Business" (or use an existing one already
-   associated with the MOLOSOC Business Manager). Note the **App ID** and
-   **App Secret** (App Settings → Basic) — these become `META_APP_ID` /
-   `META_APP_SECRET`. The App Secret is only used here to introspect tokens
-   via `/debug_token`; it never authorizes posting by itself.
+2. **Use each language's own Meta Developer App** — CZ App ID
+   `1811329706700638`, EN App ID `1537667540920982` (already created; see
+   [developers.facebook.com/apps](https://developers.facebook.com/apps) if
+   you need to open either one). For each app, note its **App Secret**
+   (App Settings → Basic) — these become `META_APP_SECRET_CZ` and
+   `META_APP_SECRET_EN` respectively. Never use CZ's secret for EN or vice
+   versa. The App Secret is only used here to introspect tokens via
+   `/debug_token`; it never authorizes posting by itself.
 
 3. **Add the Instagram Graph API + Facebook Login for Business products** to
-   that app (App Dashboard → Add Product), so the app can request
-   `pages_*` and `instagram_*` permissions.
+   each app (App Dashboard → Add Product), so it can request `pages_*` and
+   `instagram_*` permissions.
 
-4. **Create a System User** in Business Manager: **Settings → Users → System
-   Users → Add**. Create one per language (`molosoc-social-cz`,
-   `molosoc-social-en`) or one shared system user assigned to both Pages —
-   either works, since the token itself is what gets scoped per-Page below.
+4. **Create a System User for each app** in that app's Business Manager:
+   **Settings → Users → System Users → Add** — e.g.
+   `molosoc-social-cz` under the CZ app's Business Manager,
+   `molosoc-social-en` under the EN app's. Keep them one-per-language; a
+   system user created under the wrong app can't be assigned across apps.
 
-5. **Assign assets to the System User.** For each system user, **Add
-   Assets → Pages** → select that language's MOLOSOC Page → grant it at
-   least "Manage Page" access (this is what's needed for
-   `pages_manage_posts`). The linked Instagram account doesn't need a
-   separate asset assignment — it inherits from the Page.
+5. **Assign that language's Page to its own System User.** **Add
+   Assets → Pages** → select the matching Page (CZ Page ID
+   `670138019527343`, EN Page ID `1225373770662335`) → grant it at least
+   "Manage Page" access (this is what's needed for `pages_manage_posts`).
+   The linked Instagram account doesn't need a separate asset assignment —
+   it inherits from the Page.
 
-6. **Generate the System User's access token.** On the System User's detail
-   page, **Generate New Token** → select the app from step 2 → select these
-   permissions:
+6. **Generate each System User's access token, from its own app.** On the
+   System User's detail page, **Generate New Token** → select that
+   language's app from step 2 (CZ token generated from the CZ app, EN token
+   from the EN app) → select these permissions:
    - `pages_show_list`
    - `pages_read_engagement`
    - `pages_manage_posts`
@@ -135,18 +149,22 @@ you. Repeat the Page/Instagram/System-User steps once per language (CZ, EN).
    verify the pairing instead of just trusting whatever the Page reports.
 
 9. **Add everything as GitHub repository secrets** — Settings → Secrets and
-   variables → Actions, on this repo:
+   variables → Actions, on this repo. Eight secrets total, four per
+   language, no sharing between CZ and EN:
 
-   | Secret | Required | What it is |
-   |---|---|---|
-   | `META_APP_ID` | recommended | App ID from step 2 |
-   | `META_APP_SECRET` | recommended | App Secret from step 2 |
-   | `META_FB_PAGE_ID_CZ` | for CZ | MOLOSOC CZ Facebook Page ID |
-   | `META_ACCESS_TOKEN_CZ` | for CZ | CZ System User token from step 6 |
-   | `META_IG_ACCOUNT_ID_CZ` | optional | CZ Instagram professional account ID, for pairing cross-check |
-   | `META_FB_PAGE_ID_EN` | for EN | MOLOSOC EN Facebook Page ID |
-   | `META_ACCESS_TOKEN_EN` | for EN | EN System User token from step 6 |
-   | `META_IG_ACCOUNT_ID_EN` | optional | EN Instagram professional account ID, for pairing cross-check |
+   | Secret | What it is |
+   |---|---|
+   | `META_APP_ID_CZ` | `1811329706700638` (CZ Meta App ID) |
+   | `META_APP_SECRET_CZ` | CZ App Secret from step 2 |
+   | `META_FB_PAGE_ID_CZ` | `670138019527343` (MOLOSOC CZ Facebook Page ID) |
+   | `META_ACCESS_TOKEN_CZ` | CZ System User token from step 6 |
+   | `META_APP_ID_EN` | `1537667540920982` (EN Meta App ID) |
+   | `META_APP_SECRET_EN` | EN App Secret from step 2 |
+   | `META_FB_PAGE_ID_EN` | `1225373770662335` (MOLOSOC EN Facebook Page ID) |
+   | `META_ACCESS_TOKEN_EN` | EN System User token from step 6 |
+
+   Optional, for a stricter Page↔Instagram pairing cross-check:
+   `META_IG_ACCOUNT_ID_CZ`, `META_IG_ACCOUNT_ID_EN`.
 
    You can add just one language's secrets first — the connection test
    reports an unconfigured language as `SKIP`, not a failure.
@@ -162,14 +180,15 @@ Locally:
 ```bash
 pip install -r automations/social/requirements.txt pytest
 
-export META_APP_ID='...'
-export META_APP_SECRET='...'
-
-export META_FB_PAGE_ID_EN='...'
-export META_ACCESS_TOKEN_EN='...'
-
-export META_FB_PAGE_ID_CZ='...'
+export META_APP_ID_CZ='1811329706700638'
+export META_APP_SECRET_CZ='...'
+export META_FB_PAGE_ID_CZ='670138019527343'
 export META_ACCESS_TOKEN_CZ='...'
+
+export META_APP_ID_EN='1537667540920982'
+export META_APP_SECRET_EN='...'
+export META_FB_PAGE_ID_EN='1225373770662335'
+export META_ACCESS_TOKEN_EN='...'
 
 python3 automations/social/meta_connection_test.py
 ```
@@ -185,14 +204,15 @@ For each configured language the report shows:
 - the Facebook Page it can reach, and the **page tasks** the token can
   perform on it (`CREATE_CONTENT` is the one that matters for posting)
 - the linked Instagram account, or a warning if none is linked
-- (if `META_APP_ID`/`META_APP_SECRET` are set) the token's exact granted
-  scopes and expiry, via `/debug_token`
+- (if that language's `META_APP_ID_*`/`META_APP_SECRET_*` are set) the
+  token's exact granted scopes and expiry, via `/debug_token`
 - a capability line for each of the four things Stage 1 needs to support:
   **Facebook image posts, Facebook Reels, Instagram image posts, Instagram
   Reels** — `YES` when the required permission(s) and pairing are confirmed
   present, `NO` when something required is missing, `UNKNOWN` when scope
-  introspection wasn't available (add `META_APP_ID`/`META_APP_SECRET` to
-  resolve it) and only the weaker page-task/pairing proxy could be checked
+  introspection wasn't available (add that language's `META_APP_ID_*`/
+  `META_APP_SECRET_*` to resolve it) and only the weaker page-task/pairing
+  proxy could be checked
 
 ## Tests
 

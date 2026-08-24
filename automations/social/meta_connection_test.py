@@ -2,15 +2,20 @@
 """
 Molosoc Meta (Facebook + Instagram) connection test — read-only, per language.
 
+CZ and EN are two entirely separate Meta apps — separate App ID, separate
+App Secret, separate system-user token, separate Page — not one shared app
+used for both. Every secret below is per-language; there is no shared
+META_APP_ID/META_APP_SECRET/META_ACCESS_TOKEN fallback.
+
 Proves, for each configured language (CZ / EN), that:
   1. the stored access token is valid and belongs to the expected identity;
   2. the Facebook Page it names is reachable and this token can act on it;
   3. that Page's linked Instagram professional account is the expected one
      (Page <-> Instagram pairing);
-  4. the token's granted permissions (when META_APP_ID/META_APP_SECRET are
-     also set, via the /debug_token introspection endpoint) cover what
-     Instagram image posts, Instagram Reels, Facebook image posts and
-     Facebook Reels each require.
+  4. the token's granted permissions (when that language's META_APP_ID_*/
+     META_APP_SECRET_* are also set, via the /debug_token introspection
+     endpoint) cover what Instagram image posts, Instagram Reels, Facebook
+     image posts and Facebook Reels each require.
 
 Nothing here writes. Every call is a GET against a read endpoint
 (/me, /{page-id}, /debug_token) — never /media, /photos, /videos or
@@ -24,23 +29,30 @@ moment they are read, and every access_token is sent as a query parameter
 that mask_token() summarizes before printing, never the raw value.
 
 Usage:
+    export META_APP_ID_CZ='...'
+    export META_APP_SECRET_CZ='...'
     export META_ACCESS_TOKEN_CZ='...'
     export META_FB_PAGE_ID_CZ='...'
+
+    export META_APP_ID_EN='...'
+    export META_APP_SECRET_EN='...'
     export META_ACCESS_TOKEN_EN='...'
     export META_FB_PAGE_ID_EN='...'
-    # optional, enables permission-scope introspection via /debug_token:
-    export META_APP_ID='...'
-    export META_APP_SECRET='...'
+
     # optional, cross-checks the Page's linked IG account against this id:
     export META_IG_ACCOUNT_ID_CZ='...'
     export META_IG_ACCOUNT_ID_EN='...'
     python3 automations/social/meta_connection_test.py
 
-A language whose token/page secrets are not set is reported as SKIP, not
-FAIL — this script is meant to be run as each language's Meta assets get
-connected, not only once both exist. Exit code is non-zero only when a
-language that IS configured fails a check, or when --require was passed for
-a language that turns out not to be configured.
+META_APP_ID_*/META_APP_SECRET_* are optional per language — without them,
+/debug_token scope introspection for that language is skipped and its
+capability checks fall back to the page-task/pairing proxy (reported as
+UNKNOWN rather than YES/NO). A language whose token/page secrets are not set
+at all is reported as SKIP, not FAIL — this script is meant to be run as
+each language's Meta assets get connected, not only once both exist. Exit
+code is non-zero only when a language that IS configured fails a check, or
+when --require was passed for a language that turns out not to be
+configured.
 """
 
 import argparse
@@ -150,8 +162,9 @@ def check_debug_token(access_token, app_id, app_secret):
 def capability_matrix(scopes, page_tasks, ig_paired):
     """Returns True/False/None (unknown) for each of the four publishing
     capabilities the task cares about. None means the scope list wasn't
-    available (no META_APP_ID/META_APP_SECRET), so only the weaker proxy
-    signals (page tasks, IG pairing) could be checked."""
+    available (that language's META_APP_ID_*/META_APP_SECRET_* weren't set),
+    so only the weaker proxy signals (page tasks, IG pairing) could be
+    checked."""
     tasks = set(page_tasks or [])
     can_create_on_page = "CREATE_CONTENT" in tasks
 
@@ -245,9 +258,9 @@ def check_language(lang, page_id, access_token, expected_ig_id=None, app_id=None
             result["warnings"].append(f"/debug_token introspection failed: {exc}")
     else:
         result["warnings"].append(
-            "META_APP_ID/META_APP_SECRET not set — skipping /debug_token scope "
-            "introspection; capability checks below fall back to the Page's "
-            "task list and Instagram pairing only."
+            f"META_APP_ID_{lang.upper()}/META_APP_SECRET_{lang.upper()} not set — "
+            "skipping /debug_token scope introspection; capability checks below "
+            "fall back to the Page's task list and Instagram pairing only."
         )
 
     result["missing_scopes"] = missing_scopes(scopes)
@@ -267,16 +280,26 @@ def check_language(lang, page_id, access_token, expected_ig_id=None, app_id=None
 # --------------------------------------------------------------------------
 
 def load_language_config(lang):
-    """Returns (page_id, access_token, expected_ig_id) or None if this
-    language's required secrets are not set at all."""
+    """Returns a dict of this language's own secrets (page id, access token,
+    expected IG id, app id, app secret) or None if NONE of them are set at
+    all — i.e. this language hasn't been touched yet. Each language's app id
+    and app secret are its own; there is no shared fallback."""
     suffix = lang.upper()
     page_id = os.environ.get(f"META_FB_PAGE_ID_{suffix}", "").strip()
     access_token = os.environ.get(f"META_ACCESS_TOKEN_{suffix}", "").strip()
     expected_ig_id = os.environ.get(f"META_IG_ACCOUNT_ID_{suffix}", "").strip() or None
+    app_id = os.environ.get(f"META_APP_ID_{suffix}", "").strip() or None
+    app_secret = os.environ.get(f"META_APP_SECRET_{suffix}", "").strip() or None
 
-    if not page_id and not access_token:
+    if not any((page_id, access_token, expected_ig_id, app_id, app_secret)):
         return None
-    return page_id, access_token, expected_ig_id
+    return {
+        "page_id": page_id,
+        "access_token": access_token,
+        "expected_ig_id": expected_ig_id,
+        "app_id": app_id,
+        "app_secret": app_secret,
+    }
 
 
 # --------------------------------------------------------------------------
@@ -316,7 +339,11 @@ def print_result(result):
 
     caps = result.get("capabilities") or {}
     def fmt(v):
-        return "YES" if v is True else ("NO" if v is False else "UNKNOWN (needs META_APP_ID/META_APP_SECRET to confirm)")
+        if v is True:
+            return "YES"
+        if v is False:
+            return "NO"
+        return f"UNKNOWN (needs META_APP_ID_{lang}/META_APP_SECRET_{lang} to confirm)"
 
     print("      capability check:")
     print(f"        Facebook image posts:  {fmt(caps.get('facebook_image_post'))}")
@@ -361,14 +388,9 @@ def main(argv=None):
     args = parse_args(argv)
     langs = LANGUAGES if args.lang == "both" else (args.lang,)
 
-    app_id = os.environ.get("META_APP_ID", "").strip() or None
-    app_secret = os.environ.get("META_APP_SECRET", "").strip() or None
-    if app_secret:
-        register_secret(app_secret)
-
     print("Molosoc — Meta (Facebook + Instagram) read-only connection test")
     print(f"  Graph API version: {os.environ.get('META_GRAPH_API_VERSION', DEFAULT_GRAPH_API_VERSION)}")
-    print(f"  scope introspection: {'enabled' if app_id and app_secret else 'disabled (set META_APP_ID/META_APP_SECRET)'}")
+    print("  CZ and EN each use their own Meta app (separate App ID/Secret) — no shared app.")
 
     all_ok = True
     for lang in langs:
@@ -380,15 +402,25 @@ def main(argv=None):
             print_result(result)
             continue
 
-        page_id, access_token, expected_ig_id = config
-        if not page_id or not access_token:
-            missing = "META_FB_PAGE_ID_" + lang.upper() if not page_id else "META_ACCESS_TOKEN_" + lang.upper()
-            print(f"\n--- {lang.upper()} ---")
-            print(f"FAIL  {missing} is not set (its counterpart is).")
+        if config["app_secret"]:
+            register_secret(config["app_secret"])
+
+        if not config["page_id"] or not config["access_token"]:
+            suffix = lang.upper()
+            missing = f"META_FB_PAGE_ID_{suffix}" if not config["page_id"] else f"META_ACCESS_TOKEN_{suffix}"
+            print(f"\n--- {suffix} ---")
+            print(f"FAIL  {missing} is not set.")
             all_ok = False
             continue
 
-        result = check_language(lang, page_id, access_token, expected_ig_id, app_id, app_secret)
+        result = check_language(
+            lang,
+            config["page_id"],
+            config["access_token"],
+            config["expected_ig_id"],
+            config["app_id"],
+            config["app_secret"],
+        )
         print_result(result)
         if not result["ok"]:
             all_ok = False

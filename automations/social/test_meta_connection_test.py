@@ -36,8 +36,10 @@ FAKE_APP_SECRET = "fakeappsecret0123456789abcdef"
 def isolate_env(monkeypatch):
     for var in (
         "META_FB_PAGE_ID_CZ", "META_ACCESS_TOKEN_CZ", "META_IG_ACCOUNT_ID_CZ",
+        "META_APP_ID_CZ", "META_APP_SECRET_CZ",
         "META_FB_PAGE_ID_EN", "META_ACCESS_TOKEN_EN", "META_IG_ACCOUNT_ID_EN",
-        "META_APP_ID", "META_APP_SECRET", "META_GRAPH_API_VERSION",
+        "META_APP_ID_EN", "META_APP_SECRET_EN",
+        "META_GRAPH_API_VERSION",
     ):
         monkeypatch.delenv(var, raising=False)
     meta_common.reset_secrets()
@@ -277,8 +279,9 @@ def test_capability_matrix_unknown_without_scopes():
     assert caps["instagram_image_post"] is True  # proxy: pairing present
     # But neither is a confirmed scope check — the report layer must call
     # this out as UNKNOWN rather than a hard guarantee. That distinction is
-    # encoded by scopes=None triggering print_result's "needs META_APP_ID"
-    # branch, not by the boolean value itself.
+    # encoded by scopes=None triggering print_result's "needs
+    # META_APP_ID_*/META_APP_SECRET_*" branch, not by the boolean value
+    # itself.
 
 
 def test_capability_matrix_false_without_page_task_or_pairing():
@@ -297,3 +300,80 @@ def test_missing_scopes_lists_only_the_gaps():
 
 def test_missing_scopes_none_when_introspection_unavailable():
     assert mct.missing_scopes(None) is None
+
+
+# --------------------------------------------------------------------------
+# Per-language app isolation — CZ and EN never share an app id/secret
+# --------------------------------------------------------------------------
+
+def test_load_language_config_reads_only_that_languages_suffix(monkeypatch):
+    monkeypatch.setenv("META_FB_PAGE_ID_CZ", "670138019527343")
+    monkeypatch.setenv("META_ACCESS_TOKEN_CZ", FAKE_TOKEN_CZ)
+    monkeypatch.setenv("META_APP_ID_CZ", "1811329706700638")
+    monkeypatch.setenv("META_APP_SECRET_CZ", "cz-secret")
+    # EN deliberately left unset.
+
+    cz_config = mct.load_language_config("cz")
+    en_config = mct.load_language_config("en")
+
+    assert cz_config == {
+        "page_id": "670138019527343",
+        "access_token": FAKE_TOKEN_CZ,
+        "expected_ig_id": None,
+        "app_id": "1811329706700638",
+        "app_secret": "cz-secret",
+    }
+    assert en_config is None  # nothing set for EN at all -> SKIP, not a fallback to CZ's app
+
+
+def test_debug_token_call_uses_each_languages_own_app_credentials(monkeypatch):
+    """The /debug_token call for CZ must authorize with CZ's app id|secret,
+    never EN's (or any hard-coded value) — this is the core of the
+    per-language-app change: no shared META_APP_ID/META_APP_SECRET."""
+    seen_auth_tokens = []
+
+    def fake_get(url, params):
+        if "/debug_token" in url:
+            seen_auth_tokens.append(params.get("access_token"))
+            return FakeResponse(DEBUG_TOKEN_PAYLOAD_FULL_SCOPES)
+        if "/me" in url:
+            return FakeResponse({"id": "1000000000001", "name": "MOLOSOC CZ"})
+        if PAGE_PAYLOAD["id"] in url:
+            return FakeResponse(PAGE_PAYLOAD)
+        raise AssertionError(f"unexpected request to {url}")
+
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+
+    mct.check_language(
+        "cz", PAGE_PAYLOAD["id"], FAKE_TOKEN_CZ,
+        app_id="1811329706700638", app_secret="cz-only-secret",
+    )
+
+    assert seen_auth_tokens == ["1811329706700638|cz-only-secret"]
+
+
+def test_main_treats_cz_and_en_as_fully_independent(monkeypatch, capsys):
+    """CZ configured with its own app id/secret, EN left completely unset.
+    EN must SKIP cleanly and CZ's checks must never reference EN's secrets,
+    proving there's no cross-language fallback or hard-coded default."""
+    monkeypatch.setenv("META_FB_PAGE_ID_CZ", PAGE_PAYLOAD["id"])
+    monkeypatch.setenv("META_ACCESS_TOKEN_CZ", FAKE_TOKEN_CZ)
+    monkeypatch.setenv("META_APP_ID_CZ", "1811329706700638")
+    monkeypatch.setenv("META_APP_SECRET_CZ", "cz-only-secret")
+
+    fake_get, calls = make_fake_get({
+        "/me": {"id": "1000000000001", "name": "MOLOSOC CZ"},
+        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
+        "/debug_token": DEBUG_TOKEN_PAYLOAD_FULL_SCOPES,
+    })
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+
+    exit_code = mct.main(["--lang", "both"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "SKIP" in out  # EN
+    assert "PASS" in out  # CZ
+    for _url, params in calls:
+        assert params.get("access_token") != "cz-only-secret"  # never sent bare
+    assert "cz-only-secret" not in out
