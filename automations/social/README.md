@@ -173,7 +173,22 @@ you. Repeat the Page/Instagram/System-User steps once per language (CZ, EN).
 
 In CI: the **Meta Connection Test (read-only)** workflow
 (`.github/workflows/meta-connection-test.yml`). Dispatch it manually, or push
-to this folder.
+to this folder. Before the live check, the workflow runs a presence-only
+check per language — it prints `present`/`missing` for each of that
+language's 4 required secrets by name, never by value, so a secret that
+didn't reach the job (wrong name, not yet saved, added after a run already
+started) is obvious in the log instead of only inferable from the script's
+`FAIL`/`SKIP` output further down.
+
+**Note on the very first run:** the workflow also runs automatically on any
+push to `automations/social/**`. If secrets are added to the repo
+incrementally, a push that lands before all of them are saved will run
+against whatever subset exists at that instant and can fail or show
+languages as unconfigured — that's expected, not a wiring bug. Once all the
+secrets you intend to test with are saved, re-run the workflow manually
+(Actions tab → **Meta Connection Test (read-only)** → **Run workflow**) to
+get a result that reflects the current secrets rather than a race against
+when they were added.
 
 Locally:
 

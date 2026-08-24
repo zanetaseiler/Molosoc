@@ -9,7 +9,8 @@ name: Meta Connection Test (read-only)
 #
 # CZ and EN are two separate Meta apps — separate App ID, App Secret, and
 # system-user token each — so every secret below is per-language. There is
-# no shared META_APP_ID/META_APP_SECRET/META_ACCESS_TOKEN fallback.
+# no shared META_APP_ID/META_APP_SECRET/META_ACCESS_TOKEN fallback, and each
+# of the 8 required secrets (4 per language) is mapped by its exact name.
 #
 # Read-only throughout: every call is a GET, and none of them touch a write
 # endpoint (/media, /photos, /videos, /video_reels, /feed). Nothing is ever
@@ -53,6 +54,41 @@ jobs:
       - name: Run offline unit tests
         run: python3 -m pytest automations/social/ -q
 
+      # Presence-only check, per language, before the live call. Reports
+      # which of the 4 required secrets for that language reached the job —
+      # by name only, never by value — so a missing/misnamed repo secret is
+      # obvious here instead of being inferred from the script's FAIL text
+      # further down.
+      - name: Check which CZ secrets reached this job
+        env:
+          META_APP_ID_CZ: ${{ secrets.META_APP_ID_CZ }}
+          META_APP_SECRET_CZ: ${{ secrets.META_APP_SECRET_CZ }}
+          META_FB_PAGE_ID_CZ: ${{ secrets.META_FB_PAGE_ID_CZ }}
+          META_ACCESS_TOKEN_CZ: ${{ secrets.META_ACCESS_TOKEN_CZ }}
+        run: |
+          for name in META_APP_ID_CZ META_APP_SECRET_CZ META_FB_PAGE_ID_CZ META_ACCESS_TOKEN_CZ; do
+            if [ -z "${!name}" ]; then
+              echo "  missing  $name"
+            else
+              echo "  present  $name"
+            fi
+          done
+
+      - name: Check which EN secrets reached this job
+        env:
+          META_APP_ID_EN: ${{ secrets.META_APP_ID_EN }}
+          META_APP_SECRET_EN: ${{ secrets.META_APP_SECRET_EN }}
+          META_FB_PAGE_ID_EN: ${{ secrets.META_FB_PAGE_ID_EN }}
+          META_ACCESS_TOKEN_EN: ${{ secrets.META_ACCESS_TOKEN_EN }}
+        run: |
+          for name in META_APP_ID_EN META_APP_SECRET_EN META_FB_PAGE_ID_EN META_ACCESS_TOKEN_EN; do
+            if [ -z "${!name}" ]; then
+              echo "  missing  $name"
+            else
+              echo "  present  $name"
+            fi
+          done
+
       - name: Run the read-only Meta connection test
         env:
           META_APP_ID_CZ: ${{ secrets.META_APP_ID_CZ }}
@@ -65,6 +101,7 @@ jobs:
           META_FB_PAGE_ID_EN: ${{ secrets.META_FB_PAGE_ID_EN }}
           META_ACCESS_TOKEN_EN: ${{ secrets.META_ACCESS_TOKEN_EN }}
           META_IG_ACCOUNT_ID_EN: ${{ secrets.META_IG_ACCOUNT_ID_EN }}
-        run: |
-          LANG_INPUT="${{ inputs.lang }}"
-          python3 automations/social/meta_connection_test.py --lang "${LANG_INPUT:-both}"
+        # github.event.inputs.lang is only populated on a workflow_dispatch
+        # run; on push it's unset, and `||` falls back to 'both' directly in
+        # the expression rather than relying on shell parameter expansion.
+        run: python3 automations/social/meta_connection_test.py --lang "${{ github.event.inputs.lang || 'both' }}"
