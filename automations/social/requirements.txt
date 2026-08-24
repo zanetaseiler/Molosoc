@@ -1,0 +1,4 @@
+# Minimum dependencies for the read-only Meta (Facebook + Instagram)
+# connection test. Every call is a plain HTTPS GET against the Graph API, so
+# a bare requests session is all this needs — no Facebook SDK.
+requests>=2.31,<3

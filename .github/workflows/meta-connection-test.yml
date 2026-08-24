@@ -1,0 +1,64 @@
+name: Meta Connection Test (read-only)
+
+# Proves the Meta (Facebook + Instagram) side of publishing can authenticate
+# and read, per language (CZ / EN):
+#   /me            -> token identity
+#   /{page-id}     -> Page reachability, page tasks, linked Instagram account
+#   /debug_token   -> granted permission scopes (only when META_APP_ID and
+#                      META_APP_SECRET are both set)
+#
+# Read-only throughout: every call is a GET, and none of them touch a write
+# endpoint (/media, /photos, /videos, /video_reels, /feed). Nothing is ever
+# posted, scheduled, or published by this workflow.
+#
+# A language whose secrets aren't set yet is reported as a SKIP, not a
+# failure — this is meant to run as CZ and EN each get connected, not only
+# once both exist. Independent of the analytics and WordPress content-sync
+# workflows: different paths, different secrets, no shared steps.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: "Which language's Meta assets to test"
+        type: choice
+        options: [both, cz, en]
+        default: both
+  push:
+    paths:
+      - "automations/social/**"
+      - ".github/workflows/meta-connection-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/social/requirements.txt pytest
+
+      - name: Run offline unit tests
+        run: python3 -m pytest automations/social/ -q
+
+      - name: Run the read-only Meta connection test
+        env:
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          META_FB_PAGE_ID_CZ: ${{ secrets.META_FB_PAGE_ID_CZ }}
+          META_ACCESS_TOKEN_CZ: ${{ secrets.META_ACCESS_TOKEN_CZ }}
+          META_IG_ACCOUNT_ID_CZ: ${{ secrets.META_IG_ACCOUNT_ID_CZ }}
+          META_FB_PAGE_ID_EN: ${{ secrets.META_FB_PAGE_ID_EN }}
+          META_ACCESS_TOKEN_EN: ${{ secrets.META_ACCESS_TOKEN_EN }}
+          META_IG_ACCOUNT_ID_EN: ${{ secrets.META_IG_ACCOUNT_ID_EN }}
+        run: |
+          LANG_INPUT="${{ inputs.lang }}"
+          python3 automations/social/meta_connection_test.py --lang "${LANG_INPUT:-both}"
