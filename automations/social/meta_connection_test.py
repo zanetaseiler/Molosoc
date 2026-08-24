@@ -18,8 +18,9 @@ Proves, for each configured language (CZ / EN), that:
      image posts and Facebook Reels each require.
 
 Nothing here writes. Every call is a GET against a read endpoint
-(/me, /{page-id}, /debug_token) — never /media, /photos, /videos or
-/video_reels, which are the endpoints that actually create content. A
+(/me, /{page-id}, /me/accounts, /debug_token) — never /media, /photos,
+/videos or /video_reels, which are the endpoints that actually create
+content. A
 "capability" in the report below means "the credentials and permissions this
 would need are present", not "a post was made" — no post is ever made by
 this script.
@@ -134,15 +135,29 @@ def check_identity(access_token):
 
 
 def check_page(page_id, access_token):
-    """GET /{page-id} — proves this token can read the Page, returns the
-    page tasks the token can perform (CREATE_CONTENT is the one that matters
-    for posting), and pulls the linked Instagram professional account in the
-    same call so pairing can be checked without a second round trip."""
+    """GET /{page-id} — proves this token can read the Page by id, and pulls
+    the linked Instagram professional account in the same call so pairing
+    can be checked without a second round trip.
+
+    Deliberately does NOT request `tasks` here: that field only exists on
+    the Page-as-list-item shape returned by /me/accounts, not on the Page
+    node itself — requesting it directly on /{page-id} fails with
+    "(#100) Tried accessing nonexisting field (tasks)". See check_page_tasks
+    below for where `tasks` actually comes from."""
     return graph_get(
         page_id,
         access_token,
-        fields="id,name,tasks,instagram_business_account{id,username,media_count,profile_picture_url}",
+        fields="id,name,instagram_business_account{id,username,media_count,profile_picture_url}",
     )
+
+
+def check_page_tasks(access_token):
+    """GET /me/accounts — the only place `tasks` (what this token can
+    actually do on a Page — CREATE_CONTENT is the one that matters for
+    posting) is exposed by the Graph API. Returns the raw list of Pages this
+    token has access to; the caller matches the one it cares about by id."""
+    body = graph_get("me/accounts", access_token, fields="id,name,tasks", limit=100)
+    return body.get("data", [])
 
 
 def check_debug_token(access_token, app_id, app_secret):
@@ -221,6 +236,23 @@ def check_language(lang, page_id, access_token, expected_ig_id=None, app_id=None
         result["errors"].append(f"page check failed: {exc}")
         return result
 
+    page_tasks = []
+    try:
+        accounts = check_page_tasks(access_token)
+        matched = next((a for a in accounts if str(a.get("id")) == str(page_id)), None)
+        if matched is not None:
+            page_tasks = matched.get("tasks", []) or []
+        else:
+            result["warnings"].append(
+                f"Page {page_id} did not appear in this token's /me/accounts list "
+                f"({len(accounts)} Page(s) visible) — cannot confirm page tasks "
+                "(e.g. CREATE_CONTENT). The Page may not be assigned to this "
+                "System User as an asset in Business Manager."
+            )
+    except RuntimeError as exc:
+        result["warnings"].append(f"/me/accounts lookup failed: {exc}")
+    result["page_tasks"] = page_tasks
+
     ig = page.get("instagram_business_account")
     result["ig"] = ig
     ig_paired = ig is not None
@@ -264,7 +296,7 @@ def check_language(lang, page_id, access_token, expected_ig_id=None, app_id=None
         )
 
     result["missing_scopes"] = missing_scopes(scopes)
-    result["capabilities"] = capability_matrix(scopes, page.get("tasks"), ig_paired)
+    result["capabilities"] = capability_matrix(scopes, page_tasks, ig_paired)
 
     if scopes is not None and result["missing_scopes"]:
         result["ok"] = False
@@ -320,7 +352,7 @@ def print_result(result):
 
     page = result.get("page")
     if page:
-        tasks = ", ".join(page.get("tasks", []) or []) or "(none returned)"
+        tasks = ", ".join(result.get("page_tasks") or []) or "(none confirmed — see WARN below)"
         print(f"      Facebook Page:  {page.get('name')} ({page.get('id')})")
         print(f"      Page tasks:     {tasks}")
 

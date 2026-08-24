@@ -9,7 +9,22 @@ it does **not** publish or schedule anything. Nothing in it calls a write
 endpoint (`/media`, `/photos`, `/videos`, `/video_reels`, `/feed`); the
 `test_every_request_is_a_get_to_a_read_endpoint` test in
 `test_meta_connection_test.py` asserts that directly, so an accidental write
-call fails the suite rather than silently posting something.
+call fails the suite rather than silently posting something. Four GET calls
+per language: `/me`, `/{page-id}`, `/me/accounts`, `/debug_token`.
+
+**Why two separate calls for the Page.** `/{page-id}?fields=...` proves the
+Page is reachable and pulls its linked Instagram account. Page `tasks` —
+what the token is actually permitted to do on that Page, where
+`CREATE_CONTENT` is what posting needs — only exist on the list shape
+returned by `/me/accounts?fields=id,name,tasks`, never on the Page node
+itself; requesting `tasks` directly on `/{page-id}` fails with `(#100) Tried
+accessing nonexisting field (tasks)`. So `check_page()` fetches the Page by
+id (reachability + Instagram pairing) and `check_page_tasks()` separately
+fetches `/me/accounts` and matches the right Page out of that list by id.
+A Page that doesn't show up in `/me/accounts` for a token (not assigned to
+that System User as a Business Manager asset) is reported as a warning, not
+a hard failure — the Page and Instagram pairing are still independently
+confirmed by the direct node check either way.
 
 ## What this does and doesn't tell you
 
@@ -216,8 +231,11 @@ skip when the requested language isn't configured yet).
 For each configured language the report shows:
 
 - the token's identity (`/me`)
-- the Facebook Page it can reach, and the **page tasks** the token can
-  perform on it (`CREATE_CONTENT` is the one that matters for posting)
+- the Facebook Page it can reach, and — from a separate `/me/accounts`
+  lookup, matched by Page id — the **page tasks** the token can perform on
+  it (`CREATE_CONTENT` is the one that matters for posting); a warning here
+  instead of a task list means the Page didn't appear in that token's
+  `/me/accounts`, so tasks couldn't be confirmed
 - the linked Instagram account, or a warning if none is linked
 - (if that language's `META_APP_ID_*`/`META_APP_SECRET_*` are set) the
   token's exact granted scopes and expiry, via `/debug_token`

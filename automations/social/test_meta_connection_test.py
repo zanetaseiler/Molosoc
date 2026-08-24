@@ -10,6 +10,10 @@ No network and no real token. What matters most and is asserted directly:
 3. A language whose secrets aren't set is reported as SKIP, not FAIL.
 4. The capability matrix correctly reflects scopes + page tasks + IG pairing,
    including the "unknown" case when /debug_token wasn't available.
+5. Page `tasks` are read from /me/accounts, never requested directly on
+   /{page-id} (that shape errors with "(#100) Tried accessing nonexisting
+   field (tasks)" against the real API) — and a failure in that lookup
+   must not block /debug_token from running.
 
 Run with:  python3 -m pytest automations/social/
 """
@@ -60,12 +64,15 @@ class FakeResponse:
 
 def make_fake_get(routes):
     """routes: dict of node-name substring -> payload (or callable(params)->payload).
-    Records every call for assertions."""
+    Records every call for assertions. Matched longest-key-first so a
+    specific route like "/me/accounts" is never shadowed by a shorter one
+    like "/me" that also happens to be a substring of its URL."""
     calls = []
+    ordered = sorted(routes.items(), key=lambda kv: -len(kv[0]))
 
     def fake_get(url, params):
         calls.append((url, dict(params)))
-        for key, value in routes.items():
+        for key, value in ordered:
             if key in url:
                 payload = value(params) if callable(value) else value
                 return FakeResponse(payload)
@@ -74,16 +81,28 @@ def make_fake_get(routes):
     return fake_get, calls
 
 
+# Page node shape: what /{page-id} actually returns. No `tasks` field here —
+# requesting it on this node is exactly the bug being fixed.
 PAGE_PAYLOAD = {
     "id": "1000000000001",
     "name": "MOLOSOC EN",
-    "tasks": ["MANAGE", "CREATE_CONTENT", "MODERATE", "ANALYZE", "ADVERTISE"],
     "instagram_business_account": {
         "id": "17800000000001",
         "username": "molosoc_",
         "media_count": 3,
         "profile_picture_url": "https://example.com/pic.jpg",
     },
+}
+
+# /me/accounts shape: the only place `tasks` is actually exposed.
+ACCOUNTS_PAYLOAD = {
+    "data": [
+        {
+            "id": PAGE_PAYLOAD["id"],
+            "name": PAGE_PAYLOAD["name"],
+            "tasks": ["MANAGE", "CREATE_CONTENT", "MODERATE", "ANALYZE", "ADVERTISE"],
+        }
+    ]
 }
 
 DEBUG_TOKEN_PAYLOAD_FULL_SCOPES = {
@@ -100,16 +119,21 @@ DEBUG_TOKEN_PAYLOAD_FULL_SCOPES = {
 }
 
 
+def full_routes(page=None, accounts=None, debug=None, identity=None):
+    return {
+        "/me/accounts": accounts if accounts is not None else ACCOUNTS_PAYLOAD,
+        "/me": identity if identity is not None else {"id": "1000000000001", "name": "MOLOSOC EN"},
+        f"/{PAGE_PAYLOAD['id']}": page if page is not None else PAGE_PAYLOAD,
+        "/debug_token": debug if debug is not None else DEBUG_TOKEN_PAYLOAD_FULL_SCOPES,
+    }
+
+
 # --------------------------------------------------------------------------
 # Read-only guarantee
 # --------------------------------------------------------------------------
 
 def test_every_request_is_a_get_to_a_read_endpoint(monkeypatch):
-    fake_get, calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC EN"},
-        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
-        "/debug_token": DEBUG_TOKEN_PAYLOAD_FULL_SCOPES,
-    })
+    fake_get, calls = make_fake_get(full_routes())
     monkeypatch.setattr(mct, "_http_get", fake_get)
 
     mct.check_language(
@@ -121,7 +145,7 @@ def test_every_request_is_a_get_to_a_read_endpoint(monkeypatch):
     for url, _params in calls:
         for endpoint in write_endpoints:
             assert endpoint not in url, f"unexpected write-shaped call: {url}"
-    assert len(calls) == 3  # /me, /{page}, /debug_token — nothing else
+    assert len(calls) == 4  # /me, /{page}, /me/accounts, /debug_token — nothing else
 
 
 # --------------------------------------------------------------------------
@@ -129,11 +153,7 @@ def test_every_request_is_a_get_to_a_read_endpoint(monkeypatch):
 # --------------------------------------------------------------------------
 
 def test_token_never_appears_in_printed_output(monkeypatch):
-    fake_get, _calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC EN"},
-        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
-        "/debug_token": DEBUG_TOKEN_PAYLOAD_FULL_SCOPES,
-    })
+    fake_get, _calls = make_fake_get(full_routes())
     monkeypatch.setattr(mct, "_http_get", fake_get)
 
     result = mct.check_language(
@@ -194,12 +214,8 @@ def test_unconfigured_language_with_require_flag_fails(monkeypatch, capsys):
 # --------------------------------------------------------------------------
 
 def test_ig_pairing_mismatch_fails():
-    fake_get, _calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC EN"},
-        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
-    })
+    fake_get, _calls = make_fake_get(full_routes())
 
-    import types
     original = mct._http_get
     mct._http_get = fake_get
     try:
@@ -215,10 +231,7 @@ def test_ig_pairing_mismatch_fails():
 
 
 def test_ig_pairing_match_passes(monkeypatch):
-    fake_get, _calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC EN"},
-        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
-    })
+    fake_get, _calls = make_fake_get(full_routes())
     monkeypatch.setattr(mct, "_http_get", fake_get)
 
     result = mct.check_language(
@@ -231,16 +244,122 @@ def test_ig_pairing_match_passes(monkeypatch):
 
 def test_no_linked_instagram_account_warns(monkeypatch):
     page_no_ig = {**PAGE_PAYLOAD, "instagram_business_account": None}
-    fake_get, _calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC EN"},
-        f"/{page_no_ig['id']}": page_no_ig,
-    })
+    fake_get, _calls = make_fake_get(full_routes(page=page_no_ig))
     monkeypatch.setattr(mct, "_http_get", fake_get)
 
     result = mct.check_language("en", page_no_ig["id"], FAKE_TOKEN_EN)
 
     assert result["ok"] is True  # no expectation set, so no failure — just a warning
     assert any("no linked Instagram" in w for w in result["warnings"])
+
+
+# --------------------------------------------------------------------------
+# Page tasks: must come from /me/accounts, never from /{page-id} directly
+# --------------------------------------------------------------------------
+
+def test_page_node_request_never_asks_for_tasks_field(monkeypatch):
+    """Regression test for the exact Meta error this fixes:
+    "(#100) Tried accessing nonexisting field (tasks)". `tasks` only exists
+    on the /me/accounts list shape, never on the Page node itself."""
+    seen_page_fields = []
+
+    def fake_get(url, params):
+        if "/me/accounts" in url:
+            return FakeResponse(ACCOUNTS_PAYLOAD)
+        if PAGE_PAYLOAD["id"] in url:
+            seen_page_fields.append(params.get("fields", ""))
+            return FakeResponse(PAGE_PAYLOAD)
+        if "/me" in url:
+            return FakeResponse({"id": "1", "name": "x"})
+        raise AssertionError(f"unexpected request to {url}")
+
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+    mct.check_language("en", PAGE_PAYLOAD["id"], FAKE_TOKEN_EN)
+
+    assert seen_page_fields, "the page node was never queried"
+    assert "tasks" not in seen_page_fields[0]
+
+
+def test_page_tasks_are_read_from_me_accounts_and_matched_by_id(monkeypatch):
+    fake_get, _calls = make_fake_get(full_routes())
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+
+    result = mct.check_language("en", PAGE_PAYLOAD["id"], FAKE_TOKEN_EN)
+
+    assert result["page_tasks"] == ACCOUNTS_PAYLOAD["data"][0]["tasks"]
+
+
+def test_page_not_in_me_accounts_warns_but_does_not_fail(monkeypatch):
+    """A System User whose Page asset assignment doesn't include this Page
+    should get a clear warning, not a hard failure — the Page and IG
+    pairing are still independently confirmed by the direct node check."""
+    empty_accounts = {"data": []}
+    fake_get, _calls = make_fake_get(full_routes(accounts=empty_accounts))
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+
+    result = mct.check_language("en", PAGE_PAYLOAD["id"], FAKE_TOKEN_EN)
+
+    assert result["page_tasks"] == []
+    assert any("did not appear in this token's /me/accounts" in w for w in result["warnings"])
+
+
+def test_me_accounts_failure_does_not_block_debug_token():
+    """The actual bug being fixed: check_language used to return early on
+    any page-tasks-shaped failure, which meant /debug_token (and therefore
+    the whole capability matrix) never ran even when a valid
+    META_APP_ID_*/META_APP_SECRET_* pair was supplied. A failure here must
+    only produce a warning and empty page_tasks, then continue."""
+    def fake_get(url, params):
+        if "/debug_token" in url:
+            return FakeResponse(DEBUG_TOKEN_PAYLOAD_FULL_SCOPES)
+        if "/me/accounts" in url:
+            return FakeResponse({"error": {"message": "temporary", "code": 1}}, status_code=500)
+        if PAGE_PAYLOAD["id"] in url:
+            return FakeResponse(PAGE_PAYLOAD)
+        if "/me" in url:
+            return FakeResponse({"id": "1", "name": "x"})
+        raise AssertionError(f"unexpected request to {url}")
+
+    original = mct._http_get
+    mct._http_get = fake_get
+    try:
+        result = mct.check_language(
+            "en", PAGE_PAYLOAD["id"], FAKE_TOKEN_EN,
+            app_id="999", app_secret=FAKE_APP_SECRET,
+        )
+    finally:
+        mct._http_get = original
+
+    assert "debug_token" in result  # /debug_token DID run despite the /me/accounts failure
+    assert any("/me/accounts lookup failed" in w for w in result["warnings"])
+    # Instagram capability doesn't depend on page tasks at all, so it must
+    # resolve to a confirmed YES even though page tasks are unknown here.
+    assert result["capabilities"]["instagram_image_post"] is True
+    # Facebook capability DOES depend on page tasks (CREATE_CONTENT), which
+    # are unavailable here, so it must resolve to a confirmed NO — not
+    # UNKNOWN, since scopes themselves were successfully confirmed.
+    assert result["capabilities"]["facebook_image_post"] is False
+
+
+def test_full_success_all_capabilities_confirmed_true(monkeypatch):
+    """End-to-end happy path: page reachable, page tasks matched via
+    /me/accounts, IG paired, scopes confirmed via /debug_token -> every
+    capability resolves to a definite YES, not UNKNOWN."""
+    fake_get, _calls = make_fake_get(full_routes())
+    monkeypatch.setattr(mct, "_http_get", fake_get)
+
+    result = mct.check_language(
+        "en", PAGE_PAYLOAD["id"], FAKE_TOKEN_EN,
+        app_id="999", app_secret=FAKE_APP_SECRET,
+    )
+
+    assert result["ok"] is True
+    assert result["capabilities"] == {
+        "facebook_image_post": True,
+        "facebook_reels": True,
+        "instagram_image_post": True,
+        "instagram_reels": True,
+    }
 
 
 # --------------------------------------------------------------------------
@@ -336,10 +455,12 @@ def test_debug_token_call_uses_each_languages_own_app_credentials(monkeypatch):
         if "/debug_token" in url:
             seen_auth_tokens.append(params.get("access_token"))
             return FakeResponse(DEBUG_TOKEN_PAYLOAD_FULL_SCOPES)
-        if "/me" in url:
-            return FakeResponse({"id": "1000000000001", "name": "MOLOSOC CZ"})
+        if "/me/accounts" in url:
+            return FakeResponse(ACCOUNTS_PAYLOAD)
         if PAGE_PAYLOAD["id"] in url:
             return FakeResponse(PAGE_PAYLOAD)
+        if "/me" in url:
+            return FakeResponse({"id": "1000000000001", "name": "MOLOSOC CZ"})
         raise AssertionError(f"unexpected request to {url}")
 
     monkeypatch.setattr(mct, "_http_get", fake_get)
@@ -361,11 +482,7 @@ def test_main_treats_cz_and_en_as_fully_independent(monkeypatch, capsys):
     monkeypatch.setenv("META_APP_ID_CZ", "1811329706700638")
     monkeypatch.setenv("META_APP_SECRET_CZ", "cz-only-secret")
 
-    fake_get, calls = make_fake_get({
-        "/me": {"id": "1000000000001", "name": "MOLOSOC CZ"},
-        f"/{PAGE_PAYLOAD['id']}": PAGE_PAYLOAD,
-        "/debug_token": DEBUG_TOKEN_PAYLOAD_FULL_SCOPES,
-    })
+    fake_get, calls = make_fake_get(full_routes(identity={"id": "1000000000001", "name": "MOLOSOC CZ"}))
     monkeypatch.setattr(mct, "_http_get", fake_get)
 
     exit_code = mct.main(["--lang", "both"])
