@@ -1,0 +1,19 @@
+{
+  "_comment": "Image-specific copy only — no layout/position/size here, that all lives in layouts.json. Keyed by image id so a post's copy can only ever come from its own matching id. accentLineIndex is the 0-based headline line rendered in the locked accent color instead of the locked headline color — usually the last line, for a 'building to one emphasized word/phrase' rhythm, but that's a convention, not a rule.",
+
+  "PRODUCT_001": {
+    "headline": ["Made for", "the mornings", "you actually get."],
+    "accentLineIndex": 2,
+    "supporting": "Simple enough to reach for before coffee."
+  },
+  "PRODUCT_002": {
+    "headline": ["Small routines.", "Real", "difference."],
+    "accentLineIndex": 2,
+    "supporting": "A little consistency goes further than a lot of effort."
+  },
+  "PRODUCT_003": {
+    "headline": ["Quiet by", "design.", "Not by accident."],
+    "accentLineIndex": 2,
+    "supporting": "Every detail earns its place, or it isn't there."
+  }
+}

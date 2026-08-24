@@ -1,0 +1,243 @@
+import path from 'node:path';
+import { measureWidth } from './textMetrics.mjs';
+
+// Approximate ascent-to-em ratio shared by most serif/sans display fonts —
+// used only to convert a "top of visual box" y-coordinate (how every
+// position in layouts.json is authored) into the SVG baseline the renderer
+// actually draws at. This is not a layout decision; every text box position
+// in this module comes verbatim from config. If your headline font's real
+// ascent/descent differs noticeably, measure it once (fontkit exposes
+// `font.ascent` / `font.unitsPerEm`) and adjust this constant — see
+// references/font-metrics.md.
+const BASELINE_OFFSET_FACTOR = 0.82;
+
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+class LayoutViolation extends Error {}
+
+function fail(postId, message) {
+  throw new LayoutViolation(`${postId}: ${message}`);
+}
+
+/**
+ * Builds the transparent-background SVG overlay for one post, using ONLY
+ * fixed values from config/design-system.json (fonts/colors/weights, locked
+ * globally) and config/layouts.json (position/size, authored per image).
+ *
+ * There is no shrink-to-fit, no automatic safe-zone calculation, and no
+ * color/font derived from the photo anywhere in this module. Every
+ * measurement is checked against hard boundaries — the moment any of them is
+ * violated, this throws instead of adjusting anything. That is the point:
+ * a layout that doesn't fit is a layout to fix by hand in config, not a
+ * render to quietly degrade. See SKILL.md "Why fail-fast, not shrink-to-fit"
+ * for the reasoning.
+ *
+ * A headline's lines normally share one `headlineFontSize`. A layout may
+ * instead set `headlineLineSizes` (one size per line) for a deliberate
+ * editorial size contrast (a small "kicker" lead-in building to one large
+ * emphasis line) — and `headlineLineGaps` (length = lines.length - 1) to add
+ * extra breathing room before specific lines. Both are hand-authored per
+ * layout, never derived.
+ *
+ * A layout may also set `headlineLinesOverride` / `accentLineIndexOverride`
+ * to re-break the SAME copy words across different lines without touching
+ * the copy file, and `supportLinesOverride` to wrap the supporting line —
+ * buildOverlaySvg only checks that supportLinesOverride reconstructs the
+ * exact copy sentence (see the check below); render.mjs is what wires
+ * headlineLinesOverride in from the layout onto the copy object.
+ */
+export function buildOverlaySvg({ postId, copy, layout, designSystem, canvasWidth, canvasHeight, socialDir }) {
+  const pad = designSystem.minEdgePadding;
+  const colors = designSystem.colors;
+  const headlineFontPath = path.join(socialDir, designSystem.fonts.headline.file);
+  const supportFontPaths = designSystem.fonts.support.files.map((f) => path.join(socialDir, f));
+  const wordmarkFontPath = path.join(socialDir, designSystem.fonts.wordmark.file);
+
+  const { headline, accentLineIndex, supporting } = copy;
+  const { textBox, headlineLineHeight, supportFontSize, supportPosition, dividerPosition, brandPosition } = layout;
+
+  const lineSizes = layout.headlineLineSizes ?? headline.map(() => layout.headlineFontSize);
+  const lineGaps = layout.headlineLineGaps ?? headline.map(() => 0); // gaps[i] = extra px before line i+1
+  if (lineSizes.length !== headline.length) {
+    fail(postId, `headlineLineSizes has ${lineSizes.length} entries but headline has ${headline.length} lines.`);
+  }
+
+  // ---- 1. Headline must fit inside its own configured text box. ----
+  const headlineLineWidths = headline.map((l, i) => measureWidth(headlineFontPath, l, lineSizes[i], 0));
+  const headlineBlockWidth = Math.max(...headlineLineWidths);
+  const lineAdvances = lineSizes.map((s) => s * headlineLineHeight);
+  const headlineBlockHeight =
+    lineAdvances.reduce((a, b) => a + b, 0) + lineGaps.slice(0, headline.length - 1).reduce((a, b) => a + b, 0);
+
+  headline.forEach((line, i) => {
+    if (headlineLineWidths[i] > textBox.width) {
+      fail(
+        postId,
+        `headline line ${i + 1} ("${line}") is ${headlineLineWidths[i].toFixed(1)}px wide, wider than its ` +
+          `configured text box (${textBox.width}px). No glyph may extend outside its text box — widen textBox.width ` +
+          `or shorten the copy/font size in layouts.json.`,
+      );
+    }
+  });
+  if (headlineBlockHeight > textBox.maxHeight) {
+    fail(
+      postId,
+      `headline block is ${headlineBlockHeight.toFixed(1)}px tall, taller than its configured maxHeight ` +
+        `(${textBox.maxHeight}px). Increase maxHeight or reduce headline font sizes in layouts.json — never ` +
+        `silently shrink the headline to make this pass.`,
+    );
+  }
+
+  // ---- 2. The text box itself, and every other element, must clear the ----
+  // ---- global minimum edge padding — on all four sides of the canvas for ----
+  // ---- a full-bleed template, or on all four sides of the text panel/band ----
+  // ---- for a split (side/bottom) template. A split-template layout sets ----
+  // `textAreaBounds` (the panel/band's own rect, in canvas coordinates) so
+  // text is validated against ITS area, not the whole canvas — this is what
+  // guarantees text can never reach the photo region: the check fails
+  // before the photo panel's edge, not just the canvas edge.
+  const area = layout.textAreaBounds ?? { x: 0, y: 0, width: canvasWidth, height: canvasHeight };
+  const checkPadding = (label, left, top, right, bottom) => {
+    if (left < area.x + pad) fail(postId, `${label} is ${(area.x + pad - left).toFixed(1)}px inside the left ${pad}px padding limit.`);
+    if (top < area.y + pad) fail(postId, `${label} is ${(area.y + pad - top).toFixed(1)}px inside the top ${pad}px padding limit.`);
+    if (right > area.x + area.width - pad)
+      fail(postId, `${label} overflows the text area's right edge by ${(right - (area.x + area.width - pad)).toFixed(1)}px (min ${pad}px padding).`);
+    if (bottom > area.y + area.height - pad)
+      fail(postId, `${label} overflows the text area's bottom edge by ${(bottom - (area.y + area.height - pad)).toFixed(1)}px (min ${pad}px padding).`);
+  };
+
+  checkPadding('headline text box', textBox.x, textBox.y, textBox.x + textBox.width, textBox.y + headlineBlockHeight);
+
+  // A layout may set `supportLinesOverride` to wrap the supporting copy across
+  // several lines (e.g. when one photo's clean zone isn't wide enough for it
+  // as a single line, or a translation runs longer than the source) — it
+  // must reconstruct the exact copy sentence, just broken differently, never
+  // different words. This check is what makes that safe to allow.
+  const supportLines = layout.supportLinesOverride ?? [supporting];
+  const normalizedJoin = supportLines.join(' ').replace(/\s+/g, ' ').trim();
+  const normalizedSupporting = supporting.replace(/\s+/g, ' ').trim();
+  if (normalizedJoin !== normalizedSupporting) {
+    fail(
+      postId,
+      `supportLinesOverride ("${normalizedJoin}") does not reconstruct the exact supporting copy ` +
+        `("${normalizedSupporting}") — it may only change where it wraps, not the words.`,
+    );
+  }
+  const supportLineHeight = layout.supportLineHeight ?? 1.15;
+  const supportLineWidths = supportLines.map((l) =>
+    measureWidth(supportFontPaths[0], l, supportFontSize, designSystem.supportLetterSpacing),
+  );
+  const supportWidth = Math.max(...supportLineWidths);
+  const supportLineAdvance = supportFontSize * supportLineHeight;
+  // Single line keeps the original height (no internal leading needed) so
+  // every existing single-line layout's boundary check is unaffected.
+  const supportHeight = supportLines.length === 1 ? supportFontSize : supportLineAdvance * supportLines.length;
+  checkPadding(
+    'supporting text',
+    supportPosition.x,
+    supportPosition.y,
+    supportPosition.x + supportWidth,
+    supportPosition.y + supportHeight,
+  );
+
+  const dividerWidth = layout.dividerWidth ?? designSystem.dividerWidth;
+  const dividerThickness = designSystem.dividerThickness;
+  checkPadding(
+    'divider',
+    dividerPosition.x,
+    dividerPosition.y,
+    dividerPosition.x + dividerWidth,
+    dividerPosition.y + dividerThickness,
+  );
+
+  const wordmarkFontSize = layout.wordmarkFontSize ?? designSystem.wordmarkFontSize;
+  const wordmarkWidth = measureWidth(wordmarkFontPath, designSystem.wordmarkText, wordmarkFontSize, designSystem.wordmarkLetterSpacing);
+  const wordmarkHeight = wordmarkFontSize * 1.1;
+  checkPadding(
+    'brand wordmark',
+    brandPosition.x,
+    brandPosition.y,
+    brandPosition.x + wordmarkWidth,
+    brandPosition.y + wordmarkHeight,
+  );
+
+  // ---- 3. Render. Every position below is the config value verbatim. ----
+  const textEls = [];
+  const headlineInkRegions = [];
+  let cursorY = textBox.y;
+  headline.forEach((line, i) => {
+    if (i > 0) cursorY += lineGaps[i - 1] ?? 0;
+    const size = lineSizes[i];
+    const baseline = cursorY + size * BASELINE_OFFSET_FACTOR;
+    const color = i === accentLineIndex ? colors.accent : colors.headline;
+    textEls.push(
+      `<text x="${textBox.x}" y="${baseline.toFixed(2)}" font-family="${designSystem.fonts.headline.family}" font-weight="${designSystem.headlineFontWeight}" font-size="${size}" fill="${color}">${escapeXml(line)}</text>`,
+    );
+    headlineInkRegions.push({ x: textBox.x, y: cursorY, width: headlineLineWidths[i], height: lineAdvances[i] });
+    cursorY += lineAdvances[i];
+  });
+
+  const supportInkRegions = [];
+  let supportCursorY = supportPosition.y;
+  supportLines.forEach((line, i) => {
+    const baseline = supportCursorY + supportFontSize * BASELINE_OFFSET_FACTOR;
+    textEls.push(
+      `<text x="${supportPosition.x}" y="${baseline.toFixed(2)}" font-family="${designSystem.fonts.support.family}" font-weight="${designSystem.supportFontWeight}" font-size="${supportFontSize}" letter-spacing="${designSystem.supportLetterSpacing}em" fill="${colors.support}">${escapeXml(line)}</text>`,
+    );
+    const lineAdvance = supportLines.length === 1 ? supportFontSize : supportLineAdvance;
+    supportInkRegions.push({ x: supportPosition.x, y: supportCursorY, width: supportLineWidths[i], height: lineAdvance });
+    supportCursorY += lineAdvance;
+  });
+
+  const dividerY = dividerPosition.y + dividerThickness / 2;
+  textEls.push(
+    `<line x1="${dividerPosition.x}" y1="${dividerY.toFixed(2)}" x2="${dividerPosition.x + dividerWidth}" y2="${dividerY.toFixed(2)}" stroke="${colors.divider}" stroke-width="${dividerThickness}"/>`,
+  );
+
+  const wordmarkBaseline = brandPosition.y + wordmarkFontSize * BASELINE_OFFSET_FACTOR;
+  textEls.push(
+    `<text x="${brandPosition.x}" y="${wordmarkBaseline.toFixed(2)}" font-family="${designSystem.fonts.wordmark.family}" font-weight="${designSystem.wordmarkFontWeight}" font-size="${wordmarkFontSize}" letter-spacing="${designSystem.wordmarkLetterSpacing}em" fill="${colors.wordmark}">${escapeXml(designSystem.wordmarkText)}</text>`,
+  );
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasWidth}" height="${canvasHeight}" viewBox="0 0 ${canvasWidth} ${canvasHeight}">
+${textEls.join('\n')}
+</svg>`;
+
+  return {
+    svg,
+    fontFiles: [headlineFontPath, ...supportFontPaths, wordmarkFontPath],
+    report: {
+      headlineLineSizes: lineSizes,
+      headlineLineHeight,
+      headlineBlockWidth,
+      headlineBlockHeight,
+      textBox,
+      supportFontSize,
+      supportPosition,
+      supportWidth,
+      dividerPosition,
+      dividerWidth,
+      brandPosition,
+      wordmarkFontSize,
+      wordmarkWidth,
+    },
+    // Regions with actual ink, for the post-render "did our font really draw
+    // something" sanity check in render.mjs (guards against a silent font
+    // substitution/load failure, or a missing glyph, producing blank text
+    // that would otherwise pass every geometric check above). One region
+    // per headline line (sizes can differ a lot between lines) plus support
+    // and wordmark.
+    inkRegions: [
+      ...headlineInkRegions,
+      ...supportInkRegions,
+      { x: brandPosition.x, y: brandPosition.y, width: wordmarkWidth, height: wordmarkHeight },
+    ],
+  };
+}

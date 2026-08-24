@@ -1,0 +1,59 @@
+{
+  "_comment": "Manually authored per-image, per-variant layout. Every crop and text position here is chosen by looking at that specific photo and measuring its actual negative space and subject/product boundaries — nothing here is computed by the renderer. Each top-level key is an image id (must match a key in copy.json); each image has a `master` filename and one or more named variants (e.g. `final`, or `v1`/`v2` while comparing options, or `finalFr` for a locale's own sizing — see references/localization.md). `_notes` fields are free text for a human, ignored by the renderer, and are the right place to record WHY a crop/size was chosen, not just what it is. IMPORTANT: the headlineFontSize values below were measured (via textMetrics.mjs's measureWidth, not guessed) against one specific placeholder headline font at these exact textBox widths — they are a worked example of the fitting PROCESS, not universal numbers. The moment you swap in your real headline font, re-measure every size the same way; a different font's glyphs will be wider or narrower at the same point size.",
+
+  "PRODUCT_001": {
+    "_notes": "TEMPLATE_SIDE example. Master is 1200x1500. Subject sits fairly centered/vertical in the frame, so a narrower photo crop still reads well. photoPanelWidthRatio=0.6 on a 1200-wide master gives a 720px photo panel (photoCrop.width) and a 480px panel (canvasWidth-photoPanelWidth); photoCrop.x=180 was chosen by eye to keep the subject inside that 720px window while trimming background on both sides.",
+    "master": "PRODUCT_001_example-scene.png",
+    "final": {
+      "template": "A",
+      "photoCrop": { "x": 180, "y": 0, "width": 720, "height": 1500 },
+      "textAreaBounds": { "x": 0, "y": 0, "width": 480, "height": 1500 },
+      "textBox": { "x": 55, "y": 560, "width": 370, "maxHeight": 260 },
+      "headlineFontSize": 49,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 17,
+      "supportPosition": { "x": 55, "y": 790 },
+      "dividerWidth": 60,
+      "dividerPosition": { "x": 55, "y": 838 },
+      "brandPosition": { "x": 55, "y": 858 },
+      "wordmarkFontSize": 12
+    }
+  },
+
+  "PRODUCT_002": {
+    "_notes": "TEMPLATE_BOTTOM example. Master is 1200x1500. Composition needs full width to read (subjects/props on both sides), so the photo keeps its full width and only the bottom band is text. photoBandHeightRatio=0.67 gives a photoCrop.height of 1005 (round(1500*0.67)); the panel below (1500-1005=495px tall) holds the text stack.",
+    "master": "PRODUCT_002_example-scene.png",
+    "final": {
+      "template": "C",
+      "photoCrop": { "x": 0, "y": 0, "width": 1200, "height": 1005 },
+      "textAreaBounds": { "x": 0, "y": 1005, "width": 1200, "height": 495 },
+      "textBox": { "x": 55, "y": 1065, "width": 640, "maxHeight": 320 },
+      "headlineFontSize": 94,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 21,
+      "supportPosition": { "x": 55, "y": 1350 },
+      "dividerWidth": 84,
+      "dividerPosition": { "x": 55, "y": 1398 },
+      "brandPosition": { "x": 55, "y": 1414 },
+      "wordmarkFontSize": 15
+    }
+  },
+
+  "PRODUCT_003": {
+    "_notes": "TEMPLATE_FULL example (used sparingly — only when a photo genuinely has large clean negative space the text can sit in without coming near the subject/product). `crop` here is a plain lossless extract of the master, not a template-ratio panel — its width/height just need to satisfy the canvas aspect check in design-system.json.",
+    "master": "PRODUCT_003_example-scene.png",
+    "final": {
+      "template": "B",
+      "crop": { "x": 0, "y": 0, "width": 1200, "height": 1500 },
+      "textBox": { "x": 55, "y": 55, "width": 520, "maxHeight": 320 },
+      "headlineFontSize": 71,
+      "headlineLineHeight": 0.9,
+      "supportFontSize": 24,
+      "supportPosition": { "x": 55, "y": 340 },
+      "dividerWidth": 90,
+      "dividerPosition": { "x": 55, "y": 392 },
+      "brandPosition": { "x": 55, "y": 414 },
+      "wordmarkFontSize": 16
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "_comment": "Locked, global, production design system. Every value here applies to every post identically. Nothing in this file is derived from an image, computed automatically, or sampled from a photo — it is fixed by hand and stays fixed. Per-post layout (crop, text position, sizes) lives in config/layouts.json, never here.",
+
+  "canvas": {
+    "aspect": [4, 5],
+    "aspectTolerance": 0.02,
+    "_note": "Each master's own dimensions are preserved exactly. This is only a sanity check that a master is still close to the target aspect ratio — never a resize/crop target. Swap [4, 5] for whatever ratio your platform wants (e.g. [1, 1] for square, [9, 16] for a Story)."
+  },
+
+  "minEdgePadding": 55,
+  "_minEdgePadding_note": "The one number that decides 'does this fit' everywhere in the system. Pick it based on your canvas size and smallest planned font — see references/templates.md.",
+
+  "cornerRadius": 32,
+  "_cornerRadius_note": "0 to disable rounded corners entirely.",
+
+  "fonts": {
+    "headline": { "family": "REPLACE_WITH_HEADLINE_FONT", "file": "fonts/HeadlineFont-Regular.ttf" },
+    "support": { "family": "REPLACE_WITH_BODY_FONT", "files": ["fonts/BodyFont-Regular.ttf", "fonts/BodyFont-Medium.ttf", "fonts/BodyFont-SemiBold.ttf"] },
+    "wordmark": { "family": "REPLACE_WITH_BODY_FONT", "file": "fonts/BodyFont-SemiBold.ttf" }
+  },
+  "_fonts_note": "Use the FULL-coverage release of each font (not a hand-trimmed Latin-only subset) if you will ever localize into a language with diacritics — see references/localization.md. Two font roles is the minimum (a display headline face + a workhorse body/UI face for support text and the wordmark); a third face for the wordmark is fine if your brand uses one.",
+
+  "headlineFontWeight": 400,
+  "supportFontWeight": 600,
+  "supportLetterSpacing": 0.015,
+  "wordmarkFontWeight": 700,
+  "wordmarkText": "BRANDNAME",
+  "wordmarkFontSize": 10,
+  "wordmarkLetterSpacing": 0.22,
+  "dividerThickness": 2,
+  "dividerWidth": 60,
+
+  "colors": {
+    "headline": "#171719",
+    "accent": "#E8D1A6",
+    "support": "#171719",
+    "wordmark": "#171719",
+    "divider": "#E8D1A6",
+    "panelBackground": "#F8F7F4"
+  },
+  "_colors_note": "Replace with your brand's real values — pull them from an existing design token file if one exists (a live site's CSS custom properties, a brand guide) rather than inventing new ones. 'accent' is the one color used to highlight a single headline line (see copy.json's accentLineIndex); 'panelBackground' is the solid color behind TEMPLATE_SIDE's panel and TEMPLATE_BOTTOM's band.",
+
+  "locked": {
+    "noBlur": true,
+    "noGradient": true,
+    "noBackgroundPanel": true,
+    "noShadow": true,
+    "noAutomaticColorSampling": true,
+    "noAutomaticFontSubstitution": true,
+    "noAutomaticSafeZoneCalculation": true,
+    "noAutoShrinkOnOverflow": true
+  },
+  "_locked_note": "Not read by any code — a checklist for a human (or a reviewing Claude) to confirm the finished system still honors the constraints it was built under. Delete flags that don't apply to your brief; don't add automation that would falsify one of these while it's still listed true.",
+
+  "templates": {
+    "_comment": "3 deterministic, reusable templates. The canvas is always the MASTER's own width/height (never resized/upscaled) — a real photo set often has more than one native size, so TEMPLATE_SIDE/TEMPLATE_BOTTOM panel geometry is stored as a RATIO of the master's own dimensions, not a fixed pixel size. A post's layout entry sets `template: \"A\"|\"B\"|\"C\"` and, for A/C, `photoCrop` (the region extracted from the master, in the MASTER's own pixel coordinates) — its width/height must exactly equal that master's own computed panel size (canvasWidth*photoPanelWidthRatio for A, canvasHeight*photoBandHeightRatio for C, each rounded) so no scaling is ever needed. Master files are never touched; only this derived, in-memory crop is composited onto a flat panelBackground canvas. See references/templates.md for when to choose which and how to pick the ratios for your own layout.",
+    "A": {
+      "_description": "TEMPLATE_SIDE — a solid panel of brand color on one side, the photo (cropped to fill) on the other. Text never touches the photo at all.",
+      "photoPanelWidthRatio": 0.6
+    },
+    "B": {
+      "_description": "TEMPLATE_FULL — text overlaid directly on the full photo. Only for a photo with genuinely large, clean negative space that the text will never come near a face/hands/product on; never forced onto a busy photo just because a batch 'needs variety'."
+    },
+    "C": {
+      "_description": "TEMPLATE_BOTTOM — the photo (cropped to fill) on top, a solid band of brand color below it. Text never touches the photo at all.",
+      "photoBandHeightRatio": 0.67
+    }
+  }
+}
