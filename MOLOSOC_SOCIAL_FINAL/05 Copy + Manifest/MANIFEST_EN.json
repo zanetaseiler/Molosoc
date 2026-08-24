@@ -1,0 +1,210 @@
+{
+  "set": "MOLOSOC EN social — full 20-post set",
+  "generatedFrom": "config/layouts.json + config/copy.json",
+  "templateSplit": {
+    "TEMPLATE_SIDE": 7,
+    "TEMPLATE_BOTTOM": 13
+  },
+  "posts": [
+    {
+      "post": "MOL_POST_001_EN",
+      "filename": "MOL_POST_001_EN.png",
+      "sourceMaster": "MOL_IMG_001_floor-journaling.png",
+      "sourceImageId": "MOL_IMG_001",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Care that / fits real / life.",
+      "accentLine": "life.",
+      "supporting": "Cream on. MOLOSOC on. Carry on."
+    },
+    {
+      "post": "MOL_POST_002_EN",
+      "filename": "MOL_POST_002_EN.png",
+      "sourceMaster": "MOL_IMG_002_yoga-mat-roll.png",
+      "sourceImageId": "MOL_IMG_002",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Care that / keeps up / with you.",
+      "accentLine": "with you.",
+      "supporting": "Your routine doesn’t have to stop."
+    },
+    {
+      "post": "MOL_POST_003_EN",
+      "filename": "MOL_POST_003_EN.png",
+      "sourceMaster": "MOL_IMG_003_reading-chair.png",
+      "sourceImageId": "MOL_IMG_003",
+      "template": "TEMPLATE_SIDE",
+      "headline": "A little care. / A little / quiet.",
+      "accentLine": "quiet.",
+      "supporting": "Some routines are worth slowing down for."
+    },
+    {
+      "post": "MOL_POST_004_EN",
+      "filename": "MOL_POST_004_EN.png",
+      "sourceMaster": "MOL_IMG_004_vacuuming-living-room.png",
+      "sourceImageId": "MOL_IMG_004",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Self-care / while life / happens.",
+      "accentLine": "happens.",
+      "supporting": "MOLOSOC fits into the day you already have."
+    },
+    {
+      "post": "MOL_POST_005_EN",
+      "filename": "MOL_POST_005_EN.png",
+      "sourceMaster": "MOL_IMG_005_kitchen-prep.png",
+      "sourceImageId": "MOL_IMG_005",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Simple care / fits right / in.",
+      "accentLine": "in.",
+      "supporting": "Wear MOLOSOC while real life keeps moving."
+    },
+    {
+      "post": "MOL_POST_006_EN",
+      "filename": "MOL_POST_006_EN.png",
+      "sourceMaster": "MOL_IMG_006_home-office.png",
+      "sourceImageId": "MOL_IMG_006",
+      "template": "TEMPLATE_SIDE",
+      "headline": "Your feet / work all / day too.",
+      "accentLine": "day too.",
+      "supporting": "Give them a little attention while you work."
+    },
+    {
+      "post": "MOL_POST_007_EN",
+      "filename": "MOL_POST_007_EN.png",
+      "sourceMaster": "MOL_IMG_007_armchair-coffee-book.png",
+      "sourceImageId": "MOL_IMG_007",
+      "template": "TEMPLATE_SIDE",
+      "headline": "Slow down. / Your feet / can too.",
+      "accentLine": "can too.",
+      "supporting": "A simple moment of everyday care."
+    },
+    {
+      "post": "MOL_POST_008_EN",
+      "filename": "MOL_POST_008_EN.png",
+      "sourceMaster": "MOL_IMG_008_kitchen-flowers.png",
+      "sourceImageId": "MOL_IMG_008",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Small rituals / matter / too.",
+      "accentLine": "too.",
+      "supporting": "A little care can still be part of the day."
+    },
+    {
+      "post": "MOL_POST_009_EN",
+      "filename": "MOL_POST_009_EN.png",
+      "sourceMaster": "MOL_IMG_009_armchair-cream.png",
+      "sourceImageId": "MOL_IMG_009",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Take a moment. / Keep / going.",
+      "accentLine": "going.",
+      "supporting": "Cream on. MOLOSOC on. Carry on."
+    },
+    {
+      "post": "MOL_POST_010_EN",
+      "filename": "MOL_POST_010_EN.png",
+      "sourceMaster": "MOL_IMG_010_window-bench-journaling.png",
+      "sourceImageId": "MOL_IMG_010",
+      "template": "TEMPLATE_SIDE",
+      "headline": "A quiet / moment / counts.",
+      "accentLine": "counts.",
+      "supporting": "Simple care for the in-between moments."
+    },
+    {
+      "post": "MOL_POST_011_EN",
+      "filename": "MOL_POST_011_EN.png",
+      "sourceMaster": "MOL_IMG_011_bathroom-cream-routine.png",
+      "sourceImageId": "MOL_IMG_011",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Care that / works with / your routine.",
+      "accentLine": "your routine.",
+      "supporting": "Slip on MOLOSOC and let care fit real life."
+    },
+    {
+      "post": "MOL_POST_012_EN",
+      "filename": "MOL_POST_012_EN.png",
+      "sourceMaster": "MOL_IMG_012_kitchen-island-slicing.png",
+      "sourceImageId": "MOL_IMG_012",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Simple care. / Nothing / complicated.",
+      "accentLine": "complicated.",
+      "supporting": "Your cream. MOLOSOC. Your day."
+    },
+    {
+      "post": "MOL_POST_013_EN",
+      "filename": "MOL_POST_013_EN.png",
+      "sourceMaster": "MOL_IMG_013_counter-cream-jar.png",
+      "sourceImageId": "MOL_IMG_013",
+      "template": "TEMPLATE_SIDE",
+      "headline": "Start with / the cream / you love.",
+      "accentLine": "you love.",
+      "supporting": "MOLOSOC helps keep it where you put it."
+    },
+    {
+      "post": "MOL_POST_014_EN",
+      "filename": "MOL_POST_014_EN.png",
+      "sourceMaster": "MOL_IMG_014_bedside-morning-coffee.png",
+      "sourceImageId": "MOL_IMG_014",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Good mornings / start with / small rituals.",
+      "accentLine": "small rituals.",
+      "supporting": "A little time for you — and your feet."
+    },
+    {
+      "post": "MOL_POST_015_EN",
+      "filename": "MOL_POST_015_EN.png",
+      "sourceMaster": "MOL_IMG_015_bathroom-relaxing.png",
+      "sourceImageId": "MOL_IMG_015",
+      "template": "TEMPLATE_SIDE",
+      "headline": "Care should / feel this / easy.",
+      "accentLine": "easy.",
+      "supporting": "Slip on. Settle in. Let the routine happen."
+    },
+    {
+      "post": "MOL_POST_016_EN",
+      "filename": "MOL_POST_016_EN.png",
+      "sourceMaster": "MOL_IMG_016_daybed-window-view.png",
+      "sourceImageId": "MOL_IMG_016",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Nothing to do / but let your / cream stay put.",
+      "accentLine": "cream stay put.",
+      "supporting": "MOLOSOC makes the waiting part easier."
+    },
+    {
+      "post": "MOL_POST_017_EN",
+      "filename": "MOL_POST_017_EN.png",
+      "sourceMaster": "MOL_IMG_017_feet-closeup-bench.png",
+      "sourceImageId": "MOL_IMG_017",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Made for / the cream / you already use.",
+      "accentLine": "you already use.",
+      "supporting": "A simple cover for a familiar routine."
+    },
+    {
+      "post": "MOL_POST_018_EN",
+      "filename": "MOL_POST_018_EN.png",
+      "sourceMaster": "MOL_IMG_018_sofa-relaxing.png",
+      "sourceImageId": "MOL_IMG_018",
+      "template": "TEMPLATE_SIDE",
+      "headline": "Put your / feet up. / Literally.",
+      "accentLine": "Literally.",
+      "supporting": "Cream on. MOLOSOC on. Time to relax."
+    },
+    {
+      "post": "MOL_POST_019_EN",
+      "filename": "MOL_POST_019_EN.png",
+      "sourceMaster": "MOL_IMG_019_watering-plants.png",
+      "sourceImageId": "MOL_IMG_019",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Care that / moves with / you.",
+      "accentLine": "you.",
+      "supporting": "Cream on. MOLOSOC on. Back to your day."
+    },
+    {
+      "post": "MOL_POST_020_EN",
+      "filename": "MOL_POST_020_EN.png",
+      "sourceMaster": "MOL_IMG_020_floor-reading-sheepskin.png",
+      "sourceImageId": "MOL_IMG_020",
+      "template": "TEMPLATE_BOTTOM",
+      "headline": "Care doesn’t / have to feel / like work.",
+      "accentLine": "like work.",
+      "supporting": "Make it part of the moments you already enjoy."
+    }
+  ]
+}
