@@ -21,6 +21,11 @@ on:
         required: false
         default: false
         type: boolean
+      expect_404_redirect:
+        description: "Require unknown URLs to still 301 to home (404 to Start active)"
+        required: false
+        default: true
+        type: boolean
 
 jobs:
   verify:
@@ -34,6 +39,7 @@ jobs:
           BASE: ${{ inputs.base_url }}
           EXPECTED: ${{ inputs.expected_urls }}
           EXPECT_NOINDEX: ${{ inputs.expect_noindex }}
+          EXPECT_404_REDIRECT: ${{ inputs.expect_404_redirect }}
         run: |
           set -uo pipefail
           fail=0
@@ -131,6 +137,26 @@ jobs:
           else
             echo "$rx $rm2" | grep -qi noindex && bad "production root is noindexed" || pass "production root not noindexed"
           fi
+
+          echo "================ 9. 404 behaviour outside sitemap routes ================"
+          probe="$BASE/molosoc-404-probe-please-do-not-create/"
+          n4=$(curl -sS -o /dev/null -D /tmp/n4.h -m 30 -w '%{http_code}' "$probe")
+          n4l=$(grep -i '^location:' /tmp/n4.h | tr -d '\r' | head -1)
+          n4x=$(grep -i '^x-redirect-by:' /tmp/n4.h | tr -d '\r' | head -1)
+          echo "probe $probe -> status $n4 location='$n4l' $n4x"
+          if [ "$EXPECT_404_REDIRECT" = "true" ]; then
+            if [ "$n4" = "301" ] && echo "$n4l" | grep -q "$BASE"; then
+              pass "404 to Start still redirects unknown URLs (301 -> home), untouched outside sitemap routes"
+            else
+              bad "404 behaviour changed: status $n4 location='$n4l' (expected 301 -> home)"
+            fi
+          else
+            info "404 redirect expectation disabled for this run"
+          fi
+
+          echo "================ 10. obsolete workaround gone ================"
+          sc=$(curl -sS -o /dev/null -m 30 -w '%{http_code}' "$BASE/wp-content/mu-plugins/sitemap-polylang-redirect-fix.php")
+          info "direct fetch of obsolete no-op returned $sc (server listing in the deploy job is authoritative)"
 
           echo "================ result ================"
           [ "$fail" = "0" ] && echo "ALL CHECKS PASSED" || { echo "::error::one or more checks failed"; exit 1; }

@@ -3,7 +3,7 @@ name: Deploy MU-Plugins to Staging
 # Staging counterpart of deploy-mu-plugins.yml, used to rehearse and verify
 # an MU-plugin on staging before it reaches production.
 #
-# Scope is deliberately ONE file: sitemap-polylang-redirect-fix.php. The
+# Scope is deliberately ONE file: sitemap-404-to-start-bypass.php. The
 # production workflow syncs all of site/mu-plugins/, which would also push
 # brevo-checkout-capture-shim.php onto staging — an unrelated change to a
 # server we are only using to verify the sitemap fix. So the file under
@@ -22,7 +22,7 @@ on:
   push:
     branches: [staging]
     paths:
-      - "site/mu-plugins/sitemap-polylang-redirect-fix.php"
+      - "site/mu-plugins/sitemap-404-to-start-bypass.php"
   workflow_dispatch: {}
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
       - name: Stage only the sitemap fix
         run: |
           mkdir -p build/mu-plugins
-          cp site/mu-plugins/sitemap-polylang-redirect-fix.php build/mu-plugins/
+          cp site/mu-plugins/sitemap-404-to-start-bypass.php build/mu-plugins/
           echo "--- files that will be uploaded ---"
           ls -la build/mu-plugins/
           n=$(ls -1 build/mu-plugins/ | wc -l)
@@ -60,7 +60,7 @@ jobs:
           curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
             "ftp://$HOST/wp-content/mu-plugins/" > /tmp/listing.txt
           cat /tmp/listing.txt
-          grep -q "sitemap-polylang-redirect-fix.php" /tmp/listing.txt \
+          grep -q "sitemap-404-to-start-bypass.php" /tmp/listing.txt \
             && echo "sitemap fix present on staging" \
             || { echo "::error::sitemap fix missing from staging listing"; exit 1; }
           # The upload set is already proven to be exactly one file by the
@@ -71,3 +71,9 @@ jobs:
           else
             echo "brevo shim absent from staging, as intended"
           fi
+          # The obsolete Polylang no-op must not survive anywhere.
+          if grep -q "sitemap-polylang-redirect-fix.php" /tmp/listing.txt; then
+            echo "::error::obsolete sitemap-polylang-redirect-fix.php still on staging"
+            exit 1
+          fi
+          echo "obsolete Polylang no-op absent from staging"
