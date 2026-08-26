@@ -8,16 +8,25 @@ wrong path — and a wrong path here means touching someone's live site. Every
 guard below exists for that reason:
 
   * the destination is DERIVED, never taken as free text: it is always
-    `${REPORTS_BASE_PATH}/molosoc`, with nothing else accepted;
+    `${REPORTS_BASE_PATH}/<client>[/<section>]` for a fixed client and a
+    fixed section, both chosen from closed sets (`ALLOWED_CLIENTS`,
+    `ALLOWED_SECTIONS`) — or, with `--directory`, exactly
+    `${REPORTS_BASE_PATH}` itself and nothing deeper;
   * the resolved path is refused if it escapes the base, is relative, or
     contains a WordPress directory name;
   * after connecting, the server's own working directory is compared against
     the expected path and the upload is abandoned unless they match — the
     check that matters, because it is the server's opinion of where we are
     rather than ours;
-  * only `molosoc/` is ever created, and only directly inside a base path
-    that must already exist;
+  * only one segment is ever created — a client directory, or a section
+    inside one that already exists — and only directly inside a base path
+    that must already exist; `--directory` creates nothing at all, since
+    the base path is the whole destination;
   * exactly one file is stored, and nothing is ever deleted or renamed.
+
+Default behaviour is unchanged from before this script published more than
+one client's reports: every caller that never passes `--client` still
+publishes to `molosoc`, exactly as before.
 
 WHY NOT FTPS
 
@@ -77,26 +86,57 @@ DEFAULT_SSH_HOST = "p3plmcpnl502709.prod.phx3.secureserver.net"
 
 DEFAULT_BASE_PATH = "/public_html/Trafficdom.com/reports"
 
-#: The single sub-directory this script may write to, under the base path.
+#: The sub-directory this script writes to by default, under the base path —
+#: unchanged from before this file supported more than one. Every existing
+#: caller (weekly-marketing-report.yml, publish-growth-report.yml,
+#: publish-email-report.yml) never passes `--client`, so this default is
+#: what keeps every one of them behaving exactly as before.
 PROJECT_DIR = "molosoc"
 
-#: Sub-sections of that directory this script may write to, one level deeper.
-#: A FIXED SET, never free text: `--section` is an argparse choice, so an
-#: unknown value is rejected by the parser before any path exists. Adding one is
-#: a visible edit here, and each entry is a directory somebody has to create.
-#:
-#: The Growth report lives in `molosoc/growth/` and the Email Marketing report
-#: in `molosoc/email-marketing/`. Both are published by this same script, over
-#: the same connection, with the same guards — deliberately, rather than by a
-#: second publisher that would have to re-earn all of them.
-#:
-#: They are siblings of each other and children of the Analytics report, which
-#: sits one level up and is never written by a sectioned run: with `--section`
-#: set, the path check REFUSES a destination ending in `molosoc`.
-ALLOWED_SECTIONS = ("growth", "email-marketing")
+#: Every client directory this script may write to, as a FIXED SET — the
+#: same discipline `ALLOWED_SECTIONS` below already applies one level
+#: shallower. `--client` is an argparse choice, so an unknown value is
+#: rejected by the parser before any path exists.
+ALLOWED_CLIENTS = ("molosoc", "zoe")
 
-#: Where that directory is served from. Used only to verify the deployment.
-PUBLIC_URL = "https://trafficdom.com/reports/molosoc/"
+#: Sub-sections each client directory may be written to, one level deeper —
+#: a FIXED SET PER CLIENT, never free text. Adding one is a visible edit
+#: here, and each entry is a directory somebody has to create.
+#:
+#: MOLOSOC: Analytics itself sits at the client root (no section) and is
+#: never written by a sectioned run — with `--section` set, the path check
+#: REFUSES a destination ending in `molosoc` alone. `growth`, `email-
+#: marketing` and `analytics` are its three siblings, all published by this
+#: same script, over the same connection, with the same guards —
+#: deliberately, rather than by a second publisher that would have to
+#: re-earn all of them. (`analytics` exists so the Analytics report can
+#: also be published to its own segment, `molosoc/analytics/`, once the
+#: client root moves to the Brand Overview — ADR 0043 in the Growth Engine
+#: repository.)
+#:
+#: ZOE: only `social` exists, because only the Social report is live for
+#: this client — see that repository's own `clients/zoe/channels.toml`.
+ALLOWED_SECTIONS = {
+    "molosoc": ("growth", "email-marketing", "analytics"),
+    "zoe": ("social",),
+}
+
+#: Every section across every client, for the CLI's own early rejection of
+#: an obviously-unknown value — the per-client check in `expected_tail`
+#: still applies afterwards, and is the one that actually decides whether a
+#: given section is valid for the given client.
+ALL_SECTIONS = tuple(sorted({s for secs in ALLOWED_SECTIONS.values() for s in secs}))
+
+#: Where a client's directory is served from. Used only to verify the
+#: deployment. Derived, like every other destination here.
+def public_url(section=None, client=PROJECT_DIR):
+    """The address the destination is served from. Derived, like the path."""
+    if client is None:
+        expected_tail(section, client)  # refuses section/client set with --directory
+        return "https://trafficdom.com/reports/"
+    expected_tail(section, client)  # refuses an unknown client/section before building a URL
+    base = f"https://trafficdom.com/reports/{client}/"
+    return f"{base}{section}/" if section else base
 
 #: The only filename it may store.
 REMOTE_FILENAME = "index.html"
@@ -113,32 +153,44 @@ class PublishError(RuntimeError):
     pass
 
 
-def public_url(section=None):
-    """The address the destination is served from. Derived, like the path."""
-    if section is None:
-        return PUBLIC_URL
-    expected_tail(section)  # refuses an unknown section before building a URL
-    return f"{PUBLIC_URL}{section}/"
-
-
 # --------------------------------------------------------------------------
 # Destination — derived, never free text
 # --------------------------------------------------------------------------
 
-def expected_tail(section=None):
-    """The segments a resolved path must end with. One place, three callers."""
-    if section is None:
-        return (PROJECT_DIR,)
-    if section not in ALLOWED_SECTIONS:
+def expected_tail(section=None, client=PROJECT_DIR):
+    """The segments a resolved path must end with. One place, three callers.
+
+    ``client=None`` is the one exception to "every destination is a client
+    directory": it means the bare reports directory itself — the TrafficDom
+    client directory page — and refuses outright if combined with a
+    section, since there is no sub-directory of the base path this script
+    may create beyond one client's own.
+    """
+    if client is None:
+        if section is not None:
+            raise PublishError(
+                "a section cannot be combined with client=None (the bare "
+                "reports directory) — there is no sectioned path beneath it."
+            )
+        return ()
+    if client not in ALLOWED_CLIENTS:
         raise PublishError(
-            f"unknown section {section!r}; expected one of "
-            f"{', '.join(ALLOWED_SECTIONS)}. Sections are a fixed set, not a "
+            f"unknown client {client!r}; expected one of "
+            f"{', '.join(ALLOWED_CLIENTS)}. Clients are a fixed set, not a "
             "path fragment."
         )
-    return (PROJECT_DIR, section)
+    if section is None:
+        return (client,)
+    if section not in ALLOWED_SECTIONS.get(client, ()):
+        raise PublishError(
+            f"unknown section {section!r} for client {client!r}; expected "
+            f"one of {', '.join(ALLOWED_SECTIONS.get(client, ())) or '(none)'}"
+            ". Sections are a fixed set, not a path fragment."
+        )
+    return (client, section)
 
 
-def check_remote_dir(target, base, section=None):
+def check_remote_dir(target, base, section=None, client=PROJECT_DIR):
     """Every rule a path must satisfy before it may be written to.
 
     Kept separate from how the path was produced, so that a path derived a
@@ -146,44 +198,55 @@ def check_remote_dir(target, base, section=None):
     rather than a weaker one.
 
     `section` deepens the destination by exactly one fixed segment. The tail
-    check is what makes that safe: with a section, a path ending in `molosoc`
-    is refused just as firmly as one ending anywhere else, so a run asked for
-    `growth` can never land on the Analytics report one level up.
+    check is what makes that safe: with a section, a path ending in the bare
+    client directory is refused just as firmly as one ending anywhere else,
+    so a run asked for `growth` can never land on the Analytics report one
+    level up. With `client=None` (the bare reports directory), the tail is
+    empty and `target` must equal `base` exactly — checked the same way,
+    through the same function, rather than a separate rule.
     """
     segments = [s for s in target.split("/") if s]
-    tail = expected_tail(section)
+    tail = expected_tail(section, client)
     if any(s in ("..", ".") for s in segments):
         raise PublishError(f"refusing a remote path with relative segments: {target!r}")
     for forbidden in FORBIDDEN_SEGMENTS:
         if forbidden in segments:
             raise PublishError(
                 f"refusing a remote path inside a WordPress directory: {target!r}")
-    if tuple(segments[-len(tail):]) != tail:
+    if tail:
+        if tuple(segments[-len(tail):]) != tail:
+            raise PublishError(
+                f"resolved path does not end in {'/'.join(tail)!r}: {target!r}")
+        if not target.startswith(base + "/"):
+            raise PublishError(f"resolved path escapes {base!r}: {target!r}")
+    elif target != base:
         raise PublishError(
-            f"resolved path does not end in {'/'.join(tail)!r}: {target!r}")
-    if not target.startswith(base + "/"):
-        raise PublishError(f"resolved path escapes {base!r}: {target!r}")
+            f"client=None (the bare reports directory) must resolve to "
+            f"exactly the base path {base!r}, got {target!r}"
+        )
 
     return target
 
 
-def resolve_remote_dir(base_path, section=None):
-    """`${REPORTS_BASE_PATH}/molosoc[/<section>]`, or refuse to produce a path.
+def resolve_remote_dir(base_path, section=None, client=PROJECT_DIR):
+    """`${REPORTS_BASE_PATH}/<client>[/<section>]`, or refuse to produce a
+    path.
 
-    The section is appended, never substituted: the Analytics report's own
-    directory remains the parent of every sectioned path, and no argument can
-    replace `molosoc` with something else.
+    The client and section are appended, never substituted: no argument can
+    replace a fixed segment with something else — `expected_tail` is the
+    only place that ever decides what the tail is.
     """
     base = (base_path or "").strip() or DEFAULT_BASE_PATH
     if not base.startswith("/"):
         raise PublishError(f"{BASE_PATH_ENV} must be an absolute path; got {base!r}.")
 
     base = base.rstrip("/")
-    target = "/".join((base,) + expected_tail(section))
-    return check_remote_dir(target, base, section)
+    tail = expected_tail(section, client)
+    target = "/".join((base,) + tail) if tail else base
+    return check_remote_dir(target, base, section, client)
 
 
-def home_relative(remote_dir, home, section=None):
+def home_relative(remote_dir, home, section=None, client=PROJECT_DIR):
     """The same derived path, read from inside the account's home directory.
 
     FTP and SSH disagree about what `/public_html/...` means on cPanel. FTP
@@ -201,10 +264,10 @@ def home_relative(remote_dir, home, section=None):
         return None
     if remote_dir.startswith(home + "/"):
         return None  # already inside the home directory; nothing to add
-    return check_remote_dir(home + remote_dir, home, section)
+    return check_remote_dir(home + remote_dir, home, section, client)
 
 
-def load_settings(env=None, section=None):
+def load_settings(env=None, section=None, client=PROJECT_DIR):
     env = os.environ if env is None else env
 
     user = (env.get(USER_ENV) or env.get(FALLBACK_USER_ENV) or "").strip()
@@ -225,8 +288,9 @@ def load_settings(env=None, section=None):
         "user": user,
         "key": key_material,
         "host_key": (env.get(HOST_KEY_ENV) or "").strip(),
-        "remote_dir": resolve_remote_dir(env.get(BASE_PATH_ENV), section),
+        "remote_dir": resolve_remote_dir(env.get(BASE_PATH_ENV), section, client),
         "section": section,
+        "client": client,
         "user_source": USER_ENV if (env.get(USER_ENV) or "").strip()
                        else FALLBACK_USER_ENV,
         "host_source": HOST_ENV if (env.get(HOST_ENV) or "").strip()
@@ -332,7 +396,8 @@ def connect(settings, port=SSH_PORT, out=None):
 # The upload
 # --------------------------------------------------------------------------
 
-def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None):
+def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None,
+                     client=PROJECT_DIR):
     """Change into the target directory, creating only its last segment.
 
     The base path must already exist. Building a missing tree is how a typo in
@@ -343,15 +408,39 @@ def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None):
     already, and the one segment that may be created is `growth`. The rule is
     unchanged; it simply applies one level deeper.
 
+    With `client=None` (the bare reports directory), there is no segment
+    left for this script to create at all: `remote_dir` IS the base path,
+    it must already exist, and this function only ever enters it —
+    `create` has no effect in this mode, the same "never build a missing
+    base" rule every other destination already follows.
+
     `home` allows the one alternative reading of the base path: the same
     folder addressed from inside the account's home directory, which is how
     SSH sees what FTP calls `/public_html/...`. It is tried only after the
     literal path fails, and it is checked by the same rules.
     """
+    if client is None:
+        candidates = [remote_dir]
+        rebased = home_relative(remote_dir, home, section, client)
+        if rebased is not None:
+            candidates.append(rebased)
+        for index, candidate in enumerate(candidates):
+            try:
+                sftp.chdir(candidate)
+                return sftp.getcwd()
+            except IOError as exc:
+                if index == len(candidates) - 1:
+                    raise PublishError(
+                        f"reports directory {remote_dir!r} does not exist or "
+                        f"is not reachable: {redact(exc)}"
+                        + (f" (also tried {candidate!r})"
+                           if candidate != remote_dir else "")
+                    ) from None
+
     base, _, leaf = remote_dir.rpartition("/")
 
     candidates = [base]
-    rebased = home_relative(remote_dir, home, section)
+    rebased = home_relative(remote_dir, home, section, client)
     if rebased is not None:
         candidates.append(rebased.rpartition("/")[0])
 
@@ -384,7 +473,7 @@ def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None):
     return sftp.getcwd()
 
 
-def verify_location(sftp, remote_dir, section=None):
+def verify_location(sftp, remote_dir, section=None, client=PROJECT_DIR):
     """Compare the SERVER's working directory with the one we mean to write to.
 
     A chroot, a symlink or a home-relative base path can each make a
@@ -394,11 +483,23 @@ def verify_location(sftp, remote_dir, section=None):
     The tail is the whole point when a section is in play: publishing the
     Growth report must fail rather than succeed if the server has put us in
     `molosoc` instead of `molosoc/growth`, because that directory holds the
-    live Analytics report.
+    live Analytics report. With `client=None` there is no tail at all, so an
+    exact match against the resolved base path is the only thing accepted —
+    there is no suffix that would make a wrong directory look right.
     """
     actual = (sftp.getcwd() or "").rstrip("/") or "/"
     expected = remote_dir.rstrip("/")
-    tail = "/" + "/".join(expected_tail(section))
+    tail_segments = expected_tail(section, client)
+
+    if not tail_segments:
+        if actual == expected:
+            return actual
+        raise PublishError(
+            f"remote directory check FAILED. Server reports {actual!r}, "
+            f"expected exactly {expected!r}. Nothing was uploaded."
+        )
+
+    tail = "/" + "/".join(tail_segments)
 
     # A chrooted account reports a path relative to its own root, so accept a
     # suffix match — but require the derived tail to be the final segment(s)
@@ -515,26 +616,47 @@ def describe_host_shape(host):
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
-        description="Upload index.html to the Molosoc report folder over SFTP.")
+        description="Upload index.html to a TrafficDom report destination over SFTP.")
     parser.add_argument("--file", default="site/index.html",
                         help="Local file to upload (default: site/index.html)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Resolve and print the destination without connecting")
     parser.add_argument("--port", type=int, default=SSH_PORT)
-    parser.add_argument("--section", choices=ALLOWED_SECTIONS, default=None,
+    parser.add_argument("--client", choices=ALLOWED_CLIENTS, default=None,
+                        help="Which client's report directory to publish "
+                             "into (default: molosoc — every existing "
+                             "caller that never passes this flag keeps "
+                             "publishing there). Mutually exclusive with "
+                             "--directory.")
+    parser.add_argument("--section", choices=ALL_SECTIONS, default=None,
                         help="Publish one level deeper, into this fixed "
-                             "sub-directory of the report folder (e.g. "
-                             "'growth'). Omit for the Analytics dashboard "
-                             "itself. Not a path: unknown values are rejected "
-                             "by the parser.")
-    return parser.parse_args(argv)
+                             "sub-directory of the client's report folder "
+                             "(e.g. 'growth'). Must be one of the sections "
+                             "that client actually has — checked again, more "
+                             "specifically, before any connection is made. "
+                             "Omit for that client's own report at its root.")
+    parser.add_argument("--directory", action="store_true",
+                        help="Publish the bare TrafficDom client directory "
+                             "page itself (reports/index.html), instead of "
+                             "any one client's report. Mutually exclusive "
+                             "with --client/--section.")
+    args = parser.parse_args(argv)
+    if args.directory:
+        if args.client is not None:
+            parser.error("--directory cannot be combined with --client")
+        if args.section is not None:
+            parser.error("--directory cannot be combined with --section")
+        args.client = None
+    elif args.client is None:
+        args.client = PROJECT_DIR
+    return args
 
 
 def main(argv=None):
     args = parse_args(argv)
 
     try:
-        settings = load_settings(section=args.section)
+        settings = load_settings(section=args.section, client=args.client)
     except PublishError as exc:
         print(f"FAIL {exc}", file=sys.stderr)
         return 1
@@ -545,8 +667,9 @@ def main(argv=None):
     print(f"User from:                 {settings['user_source']}")
     print(f"Resolved remote directory: {remote_dir}")
     print(f"Remote file:               {remote_dir}/{REMOTE_FILENAME}")
-    print(f"Section:                   {args.section or '(none — the dashboard)'}")
-    print(f"Public URL:                {public_url(args.section)}")
+    print(f"Client:                    {args.client or '(none — the client directory)'}")
+    print(f"Section:                   {args.section or '(none — the client root)'}")
+    print(f"Public URL:                {public_url(args.section, args.client)}")
 
     if args.dry_run:
         print("\nDry run — nothing was uploaded and no connection was made.")
@@ -557,10 +680,10 @@ def main(argv=None):
         return 1
     local_bytes = os.path.getsize(args.file)
 
-    client = None
+    ssh_client = None
     try:
-        client = connect(settings, port=args.port)
-        sftp = client.open_sftp()
+        ssh_client = connect(settings, port=args.port)
+        sftp = ssh_client.open_sftp()
 
         # Where the server puts us before we go anywhere: on cPanel this is
         # the account home, and it is what makes the FTP-style base path
@@ -573,10 +696,10 @@ def main(argv=None):
             print(f"Session home:              {home}")
 
         entered = enter_remote_dir(sftp, remote_dir, home=home,
-                                   section=args.section)
+                                   section=args.section, client=args.client)
         print(f"Entered: {entered}")
 
-        confirmed = verify_location(sftp, remote_dir, args.section)
+        confirmed = verify_location(sftp, remote_dir, args.section, args.client)
         print(f"PASS remote directory verified: {confirmed}")
 
         sent = upload(sftp, args.file)
@@ -627,8 +750,8 @@ def main(argv=None):
                   file=sys.stderr)
         return 1
     finally:
-        if client is not None:
-            client.close()
+        if ssh_client is not None:
+            ssh_client.close()
 
     print(f"\nOne file uploaded ({local_bytes:,} bytes). Nothing was deleted, "
           "renamed or moved.")

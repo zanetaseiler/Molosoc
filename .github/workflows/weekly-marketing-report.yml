@@ -233,6 +233,22 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
+      # A second, small artifact carrying the same site/index.html this run
+      # is about to publish below — so a later re-publish (a hand-edited
+      # BASE_PATH, a lost connection, a run of publish-analytics-report.yml
+      # against this exact run) can reuse the identical bytes rather than
+      # regenerating them, the same "one file, byte-identical" guarantee
+      # publish-growth-report.yml/publish-email-report.yml already give the
+      # Growth Engine's reports.
+      - name: Upload the dashboard HTML as its own artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: molosoc-dashboard-html
+          path: site/index.html
+          retention-days: 90
+          if-no-files-found: error
+
       # ---------------------------------------------------------------------
       # Publish the HTML view to the Trafficdom report host over SFTP.
       #
@@ -246,11 +262,17 @@ jobs:
       # its verification switched off. SSH authenticates by host key, which the
       # publisher prints on every run so it can be pinned via REPORTS_SSH_HOST_KEY.
       #
-      # The destination is derived in code as ${REPORTS_BASE_PATH}/molosoc and
-      # cannot be redirected from here. The dry run prints the resolved path
-      # without connecting; the uploader then re-checks the server's own working
-      # directory and abandons the upload unless it matches. That host also
-      # serves a live WordPress site, which is why the check is doubled.
+      # `--section analytics`: since the client-first cutover (ADR 0043 in
+      # the Growth Engine repository), reports/molosoc/ itself belongs to
+      # the Brand Overview (published separately, from that repository's
+      # own artifact, via publish-overview-report.yml) — this report's own
+      # home is now reports/molosoc/analytics/, one level deeper, the same
+      # way Growth and Email Marketing already publish one level deeper.
+      # The destination is still derived in code and cannot be redirected
+      # from here. The dry run prints the resolved path without connecting;
+      # the uploader then re-checks the server's own working directory and
+      # abandons the upload unless it matches. That host also serves a live
+      # WordPress site, which is why the check is doubled.
       #
       # One file, index.html. Nothing is deleted, renamed or moved.
       # ---------------------------------------------------------------------
@@ -260,7 +282,7 @@ jobs:
           REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
           REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
-        run: python3 automations/analytics/publish_dashboard.py --dry-run
+        run: python3 automations/analytics/publish_dashboard.py --section analytics --dry-run
 
       - name: Publish the dashboard over SFTP
         env:
@@ -270,7 +292,7 @@ jobs:
           REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
           REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
           REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
-        run: python3 automations/analytics/publish_dashboard.py --file site/index.html
+        run: python3 automations/analytics/publish_dashboard.py --section analytics --file site/index.html
 
       # Authenticated: the reports directory is password-protected on purpose.
       # A 401 remains a failure.
@@ -281,7 +303,7 @@ jobs:
       - name: Verify the page is live
         uses: ./.github/actions/verify-report
         with:
-          url: https://trafficdom.com/reports/molosoc/
+          url: https://trafficdom.com/reports/molosoc/analytics/
           marker: weekly marketing analysis
           label: the dashboard
           user: ${{ secrets.REPORT_BASIC_AUTH_USER }}

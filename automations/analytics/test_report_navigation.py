@@ -37,14 +37,19 @@ def test_the_client_the_tabs_use_is_the_directory_we_publish_to():
 
 
 def test_the_analytics_route_is_where_this_report_is_published():
-    assert td.report_path(dash.CLIENT, "analytics") == f"/reports/{pub.PROJECT_DIR}/"
+    """Since the client-first cutover (ADR 0043 in the Growth Engine
+    repository), the Analytics report has its own segment — the client
+    root now belongs to the Brand Overview instead."""
+    assert (td.report_path(dash.CLIENT, "analytics")
+           == f"/reports/{pub.PROJECT_DIR}/analytics/")
+    assert "analytics" in pub.ALLOWED_SECTIONS[pub.PROJECT_DIR]
 
 
 def test_every_sectioned_route_matches_a_section_the_publisher_allows():
     """A tab may only point at a directory `--section` can actually write."""
     for key, segment, _label in td.REPORTS:
         if segment and key in td.LIVE_REPORTS:
-            assert segment in pub.ALLOWED_SECTIONS, key
+            assert segment in pub.ALLOWED_SECTIONS[pub.PROJECT_DIR], key
 
 
 def test_the_page_carries_the_bar():
@@ -68,9 +73,13 @@ def test_growth_is_reachable_from_here():
 
 
 def test_nothing_that_is_not_connected_is_a_link():
+    """dashboard.py calls report_header() with no explicit `live=`, so it
+    falls back to the bundle's own shared default (Overview, Analytics,
+    Growth, Email Marketing) — the same default every caller that has not
+    opted into a per-client live set already used before `live` existed."""
     bar = _bar()
     linked = {label for _href, _attrs, label in LINK.findall(bar)}
-    assert linked == {"Analytics", "Growth", "Email Marketing"}
+    assert linked == {"Overview", "Analytics", "Growth", "Email Marketing"}
     assert bar.count('aria-disabled="true"') == (
         len(td.REPORTS) - len(td.LIVE_REPORTS))
 

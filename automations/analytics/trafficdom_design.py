@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint 2dd327fe7c33e297.
+Generated from the Growth Engine at fingerprint de0dc666b517baf1.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "2dd327fe7c33e297"
+DESIGN_FINGERPRINT = "de0dc666b517baf1"
 
 """
 The heading typeface, carried in the page rather than fetched by it.
@@ -1763,7 +1763,7 @@ def brand_mark(theme=TRAFFICDOM, wordmark=None):
 
 
 def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
-                  wordmark=None, client=None, report=None):
+                  wordmark=None, client=None, report=None, live=None):
     """Masthead: brand mark, report title, the facts that date it, and the bar.
 
     ``wordmark`` names which report this is — "Growth Engine", "Weekly
@@ -1775,6 +1775,13 @@ def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
     it. Both are needed or neither — a bar without a client id has no routes to
     offer, and one without a report type cannot say which tab you are on.
 
+    ``live`` is which reports this particular client can actually open —
+    ``reporting.report_suite.live_reports()`` computes it from the client's
+    own channel configuration. ``None`` (every existing caller, today) falls
+    back to ``report_nav``'s own default, the shared ``LIVE_REPORTS`` tuple —
+    so this parameter is purely additive and changes no existing report's
+    output until a caller opts in.
+
     The header takes the two facts and builds the bar itself rather than
     accepting rendered markup, so no report can hand it a different navigation.
     """
@@ -1782,13 +1789,18 @@ def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
         f"<li>{escape(label)} <b>{escape(value)}</b></li>"
         for label, value in facts if value
     )
+    if client and report:
+        nav = report_nav(client, report, live=live) if live is not None \
+            else report_nav(client, report)
+    else:
+        nav = ""
     return (
         '<header class="td-header">'
         f"{brand_mark(theme, wordmark)}"
         f'<h1 class="td-title">{escape(title)}</h1>'
         + (f'<p class="td-lede">{escape(eyebrow)}</p>' if eyebrow else "")
         + (f'<ul class="td-facts">{rows}</ul>' if rows else "")
-        + (report_nav(client, report) if client and report else "")
+        + nav
         + "</header>"
     )
 
@@ -1797,15 +1809,23 @@ def report_header(title, eyebrow=None, facts=(), theme=TRAFFICDOM,
 #:
 #: ``key`` is the report's own type — what a renderer calls itself, and what
 #: decides which tab is active. ``segment`` is the URL segment beneath the
-#: client, and ``None`` means the suite root: Analytics is the report a client
-#: lands on, so it lives at ``/reports/<client>/`` rather than one level down.
+#: client, and ``None`` means the suite root.
+#:
+#: The suite root belongs to Overview, not Analytics, as of ADR 0043. A client
+#: now lands on a plain-language summary of the whole programme rather than on
+#: one channel's report; Analytics moved one level down, to ``analytics/``,
+#: the same shape every other channel report already has. See
+#: ``docs/decisions/0043-client-first-report-routes.md`` for why, and for the
+#: compatibility plan covering the URL that used to serve Analytics at the
+#: root.
 #:
 #: The table is here, in the shared system, for the same reason the components
 #: are: two repositories render these reports, and a navigation bar that
 #: disagrees with itself between tabs is worse than none. Adding a channel is
 #: one edit in one place, and both reports gain the tab on the next export.
 REPORTS = (
-    ("analytics", None, "Analytics"),
+    ("overview", None, "Overview"),
+    ("analytics", "analytics", "Analytics"),
     ("growth", "growth", "Growth"),
     # The segment the Analytics repository's publisher already writes to for
     # this report — `--section email-marketing`, not `email`. The table follows
@@ -1818,10 +1838,14 @@ REPORTS = (
     ("retention", "retention", "Retention"),
 )
 
-#: Which of them a client can actually open today. Everything else is rendered
-#: as present-but-not-connected: a tab that links to a page that does not exist
-#: is worse than one that says it is not there yet.
-LIVE_REPORTS = ("analytics", "growth", "email")
+#: The default live set, used whenever a caller does not supply its own —
+#: today, that is every caller, since ``report_header``/``report_nav`` predate
+#: per-client liveness. This matches the live set of the one client with
+#: published reports today. A client whose own live set differs (any client
+#: with a different channel mix) supplies its own via
+#: ``reporting.report_suite.live_reports()`` rather than changing this
+#: default — see that module for why it is not derived here.
+LIVE_REPORTS = ("overview", "analytics", "growth", "email")
 
 #: Where a client's reports live. One prefix, joined to a client id at render
 #: time — no client name appears anywhere in this system.
@@ -2242,4 +2266,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "d36063ddf82cca55"
+CONTENT_HASH = "9071ca42c709ed7b"
