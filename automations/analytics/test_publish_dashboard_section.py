@@ -323,6 +323,46 @@ def test_a_missing_base_path_is_an_error_for_the_directory_destination_too():
     assert sftp.made == []
 
 
+# --------------------------------------------------------------------------
+# Regression: the home-relative fallback must not break the bare directory
+# --------------------------------------------------------------------------
+#
+# `home_relative` rebases a path under the account's home directory — the
+# same folder FTP shows as `/public_html/...` and SSH sees as
+# `<home>/public_html/...`. For a client/section destination, the rebased
+# candidate is checked by descent from `home` (it just has to still end in
+# the right tail and not escape). --directory has no tail at all, so that
+# same check demands an EXACT match — and demanding the rebased path equal
+# bare `home` can never hold, since the rebased path is always `home` plus
+# something. That mismatch used to raise before the primary literal path was
+# even tried, breaking --directory whenever a `home` was supplied at all —
+# regardless of whether the literal chdir below would have succeeded.
+
+def test_the_bare_reports_directory_works_even_when_a_home_is_supplied():
+    """A `home` must never break the primary literal path for --directory."""
+    sftp = FakeSFTP(cwd="/", dirs={BASE})
+    entered = pub.enter_remote_dir(sftp, BASE, home="/home/certainuser", client=None)
+    assert entered == BASE
+    assert sftp.made == []
+
+
+def test_the_bare_reports_directory_is_found_via_the_home_relative_fallback():
+    """When only the home-relative path is reachable, it is still found —
+    the fallback that already worked for client/section destinations must
+    work here too, not raise before it is even tried."""
+    home = "/home/certainuser"
+    rebased = home + BASE
+    sftp = FakeSFTP(cwd="/", dirs={rebased})
+    entered = pub.enter_remote_dir(sftp, BASE, home=home, client=None)
+    assert entered == rebased
+    assert sftp.made == []
+
+
+def test_home_relative_resolves_the_bare_reports_directory_without_raising():
+    home = "/home/certainuser"
+    assert pub.home_relative(BASE, home, client=None) == home + BASE
+
+
 def test_nothing_is_ever_deleted_or_renamed():
     """The publisher has no such capability; asserted rather than assumed."""
     source = Path(pub.__file__).read_text(encoding="utf-8")

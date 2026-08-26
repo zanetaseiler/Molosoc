@@ -264,7 +264,19 @@ def home_relative(remote_dir, home, section=None, client=PROJECT_DIR):
         return None
     if remote_dir.startswith(home + "/"):
         return None  # already inside the home directory; nothing to add
-    return check_remote_dir(home + remote_dir, home, section, client)
+
+    rebased = home + remote_dir
+    tail = expected_tail(section, client)
+    # With a tail, `check_remote_dir` only needs `base` to prove the result
+    # still descends from `home` (the escape check) — `home` itself is right
+    # for that. With no tail (client=None), the same function instead
+    # requires `target == base` exactly; passing bare `home` there would
+    # compare the rebased path against a shorter one it can never equal,
+    # rejecting every legitimate rebase. The rebased path IS its own
+    # expected value in that case — there is no separate "tail" to prove
+    # descent from — so it is its own base for that comparison.
+    base_for_check = home if tail else rebased
+    return check_remote_dir(rebased, base_for_check, section, client)
 
 
 def load_settings(env=None, section=None, client=PROJECT_DIR):
