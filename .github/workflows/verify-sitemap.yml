@@ -47,6 +47,15 @@ jobs:
           bad()  { echo "::error::FAIL $1"; fail=1; }
           info() { echo "INFO  $1"; }
 
+          echo "================ 0. resolved inputs ================"
+          echo "BASE=$BASE"
+          echo "EXPECTED_URLS=$EXPECTED"
+          echo "EXPECT_NOINDEX=$EXPECT_NOINDEX"
+          echo "EXPECT_404_REDIRECT=$EXPECT_404_REDIRECT"
+          if [ -z "$BASE" ]; then echo "::error::base_url resolved empty"; exit 1; fi
+          BASE_HOST=$(printf '%s' "$BASE" | sed -E 's|^https?://||; s|/.*$||')
+          echo "BASE_HOST=$BASE_HOST"
+
           echo "================ 1. root sitemap ================"
           code=$(curl -sS -o /tmp/root.xml -D /tmp/root.h -m 30 -w '%{http_code}' "$BASE/wp-sitemap.xml")
           [ "$code" = "200" ] && pass "status 200" || bad "status $code (expected 200)"
@@ -60,6 +69,16 @@ jobs:
           echo "================ 2. child sitemaps ================"
           grep -o '<loc>[^<]*</loc>' /tmp/root.xml | sed 's|</\?loc>||g' > /tmp/children.txt
           echo "child sitemaps: $(wc -l < /tmp/children.txt)"
+          # A child sitemap on a different host than BASE means the site under
+          # test is emitting another environment's URLs. Without this guard the
+          # run silently validates that other environment and reports success.
+          xh=$( { grep -v -E "^https?://$BASE_HOST/" /tmp/children.txt || true; } | grep -c . || true )
+          if [ "$xh" != "0" ]; then
+            bad "$xh child sitemap URLs are not on $BASE_HOST — this run would test a different environment"
+            { grep -v -E "^https?://$BASE_HOST/" /tmp/children.txt || true; } | head
+          else
+            pass "all child sitemaps on $BASE_HOST"
+          fi
           : > /tmp/urls.txt
           while read -r c; do
             [ -z "$c" ] && continue
@@ -76,6 +95,9 @@ jobs:
           sort -u /tmp/urls.txt -o /tmp/urls.txt
           total=$(wc -l < /tmp/urls.txt)
           echo "--- $total unique page URLs ---"; cat /tmp/urls.txt
+          xh2=$( { grep -v -E "^https?://$BASE_HOST/" /tmp/urls.txt || true; } | grep -c . || true )
+          [ "$xh2" = "0" ] && pass "all page URLs on $BASE_HOST" \
+            || bad "$xh2 page URLs are not on $BASE_HOST"
 
           echo "================ 3. url count ================"
           if [ "$EXPECTED" = "0" ]; then info "count check skipped"
