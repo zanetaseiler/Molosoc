@@ -1,0 +1,73 @@
+name: Deploy MU-Plugins to Staging
+
+# Staging counterpart of deploy-mu-plugins.yml, used to rehearse and verify
+# an MU-plugin on staging before it reaches production.
+#
+# Scope is deliberately ONE file: sitemap-polylang-redirect-fix.php. The
+# production workflow syncs all of site/mu-plugins/, which would also push
+# brevo-checkout-capture-shim.php onto staging — an unrelated change to a
+# server we are only using to verify the sitemap fix. So the file under
+# test is copied into a build/ directory first and that directory is what
+# gets synced. Nothing else in site/mu-plugins/ can reach staging.
+#
+# Everything else mirrors production: same FTPS action, same
+# STAGING_SFTP_* credential pattern as staging.yml, same chrooted
+# /wp-content/ docroot shape (verified 2026-08-16 via
+# staging-ftp-diagnose.yml), its own state file so untracked mu-plugins
+# already on the staging server are never touched or deleted.
+#
+# Normal use is workflow_dispatch with the ref set to the branch under test.
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - "site/mu-plugins/sitemap-polylang-redirect-fix.php"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage only the sitemap fix
+        run: |
+          mkdir -p build/mu-plugins
+          cp site/mu-plugins/sitemap-polylang-redirect-fix.php build/mu-plugins/
+          echo "--- files that will be uploaded ---"
+          ls -la build/mu-plugins/
+          n=$(ls -1 build/mu-plugins/ | wc -l)
+          [ "$n" = "1" ] || { echo "::error::expected exactly 1 file to upload, found $n"; exit 1; }
+
+      - name: Upload mu-plugin via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
+        with:
+          server: ${{ secrets.STAGING_SFTP_HOST }}
+          username: ${{ secrets.STAGING_SFTP_USER }}
+          password: ${{ secrets.STAGING_SFTP_PASS }}
+          protocol: ftps
+          local-dir: build/mu-plugins/
+          server-dir: /wp-content/mu-plugins/
+          state-name: .molosoc-mu-plugins-state.json
+
+      - name: Verify what landed on the server
+        env:
+          HOST: ${{ secrets.STAGING_SFTP_HOST }}
+          USER: ${{ secrets.STAGING_SFTP_USER }}
+          PASS: ${{ secrets.STAGING_SFTP_PASS }}
+        run: |
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            "ftp://$HOST/wp-content/mu-plugins/" > /tmp/listing.txt
+          cat /tmp/listing.txt
+          grep -q "sitemap-polylang-redirect-fix.php" /tmp/listing.txt \
+            && echo "sitemap fix present on staging" \
+            || { echo "::error::sitemap fix missing from staging listing"; exit 1; }
+          # The upload set is already proven to be exactly one file by the
+          # staging step above, so a shim here would be pre-existing, not
+          # something this workflow put there. Surface it, don't fail on it.
+          if grep -q "brevo-checkout-capture-shim.php" /tmp/listing.txt; then
+            echo "::warning::brevo shim already present on staging — not uploaded by this workflow"
+          else
+            echo "brevo shim absent from staging, as intended"
+          fi

@@ -1,0 +1,136 @@
+name: Verify Sitemap
+
+# Read-only HTTP checks against a site's WordPress core sitemap. Added to
+# verify the Polylang sitemap redirect fix on staging and then production.
+# Never writes to either server — it only issues GET requests and reports.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Site root, no trailing slash (e.g. https://staging.molosoc.com)"
+        required: true
+        type: string
+      expected_urls:
+        description: "Expected count of page URLs across child sitemaps (0 = skip check)"
+        required: false
+        default: "0"
+        type: string
+      expect_noindex:
+        description: "Require the site root to be noindexed (staging only)"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install xmllint
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libxml2-utils
+
+      - name: Run sitemap checks
+        env:
+          BASE: ${{ inputs.base_url }}
+          EXPECTED: ${{ inputs.expected_urls }}
+          EXPECT_NOINDEX: ${{ inputs.expect_noindex }}
+        run: |
+          set -uo pipefail
+          fail=0
+          pass() { echo "PASS  $1"; }
+          bad()  { echo "::error::FAIL $1"; fail=1; }
+          info() { echo "INFO  $1"; }
+
+          echo "================ 1. root sitemap ================"
+          code=$(curl -sS -o /tmp/root.xml -D /tmp/root.h -m 30 -w '%{http_code}' "$BASE/wp-sitemap.xml")
+          [ "$code" = "200" ] && pass "status 200" || bad "status $code (expected 200)"
+          loc=$(grep -i '^location:' /tmp/root.h | tr -d '\r' | head -1)
+          [ -z "$loc" ] && pass "no redirect" || bad "redirected -> $loc"
+          ct=$(grep -i '^content-type:' /tmp/root.h | tr -d '\r' | head -1)
+          case "$ct" in *[xX][mM][lL]*) pass "content-type: $ct" ;; *) bad "content-type: $ct" ;; esac
+          if xmllint --noout /tmp/root.xml 2>/tmp/xmlerr; then pass "valid XML"; else bad "invalid XML: $(cat /tmp/xmlerr)"; fi
+          echo "--- first 20 lines ---"; head -20 /tmp/root.xml
+
+          echo "================ 2. child sitemaps ================"
+          grep -o '<loc>[^<]*</loc>' /tmp/root.xml | sed 's|</\?loc>||g' > /tmp/children.txt
+          echo "child sitemaps: $(wc -l < /tmp/children.txt)"
+          : > /tmp/urls.txt
+          while read -r c; do
+            [ -z "$c" ] && continue
+            cc=$(curl -sS -o /tmp/child.xml -D /tmp/child.h -m 30 -w '%{http_code}' "$c")
+            cl=$(grep -i '^location:' /tmp/child.h | tr -d '\r' | head -1)
+            if [ "$cc" = "200" ] && [ -z "$cl" ] && xmllint --noout /tmp/child.xml 2>/dev/null; then
+              n=$(grep -c '<loc>' /tmp/child.xml)
+              pass "child $c -> 200, valid XML, $n urls"
+            else
+              bad "child $c -> status $cc redirect='$cl' or invalid XML"
+            fi
+            grep -o '<loc>[^<]*</loc>' /tmp/child.xml | sed 's|</\?loc>||g' >> /tmp/urls.txt
+          done < /tmp/children.txt
+          sort -u /tmp/urls.txt -o /tmp/urls.txt
+          total=$(wc -l < /tmp/urls.txt)
+          echo "--- $total unique page URLs ---"; cat /tmp/urls.txt
+
+          echo "================ 3. url count ================"
+          if [ "$EXPECTED" = "0" ]; then info "count check skipped"
+          elif [ "$total" = "$EXPECTED" ]; then pass "url count $total"
+          else bad "url count $total (expected $EXPECTED)"; fi
+
+          echo "================ 4. stray staging urls ================"
+          case "$BASE" in
+            *staging*) info "base is staging; staging-host scan not applicable" ;;
+            *) s=$(grep -c 'staging\.' /tmp/urls.txt || true)
+               [ "$s" = "0" ] && pass "zero staging URLs" || { bad "$s staging URLs in sitemap"; grep 'staging\.' /tmp/urls.txt; } ;;
+          esac
+
+          echo "================ 5. googlebot ================"
+          gc=$(curl -sS -A "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" \
+                 -o /tmp/gbot.xml -D /tmp/gbot.h -m 30 -w '%{http_code}' "$BASE/wp-sitemap.xml")
+          gl=$(grep -i '^location:' /tmp/gbot.h | tr -d '\r' | head -1)
+          gt=$(grep -i '^content-type:' /tmp/gbot.h | tr -d '\r' | head -1)
+          [ "$gc" = "200" ] && [ -z "$gl" ] && pass "googlebot status 200, no redirect" || bad "googlebot status $gc redirect='$gl'"
+          case "$gt" in *[xX][mM][lL]*) pass "googlebot content-type: $gt" ;; *) bad "googlebot content-type: $gt" ;; esac
+          if diff -q /tmp/root.xml /tmp/gbot.xml >/dev/null; then pass "googlebot body identical"; else bad "googlebot body differs"; diff /tmp/root.xml /tmp/gbot.xml | head -20; fi
+
+          echo "================ 6. per-url health ================"
+          while read -r u; do
+            [ -z "$u" ] && continue
+            uc=$(curl -sS -o /tmp/p.html -D /tmp/p.h -m 30 -w '%{http_code}' "$u")
+            ul=$(grep -i '^location:' /tmp/p.h | tr -d '\r' | head -1)
+            xr=$(grep -i '^x-robots-tag:' /tmp/p.h | tr -d '\r')
+            mr=$(grep -io '<meta[^>]*robots[^>]*>' /tmp/p.html | head -2 | tr '\n' ' ')
+            ni=""
+            echo "$xr $mr" | grep -qi 'noindex' && ni="NOINDEX"
+            if [ "$uc" = "200" ] && [ -z "$ul" ] && [ -z "$ni" ]; then
+              pass "$u"
+            else
+              bad "$u -> status $uc redirect='$ul' $ni"
+            fi
+          done < /tmp/urls.txt
+
+          echo "================ 7. cz + routing ================"
+          czc=$(curl -sS -o /dev/null -D /tmp/cz.h -m 30 -w '%{http_code}' "$BASE/cz/")
+          czl=$(grep -i '^location:' /tmp/cz.h | tr -d '\r' | head -1)
+          [ "$czc" = "200" ] && [ -z "$czl" ] && pass "/cz/ -> 200, no redirect" || bad "/cz/ -> status $czc redirect='$czl'"
+          czn=$(grep -c '/cz/' /tmp/urls.txt || true); info "$czn CZ URLs in sitemap"
+          enc=$(curl -sS -o /dev/null -D /tmp/en.h -m 30 -H 'Accept-Language: en-US,en;q=0.9' -w '%{http_code}' "$BASE/")
+          enl=$(grep -i '^location:' /tmp/en.h | tr -d '\r' | head -1)
+          info "root with Accept-Language en -> status $enc redirect='$enl'"
+          csc=$(curl -sS -o /dev/null -D /tmp/cs.h -m 30 -H 'Accept-Language: cs-CZ,cs;q=0.9' -w '%{http_code}' "$BASE/")
+          csl=$(grep -i '^location:' /tmp/cs.h | tr -d '\r' | head -1)
+          info "root with Accept-Language cs -> status $csc redirect='$csl'"
+          if echo "$csl" | grep -q '/cz'; then pass "Polylang browser-language redirect still active"; else info "no cs redirect observed (compare against pre-deploy baseline)"; fi
+
+          echo "================ 8. noindex expectation ================"
+          rh=$(curl -sS -o /tmp/root.html -D /tmp/rh.h -m 30 -w '%{http_code}' -L "$BASE/")
+          rx=$(grep -i '^x-robots-tag:' /tmp/rh.h | tr -d '\r')
+          rm2=$(grep -io '<meta[^>]*robots[^>]*>' /tmp/root.html | head -2 | tr '\n' ' ')
+          echo "root robots signals: header='$rx' meta='$rm2'"
+          if [ "$EXPECT_NOINDEX" = "true" ]; then
+            echo "$rx $rm2" | grep -qi noindex && pass "staging noindex present" || bad "staging noindex MISSING"
+          else
+            echo "$rx $rm2" | grep -qi noindex && bad "production root is noindexed" || pass "production root not noindexed"
+          fi
+
+          echo "================ result ================"
+          [ "$fail" = "0" ] && echo "ALL CHECKS PASSED" || { echo "::error::one or more checks failed"; exit 1; }
