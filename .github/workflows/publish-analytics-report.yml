@@ -1,0 +1,170 @@
+name: Publish Analytics Report To Its New Segment (manual only)
+
+# Publish the Analytics dashboard to reports/molosoc/analytics/, using the
+# exact same HTML weekly-marketing-report.yml already generated and
+# published to the root in that same run — reused, not regenerated, so the
+# two locations can never drift from what was actually analysed that week.
+#
+#   download   the molosoc-dashboard-html artifact from a named
+#              weekly-marketing-report.yml run: site/index.html
+#   verify     that it is one file, that it is HTML, and that it is the
+#              Analytics dashboard rather than any other report
+#   publish    automations/analytics/publish_dashboard.py --section analytics
+#
+# MANUAL ONLY. No schedule, no push trigger — this changes what a client
+# sees, so a person starts it and types a confirmation. (The ONGOING case —
+# every future week — needs no separate manual step: weekly-marketing-
+# report.yml's own scheduled run already publishes straight to `--section
+# analytics` itself. This workflow exists for the one-time cutover, and for
+# any future case where the two locations need to be re-synced from an
+# existing weekly run without waiting for the next schedule.)
+#
+# NO SECOND PUBLISHER, and no second generation either: this job downloads
+# an artifact from THIS repository's own prior run, not the Growth Engine —
+# there is nothing to fetch cross-repository here, since Analytics is
+# rendered entirely in this repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "weekly-marketing-report.yml run id that produced the dashboard"
+        required: true
+        type: string
+      sha256:
+        description: "Optional: the sha256 that run printed, to check the bytes"
+        required: false
+        type: string
+      confirm:
+        description: 'Type "publish" — this changes what the client sees'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: publish-analytics-report
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Confirm this run was intended
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -eu
+          if [ "$CONFIRM" != "publish" ]; then
+            echo "::error::confirmation not given — type 'publish' to proceed."
+            echo "Nothing was downloaded and nothing was uploaded."
+            exit 1
+          fi
+          echo "Confirmation given."
+
+      - uses: actions/checkout@v4
+
+      - name: Check the required secrets are present
+        env:
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+        run: |
+          set -eu
+          missing=0
+          if [ -z "${REPORTS_SSH_KEY:-}" ]; then
+            echo "::error::REPORTS_SSH_KEY is not set"
+            missing=1
+          fi
+          if [ -z "${REPORTS_SSH_USER:-}${REPORTS_SFTP_USER:-}" ]; then
+            echo "::error::neither REPORTS_SSH_USER nor REPORTS_SFTP_USER is set"
+            missing=1
+          fi
+          [ "$missing" = "0" ] || exit 1
+          echo "All required secrets present (values never printed)."
+
+      - name: Download this repository's own dashboard-html artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: molosoc-dashboard-html
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: incoming
+
+      - name: Verify what arrived before trusting it
+        env:
+          EXPECTED_SHA: ${{ inputs.sha256 }}
+        run: |
+          set -eu
+          COUNT="$(find incoming -type f | wc -l | tr -d ' ')"
+          if [ "$COUNT" != "1" ]; then
+            echo "::error::expected exactly one file in the artifact, found $COUNT"
+            find incoming -type f
+            exit 1
+          fi
+          if [ ! -s incoming/index.html ]; then
+            echo "::error::the artifact does not contain a non-empty index.html"
+            find incoming -type f
+            exit 1
+          fi
+
+          if ! grep -qi "weekly marketing analysis" incoming/index.html; then
+            echo "::error::index.html does not look like the Analytics dashboard"
+            head -c 400 incoming/index.html
+            exit 1
+          fi
+
+          ACTUAL="$(sha256sum incoming/index.html | cut -d' ' -f1)"
+          echo "sha256: $ACTUAL"
+          if [ -n "${EXPECTED_SHA:-}" ] && [ "$ACTUAL" != "$EXPECTED_SHA" ]; then
+            echo "::error::checksum mismatch — expected $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "One file, $(wc -c < incoming/index.html) bytes, verified."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run the publisher's offline tests
+        run: python3 -m pytest automations/analytics/test_publish_dashboard_section.py -q
+
+      - name: Verify the resolved remote path (no connection)
+        env:
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --section analytics --file incoming/index.html --dry-run
+
+      - name: Publish over SFTP, one level deeper
+        env:
+          REPORTS_SSH_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --section analytics --file incoming/index.html
+
+      - name: Verify the page is live
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/analytics/
+          marker: weekly marketing analysis
+          label: the Analytics report
+          expect-sha256: ${{ inputs.sha256 }}
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
