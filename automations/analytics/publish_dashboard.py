@@ -485,7 +485,7 @@ def enter_remote_dir(sftp, remote_dir, create=True, home=None, section=None,
     return sftp.getcwd()
 
 
-def verify_location(sftp, remote_dir, section=None, client=PROJECT_DIR):
+def verify_location(sftp, remote_dir, section=None, client=PROJECT_DIR, home=None):
     """Compare the SERVER's working directory with the one we mean to write to.
 
     A chroot, a symlink or a home-relative base path can each make a
@@ -495,16 +495,24 @@ def verify_location(sftp, remote_dir, section=None, client=PROJECT_DIR):
     The tail is the whole point when a section is in play: publishing the
     Growth report must fail rather than succeed if the server has put us in
     `molosoc` instead of `molosoc/growth`, because that directory holds the
-    live Analytics report. With `client=None` there is no tail at all, so an
-    exact match against the resolved base path is the only thing accepted —
-    there is no suffix that would make a wrong directory look right.
+    live Analytics report. With `client=None` there is no tail at all, so
+    only two things are ever accepted: the resolved base path itself, and —
+    when `home` is available — the identical directory addressed from inside
+    the account's home (the same alternate reading `enter_remote_dir` and
+    `home_relative` already accept; not accepting it here too would make this
+    check reject the very entry it just approved). No other suffix makes a
+    wrong directory look right.
     """
     actual = (sftp.getcwd() or "").rstrip("/") or "/"
     expected = remote_dir.rstrip("/")
     tail_segments = expected_tail(section, client)
 
     if not tail_segments:
-        if actual == expected:
+        acceptable = {expected}
+        rebased = home_relative(remote_dir, home, section, client)
+        if rebased is not None:
+            acceptable.add(rebased.rstrip("/"))
+        if actual in acceptable:
             return actual
         raise PublishError(
             f"remote directory check FAILED. Server reports {actual!r}, "
@@ -711,7 +719,7 @@ def main(argv=None):
                                    section=args.section, client=args.client)
         print(f"Entered: {entered}")
 
-        confirmed = verify_location(sftp, remote_dir, args.section, args.client)
+        confirmed = verify_location(sftp, remote_dir, args.section, args.client, home=home)
         print(f"PASS remote directory verified: {confirmed}")
 
         sent = upload(sftp, args.file)

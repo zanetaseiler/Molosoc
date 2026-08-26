@@ -259,6 +259,26 @@ def test_the_directory_check_rejects_a_client_subdirectory():
         pub.verify_location(sftp, BASE, client=None)
 
 
+def test_the_directory_check_accepts_the_home_relative_form_too():
+    """verify_location must accept the same alternate reading of the base
+    path that enter_remote_dir and home_relative already treat as
+    legitimate — otherwise a run that entered via the home-relative
+    fallback fails this check even though it is in the right place."""
+    home = "/home/certainuser"
+    sftp = FakeSFTP(cwd=home + BASE)
+    assert pub.verify_location(sftp, BASE, client=None, home=home) == home + BASE
+
+
+def test_the_directory_check_still_rejects_a_client_subdirectory_under_home():
+    """The home-relative allowance is exactly one extra path, not a prefix
+    match — a client directory reached the same home-relative way is still
+    refused."""
+    home = "/home/certainuser"
+    sftp = FakeSFTP(cwd=home + ANALYTICS_DIR)
+    with pytest.raises(pub.PublishError):
+        pub.verify_location(sftp, BASE, client=None, home=home)
+
+
 def test_a_chrooted_account_reporting_the_tail_is_accepted():
     sftp = FakeSFTP(cwd="/molosoc/growth")
     assert pub.verify_location(sftp, GROWTH_DIR, "growth") == "/molosoc/growth"
