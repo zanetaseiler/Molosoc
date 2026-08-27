@@ -1,0 +1,67 @@
+name: PROD - one-shot sitemap status trace
+
+# TEMPORARY DIAGNOSTIC. Uploads automations/production/sitemap-trace.php to
+# production's mu-plugins, makes exactly ONE request to
+# /wp-sitemap.xml?trace=1, downloads the private trace log, prints it, then
+# deletes both the tracer and the log from the server.
+#
+# The tracer is observation-only: it returns every filter value unchanged and
+# never touches status, redirects or output, and it returns immediately for
+# any request whose URI does not contain wp-sitemap.
+#
+# Uses the production FTPS pattern already proven in deploy-mu-plugins.yml —
+# curl --ssl-reqd for transfer and curl -Q DELE for removal. Production's
+# certificate matches its hostname, so no verification is disabled anywhere.
+#
+# Delete this workflow and automations/production/sitemap-trace.php once the
+# diagnosis is complete.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  trace:
+    runs-on: ubuntu-latest
+    env:
+      HOST: ${{ secrets.PROD_SFTP_HOST }}
+      USER: ${{ secrets.PROD_SFTP_USER }}
+      PASS: ${{ secrets.PROD_SFTP_PASS }}
+      MU: /wp-content/mu-plugins
+      LOG: .molosoc-sitemap-trace.log
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload tracer
+        run: |
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -T automations/production/sitemap-trace.php \
+            "ftp://$HOST$MU/sitemap-trace.php"
+          echo "tracer uploaded"
+
+      - name: mu-plugins listing BEFORE the request
+        run: curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" "ftp://$HOST$MU/"
+
+      - name: Make exactly ONE request
+        run: |
+          echo "--- response headers ---"
+          curl -sS -m 60 -D - -o /tmp/body.xml "https://molosoc.com/wp-sitemap.xml?trace=1"
+          echo ""
+          echo "--- first 15 lines of body ---"
+          head -15 /tmp/body.xml || true
+
+      - name: Fetch and print the trace log
+        run: |
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            "ftp://$HOST$MU/$LOG" -o /tmp/trace.log || echo "(log not retrievable)"
+          echo "================= TRACE LOG ================="
+          cat /tmp/trace.log 2>/dev/null || echo "(no log produced — tracer did not load)"
+
+      - name: Remove tracer and log, always
+        if: always()
+        run: |
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE $MU/sitemap-trace.php" "ftp://$HOST/" -o /dev/null || echo "(tracer already absent)"
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+            -Q "DELE $MU/$LOG" "ftp://$HOST/" -o /dev/null || echo "(log already absent)"
+          echo "--- mu-plugins listing AFTER cleanup ---"
+          curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" "ftp://$HOST$MU/"
