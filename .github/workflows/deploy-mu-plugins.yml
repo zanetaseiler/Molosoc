@@ -1,10 +1,13 @@
 name: Deploy MU-Plugins to Production
 
 # Syncs site/mu-plugins/ to prod /wp-content/mu-plugins/ over FTPS.
-# Currently holds only brevo-checkout-capture-shim.php — the TEMPORARY
-# Brevo for WooCommerce 4.0.54–4.0.58 checkout-capture regression shim.
+# Tracks brevo-checkout-capture-shim.php (the TEMPORARY Brevo for
+# WooCommerce 4.0.54-4.0.58 checkout-capture regression shim) and
+# sitemap-404-status-fix.php.
+#
 # Uses its own state file, so mu-plugins already on the server that this
-# repo doesn't track are never touched or deleted.
+# repo doesn't track — automation-by-installatron.php in particular — are
+# never touched or deleted. Nothing here ever deletes by wildcard.
 #
 # Dispatch with action=remove to delete the shim (and this workflow's
 # state file) from the server once Brevo ships an upstream fix — then
@@ -33,6 +36,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Remove superseded sitemap workarounds and trace artifacts
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          # Exact filenames only, never a wildcard. A file the deploy state
+          # never recorded cannot be removed by the sync below, so superseded
+          # workarounds have to be deleted by name. Server-owned mu-plugins
+          # this repo does not track are untouched.
+          for f in \
+            sitemap-404-to-start-bypass.php \
+            sitemap-polylang-redirect-fix.php \
+            sitemap-trace.php \
+            .molosoc-sitemap-trace.log
+          do
+            if curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
+                 -Q "DELE /wp-content/mu-plugins/$f" "ftp://$HOST/" -o /dev/null 2>/dev/null; then
+              echo "deleted $f"
+            else
+              echo "($f already absent)"
+            fi
+          done
+
       - name: Upload mu-plugins via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
@@ -44,18 +71,40 @@ jobs:
           server-dir: /wp-content/mu-plugins/
           state-name: .molosoc-mu-plugins-state.json
 
-      - name: Verify shim file landed on the server
+      - name: Verify the server directory is exactly as intended
         env:
           HOST: ${{ secrets.PROD_SFTP_HOST }}
           USER: ${{ secrets.PROD_SFTP_USER }}
           PASS: ${{ secrets.PROD_SFTP_PASS }}
         run: |
+          # The old version of this step only grepped for the Brevo shim, so a
+          # deploy that uploaded nothing still passed. It now asserts every
+          # file that must exist and every file that must not.
           curl -sS -m 60 --ssl-reqd --user "$USER:$PASS" \
             "ftp://$HOST/wp-content/mu-plugins/" > /tmp/listing.txt
           cat /tmp/listing.txt
-          grep -q "brevo-checkout-capture-shim.php" /tmp/listing.txt \
-            && echo "shim present on server" \
-            || { echo "::error::shim missing from server listing"; exit 1; }
+          fail=0
+          need() {
+            grep -qF "$1" /tmp/listing.txt \
+              && echo "PRESENT  $1" \
+              || { echo "::error::MISSING $1"; fail=1; }
+          }
+          gone() {
+            grep -qF "$1" /tmp/listing.txt \
+              && { echo "::error::STILL PRESENT $1"; fail=1; } \
+              || echo "ABSENT   $1"
+          }
+          need brevo-checkout-capture-shim.php
+          need sitemap-404-status-fix.php
+          # Server-owned, installed by the host. This repo must never remove
+          # it; asserting it is a tripwire against an accidental deletion.
+          need automation-by-installatron.php
+          gone sitemap-404-to-start-bypass.php
+          gone sitemap-polylang-redirect-fix.php
+          gone sitemap-trace.php
+          gone .molosoc-sitemap-trace.log
+          [ "$fail" = "0" ] && echo "mu-plugins directory verified" \
+            || { echo "::error::mu-plugins directory is not in the intended state"; exit 1; }
 
   remove:
     if: github.event_name == 'workflow_dispatch' && inputs.action == 'remove'
