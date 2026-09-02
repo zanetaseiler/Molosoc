@@ -226,19 +226,23 @@ jobs:
           password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
 
       # The failure this whole design exists to prevent, checked from the
-      # outside afterwards rather than only asserted beforehand.
+      # outside afterwards rather than only asserted beforehand. The client
+      # root serves the Brand Overview, not the Analytics dashboard, since
+      # the client-first cutover (ADR 0043 in the Growth Engine repository)
+      # — "What happened this week" is the marker publish-overview-report
+      # .yml's own live-check already proves is really there.
       #
       # These were previously a loop that downgraded any non-200 to a warning
       # and continued. Behind a password that would have silently verified
       # nothing while printing nothing alarming — a check that cannot fail
       # reads as a check that passed, which is worse than no check at all.
       # They are now two ordinary steps, and they fail.
-      - name: Confirm the Analytics report is untouched
+      - name: Confirm the Brand Overview is untouched
         uses: ./.github/actions/verify-report
         with:
           url: https://trafficdom.com/reports/molosoc/
-          marker: Weekly marketing analysis
-          label: the Analytics report
+          marker: What happened this week
+          label: the Brand Overview
           user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
           password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
 

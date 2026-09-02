@@ -288,3 +288,137 @@ class TestNoUnauthenticatedCheckSurvivesAnywhere:
         body = self._uncommented(action)
         assert "REPORT_BASIC_AUTH" not in body, (
             "the action must not name a client's secrets; they are inputs")
+
+
+class TestTheRootGuardMarkerMatchesWhateverIsActuallyThere:
+    """The regression a report redesign at the client root would otherwise
+    leave behind silently.
+
+    A sectioned publisher (Growth, Email, Paid Ads, ...) protects the page
+    beside its own by re-checking `https://trafficdom.com/reports/molosoc/`
+    for a marker after it uploads — "the failure this whole design exists to
+    prevent, checked from the outside afterwards". That marker has to name
+    whatever is ACTUALLY served at the client root today. It used to be the
+    weekly Analytics dashboard ("Weekly marketing analysis"); since the
+    client-first cutover (ADR 0043 in the Growth Engine repository) the root
+    serves the Brand Overview instead, and publish-overview-report.yml's own
+    "Verify the page is live" step already proves — every time it runs
+    successfully — that "What happened this week" is what is really there.
+
+    A sectioned publisher whose root guard still names the OLD occupant
+    would fail every run after a real, successful publish (exactly what
+    happened on the first Paid Ads publish, ADR/PR discussion 2026-09-02) —
+    not because anything broke, but because the guard itself went stale. This
+    is the test that would have caught it, and that catches the next one:
+    whatever text names the client root's current occupant, every sectioned
+    publisher's guard has to agree with it.
+    """
+
+    WORKFLOWS = Path(__file__).parents[2] / ".github" / "workflows"
+    ROOT_URL = "https://trafficdom.com/reports/molosoc/"
+
+    #: The client root's current, real occupant — proven live by
+    #: publish-overview-report.yml's own "Verify the page is live" step
+    #: against this exact URL, and sourced from a fixed section heading
+    #: (overview_view.py's WHAT_HAPPENED, "this_week") that Overview renders
+    #: unconditionally, so it cannot go stale as the report's own data does.
+    CURRENT_ROOT_MARKER = "What happened this week"
+
+    #: What used to occupy the root, before ADR 0043. Legitimate as a
+    #: NEGATIVE check elsewhere (an artifact-identity guard refusing to
+    #: publish something that looks like the Analytics dashboard under the
+    #: wrong section) — never legitimate as the POSITIVE `marker:` naming
+    #: what the root itself now serves.
+    OBSOLETE_ROOT_MARKER = "Weekly marketing analysis"
+
+    #: Every sectioned MOLOSOC publisher that re-verifies the client root
+    #: after publishing beside it. publish-analytics-report.yml and
+    #: publish-overview-report.yml are deliberately excluded: they publish
+    #: TO one of the root or `analytics/` themselves, so their own "Verify
+    #: the page is live" step already IS the up-to-date check, not a second
+    #: one of something else. publish-social-report.yml is Zoe's, whose
+    #: root was never the Analytics dashboard, so it has no such guard.
+    SECTIONED_PUBLISHERS = (
+        "publish-growth-report.yml",
+        "publish-email-report.yml",
+        "publish-paid-ads-report.yml",
+    )
+
+    def _uncommented(self, path):
+        return "\n".join(line for line in
+                         path.read_text(encoding="utf-8").splitlines()
+                         if not line.lstrip().startswith("#"))
+
+    def _root_guard_marker(self, name):
+        """The `marker:` value of the `with:` block whose `url:` is exactly
+        the bare client root — the one guard this test is about — or
+        ``None`` if that workflow has no such block.
+
+        Parsed structurally (by `with:` block, keyed on `url:`) rather than
+        by proximity to a step name, so a future rename of the step itself
+        cannot make this test stop looking in the right place.
+        """
+        body = self._uncommented(self.WORKFLOWS / name)
+        blocks = body.split("with:")[1:]
+        for block in blocks:
+            lines = block.splitlines()[1:12]
+            fields = {}
+            for line in lines:
+                stripped = line.strip()
+                if ":" not in stripped:
+                    break
+                key, _, value = stripped.partition(":")
+                fields[key.strip()] = value.strip()
+            if fields.get("url") == self.ROOT_URL:
+                return fields.get("marker")
+        return None
+
+    def test_every_sectioned_publisher_has_a_root_guard(self):
+        """Not a stale-marker test — a missing-guard one. If this starts
+        failing, a publisher lost its "is the page beside mine still there"
+        check entirely, which is the exact regression this whole design
+        exists to prevent."""
+        for name in self.SECTIONED_PUBLISHERS:
+            assert self._root_guard_marker(name) is not None, (
+                f"{name} has no guard verifying {self.ROOT_URL}")
+
+    def test_no_sectioned_publisher_still_names_the_obsolete_occupant(self):
+        for name in self.SECTIONED_PUBLISHERS:
+            marker = self._root_guard_marker(name)
+            assert marker is not None, name
+            assert marker.lower() != self.OBSOLETE_ROOT_MARKER.lower(), (
+                f"{name} still verifies the client root with the pre-ADR-0043 "
+                f"Analytics marker {marker!r} — the root serves the Brand "
+                "Overview now; update it to CURRENT_ROOT_MARKER."
+            )
+
+    def test_every_sectioned_publisher_agrees_with_the_current_occupant(self):
+        for name in self.SECTIONED_PUBLISHERS:
+            marker = self._root_guard_marker(name)
+            assert marker == self.CURRENT_ROOT_MARKER, (
+                f"{name} verifies the client root with {marker!r}, not "
+                f"{self.CURRENT_ROOT_MARKER!r} — every sectioned publisher's "
+                "root guard must agree on what is actually there."
+            )
+
+    def test_the_current_marker_is_still_what_overview_report_render_proves_live(self):
+        """publish-overview-report.yml's own "Verify the page is live" step
+        checks this exact URL (parameterized by client, molosoc included)
+        with this exact marker — that IS the proof this text is real, live
+        content, not an assumption made here."""
+        body = self._uncommented(self.WORKFLOWS / "publish-overview-report.yml")
+        blocks = body.split("with:")[1:]
+        found = False
+        for block in blocks:
+            lines = block.splitlines()[1:12]
+            fields = {}
+            for line in lines:
+                stripped = line.strip()
+                if ":" not in stripped:
+                    break
+                key, _, value = stripped.partition(":")
+                fields[key.strip()] = value.strip()
+            if fields.get("url") == "https://trafficdom.com/reports/${{ inputs.client }}/":
+                assert fields.get("marker") == self.CURRENT_ROOT_MARKER
+                found = True
+        assert found, "publish-overview-report.yml's own live-check block was not found"
