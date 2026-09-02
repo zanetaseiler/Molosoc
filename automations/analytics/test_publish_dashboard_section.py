@@ -50,6 +50,7 @@ ANALYTICS_DIR = f"{BASE}/molosoc"
 GROWTH_DIR = f"{BASE}/molosoc/growth"
 EMAIL_DIR = f"{BASE}/molosoc/email-marketing"
 MOLOSOC_ANALYTICS_SECTION_DIR = f"{BASE}/molosoc/analytics"
+MOLOSOC_PAID_DIR = f"{BASE}/molosoc/paid"
 ZOE_DIR = f"{BASE}/zoe"
 ZOE_SOCIAL_DIR = f"{BASE}/zoe/social"
 
@@ -80,7 +81,7 @@ def test_the_allowed_clients_are_exactly_molosoc_and_zoe():
 
 def test_the_allowed_sections_are_scoped_per_client():
     assert pub.ALLOWED_SECTIONS == {
-        "molosoc": ("growth", "email-marketing", "analytics"),
+        "molosoc": ("growth", "email-marketing", "analytics", "paid"),
         "zoe": ("social",),
     }
 
@@ -122,6 +123,12 @@ def test_the_analytics_section_resolves_alongside_growth_and_email():
     assert pub.resolve_remote_dir(BASE, "analytics") == MOLOSOC_ANALYTICS_SECTION_DIR
 
 
+def test_the_paid_ads_section_resolves_alongside_its_molosoc_siblings():
+    assert pub.expected_tail("paid") == ("molosoc", "paid")
+    assert pub.resolve_remote_dir(BASE, "paid") == MOLOSOC_PAID_DIR
+    assert pub.public_url("paid") == "https://trafficdom.com/reports/molosoc/paid/"
+
+
 def test_the_zoe_social_section_resolves_under_zoes_own_directory():
     assert pub.expected_tail("social", client="zoe") == ("zoe", "social")
     assert pub.resolve_remote_dir(BASE, "social", "zoe") == ZOE_SOCIAL_DIR
@@ -137,6 +144,12 @@ def test_zoe_and_molosoc_can_never_be_the_same_directory():
 def test_the_two_molosoc_sections_can_never_be_the_same_directory():
     """Publishing one must not be able to replace the other."""
     assert pub.expected_tail("growth") != pub.expected_tail("email-marketing")
+
+
+def test_none_of_the_four_molosoc_sections_can_ever_collide():
+    """Same property, one segment wider now that `paid` exists too."""
+    tails = {pub.expected_tail(s) for s in pub.ALLOWED_SECTIONS["molosoc"]}
+    assert len(tails) == len(pub.ALLOWED_SECTIONS["molosoc"])
 
 
 def test_the_remote_file_is_still_only_index_html():
@@ -240,6 +253,21 @@ def test_the_location_check_passes_on_zoes_social_directory():
     assert pub.verify_location(sftp, ZOE_SOCIAL_DIR, "social", "zoe") == ZOE_SOCIAL_DIR
 
 
+def test_the_location_check_passes_on_the_paid_ads_directory():
+    sftp = FakeSFTP(cwd=MOLOSOC_PAID_DIR)
+    assert pub.verify_location(sftp, MOLOSOC_PAID_DIR, "paid") == MOLOSOC_PAID_DIR
+
+
+def test_the_upload_is_abandoned_if_the_server_puts_us_in_growth_instead_of_paid():
+    """The same chroot/symlink protection `growth` already has, proven for
+    the newly-added section too rather than assumed from the shared code
+    path."""
+    sftp = FakeSFTP(cwd=GROWTH_DIR)
+    with pytest.raises(pub.PublishError):
+        pub.verify_location(sftp, MOLOSOC_PAID_DIR, "paid")
+    assert not sftp.stored
+
+
 def test_zoes_directory_does_not_satisfy_a_molosoc_check():
     sftp = FakeSFTP(cwd=ZOE_DIR)
     with pytest.raises(pub.PublishError):
@@ -313,6 +341,15 @@ def test_an_existing_growth_directory_is_entered_rather_than_recreated():
     sftp = FakeSFTP(cwd="/", dirs={ANALYTICS_DIR, GROWTH_DIR})
     assert pub.enter_remote_dir(sftp, GROWTH_DIR, section="growth") == GROWTH_DIR
     assert sftp.made == []
+
+
+def test_paid_is_created_inside_an_existing_molosoc_directory():
+    """`molosoc/` must already exist; only `paid/` may be made — the same
+    rule `growth` already follows, for the newly-added section too."""
+    sftp = FakeSFTP(cwd="/", dirs={ANALYTICS_DIR})
+    entered = pub.enter_remote_dir(sftp, MOLOSOC_PAID_DIR, section="paid")
+    assert entered == MOLOSOC_PAID_DIR
+    assert sftp.made == [MOLOSOC_PAID_DIR]
 
 
 def test_zoes_directory_must_already_exist_too_before_its_section_is_created():

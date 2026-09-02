@@ -46,9 +46,15 @@ def test_the_analytics_route_is_where_this_report_is_published():
 
 
 def test_every_sectioned_route_matches_a_section_the_publisher_allows():
-    """A tab may only point at a directory `--section` can actually write."""
+    """A tab may only point at a directory `--section` can actually write.
+
+    Checked against this repository's own live set (`dash.
+    CLIENT_LIVE_REPORTS`) rather than the bundle's shared default: that is
+    the set this render actually uses, and the property this test exists to
+    hold — a live tab always has somewhere real to land — has to hold for
+    it specifically."""
     for key, segment, _label in td.REPORTS:
-        if segment and key in td.LIVE_REPORTS:
+        if segment and key in dash.CLIENT_LIVE_REPORTS:
             assert segment in pub.ALLOWED_SECTIONS[pub.PROJECT_DIR], key
 
 
@@ -72,16 +78,33 @@ def test_growth_is_reachable_from_here():
     assert f"/reports/{dash.CLIENT}/growth/" in hrefs
 
 
-def test_nothing_that_is_not_connected_is_a_link():
-    """dashboard.py calls report_header() with no explicit `live=`, so it
-    falls back to the bundle's own shared default (Overview, Analytics,
-    Growth, Email Marketing) — the same default every caller that has not
-    opted into a per-client live set already used before `live` existed."""
+def test_paid_ads_is_reachable_from_here():
+    """dashboard.py now opts into its own live set (dash.
+    CLIENT_LIVE_REPORTS), which includes `paid` now that
+    publish-paid-ads-report.yml actually publishes that page — the
+    established per-client `live=` mechanism (ADR 0043 in the Growth Engine
+    repository; see `report_header`'s own docstring there), not a new one
+    invented for this."""
+    hrefs = [href for href, _attrs, _label in LINK.findall(_bar())]
+    assert f"/reports/{dash.CLIENT}/paid/" in hrefs
+
+
+def test_nothing_that_is_not_a_published_section_is_a_link():
+    """dashboard.py now calls report_header() with an explicit `live=`
+    (dash.CLIENT_LIVE_REPORTS) rather than falling back to the bundle's own
+    shared default, because this client's actually-published set differs
+    from it: Paid Ads is live here, published through the same
+    publish_dashboard.py --section mechanism as Growth and Email Marketing.
+
+    Social stays unlinked — no MOLOSOC Social report has been published
+    through this publisher (only Zoe's has, at reports/zoe/social/) — and
+    this assertion is exactly what stops that from silently drifting: a tab
+    may not go live here before its page does."""
     bar = _bar()
     linked = {label for _href, _attrs, label in LINK.findall(bar)}
-    assert linked == {"Overview", "Analytics", "Growth", "Email Marketing"}
+    assert linked == {"Overview", "Analytics", "Growth", "Email Marketing", "Paid"}
     assert bar.count('aria-disabled="true"') == (
-        len(td.REPORTS) - len(td.LIVE_REPORTS))
+        len(td.REPORTS) - len(dash.CLIENT_LIVE_REPORTS))
 
 
 def test_there_is_exactly_one_navigation_on_the_page():
