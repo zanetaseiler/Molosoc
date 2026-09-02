@@ -1,0 +1,211 @@
+name: Publish Paid Ads Report (manual only)
+
+# Publish the MOLOSOC Paid Ads report that the Growth Engine rendered.
+#
+#   download   one artifact from a named Growth Engine run: index.html
+#   verify     that it is one file, that it is HTML, and that it is the
+#              Paid Ads report rather than any other report
+#   publish    automations/analytics/publish_dashboard.py --client molosoc
+#                  --section paid
+#
+# MANUAL ONLY. No schedule, no push trigger, no workflow_run trigger — this
+# changes what a client sees, so a person starts it and types a confirmation.
+#
+# NO SECOND PUBLISHER. Same publisher, same connection, same guards as every
+# other sectioned report (publish-growth-report.yml, publish-email-report.yml,
+# publish-analytics-report.yml, publish-social-report.yml): a derived
+# destination, a WordPress-directory refusal, a server-side working-directory
+# check, one file named index.html, no deletion or rename. `--client molosoc
+# --section paid` can only ever resolve to reports/molosoc/paid/ — the fixed,
+# per-client section set (publish_dashboard.ALLOWED_SECTIONS["molosoc"]) means
+# no other destination is reachable through this same call.
+#
+# The Paid Ads report itself — what it says, its truthfulness and attribution
+# safeguards, its "proposed, approval required" recommendation state — is
+# entirely the Growth Engine's own, unmodified here
+# (growth_engine/reporting/paid_view.py / paid_html.py, ADR 0079 there). This
+# workflow only moves the one file that pipeline already produced onto the
+# report host, exactly as every other sectioned report already does.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Growth Engine workflow run id that produced the report"
+        required: true
+        type: string
+      artifact:
+        description: "Artifact name from that run"
+        required: true
+        default: molosoc-paid-ads-report
+        type: string
+      sha256:
+        description: "Optional: the sha256 that run printed, to check the bytes"
+        required: false
+        type: string
+      confirm:
+        description: 'Type "publish" — this changes what the client sees'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-paid-ads-report
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Confirm this run was intended
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -eu
+          if [ "$CONFIRM" != "publish" ]; then
+            echo "::error::confirmation not given — type 'publish' to proceed."
+            echo "Nothing was downloaded and nothing was uploaded."
+            exit 1
+          fi
+          echo "Confirmation given."
+
+      - uses: actions/checkout@v4
+
+      - name: Check the required secrets are present
+        env:
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          ARTIFACT_TOKEN: ${{ secrets.GROWTH_ENGINE_ARTIFACT_TOKEN }}
+        run: |
+          set -eu
+          missing=0
+          if [ -z "${REPORTS_SSH_KEY:-}" ]; then
+            echo "::error::REPORTS_SSH_KEY is not set"
+            missing=1
+          fi
+          if [ -z "${REPORTS_SSH_USER:-}${REPORTS_SFTP_USER:-}" ]; then
+            echo "::error::neither REPORTS_SSH_USER nor REPORTS_SFTP_USER is set"
+            missing=1
+          fi
+          if [ -z "${ARTIFACT_TOKEN:-}" ]; then
+            echo "::error::GROWTH_ENGINE_ARTIFACT_TOKEN is not set."
+            echo "Downloading an artifact from another repository needs a"
+            echo "fine-grained token scoped to that ONE repository with"
+            echo "Actions: Read-only. See docs/growth-report-publishing.md."
+            missing=1
+          fi
+          [ "$missing" = "0" ] || exit 1
+          echo "All required secrets present (values never printed)."
+
+      - name: Download the one artifact from the Growth Engine run
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          repository: zanetaseiler/trafficdom-growth-engine
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GROWTH_ENGINE_ARTIFACT_TOKEN }}
+          path: incoming
+
+      - name: Verify what arrived before trusting it
+        env:
+          EXPECTED_SHA: ${{ inputs.sha256 }}
+        run: |
+          set -eu
+          COUNT="$(find incoming -type f | wc -l | tr -d ' ')"
+          if [ "$COUNT" != "1" ]; then
+            echo "::error::expected exactly one file in the artifact, found $COUNT"
+            find incoming -type f
+            exit 1
+          fi
+          if [ ! -s incoming/index.html ]; then
+            echo "::error::the artifact does not contain a non-empty index.html"
+            find incoming -type f
+            exit 1
+          fi
+
+          # The identity check uses the page's own title, which the Growth
+          # Engine's paid_html.py renders unconditionally regardless of
+          # whether this run shows the insufficient-evidence state or the
+          # active state ("<client> — Paid Ads | TrafficDom") — unlike a
+          # state-specific sentence, this can never go stale as the report's
+          # own data state changes.
+          if ! grep -qi "— Paid Ads" incoming/index.html; then
+            echo "::error::index.html does not look like a TrafficDom Paid Ads report"
+            head -c 400 incoming/index.html
+            exit 1
+          fi
+          for other in "Growth Report" "Email Marketing Report" \
+                      "— Social " "— Overview" "Weekly Marketing Analysis" \
+                      "Weekly Analytics"; do
+            if grep -qi "$other" incoming/index.html; then
+              echo "::error::index.html looks like a different report ($other), not Paid Ads"
+              exit 1
+            fi
+          done
+
+          ACTUAL="$(sha256sum incoming/index.html | cut -d' ' -f1)"
+          echo "sha256: $ACTUAL"
+          if [ -n "${EXPECTED_SHA:-}" ] && [ "$ACTUAL" != "$EXPECTED_SHA" ]; then
+            echo "::error::checksum mismatch — expected $EXPECTED_SHA"
+            exit 1
+          fi
+          echo "One file, $(wc -c < incoming/index.html) bytes, verified."
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run the publisher's offline tests
+        run: python3 -m pytest automations/analytics/test_publish_dashboard_section.py -q
+
+      - name: Verify the resolved remote path (no connection)
+        env:
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --client molosoc --section paid --file incoming/index.html --dry-run
+
+      - name: Publish over SFTP
+        env:
+          REPORTS_SSH_HOST: ${{ secrets.REPORTS_SSH_HOST }}
+          REPORTS_SSH_USER: ${{ secrets.REPORTS_SSH_USER }}
+          REPORTS_SFTP_USER: ${{ secrets.REPORTS_SFTP_USER }}
+          REPORTS_SSH_KEY: ${{ secrets.REPORTS_SSH_KEY }}
+          REPORTS_SSH_HOST_KEY: ${{ secrets.REPORTS_SSH_HOST_KEY }}
+          REPORTS_BASE_PATH: ${{ vars.REPORTS_BASE_PATH }}
+        run: |
+          python3 automations/analytics/publish_dashboard.py \
+            --client molosoc --section paid --file incoming/index.html
+
+      - name: Verify the page is live
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/paid/
+          marker: Paid Ads
+          label: the MOLOSOC Paid Ads report
+          expect-sha256: ${{ inputs.sha256 }}
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}
+
+      # The failure this whole design exists to prevent, checked from the
+      # outside afterwards rather than only asserted beforehand.
+      - name: Confirm the Analytics report is untouched
+        uses: ./.github/actions/verify-report
+        with:
+          url: https://trafficdom.com/reports/molosoc/
+          marker: Weekly marketing analysis
+          label: the Analytics report
+          user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
+          password: ${{ secrets.REPORT_BASIC_AUTH_PASSWORD }}

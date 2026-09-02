@@ -106,18 +106,20 @@ ALLOWED_CLIENTS = ("molosoc", "zoe")
 #: MOLOSOC: Analytics itself sits at the client root (no section) and is
 #: never written by a sectioned run — with `--section` set, the path check
 #: REFUSES a destination ending in `molosoc` alone. `growth`, `email-
-#: marketing` and `analytics` are its three siblings, all published by this
-#: same script, over the same connection, with the same guards —
+#: marketing`, `analytics` and `paid` are its four siblings, all published
+#: by this same script, over the same connection, with the same guards —
 #: deliberately, rather than by a second publisher that would have to
 #: re-earn all of them. (`analytics` exists so the Analytics report can
 #: also be published to its own segment, `molosoc/analytics/`, once the
 #: client root moves to the Brand Overview — ADR 0043 in the Growth Engine
-#: repository.)
+#: repository. `paid` publishes the Paid Ads report the Growth Engine's
+#: `paid_ads_analyst`/`paid_ads_report_render.py` pipeline already renders,
+#: unchanged, at `molosoc/paid/` — see publish-paid-ads-report.yml.)
 #:
 #: ZOE: only `social` exists, because only the Social report is live for
 #: this client — see that repository's own `clients/zoe/channels.toml`.
 ALLOWED_SECTIONS = {
-    "molosoc": ("growth", "email-marketing", "analytics"),
+    "molosoc": ("growth", "email-marketing", "analytics", "paid"),
     "zoe": ("social",),
 }
 

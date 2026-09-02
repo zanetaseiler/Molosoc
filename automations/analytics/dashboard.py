@@ -394,6 +394,31 @@ EMAIL_REPORT_URL = "https://trafficdom.com/reports/molosoc/email-marketing/"
 #: publisher would pull an SSH client into a render that must work offline.
 CLIENT = "molosoc"
 
+#: Which of this client's report tabs the shared navigation may link to —
+#: this repository's own record of what is actually PUBLISHED at
+#: trafficdom.com for `CLIENT`, one `--section` at a time, via
+#: `publish_dashboard.py`. This is a different question from, and answered
+#: by a different system than, the Growth Engine's own `channels.toml` (an
+#: evidence-CONTRACT flag that repository owns — "does a verified source
+#: exist for this channel" — read only by renders it produces, e.g.
+#: `paid_ads_report_render.py`). Nothing here reads or writes that file; it
+#: is out of scope for this repository, as it should be. `report_header`'s
+#: own `live=` parameter already exists precisely for a client whose live
+#: set differs from the shared default (`trafficdom_design.LIVE_REPORTS`) —
+#: see that module's docstring and `test_report_navigation.py::
+#: TestReportHeaderAcceptsAPerClientLiveSet` in the Growth Engine repository
+#: — so this is that same, established mechanism, applied here rather than
+#: a new one invented for the purpose.
+#:
+#: `paid` joins the shared default now that the Paid Ads report is actually
+#: live at `reports/molosoc/paid/` (publish-paid-ads-report.yml). `social`
+#: is deliberately NOT added here yet: no MOLOSOC Social report has been
+#: published through this publisher (only Zoe's has, at `reports/zoe/
+#: social/`), and marking a tab live before its page exists is exactly the
+#: dead link this design otherwise guarantees against — see
+#: `test_nothing_that_is_not_a_published_section_is_a_link` below.
+CLIENT_LIVE_REPORTS = td.LIVE_REPORTS + ("paid",)
+
 
 def render_dashboard(document, index=None, generated_at=None, email=None):
     """Return the complete self-contained HTML page as a string.
@@ -432,11 +457,14 @@ def render_dashboard(document, index=None, generated_at=None, email=None):
             ],
             wordmark="TrafficDom Analytics",
             # The shared bar, from the shared table. This report contributes
-            # only which client it is and which report it is; the routes, the
-            # labels and which channels are live all come from the design
-            # system, so the two reports cannot disagree about any of them.
+            # only which client it is and which report it is, plus this
+            # client's own live set (CLIENT_LIVE_REPORTS, above) now that it
+            # differs from the bundle's shared default; the routes and the
+            # labels still come from the design system alone, so the two
+            # reports cannot disagree about either.
             client=CLIENT,
             report="analytics",
+            live=CLIENT_LIVE_REPORTS,
         ),
         summary_section(document, headline, counts_text),
         td.section("Traffic", metric_grid(ga4, "No GA4 metrics in this period.")
