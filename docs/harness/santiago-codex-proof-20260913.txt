@@ -1,0 +1,2 @@
+Disposable harness proof for READY_FOR_SANTIAGO → Codex → VERIFIED.
+Do not merge this test PR.
