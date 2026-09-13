@@ -15,6 +15,8 @@ concurrency:
 
 jobs:
   verify:
+    # Keep the expression gate deliberately simple. The script below validates
+    # actor, clean-review wording, reviewed SHA, and current PR head.
     if: github.event.issue.pull_request != null
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -39,6 +41,9 @@ jobs:
               return;
             }
 
+            // Codex currently renders the reviewed commit line as Markdown:
+            // **Reviewed commit:** `abcdef1234`
+            // Accept that form plus the earlier reversed wording.
             const reviewed = (
               body.match(/Reviewed commit:\*{0,2}\s*`?([0-9a-f]{7,40})`?/i) ||
               body.match(/Commit reviewed:\*{0,2}\s*`?([0-9a-f]{7,40})`?/i) ||
@@ -52,7 +57,11 @@ jobs:
 
             const { owner, repo } = context.repo;
             const pull_number = context.issue.number;
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number,
+            });
 
             const currentHead = pr.head.sha.toLowerCase();
             const reviewedHead = reviewed.toLowerCase();
@@ -100,7 +109,12 @@ jobs:
               }
             }
 
-            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ["VERIFIED"] });
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: ["VERIFIED"],
+            });
 
             const body = [
               "VERIFIED",
@@ -112,5 +126,11 @@ jobs:
               `- marker: VERIFIED:${head}`,
             ].join("\n");
 
-            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body,
+            });
+
             core.info(`Recorded VERIFIED for PR #${issue_number} @ ${head}.`);
