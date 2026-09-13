@@ -63,6 +63,7 @@ def fire(item, url, token):
         print("queue label absent; nothing to dispatch")
         return 1
 
+    # Claim before firing: at-most-once delivery, no automatic retry.
     remove_label(item)
 
     payload = json.dumps({"text": f"{item.repo} {item.label} #{item.number} ({item.url})"}).encode("utf-8")
@@ -75,7 +76,7 @@ def fire(item, url, token):
             "anthropic-beta": ANTHROPIC_BETA_HEADER,
             "anthropic-version": ANTHROPIC_VERSION_HEADER,
             "Content-Type": "application/json",
-            "User-Agent": "ClaudeCloudBridge/1.0",
+            "User-Agent": "Zoe-ClaudeCloudBridge/1.0",
         },
     )
 
