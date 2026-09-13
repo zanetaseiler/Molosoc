@@ -1,51 +1,67 @@
-name: Santiago READY label trigger
+name: Santiago READY trigger
 
 on:
   pull_request:
     types: [labeled]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 concurrency:
-  group: santiago-ready-${{ github.event.pull_request.number }}
+  group: santiago-ready-${{ github.event.pull_request.number || github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
-  emit-ready-handoff:
-    if: github.event.label.name == 'READY_FOR_SANTIAGO'
+  handoff-to-codex-review:
+    if: >-
+      (github.event_name == 'pull_request' && github.event.label.name == 'READY_FOR_SANTIAGO') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null && github.event.comment.user.login == github.repository_owner && startsWith(github.event.comment.body, 'READY_FOR_SANTIAGO'))
     runs-on: ubuntu-latest
     steps:
-      - name: Emit fresh READY_FOR_SANTIAGO PR event with exact head SHA
+      - name: Validate handoff and wake Codex as Zaneta
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.SANTIAGO_CODEX_BRIDGE_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+          COMMENT_BODY: ${{ github.event.comment.body || '' }}
         run: |
           set -euo pipefail
 
-          head_sha="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')"
-
-          if [[ ! "${head_sha}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Could not resolve a full 40-character PR head SHA" >&2
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "SANTIAGO_CODEX_BRIDGE_TOKEN is not configured" >&2
             exit 1
           fi
 
-          body=$(cat <<EOF
-READY_FOR_SANTIAGO
+          current_head="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')"
+          if [[ ! "${current_head}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Could not resolve current PR head" >&2
+            exit 1
+          fi
 
-Repository: ${REPO}
-PR: ${PR_NUMBER}
-Head SHA: ${head_sha}
-Trigger: READY_FOR_SANTIAGO label added
-EOF
-)
+          if [[ "${EVENT_NAME}" == "issue_comment" ]]; then
+            first_nonblank="$(printf '%s\n' "${COMMENT_BODY}" | sed '/^[[:space:]]*$/d' | head -n1 | xargs)"
+            if [[ "${first_nonblank}" != "READY_FOR_SANTIAGO" ]]; then
+              echo "Ignoring non-handoff comment."
+              exit 0
+            fi
+
+            claimed_head="$(printf '%s\n' "${COMMENT_BODY}" | sed -nE 's/.*exact head commit SHA:[[:space:]]*`?([0-9a-f]{7,40})`?.*/\1/p' | head -n1)"
+            if [[ -z "${claimed_head}" ]]; then
+              echo "Ignoring READY_FOR_SANTIAGO without an exact-head claim."
+              exit 0
+            fi
+            if [[ "${current_head}" != "${claimed_head}"* ]]; then
+              echo "Ignoring stale READY_FOR_SANTIAGO: ${claimed_head} != ${current_head}"
+              exit 0
+            fi
+          fi
 
           gh api \
             --method POST \
             "repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            -f body="${body}" >/dev/null
+            -f body='@codex review' >/dev/null
 
-          echo "Emitted READY_FOR_SANTIAGO handoff for PR #${PR_NUMBER} @ ${head_sha}"
+          echo "Posted @codex review using SANTIAGO_CODEX_BRIDGE_TOKEN for PR #${PR_NUMBER} at ${current_head}."
