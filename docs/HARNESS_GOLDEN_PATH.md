@@ -103,6 +103,34 @@ Require:
 
 Then record `VERIFIED` and stop. Never merge automatically.
 
+## Close/merge label hygiene
+
+Comments preserve history. Labels represent current actionable state only.
+
+Transient labels (`READY_FOR_CLAUDE_CLOUD`, `READY_FOR_SANTIAGO`) and every
+retired/forbidden label (`controller:*`, `CHANGES_REQUESTED`,
+`SANTIAGO_REVIEWING`, `WORK_IN_PROGRESS`, `SANTIAGO_STALLED`,
+`CLAUDE_DISPATCHED`, `CLAUDE_WORKING`, `CLAUDE_STALLED`, historical literal
+`NEEDS_ZANETA`) must never survive on a closed Issue/PR. Two idempotent,
+removal-only layers keep that true:
+
+- `.github/workflows/harness-label-close-cleanup.yml` — fires on
+  `issues: closed` / `pull_request: closed` and removes any transient or
+  retired label from that exact item.
+- `.github/workflows/harness-label-reconciler.yml` — a 15-minute +
+  `workflow_dispatch` fallback that sweeps closed items for the same stray
+  labels, for eventual consistency when the event-driven layer missed one.
+
+Both layers, and the shared `.github/scripts/zoe_harness_labels.py`
+contract they use:
+
+- only ever remove labels — never add a label, comment, reopen an item,
+  requeue Claude, or wake Codex;
+- re-check the item's open/closed state immediately before every write, so
+  a reopen racing the cleanup is never clobbered;
+- treat a label that is already absent as a benign no-op, not a failure;
+- never touch `VERIFIED` or any other durable/normal MOLOSOC label.
+
 ## Minimal visible states
 
 The reusable core needs only these transport/terminal concepts:
