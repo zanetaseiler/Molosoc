@@ -75,3 +75,20 @@ def test_already_absent_label_does_not_fail(monkeypatch):
     result = cleanup_mod.cleanup("owner/repo", "issue", 3)
 
     assert result == 0
+
+
+def test_reopen_between_removals_stops_remaining_removals(monkeypatch):
+    """Item is closed on the initial fetch but is reopened after the first
+    label is removed; the second removable label must never be touched."""
+    states = iter(["closed", "closed", "open"])
+    monkeypatch.setattr(
+        cleanup_mod, "fetch_state_and_labels",
+        lambda repo, number: (next(states), ["READY_FOR_SANTIAGO", "controller:stale"]),
+    )
+    removed = []
+    monkeypatch.setattr(cleanup_mod, "remove_label", lambda repo, number, name: removed.append(name) or True)
+
+    result = cleanup_mod.cleanup("owner/repo", "pr", 11)
+
+    assert result == 0
+    assert removed == ["READY_FOR_SANTIAGO"]

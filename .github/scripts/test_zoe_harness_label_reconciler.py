@@ -93,3 +93,25 @@ def test_closed_items_with_label_paginates_until_short_page(monkeypatch):
 
     assert calls == [1, 2]
     assert numbers == pages[1] + pages[2]
+
+
+def test_closed_items_with_label_forces_get_method(monkeypatch):
+    """`-f` params otherwise make `gh api` default to POST, which 404s
+    against the read-only search/issues endpoint; --method GET must be
+    explicit."""
+    captured = []
+
+    def fake_gh(argv):
+        captured.append(argv)
+        import json
+        return json.dumps([])
+
+    monkeypatch.setattr(reconciler_mod, "gh", fake_gh)
+
+    reconciler_mod.closed_items_with_label("owner/repo", "READY_FOR_SANTIAGO")
+
+    assert len(captured) == 1
+    argv = captured[0]
+    method_index = argv.index("--method")
+    assert argv[method_index + 1] == "GET"
+    assert argv.index("search/issues") > method_index

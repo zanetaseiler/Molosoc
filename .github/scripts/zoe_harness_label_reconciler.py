@@ -55,7 +55,7 @@ def closed_items_with_label(repo, label_name):
     page = 1
     while len(numbers) < MAX_ITEMS_PER_LABEL:
         raw = gh([
-            "gh", "api", "search/issues",
+            "gh", "api", "--method", "GET", "search/issues",
             "-f", f"q={query}",
             "-f", f"per_page={PAGE_SIZE}",
             "-f", f"page={page}",

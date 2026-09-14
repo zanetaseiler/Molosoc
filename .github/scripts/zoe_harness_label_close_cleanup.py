@@ -9,9 +9,10 @@ is closed right now. It never adds a label, posts a comment, reopens an
 item, requeues Claude, or wakes Codex. Durable labels (VERIFIED) and any
 other MOLOSOC label are left untouched.
 
-Defense in depth: state is re-checked here, at write time, rather than
-trusted from the triggering event payload, since the item could have been
-reopened between the event firing and this script running.
+Defense in depth: state is re-checked immediately before every removal
+call, rather than trusted from the triggering event payload or from a
+single fetch at the start, since the item could be reopened at any point
+while multiple labels are being removed.
 """
 import argparse
 import sys
@@ -34,6 +35,10 @@ def cleanup(repo, kind, number):
         return 0
 
     for name in to_remove:
+        state, _ = fetch_state_and_labels(repo, number)
+        if state != "closed":
+            print(f"{kind} #{number} is now '{state or 'unknown'}'; stopping remaining removals (never touch open items).")
+            return 0
         if remove_label(repo, number, name):
             print(f"Removed '{name}' from closed {kind} #{number}.")
         else:
