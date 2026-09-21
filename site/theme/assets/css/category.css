@@ -632,6 +632,7 @@
 .molosoc-who-card--2 {
   grid-column: 1;
   grid-row: 2;
+  margin-top: 100px; /* extra drop below panel 1, on top of the row gap */
 }
 
 /* Right column, top: the mirror of panel 1. Spans down through the
@@ -689,6 +690,7 @@
     grid-column: auto;
     grid-row: auto;
     width: auto;
+    margin-top: 0;
   }
 }
 
