@@ -93,16 +93,16 @@ get_header();
 				</div>
 				<div class="molosoc-argument__text">
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je skutečně uvnitř jednorázové ponožkové masky' : __( "What's actually inside a single-use sock mask", 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Předplněná ponožková maska přichází s vlastní, pevně danou formulí — použijete ji jednou a maska i formule společně skončí v koši. Pro jeden večer pohodlné, ale cena se s každým dalším použitím opakuje od nuly.' : __( 'A pre-filled sock mask comes pre-loaded with its own formula — you use it once, and both the formula and the sock go in the bin together. Convenient for a single night, but the formula is fixed and the cost resets every time.', 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je uvnitř jednorázové masky' : __( "What's actually inside a single-use sock mask", 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Předplněná maska má vlastní formuli. Použijete ji jednou a obojí skončí v koši. Pohodlné na jeden večer — při dalším použití ale platíte znovu.' : __( 'A pre-filled sock mask comes pre-loaded with its own formula — you use it once, and both the formula and the sock go in the bin together. Convenient for a single night, but the formula is fixed and the cost resets every time.', 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč opakované použití mění celou matematiku' : __( 'Why reusable changes the math', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek na opakované použití odděluje dvě věci, které jednorázová maska spojuje: samotný návlek a krém uvnitř. Vypláchněte ho, naplňte tím, co už doma máte, a použijte znovu — cena jednoho použití klesá, místo aby se s každým večerem opakovala.' : __( "A reusable cover separates the two things a disposable mask bundles together: the cover itself, and the cream inside it. Wash it, refill it with whatever you're already using, and use it again — the cost of a single session drops instead of repeating every time.", 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč opakované použití mění matematiku' : __( 'Why reusable changes the math', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc odděluje návlek od krému. Vypláchnete ho, použijete svůj vlastní krém a vezmete si ho znovu. S každým použitím tak klesá jeho cena.' : __( "A reusable cover separates the two things a disposable mask bundles together: the cover itself, and the cream inside it. Wash it, refill it with whatever you're already using, and use it again — the cost of a single session drops instead of repeating every time.", 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Jeden návlek, jakýkoli krém — ne uzamčený v předplněné formuli' : __( 'One cover, any cream — not locked to a pre-filled formula', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Jednorázová maska vás uzamkne do formule, se kterou přišla. Molosoc ne — funguje s krémem, který už máte v koupelně, ať je to levnější balzám nebo něco dražšího. Návlek zajistí uzamčení vlhkosti, výběr krému zůstává na vás.' : __( "A disposable mask locks you into whatever formula it shipped with. Molosoc doesn't — it works with the cream already in your drawer, whether that's a drugstore balm or something you paid more for. The cover does the locking-in; the cream is entirely your choice.", 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Jeden návlek, jakýkoli krém' : __( 'One cover, any cream — not locked to a pre-filled formula', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Nejste odkázáni na jednu předplněnou formuli. Molosoc funguje s krémem, který už máte — levným i dražším. Návlek zadrží vlhkost, krém si vybíráte vy.' : __( "A disposable mask locks you into whatever formula it shipped with. Molosoc doesn't — it works with the cream already in your drawer, whether that's a drugstore balm or something you paid more for. The cover does the locking-in; the cream is entirely your choice.", 'molosoc' ) ); ?></p>
 					</div>
 				</div>
 			</div>
@@ -113,11 +113,11 @@ get_header();
 	     card as the block above (see category.css .molosoc-elevated-card):
 	     eyebrow + H2 + photo + three points in one lifted ivory card. Static,
 	     no entrance animation. -->
-	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?>">
+	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Co skutečně znamená „hydratační“' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?>">
 		<div class="molosoc-elevated-card">
 			<div class="molosoc-elevated-card__heading">
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Mechanismus' : __( 'The mechanism', 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?></h2>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Co skutečně znamená „hydratační“' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?></h2>
 			</div>
 			<div class="molosoc-argument molosoc-argument--reverse">
 				<div class="molosoc-argument__media">
@@ -129,16 +129,16 @@ get_header();
 				</div>
 				<div class="molosoc-argument__text">
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak těsnění zadrží vlhkost na kůži' : __( 'How the seal traps moisture against skin', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Krém nanesený a ponechaný na vzduchu ztrácí účinek už během pár minut — většina z něj skončí na ponožkách nebo prostěradle dřív, než se stihne vstřebat. Návlek zapečetí krém přímo na kůži po dobu použití, takže se ho vstřebá výrazně víc.' : __( "Cream applied and left open to air starts losing its effect within minutes — most of it ends up on socks or sheets before it's absorbed. A moisture-lock cover seals the cream directly against skin for the length of the session, so more of it actually goes in instead of rubbing off.", 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Krém zůstane tam, kde má' : __( 'How the seal traps moisture against skin', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Na vzduchu se krém snadno setře do ponožek nebo povlečení. Návlek ho drží přímo na kůži po celou dobu použití.' : __( "Cream applied and left open to air starts losing its effect within minutes — most of it ends up on socks or sheets before it's absorbed. A moisture-lock cover seals the cream directly against skin for the length of the session, so more of it actually goes in instead of rubbing off.", 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč nepořádek a klouzání obvykle zabijí rutinu' : __( 'Why mess and slipping usually kill the routine', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Nejčastější důvod, proč rutina s krémem na nohy skončí, není samotný krém — je to nepořádek. Mastné povlečení, kluzká podlaha a ponožka, která nedrží, jsou obvykle ten skutečný důvod, proč lidé potichu přestanou krém používat.' : __( "The most common reason a foot cream routine stops isn't the cream — it's the mess. Slippery floors, greasy sheets, and a sock that won't stay put make people quietly stop reaching for it. A sealed cover removes that friction, which is usually the actual reason routines don't survive past the first week.", 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Méně nepořádku, jednodušší rutina' : __( 'Why mess and slipping usually kill the routine', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Mastné povlečení, kluzká podlaha a špinavé ponožky dokážou rutinu rychle ukončit. Návlek pomáhá udržet krém tam, kam patří.' : __( "The most common reason a foot cream routine stops isn't the cream — it's the mess. Slippery floors, greasy sheets, and a sock that won't stay put make people quietly stop reaching for it. A sealed cover removes that friction, which is usually the actual reason routines don't survive past the first week.", 'molosoc' ) ); ?></p>
 					</div>
 					<div class="molosoc-argument__item molosoc-sequential-entrance--text">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Funguje s jakýmkoli krémem, záměrně' : __( 'Cream-agnostic, by design', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc není navržen na jednu konkrétní formuli — je navržen tak, aby fungoval s tím, čemu už důvěřujete. Je to záměr: cílem není prodat nový krém, ale konečně nechat fungovat ten, který už máte.' : __( "Molosoc isn't formulated to work with one specific cream — it's designed to work with whichever one you already trust. That's a deliberate choice: the goal isn't to sell a new formula, it's to make the one you already own finally do its job.", 'molosoc' ) ); ?></p>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Funguje s krémem, kterému už důvěřujete' : __( 'Cream-agnostic, by design', 'molosoc' ) ); ?></h3>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc není navržen pro jednu konkrétní formuli. Cílem není prodat vám další krém — ale pomoci vám lépe využít ten, který už máte.' : __( "Molosoc isn't formulated to work with one specific cream — it's designed to work with whichever one you already trust. That's a deliberate choice: the goal isn't to sell a new formula, it's to make the one you already own finally do its job.", 'molosoc' ) ); ?></p>
 					</div>
 				</div>
 			</div>
@@ -157,16 +157,16 @@ get_header();
 		<div class="molosoc-sequential-stage__inner">
 			<div class="molosoc-pillars molosoc-cost-grid">
 				<div class="molosoc-pillar molosoc-sequential-entrance--text">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Cena za použití během měsíce' : __( 'Cost per use over a month', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek Molosoc stojí 229 Kč a vydrží alespoň 10 použití — při pravidelném používání dvakrát týdně tak jedno balení pokryje celý měsíc za méně než 23 Kč na použití. Jednorázová maska se musí kupovat znovu při každém dalším použití.' : __( 'Using a twice-weekly routine as an example: a Molosoc cover costs €10 and holds up for at least 10 uses — so across a month of regular use (roughly 8 sessions), that €10 covers the entire month, working out to under €1.50 per session. A disposable sock mask, priced $6–10, is a new purchase every single time — the same 8 sessions cost $48–80 in disposables alone.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Méně než 23 Kč za použití' : __( 'Cost per use over a month', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc stojí 229 Kč a vydrží alespoň 10 použití. Při používání dvakrát týdně vám jedno balení vystačí přibližně na měsíc.' : __( 'Using a twice-weekly routine as an example: a Molosoc cover costs €10 and holds up for at least 10 uses — so across a month of regular use (roughly 8 sessions), that €10 covers the entire month, working out to under €1.50 per session. A disposable sock mask, priced $6–10, is a new purchase every single time — the same 8 sessions cost $48–80 in disposables alone.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-pillar molosoc-sequential-entrance--text">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Cena za použití během roku' : __( 'Cost per use over a year', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Při stejném tempu (přibližně 96 použití za rok) vychází Molosoc, vyměňovaný každých 10 použití, na přibližně 1 900 Kč ročně. Jednorázové masky se musí dokupovat znovu s každým balením — u stejného počtu použití je celková částka výrazně vyšší.' : __( "Stretched across a year at the same twice-weekly pace (roughly 96 sessions), a Molosoc cover — replaced every 10 uses at €10 each — comes to around €100 for the year. The same 96 sessions in disposable masks, at $6–10 each, adds up to $576–960. The gap isn't a marketing number — it's the same €10 cover, reused instead of rebought.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Přibližně 1 900 Kč za rok' : __( 'Cost per use over a year', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Při stejném tempu a výměně po 10 použitích vychází Molosoc přibližně na 1 900 Kč ročně. Jednorázovou masku kupujete pokaždé znovu.' : __( "Stretched across a year at the same twice-weekly pace (roughly 96 sessions), a Molosoc cover — replaced every 10 uses at €10 each — comes to around €100 for the year. The same 96 sessions in disposable masks, at $6–10 each, adds up to $576–960. The gap isn't a marketing number — it's the same €10 cover, reused instead of rebought.", 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-pillar molosoc-sequential-entrance--text">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Za co už neplatíte (opakované návštěvy salonu)' : __( "What you're not paying for anymore (salon touch-ups)", 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Výsledek z pedikúry vyprchá během dní až dvou týdnů. Udržet ho doma s návlekem na opakované použití stojí zlomek toho, co jedna další návštěva salonu — úspora není jen v návleku oproti masce, ale hlavně v cestách do salonu, které už nemusíte podnikat.' : __( "A salon pedicure fades within days to a couple of weeks. Maintaining that result at home with a €10 reusable cover costs a fraction of what a single repeat salon visit runs — the saving isn't just the cover versus the mask, it's the trips you stop needing to book.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'A méně důvodů vracet se do salonu' : __( "What you're not paying for anymore (salon touch-ups)", 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Výsledek pedikúry postupně mizí. Pravidelná domácí péče vám pomůže ho udržovat déle — bez další rezervace pokaždé, když chodidla začnou vysychat.' : __( "A salon pedicure fades within days to a couple of weeks. Maintaining that result at home with a €10 reusable cover costs a fraction of what a single repeat salon visit runs — the saving isn't just the cover versus the mask, it's the trips you stop needing to book.", 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -181,7 +181,7 @@ get_header();
 	<div class="molosoc-sequential-heading molosoc-sequential-heading--clear">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></p>
-			<h2><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></h2>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je Molosoc' : __( 'Who this is for', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
 	<section class="molosoc-who-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?>">
@@ -194,15 +194,15 @@ get_header();
 			<div class="molosoc-who-cards">
 				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Už máte oblíbený krém' : __( 'Already have a cream you love', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Pokud už máte krém, kterému věříte, tohle je způsob, jak ho konečně nechat fungovat tak, jak měl od začátku.' : __( "If there's already a cream in your routine that you trust, this is how you make it actually work the way it was supposed to.", 'molosoc' ) ); ?></p>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Máte krém, kterému věříte? Molosoc vám pomůže udržet ho na kůži déle a udělat z něj pravidelnou rutinu.' : __( "If there's already a cream in your routine that you trust, this is how you make it actually work the way it was supposed to.", 'molosoc' ) ); ?></p>
 				</a>
 				<a class="molosoc-who-card molosoc-who-card--2" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Právě jste byli na pedikúře a chcete, aby vydržela' : __( 'Just had a pedicure and want it to last', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Čerstvá pedikúra začíná vyprchávat téměř okamžitě. Návlek na opakované použití je způsob, jak si výsledek prodloužit bez další rezervace v salonu.' : __( 'A fresh pedicure starts fading almost immediately. A reusable cover is how you stretch that result without booking another appointment.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Chcete prodloužit pocit po pedikúře' : __( 'Just had a pedicure and want it to last', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Používejte návlek mezi návštěvami salonu a udržujte chodidla v péči i doma.' : __( 'A fresh pedicure starts fading almost immediately. A reusable cover is how you stretch that result without booking another appointment.', 'molosoc' ) ); ?></p>
 				</a>
 				<a class="molosoc-who-card molosoc-who-card--3" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Kupujete to pro někoho jiného' : __( 'Buying this for someone else', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je pořád na nohou, nebo se k péči o sebe nikdy pořádně nedostane — tohle je nejjednodušší způsob, jak jí dát rutinu, u které skutečně vydrží.' : __( "For someone who's always on her feet, or who never quite gets around to taking care of her own — this is the easiest way to give her a routine that actually sticks.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Kupujete ho pro někoho jiného' : __( 'Buying this for someone else', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je celý den na nohou nebo na péči o sebe stále zapomíná — jednoduchá rutina bez další kosmetiky.' : __( "For someone who's always on her feet, or who never quite gets around to taking care of her own — this is the easiest way to give her a routine that actually sticks.", 'molosoc' ) ); ?></p>
 				</a>
 			</div>
 		</div>
