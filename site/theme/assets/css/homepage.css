@@ -571,7 +571,9 @@
   min-height: clamp(30rem, calc(100vh - 11rem), 60rem);
   min-height: clamp(30rem, calc(100svh - 11rem), 60rem);
   display: flex;
-  align-items: flex-end;
+  /* center, not the full-bleed hero's flex-end: the text block was
+     sitting on the card's bottom edge and needed to start much higher. */
+  align-items: center;
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
   border-radius: 18px;
@@ -589,16 +591,18 @@
 /* Inner gutters: the card already sits inset from the viewport edge, so
    these are smaller than the full-bleed hero's --section-padding-x — but
    not tiny: the text was reading as crowded into the card's left edge.
-   Column widened too (46rem → 64rem, and the lede freed from base.css's
-   36rem <p> cap) so the H1 and lede spread across more of the card.
-   Still left-aligned, per explicit request. */
+   Column: 46rem → 64rem first (too crowded left), then pulled back 20%
+   to 51rem per feedback; the lede is freed from base.css's 36rem <p>
+   cap and follows at 43rem. Still left-aligned, per explicit request.
+   Vertical padding is now symmetric because the block is vertically
+   centered in the card (see .molosoc-hero__card). */
 .molosoc-hero--card .molosoc-hero__content {
-  max-width: 64rem;
-  padding: var(--space-xl) clamp(2rem, 5vw, 5.5rem) clamp(2rem, 4vw, 3.5rem);
+  max-width: 51rem;
+  padding: clamp(3rem, 6vw, 5.5rem) clamp(2rem, 5vw, 5.5rem);
 }
 
 .molosoc-hero--card .molosoc-hero__content p {
-  max-width: 54rem;
+  max-width: 43rem;
 }
 
 .molosoc-hero--card .molosoc-hero__scroll-cue {
@@ -1656,4 +1660,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.33 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.34 */
