@@ -544,33 +544,40 @@
   );
 }
 
+/* Card layer — three editorial panels placed on an invisible grid over
+   the photo (desktop ≥ 1201px). Photo facts that drive the placement
+   (molosoc_pedicure_relaxing.jpg, 1376×768, cover/center): the woman's
+   head sits ~30–38% across and ~18–35% down, her body runs from ~25% to
+   ~80% across, her feet are lower-right of center (~55–80% across,
+   ~68–80% down), a low table + cup fill the lower-left corner.
+   Panels 1 and 2 hang from the page's own left/right gutter
+   (--section-padding-x) so they align with every other section's
+   edges; panel 3 sits low and center-LEFT — not dead center, which would
+   cover her feet, the one thing a foot-care photo must keep visible.
+   All three share one width, one padding, one type scale. */
+
 .molosoc-who-cards {
   position: absolute;
-  inset: 0; /* same 100vh box as the two background layers */
+  inset: 0; /* same 100vh box as the background layer */
   z-index: 2;
   pointer-events: none;
 }
 
-/* Same premium/tactile card surface as the homepage's .molosoc-feature-card:
-   pure white, warm hairline border, soft radius, layered shadow. Kept as
-   its own class (not a reuse of homepage.css's version) since this page
-   doesn't load homepage.css. */
 .molosoc-who-card {
   position: absolute;
   pointer-events: auto;
   display: block;
-  background: var(--color-white);
-  border: 1px solid #ece8e2;
-  border-radius: 13px;
-  padding: var(--space-s) var(--space-m);
+  width: clamp(16rem, 21vw, 21rem);
+  padding: clamp(1.75rem, 2.2vw, 2.5rem);
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.06);
+  border-radius: var(--radius-s); /* 4px — a panel edge, not a pill */
   box-shadow:
-    0 1px 2px rgba(12, 17, 21, 0.04),
-    0 8px 20px -12px rgba(12, 17, 21, 0.1),
-    0 24px 48px -28px rgba(12, 17, 21, 0.12);
+    0 1px 2px rgba(12, 17, 21, 0.03),
+    0 14px 36px -20px rgba(12, 17, 21, 0.16);
   text-decoration: none;
   color: var(--color-text);
-  /* Flat: no transition, no hover lift — the hover state below is an
-     instant shadow change only, purely as a link affordance. */
+  text-align: left;
   transition: none;
   opacity: 1;
   transform: none;
@@ -578,56 +585,58 @@
 
 .molosoc-who-card:hover {
   box-shadow:
-    0 2px 4px rgba(12, 17, 21, 0.05),
-    0 14px 28px -14px rgba(12, 17, 21, 0.14),
-    0 32px 64px -32px rgba(12, 17, 21, 0.16);
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    0 20px 44px -22px rgba(12, 17, 21, 0.22);
 }
 
 .molosoc-who-card h3 {
-  font-size: var(--text-body-l);
+  font-size: clamp(1.25rem, 0.45vw + 1.1rem, 1.5rem);
   font-family: var(--font-body);
   font-weight: 700;
-  margin-bottom: var(--space-2xs);
+  line-height: 1.3;
+  margin-bottom: var(--space-xs);
 }
 
 .molosoc-who-card p {
   color: var(--color-text-muted);
-  font-size: var(--text-small);
+  font-size: var(--text-body);
+  line-height: 1.6;
 }
 
-/* Tiered, hand-placed composition (not a grid) — two cards on an upper
-   tier, one centered on a bottom tier to resolve the Z-pattern, center of
-   the frame left open so the photo's own subject stays the focal point.
-
-   Retuned per explicit "not in line" feedback — cards 1/2 previously sat
-   at 24%/20%, only a 4% stagger, which read as a flat, aligned pair
-   rather than an intentional composition. Now an 18%/30% diagonal
-   stagger (real height difference, not a near-tie) and slightly tighter
-   10-11% side insets for a more considered, editorial placement. */
+/* Upper-left: wall + fireplace edge, left of her head. */
 .molosoc-who-card--1 {
-  top: 18%;
-  left: 10%;
-  width: clamp(14rem, 22vw, 17rem);
+  top: 12%;
+  left: var(--section-padding-x);
 }
 
+/* Upper-right, one step lower than panel 1 (deliberate diagonal): curtains,
+   well above her feet. */
 .molosoc-who-card--2 {
-  top: 30%;
-  right: 11%;
-  width: clamp(14rem, 22vw, 17rem);
+  top: 24%;
+  right: var(--section-padding-x);
 }
 
+/* Lower, center-left: daybed base under her hips; her feet (to the right)
+   and the cup (far left) both stay clear. */
 .molosoc-who-card--3 {
-  bottom: 14%;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  width: clamp(16rem, 26vw, 20rem);
-  text-align: center;
+  bottom: 6%;
+  left: 30%;
 }
 
-@media (max-width: 760px) {
-  /* Plain stacked layout: photo block, then the cards in a column. */
+/* Narrower viewports crop the photo's sides (cover), which pushes her head
+   toward panel 1 — anchor the crop a little left of center so the
+   subject keeps its distance. Overlay layout only (≥ 1201px). */
+@media (min-width: 1201px) and (max-aspect-ratio: 3/2) {
+  .molosoc-who-section__bg {
+    background-position: 22% center;
+  }
+}
+
+/* ≤ 1200px: the overlay can no longer avoid the subject, so the panels
+   leave the photo — full-height photo block first, then the three panels
+   in a row (three columns), one column on phones. Same surface, same
+   type, same padding as the overlay panels. */
+@media (max-width: 1200px) {
   .molosoc-who-section__stage {
     height: auto;
   }
@@ -637,11 +646,17 @@
     height: 100vh;
   }
 
+  .molosoc-who-section__scrim {
+    display: none;
+  }
+
   .molosoc-who-cards {
     position: static;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: var(--space-m);
+    max-width: var(--content-max-width-wide);
+    margin: 0 auto;
     padding: var(--space-l) var(--section-padding-x);
     pointer-events: auto;
   }
@@ -655,10 +670,17 @@
     bottom: auto;
     left: auto;
     right: auto;
-    width: 100%;
-    text-align: left;
-    opacity: 1;
-    transform: none;
+    width: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .molosoc-who-section__media {
+    height: 70vh;
+  }
+
+  .molosoc-who-cards {
+    grid-template-columns: 1fr;
   }
 }
 
