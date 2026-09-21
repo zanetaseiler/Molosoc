@@ -751,6 +751,9 @@
   color: var(--color-white);
   max-width: 34rem;
   margin: 0 auto;
+  /* Dark hero-like stage: moderated editorial scale (tokens.css). */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-category-final-cta p {
