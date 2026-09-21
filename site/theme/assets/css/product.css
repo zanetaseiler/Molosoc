@@ -590,9 +590,28 @@
 
 .molosoc-sequential-stage {
   position: relative;
-  height: 100vh;
-  overflow: hidden;
+  /* Was height: 100vh + overflow: hidden — the full-viewport box the old
+     pinned reveal needed. With the reveal gone that box only left a
+     large empty band under the text column before the next heading
+     ("too much padding ... should be much closer", 2026-09-21). The
+     stage now just wraps its content. */
+  height: auto;
   isolation: isolate;
+}
+
+/* Tighten the seam between a stage and whatever heading follows it
+   ("Darujte ho dál" after the pedicure stage, "Jak to funguje" after the
+   gift stage): the argument's own bottom padding drops from --space-l to
+   --space-m and the following heading's top padding from --space-xl to
+   --space-m — 4rem between the last point and the next eyebrow instead
+   of the previous viewport-height gap plus 12rem. Headings elsewhere on
+   the page keep their full --space-xl. */
+.molosoc-sequential-stage .molosoc-argument {
+  padding-bottom: var(--space-m);
+}
+
+.molosoc-sequential-stage + .molosoc-product-heading {
+  padding-top: var(--space-m);
 }
 
 @media (max-width: 760px) {
