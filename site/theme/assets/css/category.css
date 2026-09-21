@@ -565,7 +565,7 @@
   z-index: 2;
   pointer-events: none;
   /* Shared panel width + the gap between neighbouring panels. */
-  --who-panel-w: clamp(16rem, 21vw, 21rem);
+  --who-panel-w: clamp(18rem, 23vw, 23rem);
   --who-panel-gap: var(--space-m);
   /* A real grid over the photo: a panel-wide column on each side, the
      open middle column over her, and the top inset matching the old 12%
@@ -589,7 +589,7 @@
   padding: clamp(1.75rem, 2.2vw, 2.5rem);
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.06);
-  border-radius: var(--radius-s); /* 4px — a panel edge, not a pill */
+  border-radius: 18px; /* same corner as the page's elevated cards */
   box-shadow:
     0 1px 2px rgba(12, 17, 21, 0.03),
     0 14px 36px -20px rgba(12, 17, 21, 0.16);
