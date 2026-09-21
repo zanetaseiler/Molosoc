@@ -83,17 +83,17 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Disposable sock masks vs. reusable foot covers — the Molosoc
+	<!-- H2: Disposable masks vs. reusable covers — the Molosoc
 	     "elevated card": the whole block (eyebrow + H2 + photo + three
 	     points) sits inside one near-white/ivory card with soft rounded
 	     corners and a very soft shadow, visibly lifted above the page's warm
 	     cream background (see category.css .molosoc-elevated-card). Static,
 	     no entrance animation. -->
-	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?>">
+	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Jednorázové masky vs. návleky' : __( 'Disposable masks vs. reusable covers', 'molosoc' ) ); ?>">
 		<div class="molosoc-elevated-card">
 			<div class="molosoc-elevated-card__heading">
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa' : __( 'The alternative', 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?></h2>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Jednorázové masky vs. návleky' : __( 'Disposable masks vs. reusable covers', 'molosoc' ) ); ?></h2>
 			</div>
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
@@ -162,10 +162,10 @@ get_header();
 	<div class="molosoc-sequential-heading molosoc-sequential-heading--clear">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečná cena' : __( 'The real cost', 'molosoc' ) ); ?></p>
-			<h2><?php echo esc_html( $molosoc_is_cz ? 'Opakované použití vs. jednorázové: skutečná cena' : __( 'Reusable vs. disposable: the real cost', 'molosoc' ) ); ?></h2>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Návlek vs. maska: skutečná cena' : __( 'Reusable vs. disposable: the real cost', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage molosoc-sequential-stage--clear" data-slide-direction="up" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Opakované použití vs. jednorázové: skutečná cena' : __( 'Reusable vs. disposable: the real cost', 'molosoc' ) ); ?>">
+	<section class="molosoc-sequential-stage molosoc-sequential-stage--clear" data-slide-direction="up" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Návlek vs. maska: skutečná cena' : __( 'Reusable vs. disposable: the real cost', 'molosoc' ) ); ?>">
 		<div class="molosoc-sequential-stage__inner">
 			<!-- Floating elevated card: the three cost points sit in one lifted
 			     ivory card over the section's photo background (category.css

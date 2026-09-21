@@ -98,8 +98,8 @@ get_header();
 		<div class="molosoc-orbit-drawer">
 			<div class="molosoc-orbit-drawer__top">
 				<div class="molosoc-orbit-drawer__heading">
-					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už doma máte, konečně dostane čas' : __( 'The cream you already own, finally working', 'molosoc' ) ); ?></p>
-					<h2><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už doma máte, konečně dostane čas' : __( 'The cream you already own, finally working', 'molosoc' ) ); ?></h2>
+					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Váš krém konečně dostane čas' : __( 'Your cream, finally working', 'molosoc' ) ); ?></p>
+					<h2><?php echo esc_html( $molosoc_is_cz ? 'Váš krém konečně dostane čas' : __( 'Your cream, finally working', 'molosoc' ) ); ?></h2>
 				</div>
 				<div class="molosoc-orbit-drawer__buy">
 					<?php // translate="no" on every price group/note: browser auto-translate

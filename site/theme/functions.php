@@ -1656,7 +1656,7 @@ function molosoc_cz_schema() {
 		        },
 		        {
 		          "@type": "Question",
-		          "name": "Proč samotné namáčení a pilování nepomůže natrvalo?",
+		          "name": "Proč namáčení a pilování nestačí?",
 		          "acceptedAnswer": { "@type": "Answer", "text": "Odloupnutí řeší jen kůži, která už je ztvrdlá — nemění tlak, který ji způsobil, takže se stejné místo znovu ztvrdne. Jakmile ztvrdlá kůže dosáhne určité tloušťky, začíná měnit rozložení váhy při každém kroku." }
 		        }
 		      ]

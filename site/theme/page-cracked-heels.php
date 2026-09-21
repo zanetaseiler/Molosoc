@@ -89,7 +89,7 @@ get_header();
 	     reveal. pillar1_03_sandals.jpg (Image A) gives way to
 	     pillar3_03_texture.jpg (Image B) through a circular mask, then the
 	     3 severity cards emerge from center to their tiered positions. -->
-	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Kdy popraskané paty přejdou ze suchých v bolestivé' : __( 'When cracked heels go from dry to painful', 'molosoc' ) ); ?>">
+	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Když suché paty začnou bolet' : __( 'When dry heels start to hurt', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
 				<div class="molosoc-severity-section__bg molosoc-severity-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/pillar3_03_texture.jpg');"></div>
@@ -99,7 +99,7 @@ get_header();
 
 			<div class="molosoc-severity-section__heading">
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Když se to zhorší' : __( 'When it gets serious', 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Kdy popraskané paty přejdou ze suchých v bolestivé' : __( 'When cracked heels go from dry to painful', 'molosoc' ) ); ?></h2>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Když suché paty začnou bolet' : __( 'When dry heels start to hurt', 'molosoc' ) ); ?></h2>
 			</div>
 
 			<div class="molosoc-severity-cards">

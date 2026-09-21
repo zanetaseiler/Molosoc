@@ -12,7 +12,7 @@
  * heels-cream-copy.md.
  *
  * Deliberate exception vs. every other spoke here: this one deep-links to
- * the Product page's "The cream you already own, finally working" H2
+ * the Product page's "Your cream, finally working" H2
  * (Persona 1), not the "Real results, no filters" H2 (Persona 2) — this
  * spoke is about cream effectiveness, matching the Cream Graveyard
  * Owner's mindset, per site-structure.md §8 Spoke 4's own note.

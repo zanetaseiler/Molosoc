@@ -128,7 +128,7 @@ get_header();
 	     Product page's own hero model
 	     (docs/molosoc-animation-specification.md) — model-viewer's own
 	     auto-rotate, independent of scroll/JS. -->
-	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?>">
+	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč namáčení a pilování nestačí' : __( "Why soaking and filing don't last", 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
 			<div class="molosoc-mechanism-stage" aria-hidden="true">
@@ -153,8 +153,8 @@ get_header();
 			</div>
 
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné namáčení a pilování nepomůže natrvalo' : __( "Why soaking and filing alone don't keep it away", 'molosoc' ) ); ?></h2>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč namáčení a pilování nestačí' : __( "Why soaking and filing don't last", 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč namáčení a pilování nestačí' : __( "Why soaking and filing don't last", 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Namáčení a pilování ztvrdlé kůže je rutina, kterou už většina lidí zná a zkouší.' : __( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">
 					<article>
