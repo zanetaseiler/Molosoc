@@ -19,9 +19,10 @@
  * functions.php (molosoc_category_schema()) instead of being printed here,
  * since get_header() already owns the <head>.
  *
- * CSS/JS for this page (category.css, sequential-text-reveal.js,
- * who-reveal.js, GSAP+ScrollTrigger, scroll-refresh.js) are enqueued
- * conditionally in functions.php on is_page('foot-covers').
+ * category.css is enqueued conditionally in functions.php on
+ * is_page(['foot-covers','navleky-na-nohy']). No JS at all: every section
+ * below the hero is flat/static by design — the hero's pure-CSS ring spin
+ * and headline type-in are the only animation on the page.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -70,11 +71,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Disposable sock masks vs. reusable foot covers — photo stays
-	     fixed/static in place; each of the three points slides in from the
-	     right, one per scroll step, starting with the first scroll into
-	     the section. See assets/js/sequential-text-reveal.js and
-	     docs/skills/Fixed-Image-Sequential-Text-Reveal.md. -->
+	<!-- H2: Disposable sock masks vs. reusable foot covers — static:
+	     photo + three points, no entrance animation (the class names are
+	     the shared layout hooks from category.css; sequential-text-reveal.js
+	     is deliberately not loaded on this page). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa' : __( 'The alternative', 'molosoc' ) ); ?></p>
@@ -109,11 +109,8 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: What "moisture-lock" actually means — photo stays fixed/static
-	     in place; each of the three points slides in from the left, one
-	     per scroll step, starting with the first scroll into the section.
-	     See assets/js/sequential-text-reveal.js and
-	     docs/skills/Fixed-Image-Sequential-Text-Reveal.md. -->
+	<!-- H2: What "moisture-lock" actually means — static: photo + three
+	     points, no entrance animation. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Mechanismus' : __( 'The mechanism', 'molosoc' ) ); ?></p>
@@ -148,12 +145,8 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Reusable vs. disposable: the real cost — headline shows first;
-	     each of the three cost points rises in from the bottom, one per
-	     scroll step, starting with the first scroll into the section. See
-	     assets/js/sequential-text-reveal.js and
-	     docs/skills/Fixed-Image-Sequential-Text-Reveal.md (no fixed image
-	     in this instance — the pattern works with or without one). -->
+	<!-- H2: Reusable vs. disposable: the real cost — static three-card
+	     cost grid, no entrance animation. -->
 	<div class="molosoc-sequential-heading molosoc-sequential-heading--clear">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečná cena' : __( 'The real cost', 'molosoc' ) ); ?></p>
@@ -179,15 +172,13 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Who this is for — links to Product page. Editorial feature
-	     reveal (see assets/js/who-reveal.js): Image A gives way to Image B
-	     in the same crop via a plain circular mask, then the three persona
-	     cards emerge from center to their own tiered positions. -->
+	<!-- H2: Who this is for — links to Product page. Static full-screen
+	     photo with the three persona cards at their hand-placed tiered
+	     positions (category.css). No pin, no mask reveal, no card flight. -->
 	<section class="molosoc-who-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?>">
 		<div class="molosoc-who-section__stage">
 			<div class="molosoc-who-section__media" aria-hidden="true">
 				<div class="molosoc-who-section__bg molosoc-who-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_relaxing.jpg');"></div>
-				<div class="molosoc-who-section__bg molosoc-who-section__bg--a" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/hero_collection_03_relaxing-scaled.jpg');"></div>
 			</div>
 			<div class="molosoc-who-section__scrim" aria-hidden="true"></div>
 
@@ -213,14 +204,14 @@ get_header();
 		</div>
 	</section>
 
-	<!-- Final CTA -->
+	<!-- Final CTA — static (no .molosoc-reveal fade-in). -->
 	<section class="molosoc-section molosoc-category-final-cta">
 		<div class="molosoc-category-final-cta__media" aria-hidden="true">
 			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_render_01_front_nobg.png"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-category-final-cta__scrim" aria-hidden="true"></div>
-		<div class="molosoc-section__inner molosoc-reveal">
+		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);">Molosoc</p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na vlastní kůži' : __( 'See the reusable cover for yourself', 'molosoc' ) ); ?></h2>
 			<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, celý mechanismus a co přesně najdete v balení.' : __( "Real before/after results, the full mechanism, and what's actually in the box.", 'molosoc' ) ); ?></p>
