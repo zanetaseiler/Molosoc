@@ -776,6 +776,24 @@
 .molosoc-product-how-block {
   position: relative;
   overflow: hidden;
+  /* The render is square (2048×2048, product spanning roughly the 17%–88%
+     band top to bottom) and the block is wide, so object-fit: cover crops
+     the top and bottom — on a 1920px-wide screen about 18% each way, which
+     cut the cuff at the top and the plinth at the bottom. Extra upper
+     space that grows with the viewport width makes the block tall enough
+     for the whole product to fit (≈14% crop at 1920, well inside the
+     product's margins), and reads as breathing room above the heading —
+     per explicit request ("more upper space ... so we can see the whole
+     bg image", 2026-09-21). */
+  padding-top: clamp(3rem, 10vw, 12rem);
+}
+
+@media (max-width: 760px) {
+  /* Phones: the block is already taller than it is wide, so the render is
+     cropped on the sides, not the top — no extra upper space needed. */
+  .molosoc-product-how-block {
+    padding-top: 0;
+  }
 }
 
 .molosoc-product-how-block__media {
