@@ -564,17 +564,28 @@
   inset: 0; /* same 100vh box as the background layer */
   z-index: 2;
   pointer-events: none;
-  /* Shared panel width + the gap between neighbouring panels — the two
-     numbers every panel position below is built from. */
+  /* Shared panel width + the gap between neighbouring panels. */
   --who-panel-w: clamp(16rem, 21vw, 21rem);
   --who-panel-gap: var(--space-m);
+  /* A real grid over the photo: a panel-wide column on each side, the
+     open middle column over her, and the top inset matching the old 12%
+     of the 100vh stage. Panels 1 and 2 stack in the left column exactly
+     one gap apart; panel 3 mirrors panel 1 in the right column. */
+  display: grid;
+  grid-template-columns: var(--who-panel-w) 1fr var(--who-panel-w);
+  grid-template-rows: auto auto 1fr;
+  column-gap: var(--who-panel-gap);
+  row-gap: var(--who-panel-gap);
+  padding: 12vh var(--section-padding-x) 6vh;
+  align-content: start;
 }
 
 .molosoc-who-card {
-  position: absolute;
+  position: relative;
   pointer-events: auto;
   display: block;
-  width: var(--who-panel-w);
+  width: auto; /* fills its grid column (--who-panel-w) */
+  align-self: start;
   padding: clamp(1.75rem, 2.2vw, 2.5rem);
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.06);
@@ -610,28 +621,24 @@
   line-height: 1.6;
 }
 
-/* Upper-left: wall + fireplace edge, left of her head. */
+/* Left column, top: wall + fireplace edge, left of her head. */
 .molosoc-who-card--1 {
-  top: 12%;
-  left: var(--section-padding-x);
+  grid-column: 1;
+  grid-row: 1;
 }
 
-/* Think of the stage as four columns: panel 1 in column 1, her head in
-   the empty column 2, panels 2 and 3 in columns 3 and 4 — all on one
-   top line, one panel-gap apart. */
-
-/* Column 3: one panel width + one gap in from the right gutter. Curtains
-   and wall above her knees. */
+/* Left column, directly under panel 1 (one row-gap): the daybed's left
+   end / bolster, still left of her. */
 .molosoc-who-card--2 {
-  top: 12%;
-  right: calc(var(--section-padding-x) + var(--who-panel-w) + var(--who-panel-gap));
+  grid-column: 1;
+  grid-row: 2;
 }
 
-/* Column 4: the exact mirror of panel 1 — same top, hung from the right
-   gutter. */
+/* Right column, top: the mirror of panel 1. Spans down through the
+   flexible last row so its own height never pushes panel 2 lower. */
 .molosoc-who-card--3 {
-  top: 12%;
-  right: var(--section-padding-x);
+  grid-column: 3;
+  grid-row: 1 / span 3;
 }
 
 /* Narrower viewports crop the photo's sides (cover), which pushes her head
@@ -665,11 +672,13 @@
     position: static;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: none;
     gap: var(--space-m);
     max-width: var(--content-max-width-wide);
     margin: 0 auto;
     padding: var(--space-l) var(--section-padding-x);
     pointer-events: auto;
+    align-content: normal;
   }
 
   .molosoc-who-card,
@@ -677,10 +686,8 @@
   .molosoc-who-card--2,
   .molosoc-who-card--3 {
     position: static;
-    top: auto;
-    bottom: auto;
-    left: auto;
-    right: auto;
+    grid-column: auto;
+    grid-row: auto;
     width: auto;
   }
 }
