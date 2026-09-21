@@ -571,19 +571,38 @@
   min-height: clamp(30rem, calc(100vh - 11rem), 60rem);
   min-height: clamp(30rem, calc(100svh - 11rem), 60rem);
   display: flex;
-  align-items: flex-end;
+  /* center, not the full-bleed hero's flex-end: the text block was
+     sitting on the card's bottom edge and needed to start much higher. */
+  align-items: center;
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
   border-radius: 18px;
+  /* Deeper than the category card's --shadow-lift, per request: the card
+     should visibly float off the cream page. Same language as the rest
+     of the site (soft, layered ink shadows — a tight contact shadow, a
+     mid-range lift, and a long diffuse ambient pass — never a hard,
+     dark drop shadow). */
   box-shadow:
-    0 1px 2px rgba(12, 17, 21, 0.04),
-    var(--shadow-lift);
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 18px 40px -18px rgba(12, 17, 21, 0.22),
+    0 48px 96px -32px rgba(12, 17, 21, 0.4);
 }
 
-/* Tighter inner gutters than the full-bleed hero's --section-padding-x:
-   the card already sits inset from the viewport edge. */
+/* Inner gutters: the card already sits inset from the viewport edge, so
+   these are smaller than the full-bleed hero's --section-padding-x — but
+   not tiny: the text was reading as crowded into the card's left edge.
+   Column: 46rem → 64rem first (too crowded left), then pulled back 20%
+   to 51rem per feedback; the lede is freed from base.css's 36rem <p>
+   cap and follows at 43rem. Still left-aligned, per explicit request.
+   Vertical padding is now symmetric because the block is vertically
+   centered in the card (see .molosoc-hero__card). */
 .molosoc-hero--card .molosoc-hero__content {
-  padding: var(--space-xl) clamp(1.5rem, 4vw, 4rem) clamp(2rem, 4vw, 3.5rem);
+  max-width: 51rem;
+  padding: clamp(3rem, 6vw, 5.5rem) clamp(2rem, 5vw, 5.5rem);
+}
+
+.molosoc-hero--card .molosoc-hero__content p {
+  max-width: 43rem;
 }
 
 .molosoc-hero--card .molosoc-hero__scroll-cue {
@@ -725,9 +744,13 @@
 .molosoc-arc-reveal__heading {
   position: relative;
   z-index: 2;
-  font-size: clamp(3rem, 6vw + 1rem, 6rem);
-  line-height: var(--leading-tight);
-  max-width: 46rem;
+  /* Size/leading come from the shared <h2> rule (base.css, the
+     --text-display-2xl editorial scale) — this heading used to carry
+     its own clamp(3rem, 6vw + 1rem, 6rem). */
+  /* 46rem → 72rem: at this size the heading wrapped into a tight,
+     crowded centered stack; the wider measure lets it spread across
+     the section (still centered). */
+  max-width: 72rem;
   margin: 0 auto;
   /* ~120px (--space-xl) of white space above the heading — enough that the
      hero-to-section hand-off reads as calm and intentional rather than
@@ -1050,6 +1073,12 @@
 
 .molosoc-merge__text {
   opacity: 1;
+}
+
+/* Over the photo, in a 30rem column: moderated editorial scale. */
+h2.molosoc-merge__text {
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1621,6 +1650,9 @@
   color: var(--color-white);
   max-width: 34rem;
   margin: 0 auto;
+  /* Dark hero-like stage: moderated editorial scale. */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-final-cta p {
@@ -1638,4 +1670,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.27 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.35 */

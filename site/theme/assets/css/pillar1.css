@@ -305,6 +305,9 @@
 .molosoc-severity-section__heading h2 {
   color: var(--color-white);
   max-width: 34rem;
+  /* White over the photo stage: moderated editorial scale (tokens.css). */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-severity-cards {
@@ -569,6 +572,10 @@
 .molosoc-mechanism-drawer h2 {
   color: var(--color-ink);
   max-width: 30rem;
+  /* Glass drawer over the rotating 3D object, 30rem column: moderated
+     editorial scale (tokens.css). */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-mechanism-drawer > p {
@@ -732,6 +739,9 @@
 
 .molosoc-pillar-final-cta h2 {
   color: var(--color-white);
+  /* Dark hero-like stage: moderated editorial scale (tokens.css). */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-pillar-final-cta p {

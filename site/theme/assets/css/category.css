@@ -91,6 +91,44 @@
   margin-top: var(--space-l);
 }
 
+/* ---------- Editorial two-part headline (2026-09-21) ----------
+   Mirrors the product hero's composition: the product phrase ("Návleky
+   na nohy" / "Reusable foot covers") is one oversized, tracked, single
+   line; the qualifier ("které zadrží vlhkost — ne jen jednou" / "that
+   lock moisture in — not just once") sits under it at the regular
+   display-m size. Both are spans inside the one H1, so the accessible
+   name is still the full sentence and the type-in reveal above still
+   plays on the whole headline. 5.2vw keeps the longer EN phrase clear
+   of the rings on the right at every desktop width. */
+
+.molosoc-category-hero__phrase {
+  display: block;
+  font-size: clamp(3.25rem, 5.2vw, 5.75rem);
+  line-height: 0.95;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
+}
+
+.molosoc-category-hero__qualifier {
+  display: block;
+  margin-top: var(--space-xs);
+  font-size: var(--text-display-m);
+  line-height: var(--leading-tight);
+  letter-spacing: 0.01em;
+}
+
+@media (max-width: 860px) {
+  .molosoc-category-hero__phrase {
+    white-space: normal;
+    font-size: clamp(2.5rem, 10vw, 4rem);
+    line-height: 1;
+  }
+
+  .molosoc-category-hero__qualifier {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+  }
+}
+
 /* ---------- Hero motion decoration ----------
    Adapted from nexu-io/open-design's "motion-frames" template
    (github.com/nexu-io/open-design/tree/main/design-templates/motion-frames):
@@ -751,6 +789,9 @@
   color: var(--color-white);
   max-width: 34rem;
   margin: 0 auto;
+  /* Dark hero-like stage: moderated editorial scale (tokens.css). */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-category-final-cta p {
