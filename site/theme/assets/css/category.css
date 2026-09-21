@@ -380,6 +380,9 @@
 .molosoc-elevated-card .molosoc-argument {
   max-width: var(--content-max-width-wide);
   margin: 0 auto;
+  /* Inside the card the three points sit at the photo's vertical middle
+     (the shared .molosoc-argument default is top-aligned). */
+  align-items: center;
 }
 
 /* No 100vh stage around this instance, so the photo needs no viewport
