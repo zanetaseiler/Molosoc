@@ -78,10 +78,13 @@
   );
 }
 
+/* 46rem, up from 34rem: the H1 + lede felt crowded against the left
+   edge at the narrower measure. Still left-aligned; stops well short of
+   the product render / rings on the right. */
 .molosoc-category-hero__text {
   position: relative;
   z-index: 2;
-  max-width: 34rem;
+  max-width: 46rem;
 }
 
 .molosoc-category-hero__text .molosoc-btn {
