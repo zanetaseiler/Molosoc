@@ -575,9 +575,15 @@
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
   border-radius: 18px;
+  /* Deeper than the category card's --shadow-lift, per request: the card
+     should visibly float off the cream page. Same language as the rest
+     of the site (soft, layered ink shadows — a tight contact shadow, a
+     mid-range lift, and a long diffuse ambient pass — never a hard,
+     dark drop shadow). */
   box-shadow:
-    0 1px 2px rgba(12, 17, 21, 0.04),
-    var(--shadow-lift);
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 18px 40px -18px rgba(12, 17, 21, 0.22),
+    0 48px 96px -32px rgba(12, 17, 21, 0.4);
 }
 
 /* Inner gutters: the card already sits inset from the viewport edge, so
@@ -736,7 +742,10 @@
   z-index: 2;
   font-size: clamp(3rem, 6vw + 1rem, 6rem);
   line-height: var(--leading-tight);
-  max-width: 46rem;
+  /* 46rem → 72rem: at this size the heading wrapped into a tight,
+     crowded centered stack; the wider measure lets it spread across
+     the section (still centered). */
+  max-width: 72rem;
   margin: 0 auto;
   /* ~120px (--space-xl) of white space above the heading — enough that the
      hero-to-section hand-off reads as calm and intentional rather than
@@ -1647,4 +1656,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.32 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.33 */
