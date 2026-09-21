@@ -172,20 +172,24 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Who this is for — links to Product page. Static full-screen
-	     photo with the three persona cards at their hand-placed tiered
-	     positions (category.css). No pin, no mask reveal, no card flight. -->
+	<!-- H2: Who this is for — links to Product page. The heading sits in
+	     its own centered white block above the stage, identical to the
+	     "real cost" section's heading directly before it, and the stage
+	     below is a static full-screen photo with the three persona cards at
+	     their hand-placed tiered positions (category.css). No pin, no mask
+	     reveal, no card flight. -->
+	<div class="molosoc-sequential-heading molosoc-sequential-heading--clear">
+		<div class="molosoc-sequential-heading__inner">
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></h2>
+		</div>
+	</div>
 	<section class="molosoc-who-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?>">
 		<div class="molosoc-who-section__stage">
 			<div class="molosoc-who-section__media" aria-hidden="true">
 				<div class="molosoc-who-section__bg molosoc-who-section__bg--b" style="background-image: url('https://molosoc.com/wp-content/uploads/2026/07/molosoc_pedicure_relaxing.jpg');"></div>
 			</div>
 			<div class="molosoc-who-section__scrim" aria-hidden="true"></div>
-
-			<div class="molosoc-who-section__heading">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Pro koho je to určené' : __( 'Who this is for', 'molosoc' ) ); ?></h2>
-			</div>
 
 			<div class="molosoc-who-cards">
 				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">

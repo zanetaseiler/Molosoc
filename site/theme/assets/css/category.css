@@ -409,7 +409,10 @@
 }
 
 /* ---------- Who this is for — static full-screen photo + cards ----------
-   One 100vh stage with the photo (molosoc_pedicure_relaxing.jpg) as a
+   The eyebrow + H2 live in a .molosoc-sequential-heading--clear block
+   above this stage (same centered white heading as the "real cost"
+   section right before it), not inside the photo. The stage itself is
+   one 100vh box with the photo (molosoc_pedicure_relaxing.jpg) as a
    plain cover background and the three persona cards at their tiered,
    hand-placed positions. This used to be a pinned editorial feature
    reveal (circular mask from Image A to Image B, cards flying out from
@@ -453,12 +456,6 @@
     rgba(248, 247, 244, 0.15) 74%,
     rgba(248, 247, 244, 0.72) 100%
   );
-}
-
-.molosoc-who-section__heading {
-  position: absolute;
-  inset: var(--space-l) var(--section-padding-x) auto;
-  z-index: 2;
 }
 
 .molosoc-who-cards {
@@ -552,11 +549,6 @@
   .molosoc-who-section__media {
     position: relative;
     height: 100vh;
-  }
-
-  .molosoc-who-section__heading {
-    position: static;
-    padding: var(--space-l) var(--section-padding-x) 0;
   }
 
   .molosoc-who-cards {
