@@ -333,9 +333,9 @@
    An entire content block (heading + photo + points) contained inside one
    near-white/ivory card with subtle rounded corners and a very soft
    shadow, sitting visibly above the page's warm cream background. Used
-   for the "disposable vs. reusable" block; the heading inside it is left-
-   aligned like the section's own text, and the argument grid is reused
-   unchanged. */
+   for the "disposable vs. reusable" and "moisture-lock mechanism" blocks
+   (two cards back to back); the heading inside is left-aligned like the
+   section's own text, and the argument grid is reused unchanged. */
 
 /* Card = three quarters of the available width (it used to run nearly
    edge to edge), never narrower than its content + padding, never wider
@@ -346,6 +346,12 @@
 .molosoc-elevated-card-section {
   background: var(--color-bg);
   padding: var(--space-xl) clamp(1rem, 2vw, 2rem);
+}
+
+/* Two cards back to back share one section gap instead of stacking two
+   full paddings between them. */
+.molosoc-elevated-card-section + .molosoc-elevated-card-section {
+  padding-top: 0;
 }
 
 .molosoc-elevated-card {

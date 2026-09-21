@@ -109,16 +109,16 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: What "moisture-lock" actually means — static: photo + three
-	     points, no entrance animation. -->
-	<div class="molosoc-sequential-heading">
-		<div class="molosoc-sequential-heading__inner">
-			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Mechanismus' : __( 'The mechanism', 'molosoc' ) ); ?></p>
-			<h2><?php echo esc_html( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?></h2>
-		</div>
-	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="left" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?>">
-		<div class="molosoc-sequential-stage__inner">
+	<!-- H2: What "moisture-lock" actually means — same Molosoc elevated
+	     card as the block above (see category.css .molosoc-elevated-card):
+	     eyebrow + H2 + photo + three points in one lifted ivory card. Static,
+	     no entrance animation. -->
+	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?>">
+		<div class="molosoc-elevated-card">
+			<div class="molosoc-elevated-card__heading">
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Mechanismus' : __( 'The mechanism', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Co skutečně znamená "hydratační"' : __( 'What "moisture-lock" actually means', 'molosoc' ) ); ?></h2>
+			</div>
 			<div class="molosoc-argument molosoc-argument--reverse">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media molosoc-media--static molosoc-media--justify-right">
