@@ -1,24 +1,24 @@
 /*
-  Molosoc — sequential, scroll-gated text entrance (category page).
+  Molosoc — scroll-triggered text-column entrance (shared).
 
   Applies independently to every ".molosoc-sequential-stage" on the page: a
   photo (if the instance has one) stays fixed/static in place — never
   selected or touched by this script — while its stack of
-  ".molosoc-sequential-entrance--text" items slides in one at a time from
-  the direction named in that stage's own [data-slide-direction] ("left",
-  "right", "up", or "down"), each gated to its own scroll-progress
-  threshold. The first scroll into a stage already reveals its first item;
-  continuing to scroll reveals each subsequent one. A fixed image isn't
-  required — the same pinned/threshold mechanic works for a plain stat
-  grid with no photo at all (see the "real cost" section, direction "up").
+  ".molosoc-sequential-entrance--text" items slides in TOGETHER, as one
+  unit, from the direction named in that stage's own [data-slide-direction]
+  ("left", "right", "up", or "down") when the stage scrolls into view. One
+  content section = one reveal event: reaching the section reveals the
+  whole text column at once, and no paragraph ever needs its own extra
+  scroll. A fixed image isn't required — the same entrance works for a
+  plain stat grid with no photo at all (the "real cost" section, "up").
 
-  This is the reusable "fixed image, sequential text reveal" pattern — see
-  docs/skills/Fixed-Image-Sequential-Text-Reveal.md (project copy) or
-  ~/.claude/skills/fixed-image-text-reveal (canonical/global) for the full
-  mechanics, the two earlier variants that were tried and reverted before
-  landing here, and the mistakes to avoid (an IntersectionObserver inside a
-  pinned stage fires every item at once; giving the photo its own entrance
-  reintroduces an edge-clipping bug on a rounded/overflow-hidden wrapper).
+  This deliberately replaced the earlier pinned, scroll-gated variant
+  (each item gated to its own scroll-progress threshold inside a pinned
+  stage — see docs/skills/Fixed-Image-Sequential-Text-Reveal.md for that
+  pattern's mechanics): revealing paragraphs one-per-scroll-step made
+  visitors micro-scroll through every section and read as if the section
+  had ended after its first item. No pin, no scrub — the stage scrolls
+  normally and the column's entrance plays once on arrival.
 
   Progressive enhancement: no-JS/reduced-motion/CDN-failure all render the
   same finished state — every text item already at full opacity/no
@@ -47,10 +47,8 @@
   gsap.registerPlugin(ScrollTrigger);
 
   var SLIDE_DISTANCE = 70; // px
-  var DURATION = 0.6;
+  var DURATION = 0.7;
   var EASE = "power2.out";
-  var STEP_START = 0.12;
-  var STEP_END = 0.9;
 
   stages.forEach(function (stage) {
     var textItems = Array.prototype.slice.call(
@@ -58,7 +56,7 @@
     );
     if (!textItems.length) return;
 
-    // Direction names the side each item starts offset toward, then eases
+    // Direction names the side the column starts offset toward, then eases
     // back to its resting position from: "left"/"right" move along x,
     // "up"/"down" move along y ("up" = starts lower, rises upward into
     // place — reads as "coming up from the bottom"). Defaults to "right".
@@ -74,42 +72,20 @@
 
     gsap.set(textItems, startProps);
 
-    var entrances = textItems.map(function (item) {
-      return gsap.timeline({ paused: true }).to(item, {
-        x: 0,
-        y: 0,
-        opacity: 1,
-        duration: DURATION,
-        ease: EASE,
-      });
-    });
-
-    var triggered = entrances.map(function () {
-      return false;
-    });
-    var thresholds = entrances.map(function (_, i) {
-      return entrances.length === 1
-        ? STEP_START
-        : STEP_START + (i * (STEP_END - STEP_START)) / (entrances.length - 1);
-    });
-
-    ScrollTrigger.create({
-      trigger: stage,
-      start: "top top",
-      end: "+=" + window.innerHeight * 1.5,
-      pin: true,
-      scrub: true,
-      onUpdate: function (self) {
-        entrances.forEach(function (tl, i) {
-          var shouldShow = self.progress >= thresholds[i];
-          if (shouldShow && !triggered[i]) {
-            triggered[i] = true;
-            tl.play();
-          } else if (!shouldShow && triggered[i]) {
-            triggered[i] = false;
-            tl.reverse();
-          }
-        });
+    // One tween, every item together, stagger 0 — no per-paragraph delay.
+    // once:true (play on first arrival, never re-hide) also covers loading
+    // mid-page past the stage: ScrollTrigger's initial refresh sees the
+    // start already crossed and plays the entrance immediately.
+    gsap.to(textItems, {
+      x: 0,
+      y: 0,
+      opacity: 1,
+      duration: DURATION,
+      ease: EASE,
+      scrollTrigger: {
+        trigger: stage,
+        start: "top 60%",
+        once: true,
       },
     });
   });

@@ -120,9 +120,9 @@
 }
 
 /* ============================================================= */
-/* 2. WHAT CAUSES CRACKED HEELS — fixed-image-text-reveal          */
-/* ~/.claude/skills/fixed-image-text-reveal — photo stays          */
-/* completely static; 3 H3 causes slide in one per scroll step.    */
+/* 2. WHAT CAUSES CRACKED HEELS — fixed image + text column        */
+/* entrance — photo stays completely static; the 3 H3 causes       */
+/* slide in together, as one unit, when the stage scrolls in.      */
 /* Same class names assets/js/sequential-text-reveal.js already    */
 /* looks for (that script is page-agnostic — it just needs these   */
 /* classes to exist on the page), duplicated here rather than      */

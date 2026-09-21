@@ -49,9 +49,9 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. HOW TO TREAT INGROWN TOENAILS — fixed-image-text-reveal.
+	<!-- 2. HOW TO TREAT INGROWN TOENAILS — fixed image + text column.
 	     molosoc_ingrown_toenail.jpg stays fixed/static; the 3 H3 steps
-	     slide in from the right, one per scroll step. -->
+	     slide in from the right together, as one unit, on arrival. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Step by step', 'molosoc' ); ?></p>

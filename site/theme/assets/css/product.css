@@ -502,16 +502,15 @@
   }
 }
 
-/* ---------- "Make the pedicure last" — fixed-image, sequential text
+/* ---------- "Make the pedicure last" — fixed-image, text-column
    reveal (same pattern as category-preview.html's two argument rows). The
-   photo pair stays completely static; the three H3/paragraph points reveal
-   one at a time, gated to scroll progress. See
-   assets/js/sequential-text-reveal.js and
-   docs/skills/Fixed-Image-Sequential-Text-Reveal.md. Reused as-is from
+   photo pair stays completely static; the three H3/paragraph points slide
+   in together, as one unit, when the stage scrolls into view. See
+   assets/js/sequential-text-reveal.js. Reused as-is from
    category.css rather than imported, matching this file's existing
    per-page-CSS convention. `.molosoc-argument` itself keeps handling its
    own max-width/padding/centering, so the stage wrapper only needs to
-   provide the pin/overflow box — no nested `__inner`. ---------- */
+   provide the overflow box — no nested `__inner`. ---------- */
 
 .molosoc-sequential-stage {
   position: relative;

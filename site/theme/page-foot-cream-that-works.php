@@ -56,9 +56,9 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. WHY CREAMS GET ABANDONED HALFWAY THROUGH — fixed-image-text-reveal.
-	     pillar5_02_squeezing.jpg stays fixed/static; the 3 H3 points slide in
-	     from the right, one per scroll step. -->
+	<!-- 2. WHY CREAMS GET ABANDONED HALFWAY THROUGH — fixed image + text
+	     column. pillar5_02_squeezing.jpg stays fixed/static; the 3 H3 points
+	     slide in from the right together, as one unit, on arrival. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'The real reason', 'molosoc' ); ?></p>

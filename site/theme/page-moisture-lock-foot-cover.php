@@ -170,9 +170,9 @@ get_header();
 	</div>
 
 	<!-- H2: Make the pedicure last (Persona 3 — After-Pedicure Maintainer).
-	     Photo pair stays fixed/static; the three points below reveal one
-	     at a time on scroll — see assets/js/sequential-text-reveal.js and
-	     docs/skills/Fixed-Image-Sequential-Text-Reveal.md. -->
+	     Photo pair stays fixed/static; the three points below reveal
+	     together, as one unit, when the section scrolls into view — see
+	     assets/js/sequential-text-reveal.js. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Ať vám pedikúra vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?></p>
@@ -211,8 +211,8 @@ get_header();
 	</section>
 
 	<!-- H2: Give it as a gift (Persona 4 — Gift Buyer). Photo pair stays
-	     fixed/static; the three points below reveal one at a time on
-	     scroll, same pattern as above. -->
+	     fixed/static; the three points below reveal together, as one
+	     unit, when the section scrolls into view, same pattern as above. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?></p>

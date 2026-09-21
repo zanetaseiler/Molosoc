@@ -49,9 +49,9 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. WHAT CAUSES INGROWN TOENAILS — fixed-image-text-reveal.
+	<!-- 2. WHAT CAUSES INGROWN TOENAILS — fixed image + text column.
 	     pillar2_02_trimming.jpg stays fixed/static; the 3 H3 causes slide
-	     in from the right, one per scroll step. -->
+	     in from the right together, as one unit, on arrival. -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Příčiny' : __( 'The causes', 'molosoc' ) ); ?></p>
