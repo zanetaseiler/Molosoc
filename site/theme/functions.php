@@ -161,11 +161,14 @@ add_action( 'wp_head', function () {
  * topics-portal / scroll-refresh, and every .molosoc-reveal pinned at its
  * settled state (homepage.css, body.molosoc-front-page--card).
  *
- * Currently the Czech homepage only. Return true unconditionally to roll
- * the same treatment out to the English homepage.
+ * Built for the Czech homepage first (2026-09-21), then approved for the
+ * English homepage the same day — so this is now every homepage. Kept as
+ * a function (rather than deleting the old floating-header/full-bleed
+ * hero code paths) so the two treatments can still be A/B'd or rolled
+ * back per language with a one-line change here.
  */
 function molosoc_home_card_variant() {
-	return function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
+	return true;
 }
 
 function molosoc_enqueue_assets() {

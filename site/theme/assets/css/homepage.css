@@ -526,7 +526,7 @@
 
 /* ---------- Hero — "card" variant (body.molosoc-front-page--card) ----------
    Rendered when molosoc_home_card_variant() is true (functions.php —
-   currently the Czech homepage). Same idea as the category page's
+   both languages since 2026-09-21). Same idea as the category page's
    floating elevated card (category.css .molosoc-elevated-card--floating,
    the "real cost" points on /cz/navleky-na-nohy/), moved INTO the hero:
    the section itself is just the warm cream page background, and the

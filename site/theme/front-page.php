@@ -35,7 +35,7 @@
  * Floating over the hero, not boxed like molosoc-site-header.
  *
  * "Card hero" variant (2026-09-21, molosoc_home_card_variant() in
- * functions.php — currently the Czech homepage only): the page instead
+ * functions.php — now on for both languages): the page instead
  * renders the SAME boxed header as every other template (logo + menu as
  * on /cz/navleky-na-nohy/, via template-parts/site-header.php), the hero
  * photo sits inside one very wide floating elevated card on the cream
