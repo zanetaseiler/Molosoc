@@ -165,7 +165,7 @@ function molosoc_enqueue_assets() {
 
 	wp_enqueue_style(
 		'molosoc-fonts',
-		'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Mulish:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap',
+		'https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Mulish:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap',
 		array(),
 		null
 	);
