@@ -65,7 +65,19 @@ get_header();
 
 		<div class="molosoc-category-hero__text">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa na opakované použití' : __( 'The reusable alternative', 'molosoc' ) ); ?></p>
-			<h1><?php echo esc_html( $molosoc_is_cz ? 'Návleky na nohy, které zadrží vlhkost — ne jen jednou' : __( 'Reusable foot covers that lock moisture in — not just once', 'molosoc' ) ); ?></h1>
+			<?php
+			// Editorial two-part headline (2026-09-21), same idea as the
+			// product hero: the product phrase is one oversized, tracked line
+			// and the qualifier sits beneath it at the normal display size.
+			// The H1 keeps the full sentence as its accessible name; only the
+			// comma after "nohy" is dropped from the CZ display (a trailing
+			// comma on a giant line read as a typo). category.css does the
+			// sizing.
+			?>
+			<h1 class="molosoc-category-hero__title">
+				<span class="molosoc-category-hero__phrase"><?php echo esc_html( $molosoc_is_cz ? 'Návleky na nohy' : __( 'Reusable foot covers', 'molosoc' ) ); ?></span>
+				<span class="molosoc-category-hero__qualifier"><?php echo esc_html( $molosoc_is_cz ? 'které zadrží vlhkost — ne jen jednou' : __( 'that lock moisture in — not just once', 'molosoc' ) ); ?></span>
+			</h1>
 			<p class="molosoc-section__lede"><?php echo esc_html( $molosoc_is_cz ? 'Většina masek na nohy v obchodě je na jedno použití. Návlek od Molosoc je na stovky.' : __( "Most foot masks on the shelf are built for one wear. Molosoc's cover is built for hundreds.", 'molosoc' ) ); ?></p>
 			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
 		</div>
