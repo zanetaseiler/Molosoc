@@ -11,10 +11,11 @@
   text on top of it, same as every other page.
 */
 
-/* ---------- Hero — rotating 3D model, static layout ----------
-   The molosoc-3d.glb model still rotates continuously via <model-viewer>'s
-   own auto-rotate attribute — that's independent of scroll/JS and stays.
-   What's gone: the orbit-scroll-drawer scroll-pin/fade/blur/slide mechanic
+/* ---------- Hero — static 3D model, static layout ----------
+   The molosoc-3d.glb model renders as a still via <model-viewer> — its
+   continuous auto-rotate was removed 2026-09-21 (per explicit request:
+   no animation anywhere on this page, the model included).
+   Also gone: the orbit-scroll-drawer scroll-pin/fade/blur/slide mechanic
    this section used to run (.claude/skills/orbit-scroll-drawer/SKILL.md).
    Per explicit correction, that whole idea is reverted — the "cream you
    already own" content (.molosoc-orbit-drawer below) is now a plain, firm
@@ -54,7 +55,7 @@
   /* The model-viewer canvas is a transparent 960px rectangle that bleeds
      over the drawer's price/CTA row below the hero — at z-index 50 it was
      swallowing clicks on the Order Now button. The model is decorative
-     only (auto-rotate, no camera-controls), so let clicks pass through. */
+     only (static, no camera-controls), so let clicks pass through. */
   pointer-events: none;
 }
 
@@ -502,15 +503,14 @@
   }
 }
 
-/* ---------- "Make the pedicure last" — fixed-image, text-column
-   reveal (same pattern as category-preview.html's two argument rows). The
-   photo pair stays completely static; the three H3/paragraph points slide
-   in together, as one unit, when the stage scrolls into view. See
-   assets/js/sequential-text-reveal.js. Reused as-is from
-   category.css rather than imported, matching this file's existing
-   per-page-CSS convention. `.molosoc-argument` itself keeps handling its
-   own max-width/padding/centering, so the stage wrapper only needs to
-   provide the overflow box — no nested `__inner`. ---------- */
+/* ---------- "Make the pedicure last" / "Give it as a gift" — static
+   photo pair + static text column. The scroll-in text entrance these two
+   stages used to run (assets/js/sequential-text-reveal.js, no longer
+   enqueued on this page) was removed 2026-09-21; the stage wrapper is
+   kept purely for layout (the same viewport-height box as before, so
+   nothing shifts). `.molosoc-argument` itself keeps handling its own
+   max-width/padding/centering, so the stage wrapper only needs to
+   provide the box — no nested `__inner`. ---------- */
 
 .molosoc-sequential-stage {
   position: relative;
@@ -525,15 +525,17 @@
   }
 }
 
-.molosoc-sequential-entrance--text {
-  opacity: 1;
-  transform: none;
+/* No motion anywhere on this page (2026-09-21, per explicit request):
+   neutralise components.css's shared photo hover-zoom and button hover-lift
+   transitions for every instance on this page. */
+.molosoc-media img,
+.molosoc-btn {
+  transition: none;
 }
 
-/* Overrides components.css's shared .molosoc-media:hover img zoom — a
-   fixed/static photo inside a pinned sequential stage shouldn't also carry
-   its own independent hover motion. */
-.molosoc-media--static:hover img {
+.molosoc-media:hover img,
+.molosoc-btn:hover,
+.molosoc-btn:active {
   transform: none;
 }
 
@@ -642,29 +644,13 @@
   aspect-ratio: 4 / 5;
 }
 
-/* Hero breathing zoom (.claude/skills/hero-breathing-zoom/SKILL.md) — a
-   slow, continuous ambient scale. Running animations override a plain
-   :hover transform rule for the same property regardless of specificity,
-   so this also quietly supersedes components.css's shared
-   .molosoc-media:hover zoom — no separate override needed. No JS gating
-   needed either: these cards sit below the fold on load, so there's no
-   risk of the animation starting mid-transition before the user ever
-   sees it. Scale pushed to 1.12 (vs. the skill's canonical 1.06) per
-   explicit request for a more visible zoom on these three photos
-   specifically — not a change to the skill's own default. */
+/* The three proof photos used to run the hero-breathing-zoom ambient
+   scale (.claude/skills/hero-breathing-zoom/SKILL.md, 9s alternate,
+   1 → 1.12). Removed 2026-09-21 per explicit request — these photos are
+   plain stills now, like everything else on this page. */
 .molosoc-product-proof__media img {
-  animation: molosoc-hero-breathe 9s ease-in-out infinite alternate;
-}
-
-@keyframes molosoc-hero-breathe {
-  from { transform: scale(1); }
-  to { transform: scale(1.12); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .molosoc-product-proof__media img {
-    animation: none;
-  }
+  animation: none;
+  transform: none;
 }
 
 @media (max-width: 760px) {
