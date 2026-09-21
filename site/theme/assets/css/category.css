@@ -612,18 +612,18 @@
   left: var(--section-padding-x);
 }
 
-/* Upper-right, one step lower than panel 1 (deliberate diagonal): curtains,
-   well above her feet. */
+/* Upper-right: the exact mirror of panel 1 — same top, hung from the
+   right gutter. Curtains, well above her feet. */
 .molosoc-who-card--2 {
-  top: 24%;
+  top: 12%;
   right: var(--section-padding-x);
 }
 
-/* Lower, center-left: daybed base under her hips; her feet (to the right)
-   and the cup (far left) both stay clear. */
+/* Lower-left, flush with panel 1's left edge: the low table under the
+   cup. Her feet (lower-right) stay fully clear. */
 .molosoc-who-card--3 {
   bottom: 6%;
-  left: 30%;
+  left: var(--section-padding-x);
 }
 
 /* Narrower viewports crop the photo's sides (cover), which pushes her head
