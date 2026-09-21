@@ -34,6 +34,16 @@
  * is no longer a dead end with no way to click to Foot Covers/Product.
  * Floating over the hero, not boxed like molosoc-site-header.
  *
+ * "Card hero" variant (2026-09-21, molosoc_home_card_variant() in
+ * functions.php — currently the Czech homepage only): the page instead
+ * renders the SAME boxed header as every other template (logo + menu as
+ * on /cz/navleky-na-nohy/, via template-parts/site-header.php), the hero
+ * photo sits inside one very wide floating elevated card on the cream
+ * page background (its breathing zoom kept), and nothing below the hero
+ * animates: functions.php skips GSAP/merge/topics-portal/scroll-refresh
+ * for this variant and homepage.css pins every .molosoc-reveal at its
+ * settled state under body.molosoc-front-page--card.
+ *
  * DOES call get_footer() at the bottom, though — the homepage had no
  * footer at all otherwise (no legal links, no copyright), which was never
  * an intentional design decision, just a side effect of skipping both
@@ -45,6 +55,10 @@ defined( 'ABSPATH' ) || exit;
 $molosoc_img = get_stylesheet_directory_uri() . '/assets/images/';
 
 $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
+
+// See the "Card hero" note above — boxed site header + hero-in-card +
+// static below the hero.
+$molosoc_home_card = molosoc_home_card_variant();
 ?><!doctype html>
 <html <?php language_attributes(); ?>>
 <head>
@@ -95,11 +109,14 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 <?php endif; ?>
 <?php wp_head(); ?>
 </head>
-<body <?php body_class( 'molosoc-front-page' ); ?>>
+<body <?php body_class( $molosoc_home_card ? 'molosoc-front-page molosoc-front-page--card' : 'molosoc-front-page' ); ?>>
 <?php wp_body_open(); ?>
 
 <a class="molosoc-skip-link" href="#main"><?php esc_html_e( 'Skip to content', 'molosoc' ); ?></a>
 
+<?php if ( $molosoc_home_card ) : ?>
+	<?php get_template_part( 'template-parts/site-header' ); ?>
+<?php else : ?>
 <header class="molosoc-home-header">
 	<a class="molosoc-home-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 		<picture>
@@ -122,11 +139,20 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 	molosoc_cart_link();
 	?>
 </header>
+<?php endif; ?>
 
 <main id="main">
 
-	<!-- Beat 1+2 — Hero / emotional opening -->
-	<section class="molosoc-hero">
+	<!-- Beat 1+2 — Hero / emotional opening. In the card variant the whole
+	     hero (photo + scrim + text + scroll cue) is wrapped in one very
+	     wide floating elevated card (.molosoc-hero__card, homepage.css) on
+	     the cream section background; the photo keeps its breathing zoom
+	     because the <section> still carries .molosoc-hero (motion.js adds
+	     .is-visible there). -->
+	<section class="molosoc-hero<?php echo $molosoc_home_card ? ' molosoc-hero--card' : ''; ?>">
+		<?php if ( $molosoc_home_card ) : ?>
+		<div class="molosoc-hero__card">
+		<?php endif; ?>
 		<div class="molosoc-hero__media">
 			<picture>
 				<source type="image/webp"
@@ -149,6 +175,9 @@ $molosoc_is_cz = function_exists( 'pll_current_language' ) && pll_current_langua
 			<?php endif; ?>
 		</div>
 		<a class="molosoc-hero__scroll-cue" href="#story-start"><?php esc_html_e( 'Scroll', 'molosoc' ); ?></a>
+		<?php if ( $molosoc_home_card ) : ?>
+		</div>
+		<?php endif; ?>
 	</section>
 
 	<!-- Beat 2 — The problem, ported from homepage-preview.html's arc-reveal

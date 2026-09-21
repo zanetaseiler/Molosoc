@@ -152,6 +152,22 @@ add_action( 'wp_head', function () {
 	printf( '<link rel="alternate" href="%s" hreflang="x-default" />' . "\n", esc_url( get_permalink( $en ) ) );
 } );
 
+/**
+ * Whether the homepage renders its "card hero" variant (front-page.php):
+ * the site's normal boxed header (same logo + menu as every other
+ * template, e.g. /cz/navleky-na-nohy/), the hero photo inside one very
+ * wide floating elevated card on the cream page background (breathing
+ * zoom kept), and NO animation below the hero — no GSAP merge /
+ * topics-portal / scroll-refresh, and every .molosoc-reveal pinned at its
+ * settled state (homepage.css, body.molosoc-front-page--card).
+ *
+ * Currently the Czech homepage only. Return true unconditionally to roll
+ * the same treatment out to the English homepage.
+ */
+function molosoc_home_card_variant() {
+	return function_exists( 'pll_current_language' ) && pll_current_language() === 'cz';
+}
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
@@ -193,29 +209,38 @@ function molosoc_enqueue_assets() {
 
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
+		// motion.js stays on for BOTH variants: it is what adds .is-visible
+		// to .molosoc-hero, which starts the hero photo's breathing zoom.
 		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
 
-		// GSAP + ScrollTrigger are being re-enabled one effect at a time (see
-		// git history: "Revert homepage to last confirmed-stable static state
-		// (pre-animation-port)" — the full stack caused a regression once
-		// before). Merge transition and topics-portal (five-card reveal) are
-		// confirmed working; proof-scale stays off until it's confirmed the
-		// same way.
-		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
-		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
-		wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		// Card-hero variant (see molosoc_home_card_variant()): nothing below
+		// the hero animates, so none of the GSAP/ScrollTrigger stack below
+		// is loaded — the merge tiles, proof image and topic cards all
+		// render their settled, static state with no JS (homepage.css
+		// documents that baseline on each of them).
+		if ( ! molosoc_home_card_variant() ) {
+			// GSAP + ScrollTrigger are being re-enabled one effect at a time (see
+			// git history: "Revert homepage to last confirmed-stable static state
+			// (pre-animation-port)" — the full stack caused a regression once
+			// before). Merge transition and topics-portal (five-card reveal) are
+			// confirmed working; proof-scale stays off until it's confirmed the
+			// same way.
+			wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
+			wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
+			wp_enqueue_script( 'molosoc-merge-transition', $theme_uri . '/assets/js/merge-transition.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+			wp_enqueue_script( 'molosoc-topics-portal', $theme_uri . '/assets/js/topics-portal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
 
-		// Real file content, not wp_add_inline_script — see scroll-refresh.js
-		// for why (WPO Minify silently drops inline scripts on a bundled
-		// handle). Keeps every ScrollTrigger pin above matched to the real,
-		// settled DOM regardless of lazy-loaded images changing page height.
-		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-merge-transition', 'molosoc-topics-portal' ), $theme_version, true );
+			// Real file content, not wp_add_inline_script — see scroll-refresh.js
+			// for why (WPO Minify silently drops inline scripts on a bundled
+			// handle). Keeps every ScrollTrigger pin above matched to the real,
+			// settled DOM regardless of lazy-loaded images changing page height.
+			wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-merge-transition', 'molosoc-topics-portal' ), $theme_version, true );
 
-		// Still disabled — CSS default state (--proof-scale:1) renders this
-		// correctly at rest with no JS, so leaving it off doesn't change how
-		// it looks:
-		// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+			// Still disabled — CSS default state (--proof-scale:1) renders this
+			// correctly at rest with no JS, so leaving it off doesn't change how
+			// it looks:
+			// wp_enqueue_script( 'molosoc-proof-scale', $theme_uri . '/assets/js/proof-scale.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
+		}
 	} elseif ( is_page( array( 'foot-covers', 'navleky-na-nohy' ) ) ) {
 		// 'navleky-na-nohy' is the Czech translation of 'foot-covers' —
 		// is_page() only auto-matches the theme_template by exact English

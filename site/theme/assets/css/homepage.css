@@ -524,6 +524,122 @@
   }
 }
 
+/* ---------- Hero — "card" variant (body.molosoc-front-page--card) ----------
+   Rendered when molosoc_home_card_variant() is true (functions.php —
+   currently the Czech homepage). Same idea as the category page's
+   floating elevated card (category.css .molosoc-elevated-card--floating,
+   the "real cost" points on /cz/navleky-na-nohy/), moved INTO the hero:
+   the section itself is just the warm cream page background, and the
+   whole hero — photo, scrim, headline, scroll cue — lives inside one
+   very wide, lifted ivory card with soft rounded corners. Much wider
+   than the category card (which sits on a 72rem column): this one runs
+   nearly edge to edge at every viewport width (no max-width cap — a cap
+   was tried and on a ~2100px-wide desktop it left the card looking
+   inset, not wide).
+
+   The photo keeps its breathing zoom untouched: the <section> still
+   carries .molosoc-hero, motion.js still adds .is-visible to it, and the
+   card is the overflow:hidden box the scaled image is clipped inside
+   (the rounded corners stay intact during the scale — isolation +
+   translateZ(0) below are the usual Safari/Chrome guards for a transformed
+   child inside a border-radius clip).
+
+   The card surface tokens (#fdfcf9, 18px, hairline border, --shadow-lift)
+   are duplicated from category.css on purpose: that file isn't enqueued
+   on the homepage. */
+
+.molosoc-hero--card {
+  min-height: 0;
+  display: block;
+  overflow: visible; /* the card's shadow must not be clipped */
+  background: var(--color-bg);
+  /* Header above is the boxed .molosoc-site-header (position: relative),
+     so the card starts a little below it, not under it. */
+  padding: var(--space-m) clamp(1rem, 2.5vw, 2.5rem) var(--space-l);
+}
+
+.molosoc-hero__card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transform: translateZ(0);
+  width: 100%;
+  /* Fills the first viewport minus the header + section padding, within
+     sane bounds so a very tall monitor doesn't get a 2000px card and a
+     short laptop still shows a proper hero. vh fallback first for
+     engines without svh. */
+  min-height: clamp(30rem, calc(100vh - 11rem), 60rem);
+  min-height: clamp(30rem, calc(100svh - 11rem), 60rem);
+  display: flex;
+  align-items: flex-end;
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.05);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    var(--shadow-lift);
+}
+
+/* Tighter inner gutters than the full-bleed hero's --section-padding-x:
+   the card already sits inset from the viewport edge. */
+.molosoc-hero--card .molosoc-hero__content {
+  padding: var(--space-xl) clamp(1.5rem, 4vw, 4rem) clamp(2rem, 4vw, 3.5rem);
+}
+
+.molosoc-hero--card .molosoc-hero__scroll-cue {
+  right: clamp(1.5rem, 4vw, 4rem);
+}
+
+@media (max-width: 760px) {
+  .molosoc-hero--card {
+    padding: var(--space-s) 1rem var(--space-m);
+  }
+
+  .molosoc-hero__card {
+    border-radius: 14px;
+    min-height: clamp(26rem, calc(100vh - 9rem), 44rem);
+    min-height: clamp(26rem, calc(100svh - 9rem), 44rem);
+  }
+
+  /* On a phone the lede runs the full card width, so it needs to clear
+     the absolutely-positioned "Scroll" cue in the bottom-right corner
+     (the desktop rule above only leaves ~3.5rem, which overlapped). */
+  .molosoc-hero--card .molosoc-hero__content {
+    padding-bottom: 5rem;
+  }
+}
+
+/* ---------- Card variant: nothing below the hero animates ----------
+   Every scroll-driven effect on this page is progressive enhancement
+   over a static baseline, so with the GSAP stack not enqueued for this
+   variant (functions.php) the merge tiles, proof image and topic cards
+   already render settled. What's left is the shared IntersectionObserver
+   fade/lift on .molosoc-reveal (motion.js still loads for the hero's
+   breathing zoom) and the sitewide .molosoc-media hover zoom — both
+   pinned to their resting state here, mirroring the category page's
+   .molosoc-media--static. Hover box-shadow feedback on the topic cards
+   is UI feedback, not animation, and stays. */
+
+.molosoc-front-page--card .molosoc-reveal {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  will-change: auto;
+}
+
+.molosoc-front-page--card .molosoc-media img {
+  transition: none;
+}
+
+.molosoc-front-page--card .molosoc-media:hover img {
+  transform: none;
+}
+
+.molosoc-front-page--card .molosoc-proof__media--scale,
+.molosoc-front-page--card .molosoc-merge__tile {
+  will-change: auto;
+}
+
 /* ---------- Beat 2 — The problem ("Why foot care never sticks") ---------- */
 
 .molosoc-problem__list {
@@ -1522,4 +1638,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: story-photo crop rules v0.2.3 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.27 */
