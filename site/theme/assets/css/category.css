@@ -564,13 +564,17 @@
   inset: 0; /* same 100vh box as the background layer */
   z-index: 2;
   pointer-events: none;
+  /* Shared panel width + the gap between neighbouring panels — the two
+     numbers every panel position below is built from. */
+  --who-panel-w: clamp(16rem, 21vw, 21rem);
+  --who-panel-gap: var(--space-m);
 }
 
 .molosoc-who-card {
   position: absolute;
   pointer-events: auto;
   display: block;
-  width: clamp(16rem, 21vw, 21rem);
+  width: var(--who-panel-w);
   padding: clamp(1.75rem, 2.2vw, 2.5rem);
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.06);
@@ -612,18 +616,22 @@
   left: var(--section-padding-x);
 }
 
-/* Upper-right: the exact mirror of panel 1 — same top, hung from the
-   right gutter. Curtains, well above her feet. */
+/* Think of the stage as four columns: panel 1 in column 1, her head in
+   the empty column 2, panels 2 and 3 in columns 3 and 4 — all on one
+   top line, one panel-gap apart. */
+
+/* Column 3: one panel width + one gap in from the right gutter. Curtains
+   and wall above her knees. */
 .molosoc-who-card--2 {
   top: 12%;
-  right: var(--section-padding-x);
+  right: calc(var(--section-padding-x) + var(--who-panel-w) + var(--who-panel-gap));
 }
 
-/* Lower-left, flush with panel 1's left edge: the low table under the
-   cup. Her feet (lower-right) stay fully clear. */
+/* Column 4: the exact mirror of panel 1 — same top, hung from the right
+   gutter. */
 .molosoc-who-card--3 {
-  bottom: 6%;
-  left: var(--section-padding-x);
+  top: 12%;
+  right: var(--section-padding-x);
 }
 
 /* Narrower viewports crop the photo's sides (cover), which pushes her head
