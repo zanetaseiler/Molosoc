@@ -337,16 +337,17 @@
    aligned like the section's own text, and the argument grid is reused
    unchanged. */
 
-/* Wider than the page's usual 72rem content column on purpose: tighter
-   side gutters than --section-padding-x and a larger cap, so the card
-   reads as a broad, generous slab rather than a boxed-in column. */
+/* The card itself runs nearly edge to edge (no width cap, thin gutters);
+   the CONTENT inside it — heading, photo, points — keeps the 83rem width
+   it had at the previous 90rem cap and stays centered, so widening the
+   box never widens the photo or stretches the text measure. */
 .molosoc-elevated-card-section {
   background: var(--color-bg);
-  padding: var(--space-xl) clamp(1.25rem, 3vw, 3rem);
+  padding: var(--space-xl) clamp(1rem, 2vw, 2rem);
 }
 
 .molosoc-elevated-card {
-  max-width: 90rem;
+  max-width: none;
   margin: 0 auto;
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
@@ -358,11 +359,13 @@
 }
 
 .molosoc-elevated-card__heading {
-  margin-bottom: var(--space-m);
+  max-width: 83rem;
+  margin: 0 auto var(--space-m);
 }
 
 .molosoc-elevated-card .molosoc-argument {
-  margin-top: 0;
+  max-width: 83rem;
+  margin: 0 auto;
 }
 
 /* No 100vh stage around this instance, so the photo needs no viewport
