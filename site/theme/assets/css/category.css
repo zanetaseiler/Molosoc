@@ -8,6 +8,12 @@
   Backgrounds are deliberately kept to the brand's warm cream tones (or a real
   photo) throughout — no flat neutral-grey blocks (--color-bg-alt reads as
   grey next to a photo, not as the warm Scandinavian surface it's meant to be).
+
+  Deploy gotcha: WP-Optimize builds this file's minify bundle by fetching
+  it over HTTP, and Cloudflare edge-caches the raw ?ver= URL — so a deploy
+  that changes this file needs BOTH a style.css Version bump (new ?ver=)
+  AND a content change here (new mtime → new bundle key), or the bundle is
+  rebuilt from Cloudflare's stale copy under a fresh filename.
 */
 
 /* ---------- Disposable-block photo: no animation at all ----------
