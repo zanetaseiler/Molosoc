@@ -155,6 +155,10 @@ get_header();
 	</div>
 	<section class="molosoc-sequential-stage molosoc-sequential-stage--clear" data-slide-direction="up" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Opakované použití vs. jednorázové: skutečná cena' : __( 'Reusable vs. disposable: the real cost', 'molosoc' ) ); ?>">
 		<div class="molosoc-sequential-stage__inner">
+			<!-- Floating elevated card: the three cost points sit in one lifted
+			     ivory card over the section's photo background (category.css
+			     .molosoc-elevated-card--floating). -->
+			<div class="molosoc-elevated-card molosoc-elevated-card--floating">
 			<div class="molosoc-pillars molosoc-cost-grid">
 				<div class="molosoc-pillar molosoc-sequential-entrance--text">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Méně než 23 Kč za použití' : __( 'Cost per use over a month', 'molosoc' ) ); ?></h3>
@@ -168,6 +172,7 @@ get_header();
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'A méně důvodů vracet se do salonu' : __( "What you're not paying for anymore (salon touch-ups)", 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Výsledek pedikúry postupně mizí. Pravidelná domácí péče vám pomůže ho udržovat déle — bez další rezervace pokaždé, když chodidla začnou vysychat.' : __( "A salon pedicure fades within days to a couple of weeks. Maintaining that result at home with a €10 reusable cover costs a fraction of what a single repeat salon visit runs — the saving isn't just the cover versus the mask, it's the trips you stop needing to book.", 'molosoc' ) ); ?></p>
 				</div>
+			</div>
 			</div>
 		</div>
 	</section>

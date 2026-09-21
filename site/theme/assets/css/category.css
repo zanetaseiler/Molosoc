@@ -297,11 +297,13 @@
   background-position: center;
 }
 
+/* Lighter wash than the previous 0.75 now that the cost points float in
+   their own card: the photo needs to read as a photo behind it. */
 .molosoc-sequential-stage--clear::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.45);
   z-index: 0;
 }
 
@@ -392,6 +394,22 @@
   .molosoc-elevated-card {
     border-radius: 14px;
   }
+}
+
+/* Floating variant — the "real cost" points: same card surface, but it
+   sits INSIDE the photo stage (.molosoc-sequential-stage--clear) rather
+   than on the cream section, so it reads as a card floating over the
+   photo. Width follows the stage's own 72rem inner column. */
+.molosoc-elevated-card--floating {
+  width: 100%;
+  max-width: none;
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    var(--shadow-lift);
+}
+
+.molosoc-elevated-card--floating .molosoc-pillars {
+  margin-top: 0;
 }
 
 /* ---------- Argument rows: one real photo + a stack of H3 points ----------
