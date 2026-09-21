@@ -580,10 +580,19 @@
     var(--shadow-lift);
 }
 
-/* Tighter inner gutters than the full-bleed hero's --section-padding-x:
-   the card already sits inset from the viewport edge. */
+/* Inner gutters: the card already sits inset from the viewport edge, so
+   these are smaller than the full-bleed hero's --section-padding-x — but
+   not tiny: the text was reading as crowded into the card's left edge.
+   Column widened too (46rem → 64rem, and the lede freed from base.css's
+   36rem <p> cap) so the H1 and lede spread across more of the card.
+   Still left-aligned, per explicit request. */
 .molosoc-hero--card .molosoc-hero__content {
-  padding: var(--space-xl) clamp(1.5rem, 4vw, 4rem) clamp(2rem, 4vw, 3.5rem);
+  max-width: 64rem;
+  padding: var(--space-xl) clamp(2rem, 5vw, 5.5rem) clamp(2rem, 4vw, 3.5rem);
+}
+
+.molosoc-hero--card .molosoc-hero__content p {
+  max-width: 54rem;
 }
 
 .molosoc-hero--card .molosoc-hero__scroll-cue {
@@ -1638,4 +1647,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.27 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.32 */
