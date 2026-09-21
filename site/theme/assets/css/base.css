@@ -44,7 +44,22 @@ h1, h2, h3 {
 }
 
 h1 { font-size: var(--text-display-xl); }
-h2 { font-size: var(--text-display-l); }
+
+/* Major section headings: the oversized editorial scale (tokens.css
+   --text-display-2xl), tight 1.0 leading. This is the ONE shared rule
+   behind every plain <h2> on the bespoke EN/CZ page templates; the
+   contexts that must stay smaller opt out explicitly — the_content()
+   headings (.molosoc-entry-content h2, below), blog tiles (blog.css),
+   the product drawer heading (product.css) — and over-photo/dark-stage
+   H2s use the moderated --text-display-2xl-soft in their own files.
+   overflow-wrap is a safety net only: it never fires unless one word is
+   wider than its column. */
+h2 {
+  font-size: var(--text-display-2xl);
+  line-height: var(--leading-display);
+  overflow-wrap: break-word;
+}
+
 h3 { font-size: var(--text-display-m); }
 
 p {

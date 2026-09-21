@@ -744,8 +744,9 @@
 .molosoc-arc-reveal__heading {
   position: relative;
   z-index: 2;
-  font-size: clamp(3rem, 6vw + 1rem, 6rem);
-  line-height: var(--leading-tight);
+  /* Size/leading come from the shared <h2> rule (base.css, the
+     --text-display-2xl editorial scale) — this heading used to carry
+     its own clamp(3rem, 6vw + 1rem, 6rem). */
   /* 46rem → 72rem: at this size the heading wrapped into a tight,
      crowded centered stack; the wider measure lets it spread across
      the section (still centered). */
@@ -1072,6 +1073,12 @@
 
 .molosoc-merge__text {
   opacity: 1;
+}
+
+/* Over the photo, in a 30rem column: moderated editorial scale. */
+h2.molosoc-merge__text {
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1643,6 +1650,9 @@
   color: var(--color-white);
   max-width: 34rem;
   margin: 0 auto;
+  /* Dark hero-like stage: moderated editorial scale. */
+  font-size: var(--text-display-2xl-soft);
+  line-height: 1.05;
 }
 
 .molosoc-final-cta p {
@@ -1660,4 +1670,4 @@
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.34 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.35 */
