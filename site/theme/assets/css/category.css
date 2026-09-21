@@ -337,13 +337,16 @@
    aligned like the section's own text, and the argument grid is reused
    unchanged. */
 
+/* Wider than the page's usual 72rem content column on purpose: tighter
+   side gutters than --section-padding-x and a larger cap, so the card
+   reads as a broad, generous slab rather than a boxed-in column. */
 .molosoc-elevated-card-section {
   background: var(--color-bg);
-  padding: var(--space-xl) var(--section-padding-x);
+  padding: var(--space-xl) clamp(1.25rem, 3vw, 3rem);
 }
 
 .molosoc-elevated-card {
-  max-width: var(--content-max-width-wide);
+  max-width: 90rem;
   margin: 0 auto;
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
