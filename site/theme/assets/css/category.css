@@ -329,6 +329,56 @@
   }
 }
 
+/* ---------- Molosoc elevated card ----------
+   An entire content block (heading + photo + points) contained inside one
+   near-white/ivory card with subtle rounded corners and a very soft
+   shadow, sitting visibly above the page's warm cream background. Used
+   for the "disposable vs. reusable" block; the heading inside it is left-
+   aligned like the section's own text, and the argument grid is reused
+   unchanged. */
+
+.molosoc-elevated-card-section {
+  background: var(--color-bg);
+  padding: var(--space-xl) var(--section-padding-x);
+}
+
+.molosoc-elevated-card {
+  max-width: var(--content-max-width-wide);
+  margin: 0 auto;
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.05);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.03),
+    var(--shadow-soft);
+  padding: clamp(1.75rem, 4vw, 3.5rem);
+}
+
+.molosoc-elevated-card__heading {
+  margin-bottom: var(--space-m);
+}
+
+.molosoc-elevated-card .molosoc-argument {
+  margin-top: 0;
+}
+
+/* No 100vh stage around this instance, so the photo needs no viewport
+   height cap — it just follows its 4:5 column width. */
+.molosoc-elevated-card .molosoc-argument__media .molosoc-media {
+  max-height: none;
+}
+
+@media (max-width: 760px) {
+  .molosoc-elevated-card-section {
+    padding-top: var(--space-l);
+    padding-bottom: var(--space-l);
+  }
+
+  .molosoc-elevated-card {
+    border-radius: 14px;
+  }
+}
+
 /* ---------- Argument rows: one real photo + a stack of H3 points ----------
    Same idea as the homepage's arc-reveal "story" rows, but named/scoped to
    this page rather than reusing homepage.css's .molosoc-story (which also

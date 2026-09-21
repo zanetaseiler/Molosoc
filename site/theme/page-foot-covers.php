@@ -71,18 +71,18 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Disposable sock masks vs. reusable foot covers — static:
-	     photo + three points, no entrance animation (the class names are
-	     the shared layout hooks from category.css; sequential-text-reveal.js
-	     is deliberately not loaded on this page). -->
-	<div class="molosoc-sequential-heading">
-		<div class="molosoc-sequential-heading__inner">
-			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa' : __( 'The alternative', 'molosoc' ) ); ?></p>
-			<h2><?php echo esc_html( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?></h2>
-		</div>
-	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?>">
-		<div class="molosoc-sequential-stage__inner">
+	<!-- H2: Disposable sock masks vs. reusable foot covers — the Molosoc
+	     "elevated card": the whole block (eyebrow + H2 + photo + three
+	     points) sits inside one near-white/ivory card with soft rounded
+	     corners and a very soft shadow, visibly lifted above the page's warm
+	     cream background (see category.css .molosoc-elevated-card). Static,
+	     no entrance animation. -->
+	<section class="molosoc-elevated-card-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?>">
+		<div class="molosoc-elevated-card">
+			<div class="molosoc-elevated-card__heading">
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa' : __( 'The alternative', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Jednorázové ponožkové masky vs. návleky na opakované použití' : __( 'Disposable sock masks vs. reusable foot covers', 'molosoc' ) ); ?></h2>
+			</div>
 			<div class="molosoc-argument">
 				<div class="molosoc-argument__media">
 					<div class="molosoc-media molosoc-media--static">
