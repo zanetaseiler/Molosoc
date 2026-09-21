@@ -96,32 +96,90 @@
   transform: translateY(190px);
 }
 
-/* Centered above the model, not left-aligned — with the model doubled in
-   size and staying centered in the stage, a left-hugging text block plus
-   the top-left logo read as unbalanced against the now-dominant centered
-   object. Centering the headline on the same axis as the model (and
-   giving it its own band above it) rebalances the composition instead.
-   (A right-corner variant was tried and reverted per explicit feedback —
-   centered is the confirmed direction.) */
+/* Editorial headline composition (2026-09-21, per explicit request) —
+   replaces the earlier narrow, centered 3-line stack. The H1 text is
+   unchanged; it's split into two spans (.molosoc-hero-title__phrase =
+   "Návlek na nohy" / "Foot Cover", .molosoc-hero-title__brand =
+   "Molosoc") and the copy block becomes a two-column grid spanning the
+   hero's full width between the gutters:
+
+       ┌──────────────────────────────────────────────┐
+       │ Návlek na nohy   (oversized, tracked, 1 line) │  row 1: phrase
+       │ lede (left, ≤30rem)             M o l o s o c │  row 2: lede | brand
+       └──────────────────────────────────────────────┘
+                     [ 3D model, centered below ]
+
+   The phrase runs across the top of the hero; the lede sits bottom-left
+   and the brand word bottom-right, so the typography brackets the
+   centered product instead of stacking over it. The H1 is display:
+   contents so its two spans (and the lede <p>) are direct grid items —
+   the accessible name stays the full headline. Tenor Sans comes from
+   base.css's h1 rule (var(--font-display)); no decorative graphics. */
 .molosoc-orbit-hero-copy {
   position: absolute;
   left: 0;
   right: 0;
-  top: 7vh;
-  margin: 0 auto;
-  max-width: 34rem;
-  text-align: center;
+  top: 6vh;
+  padding: 0 var(--section-padding-x);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "phrase phrase"
+    "lede   brand";
+  column-gap: var(--space-l);
+  row-gap: var(--space-m);
+  align-items: end;
+  text-align: left;
   color: var(--color-text);
 }
 
-.molosoc-orbit-hero-copy h1 {
+.molosoc-hero-title {
+  display: contents;
+}
+
+.molosoc-hero-title__phrase {
+  grid-area: phrase;
+  display: block;
+  /* 8.5vw ≈ 122px at 1440 / 87px at 1024 — a single line of "Návlek na
+     nohy" spans roughly two thirds of the hero width at either size. */
+  font-size: clamp(3.75rem, 8.5vw, 8.75rem);
+  line-height: 0.95;
+  letter-spacing: 0.035em;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.molosoc-hero-title__brand {
+  grid-area: brand;
+  display: block;
+  justify-self: end;
+  font-size: clamp(1.25rem, 2vw, 2rem);
+  line-height: 1;
+  /* Generous tracking is what separates the brand word from the phrase —
+     no rule, no ornament. Trailing letter-space is compensated so the
+     last glyph sits on the right gutter, not 0.45em short of it. */
+  letter-spacing: 0.45em;
+  margin-right: -0.45em;
+  padding-bottom: 0.35em;
   color: var(--color-text);
 }
 
 .molosoc-orbit-hero-copy p {
+  grid-area: lede;
   color: var(--color-text-muted);
-  margin: var(--space-m) auto 0;
+  margin: 0;
+  max-width: 30rem;
   font-size: var(--text-body-l);
+}
+
+/* Between phone and full desktop the single-line phrase at 8.5vw would
+   still fit, but the brand word and lede start fighting for the second
+   row — let the phrase wrap and stack the row-2 pair instead. */
+@media (max-width: 1024px) {
+  .molosoc-hero-title__phrase {
+    white-space: normal;
+    font-size: clamp(3.25rem, 9vw, 6rem);
+  }
 }
 
 /* ---------- The second block — "The cream you already own, finally
@@ -301,13 +359,38 @@
     top: auto;
     max-width: none;
     padding: 0 var(--section-padding-x) var(--space-l);
+    /* Single centered column on phones: phrase (wrapping, still the
+       dominant element) → brand word → lede, above the model. The H1
+       stays display: contents, so `order` puts the phrase first
+       regardless of the language's span order. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-s);
     text-align: center;
     order: 1;
   }
 
+  .molosoc-hero-title__phrase {
+    order: 1;
+    white-space: normal;
+    font-size: clamp(2.75rem, 13vw, 4rem);
+    line-height: 1;
+    letter-spacing: 0.03em;
+  }
+
+  .molosoc-hero-title__brand {
+    order: 2;
+    justify-self: auto;
+    font-size: 1.0625rem;
+    letter-spacing: 0.4em;
+    margin-right: -0.4em;
+    padding-bottom: 0;
+  }
+
   .molosoc-orbit-hero-copy p {
-    margin-left: auto;
-    margin-right: auto;
+    order: 3;
+    margin: var(--space-2xs) auto 0;
     max-width: 30rem;
   }
 

@@ -71,7 +71,23 @@ get_header();
 			</div>
 
 			<div class="molosoc-orbit-hero-copy">
-				<h1><?php echo esc_html( $molosoc_is_cz ? 'Návlek na nohy Molosoc' : __( 'Molosoc Foot Cover', 'molosoc' ) ); ?></h1>
+				<?php
+				// Editorial two-part headline (2026-09-21): the H1's text is
+				// unchanged ("Návlek na nohy Molosoc" / "Molosoc Foot Cover") —
+				// the two spans only let product.css set the product phrase
+				// oversized and the brand word as its own tracked-out element,
+				// placed around the 3D model. Span order follows each
+				// language's word order; CSS grid areas do the placement.
+				?>
+				<h1 class="molosoc-hero-title">
+					<?php if ( $molosoc_is_cz ) : ?>
+						<span class="molosoc-hero-title__phrase">Návlek na nohy</span>
+						<span class="molosoc-hero-title__brand">Molosoc</span>
+					<?php else : ?>
+						<span class="molosoc-hero-title__brand"><?php esc_html_e( 'Molosoc', 'molosoc' ); ?></span>
+						<span class="molosoc-hero-title__phrase"><?php esc_html_e( 'Foot Cover', 'molosoc' ); ?></span>
+					<?php endif; ?>
+				</h1>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, žádné filtry. Opakovaně použitelný návlek, který udrží váš oblíbený krém na místě a usnadní pravidelnou péči.' : __( 'Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.', 'molosoc' ) ); ?></p>
 			</div>
 
