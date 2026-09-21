@@ -85,14 +85,17 @@ The product deserves premium attention. Use:
 
 Never spin products. Never rotate continuously. Never exaggerate.
 
-**Sanctioned exception — product hero auto-rotate:** the Product page's
-hero (`site/theme/preview/product-preview.html`, `.molosoc-orbit-*`) runs
-the real `molosoc-3d.glb` model on continuous auto-rotate via
-`<model-viewer>`'s own attribute, independent of scroll/JS. This was
-requested and confirmed explicitly, knowing it contradicts the rule above.
-Reserve it for this kind of static hero moment (a rotating product as the
-page's visual anchor), not for casual "spin the product to see it" demos
-elsewhere, which the rule above still forbids.
+**Former exception — product hero auto-rotate (withdrawn 2026-09-21):**
+the Product page's hero (`site/theme/page-moisture-lock-foot-cover.php`,
+`.molosoc-orbit-*`) used to run the real `molosoc-3d.glb` model on
+continuous auto-rotate via `<model-viewer>`'s own attribute. That was
+requested explicitly at the time, knowing it contradicted the rule above,
+and has since been explicitly withdrawn: the live product page is now
+fully static — the model renders as a still, and the page carries no
+scroll-reveal, breathing-zoom or hover-zoom motion either. The rule above
+therefore applies to the product page without exception. (The
+`preview/product-preview.html` design artifact still shows the older
+rotating version.)
 
 An earlier version of this hero also ran a scroll-pinned "glass drawer
 slides up over the fading/blurring model" sequence, per
@@ -101,8 +104,8 @@ That scroll mechanic was built, tested, and then explicitly reverted — the
 skill stays installed and available for future use elsewhere on the site,
 but this page no longer uses it. The content that was going to be the
 "drawer" (the cream-you-already-own section) is now a plain, firm static
-block in normal document flow directly under the hero — only the model's
-own rotation remains as motion on this page.
+block in normal document flow directly under the hero. As of 2026-09-21
+no motion at all remains on the live product page.
 
 ---
 

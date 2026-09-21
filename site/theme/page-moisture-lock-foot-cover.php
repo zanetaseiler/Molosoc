@@ -24,10 +24,14 @@
  * schema hook existed, but this template file — the thing that actually
  * replaces the_content() with the real page — never did.
  *
- * CSS/JS for this page (product.css, model-viewer, sequential-text-
- * reveal.js + GSAP/ScrollTrigger for "Make the pedicure last" only,
- * scroll-refresh.js) are enqueued conditionally in functions.php on
- * is_page('moisture-lock-foot-cover').
+ * CSS/JS for this page (product.css + model-viewer only) are enqueued
+ * conditionally in functions.php on is_page('moisture-lock-foot-cover').
+ *
+ * FULLY STATIC PAGE (2026-09-21, per explicit request): no animation of
+ * any kind. The hero's molosoc-3d.glb model renders as a still — its
+ * auto-rotate was removed — and no GSAP/ScrollTrigger, scroll-refresh,
+ * scroll-reveal, breathing-zoom or hover-zoom motion runs anywhere on
+ * the page.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -38,11 +42,12 @@ get_header();
 
 <main id="main">
 
-	<!-- Hero: H1 + lede over the always-rotating molosoc-3d.glb model
-	     (model-viewer's own auto-rotate — independent of scroll, never
-	     paused; the one sanctioned exception to "never spin products", see
-	     docs/molosoc-animation-specification.md). The "cream you already
-	     own" H2's 3 H3 points sit directly below as static feature cards,
+	<!-- Hero: H1 + lede over a STATIC render of the molosoc-3d.glb model
+	     (model-viewer with no auto-rotate and no camera-controls — the
+	     continuous spin this hero used to run was removed 2026-09-21 per
+	     explicit request; see docs/molosoc-animation-specification.md).
+	     The "cream you already own" H2's 3 H3 points sit directly below
+	     as static feature cards,
 	     in normal document flow — a firm static block under the hero, not
 	     a glass drawer sliding in over it (that scroll-pin mechanic was
 	     built, then explicitly reverted; see product.css's file-header
@@ -56,8 +61,6 @@ get_header();
 					class="molosoc-orbit-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"
@@ -170,16 +173,16 @@ get_header();
 	</div>
 
 	<!-- H2: Make the pedicure last (Persona 3 — After-Pedicure Maintainer).
-	     Photo pair stays fixed/static; the three points below reveal
-	     together, as one unit, when the section scrolls into view — see
-	     assets/js/sequential-text-reveal.js. -->
+	     Photo pair and the three points below are all static — the
+	     scroll-in text entrance (sequential-text-reveal.js) this section
+	     used to run was removed 2026-09-21. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Ať vám pedikúra vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?></p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Ať vám pedikúra vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="left" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Ať vám pedikúra vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?>">
+	<section class="molosoc-sequential-stage" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Ať vám pedikúra vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?>">
 		<div class="molosoc-argument molosoc-argument--reverse">
 			<div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
 				<div class="molosoc-media molosoc-media--primary molosoc-media--static">
@@ -194,15 +197,15 @@ get_header();
 				</div>
 			</div>
 			<div class="molosoc-argument__text">
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč výsledky ze salonu vyprchají za ~10 dní' : __( 'Why salon results fade in ~10 days', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Čerstvá pedikúra vypadá nejlépe zhruba týden až deset dní, než se začne vracet sucho. Není to chyba salonního ošetření — je to prostě to, co se stane, jakmile intenzivní péče skončí.' : __( "A fresh pedicure looks its best for about a week to ten days before dryness starts creeping back in. That's not a flaw in the salon treatment — it's just what happens once the intensive care stops.", 'molosoc' ) ); ?></p>
 				</div>
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Cena za použití vs. další návštěva salonu' : __( 'Cost per use vs. another salon visit', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek Molosoc stojí 229 Kč a vydrží alespoň 10 použití — tedy zhruba 23 Kč na použití. Udržet si stejný výsledek doma vychází na zlomek toho, co jedna další návštěva salonu.' : __( 'A Molosoc cover costs €10 and holds up for at least 10 sessions — working out to about €1 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.', 'molosoc' ) ); ?></p>
 				</div>
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Domácí spa, bez ceny salonu' : __( 'Home spa, without the salon price', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Deset až patnáct minut s vlastním krémem a návlekem vám dá většinu toho, co dodatečná návštěva salonu — bez cesty, bez objednávání, bez účtu.' : __( 'Ten to fifteen minutes with your own cream and a cover gets you most of what a touch-up appointment does, without the drive, the booking, or the bill.', 'molosoc' ) ); ?></p>
 				</div>
@@ -210,16 +213,15 @@ get_header();
 		</div>
 	</section>
 
-	<!-- H2: Give it as a gift (Persona 4 — Gift Buyer). Photo pair stays
-	     fixed/static; the three points below reveal together, as one
-	     unit, when the section scrolls into view, same pattern as above. -->
+	<!-- H2: Give it as a gift (Persona 4 — Gift Buyer). Photo pair and the
+	     three points below are all static, same as above. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?></p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
-	<section class="molosoc-sequential-stage" data-slide-direction="right" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?>">
+	<section class="molosoc-sequential-stage" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?>">
 		<div class="molosoc-argument">
 			<div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
 				<div class="molosoc-media molosoc-media--primary molosoc-media--static">
@@ -234,15 +236,15 @@ get_header();
 				</div>
 			</div>
 			<div class="molosoc-argument__text">
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je pořád na nohou' : __( 'For someone always on her feet', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je pořád na nohou, nebo se k péči o sebe nikdy pořádně nedostane — tohle je nejjednodušší způsob, jak jí dát rutinu, u které skutečně vydrží.' : __( "For the person who's on her feet all day and never quite gets around to taking care of her own — this is the easiest way to actually give her something she'll use.", 'molosoc' ) ); ?></p>
 				</div>
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Jedna fotka před/po řekne vše' : __( 'One before/after photo says it all', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Není potřeba žádné vysvětlování. Popraskaná, ztvrdlá kůže na jedné straně; jemná, ošetřená kůže na druhé. To je celý argument.' : __( 'No explanation needed. Cracked, hardened skin on one side; soft, cared-for skin on the other. That\'s the entire pitch.', 'molosoc' ) ); ?></p>
 				</div>
-				<div class="molosoc-argument__item molosoc-sequential-entrance--text">
+				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak to darovat (jednoduše, bez velkého vysvětlování)' : __( 'How to gift it (simple, low-effort framing)', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Žádné skládání, žádná složitá instrukce — otevřít krabičku, použít krém, který už doma je, hotovo během jedné krátké chvíle. Nejjednodušší dárek v oblasti péče o sebe, který člověk skutečně použije.' : __( 'No assembly, no learning curve — open the box, use the cream you already have, done in one short session. The easiest self-care gift to actually hand someone and have them use.', 'molosoc' ) ); ?></p>
 				</div>

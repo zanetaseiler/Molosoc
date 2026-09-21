@@ -423,22 +423,20 @@ function molosoc_enqueue_assets() {
 		// above for why the Czech slug has to be listed explicitly.
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
-		// model-viewer renders the always-rotating molosoc-3d.glb model in
-		// the hero — same web component page-cracked-heels.php uses for its
-		// "why moisturizer alone doesn't fix it" section. Needs
+		// model-viewer renders the molosoc-3d.glb model in the hero as a
+		// STILL (no auto-rotate, no camera-controls — the template omits
+		// both attributes) — same web component page-cracked-heels.php uses
+		// for its "why moisturizer alone doesn't fix it" section. Needs
 		// type="module" (see the script_loader_tag filter below), not a
 		// plain classic script.
 		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
 
-		// One GSAP/ScrollTrigger sequence, reused twice on this page
-		// (sequential-text-reveal for "Make the pedicure last" and "Give it
-		// as a gift"). Same real-file scroll-refresh.js convention as the
-		// other branches above (WPO Minify silently drops inline scripts on
-		// a bundled handle).
-		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
-		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
-		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal' ), $theme_version, true );
+		// Deliberately NO GSAP / ScrollTrigger / sequential-text-reveal.js /
+		// scroll-refresh.js here (2026-09-21, per explicit request): this
+		// page is fully static — the "Make the pedicure last" / "Give it as
+		// a gift" scroll-in text entrances were removed along with the
+		// hero's model spin, the proof photos' breathing zoom and every
+		// hover zoom (see product.css).
 	} elseif ( is_page( array( 'blog', 'magazin' ) ) ) {
 		// Journal index — static photo-tile grid, no motion.js/GSAP needed
 		// (see page-blog.php's own header comment for why). 'magazin' is
