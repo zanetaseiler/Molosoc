@@ -1,7 +1,8 @@
 /*
   Molosoc design tokens
   Source of truth for colors/type: docs/design-system.md (extracted from the
-  live molosoc.com site — DM Serif Display / Muli / Nunito, ink #0C1115).
+  live molosoc.com site — Muli / Nunito, ink #0C1115; display face changed
+  from DM Serif Display to Tenor Sans on 2026-09-21, a font-family swap only).
   Cream/accent hex values below are visually sampled from the live site
   (Thrive theme applies them via background images, not inspectable
   background-color) — verify with a color picker against the live design
@@ -36,7 +37,7 @@
   --color-cta-text: var(--color-white);
 
   /* Type families (as used on the live site — brand typography, not reinvented) */
-  --font-display: "DM Serif Display", Georgia, serif;
+  --font-display: "Tenor Sans", "Helvetica Neue", Arial, sans-serif;
   --font-body: "Muli", "Mulish", -apple-system, sans-serif;
   --font-accent: "Nunito", -apple-system, sans-serif;
 
