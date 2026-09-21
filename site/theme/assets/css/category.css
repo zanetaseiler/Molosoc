@@ -224,10 +224,10 @@
   }
 }
 
-/* ---------- Sequential-text heading + pinned stage (fixed image + text
-   entering one-by-one on scroll) ----------
+/* ---------- Sequential-text heading + stage (fixed image + text column)
+   ----------
    The heading (eyebrow + H2) deliberately lives in its own normal-flow
-   block ABOVE the pinned stage, not inside it — the combined height of a
+   block ABOVE the stage, not inside it — the combined height of a
    heading + 3 text items + an image was taller than 100vh at realistic
    viewport heights, and whichever way the overflow got pushed
    (align-items: center pushed it off the top; flex-start pushed it off
@@ -235,17 +235,11 @@
    overflow:hidden. Pulling the heading out removes enough height that the
    remaining image+text grid comfortably fits on its own.
 
-   Reusable across any section that needs it — see
-   assets/js/sequential-text-reveal.js (handles every
-   .molosoc-sequential-stage on the page independently, entrance direction
-   set per-instance via [data-slide-direction="left"|"right"]) and
-   docs/skills/Fixed-Image-Sequential-Text-Reveal.md /
-   ~/.claude/skills/fixed-image-text-reveal for the full mechanics. Same
-   pinned-stage convention as .molosoc-who-section__stage. Default/no-JS
-   state is the settled final look (opacity 1, no transform); JS parks each
-   text item off to its stage's own side, invisible, before playing it back
-   on its threshold. The photo is never selected by that script at all —
-   it's plain, static content throughout. */
+   On THIS page every stage is flat/static: sequential-text-reveal.js is
+   not enqueued for the category page (functions.php), so the
+   .molosoc-sequential-entrance--text items simply sit at their resting
+   opacity/transform below. The same class names still drive the
+   scroll-in entrance on the pillar pages, which do load that script. */
 
 .molosoc-sequential-heading {
   background: var(--color-bg);
@@ -408,15 +402,13 @@
   }
 }
 
-/* ---------- Who this is for — editorial feature reveal ----------
-   Pinned single-screen stage (matches homepage's .molosoc-topics__stage
-   convention exactly): Image A (hero_collection_03_relaxing-scaled.jpg)
-   sits static, a clean circular mask opens from the frame's center to
-   reveal Image B (molosoc_pedicure_relaxing.jpg) underneath in the same
-   crop, then the three persona cards emerge from center and travel out to
-   their own tiered positions — see assets/js/who-reveal.js. Progressive
-   enhancement: no-JS/reduced-motion renders Image B as the plain
-   background with every card already at its settled position (below). */
+/* ---------- Who this is for — static full-screen photo + cards ----------
+   One 100vh stage with the photo (molosoc_pedicure_relaxing.jpg) as a
+   plain cover background and the three persona cards at their tiered,
+   hand-placed positions. This used to be a pinned editorial feature
+   reveal (circular mask from Image A to Image B, cards flying out from
+   center via who-reveal.js); that motion was removed — the page is flat
+   below the hero — and Image A was dropped from the markup with it. */
 
 .molosoc-who-section {
   position: relative;
@@ -442,40 +434,6 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-.molosoc-who-section__bg--a {
-  /* Camera-iris reveal — plain circular mask only, no distortion/blur.
-     --who-hole defaults to a fully-open mask (the no-JS/reduced-motion
-     baseline); who-reveal.js pulls it down to 0 at startup and grows it
-     back on scroll — never the reverse. */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--who-hole, 200vmax),
-    black calc(var(--who-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--who-hole, 200vmax),
-    black calc(var(--who-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-}
-
-.molosoc-who-section__bg--a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.98);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .molosoc-who-section__bg--a {
-    display: none;
-  }
 }
 
 .molosoc-who-section__scrim {
@@ -522,12 +480,9 @@
     0 24px 48px -28px rgba(12, 17, 21, 0.12);
   text-decoration: none;
   color: var(--color-text);
-  /* Only box-shadow transitions here — the hover lift is driven by GSAP
-     (who-reveal.js), not CSS: GSAP writes translate/scale as inline
-     styles on every card it tweens, and inline styles always beat a CSS
-     class rule for the same property, so a `:hover { transform }` here
-     would silently never apply once a card's entrance has run. */
-  transition: box-shadow var(--motion-duration-s) var(--motion-ease);
+  /* Flat: no transition, no hover lift — the hover state below is an
+     instant shadow change only, purely as a link affordance. */
+  transition: none;
   opacity: 1;
   transform: none;
 }
@@ -583,7 +538,7 @@
 }
 
 @media (max-width: 760px) {
-  /* who-reveal.js skips the pin below this width — plain stacked fallback. */
+  /* Plain stacked layout: photo block, then the cards in a column. */
   .molosoc-who-section__stage {
     height: auto;
   }
@@ -591,10 +546,6 @@
   .molosoc-who-section__media {
     position: relative;
     height: 100vh;
-  }
-
-  .molosoc-who-section__bg--a {
-    display: none;
   }
 
   .molosoc-who-section__heading {

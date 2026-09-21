@@ -222,18 +222,13 @@ function molosoc_enqueue_assets() {
 		// slug, so the Czech page needs to be listed here explicitly or
 		// this whole stylesheet/script stack silently never loads on it.
 		wp_enqueue_style( 'molosoc-category', $theme_uri . '/assets/css/category.css', array( 'molosoc-components' ), $theme_version );
-		wp_enqueue_script( 'molosoc-motion', $theme_uri . '/assets/js/motion.js', array(), $theme_version, true );
 
-		// Three independent pinned sequences on this page (two
-		// sequential-text-reveal sections + the "who this is for" editorial
-		// feature reveal) — same GSAP/ScrollTrigger stack as the homepage,
-		// same reasoning for real-file scroll-refresh.js over inline script
-		// (see the homepage branch above).
-		wp_enqueue_script( 'gsap', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js', array(), '3.12.5', true );
-		wp_enqueue_script( 'gsap-scrolltrigger', 'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js', array( 'gsap' ), '3.12.5', true );
-		wp_enqueue_script( 'molosoc-sequential-text-reveal', $theme_uri . '/assets/js/sequential-text-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-who-reveal', $theme_uri . '/assets/js/who-reveal.js', array( 'gsap-scrolltrigger' ), $theme_version, true );
-		wp_enqueue_script( 'molosoc-scroll-refresh', $theme_uri . '/assets/js/scroll-refresh.js', array( 'gsap-scrolltrigger', 'molosoc-sequential-text-reveal', 'molosoc-who-reveal' ), $theme_version, true );
+		// Deliberately NO motion.js / GSAP / ScrollTrigger / scroll-refresh
+		// here: everything below the hero on this page is flat, static
+		// content (the sequential-text entrances, the "who this is for"
+		// mask-reveal + card flight, and the final-CTA .molosoc-reveal fade
+		// were all removed). The only animation left is the hero's own
+		// pure-CSS ring spin / type-in (category.css), which needs no script.
 	} elseif ( is_page( array( 'cracked-heels', 'popraskane-paty' ) ) ) {
 		// 'popraskane-paty' is the Czech translation of 'cracked-heels' —
 		// see the 'navleky-na-nohy' branch above for why the Czech slug
