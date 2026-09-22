@@ -40,7 +40,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. ČÍM SE LIŠÍ OD KUŘÍHO OKA NA PRSTU — fixed-image-text-reveal. -->
+	<!-- 2. ČÍM SE LIŠÍ OD KUŘÍHO OKA NA PRSTU — static fixed image + text
+	     column. The photo and the 3 H3 points sit at rest (the old fixed-
+	     image-text-reveal entrance was removed 2026-09-22 — the only motion on
+	     this page is the hero breathe). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow">Rozdíl</p>
@@ -75,7 +78,11 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 3. CO POMÁHÁ, KDYŽ JE POD CHODIDLEM — editorial-feature-reveal. -->
+	<!-- 3. CO POMÁHÁ, KDYŽ JE POD CHODIDLEM — static photo + cards. Image B is
+	     the plain background and the 3 cards sit at their final tiered
+	     positions (the old editorial-feature-reveal mask + card flight was
+	     removed 2026-09-22; Image A stays in the markup, hidden by
+	     pillar1.css). -->
 	<section class="molosoc-severity-section" aria-label="Co pomáhá, když je pod chodidlem">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
@@ -106,7 +113,9 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 4. KDY JÍT K LÉKAŘI — orbit-scroll-drawer. -->
+	<!-- 4. KDY JÍT K LÉKAŘI — static glass drawer settled over the still (non-
+	     rotating) molosoc-3d.glb model (the old orbit-scroll-drawer
+	     fade/blur/slide and the model's auto-rotate were removed 2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="Kdy jít k lékaři">
 		<div class="molosoc-mechanism-pin">
 
@@ -116,8 +125,6 @@ get_header();
 					class="molosoc-mechanism-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"
@@ -178,14 +185,5 @@ get_header();
 
 </main>
 
-<script>
-	// motion.js gates .molosoc-hero, not .molosoc-pillar-hero — this page's
-	// own hero class — so its breathing-zoom start is triggered here
-	// instead, same one-line rAF gate as the other pillar/spoke templates.
-	requestAnimationFrame( function () {
-		var hero = document.getElementById( 'pillarHero' );
-		if ( hero ) hero.classList.add( 'is-visible' );
-	} );
-</script>
 
 <?php get_footer(); ?>

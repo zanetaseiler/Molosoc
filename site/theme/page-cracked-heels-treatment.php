@@ -34,9 +34,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. THE THREE THINGS ACTUAL TREATMENT REQUIRES —
-	     fixed-image-text-reveal. molosoc_spa_treatment_05.jpg stays fixed;
-	     3 H3s slide in. -->
+	<!-- 2. THE THREE THINGS ACTUAL TREATMENT REQUIRES — static fixed image +
+	     text column. The photo and the 3 H3 points sit at rest (the old fixed-
+	     image-text-reveal entrance was removed 2026-09-22 — the only motion on
+	     this page is the hero breathe). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'The full picture', 'molosoc' ); ?></p>
@@ -71,10 +72,11 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 3. WHEN TO SEE A PODIATRIST INSTEAD OF TREATING IT YOURSELF —
-	     editorial-feature-reveal. molosoc_cracked_heels_05.jpg (Image A)
-	     gives way to molosoc_walking_07_bedroom_web.jpg (Image B) through
-	     a circular mask, then the 3 cards emerge. -->
+	<!-- 3. WHEN TO SEE A PODIATRIST INSTEAD OF TREATING IT YOURSELF — static
+	     photo + cards. Image B is the plain background and the 3 cards sit at
+	     their final tiered positions (the old editorial-feature-reveal mask +
+	     card flight was removed 2026-09-22; Image A stays in the markup,
+	     hidden by pillar1.css). -->
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'When to see a podiatrist instead of treating it yourself', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
@@ -105,8 +107,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 4. BUILDING A TREATMENT ROUTINE THAT ACTUALLY FINISHES —
-	     orbit-scroll-drawer. -->
+	<!-- 4. BUILDING A TREATMENT ROUTINE THAT ACTUALLY FINISHES — static glass
+	     drawer settled over the still (non-rotating) molosoc-3d.glb model (the
+	     old orbit-scroll-drawer fade/blur/slide and the model's auto-rotate
+	     were removed 2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( 'Building a treatment routine that actually finishes', 'molosoc' ); ?>">
 		<div class="molosoc-mechanism-pin">
 
@@ -116,8 +120,6 @@ get_header();
 					class="molosoc-mechanism-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"

@@ -4,17 +4,27 @@
   pillar1-cracked-heels-copy.md — headings/H2/H3 order and copy are locked,
   see docs/site-structure.md §7 "Pillar 1 — Cracked Heels".
 
-  Five sections, each carrying one of the site's five documented animation
-  skills so the page reads as varied rather than one effect repeated down
-  the page:
-    1. Hero                              → hero-breathing-zoom
-    2. What causes cracked heels         → fixed-image-text-reveal
-    3. When it goes from dry to painful  → editorial-feature-reveal
-    4. Why moisturizer alone doesn't fix it → orbit-scroll-drawer
-    5. Go deeper / final CTA             → luxury-wellness-editorial-system
-       (static, restrained — "deliberately un-animated content is a valid
-       choice" per that skill's §12; this is the page's own closing beat,
-       not a place to force a sixth effect)
+  Shared by every Journal article template (all 5 EN pillars, 6 EN spokes
+  and their Czech siblings — see functions.php's single enqueue branch).
+
+  Motion policy (2026-09-22, per explicit request): the ONLY motion on
+  these pages is the hero photo's breathing zoom (section 1). Everything
+  below the hero is flat/static — each section was built around one of the
+  site's documented scroll skills and now renders that skill's settled end
+  state directly, with no JS enqueued at all:
+    1. Hero                              → hero-breathing-zoom (kept)
+    2. What causes cracked heels         → was fixed-image-text-reveal;
+                                           text column sits at rest
+    3. When it goes from dry to painful  → was editorial-feature-reveal;
+                                           Image B as a plain background,
+                                           cards at their final positions
+    4. Why moisturizer alone doesn't fix it → was orbit-scroll-drawer;
+                                           drawer settled over a still
+                                           (non-rotating) model
+    5. Go deeper / final CTA             → static (always was)
+  The old class names are kept so the templates need no restructuring and
+  the (no longer enqueued) reveal scripts would still find their hooks if
+  motion were ever restored.
 
   Page-specific layout only — this page doesn't load category.css or
   product.css, so any generic mechanic it reuses (fixed-image-text-reveal's
@@ -64,13 +74,17 @@
 /* 4.5s/leg — faster than the homepage's calibrated 9s/leg baseline, per
    explicit request for this hero specifically. Still the same symmetric
    ease-in-out/alternate pairing (see the comment above) so it stays a
-   smooth breathe rather than a snap, just a quicker one. */
-.molosoc-pillar-hero.is-visible .molosoc-pillar-hero__media img {
+   smooth breathe rather than a snap, just a quicker one.
+   Applied unconditionally (no .is-visible gate): motion.js is not
+   enqueued on these pages and the templates' old inline rAF gate was
+   removed with it — a CSS keyframe animation just starts on load, and
+   this is the one motion these pages keep. */
+.molosoc-pillar-hero .molosoc-pillar-hero__media img {
   animation: molosoc-pillar-hero-breathe 4.5s ease-in-out infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .molosoc-pillar-hero__media img {
+  .molosoc-pillar-hero .molosoc-pillar-hero__media img {
     animation: none;
     transform: none;
   }
@@ -121,12 +135,11 @@
 
 /* ============================================================= */
 /* 2. WHAT CAUSES CRACKED HEELS — fixed image + text column        */
-/* entrance — photo stays completely static; the 3 H3 causes       */
-/* slide in together, as one unit, when the stage scrolls in.      */
-/* Same class names assets/js/sequential-text-reveal.js already    */
-/* looks for (that script is page-agnostic — it just needs these   */
-/* classes to exist on the page), duplicated here rather than      */
-/* shared via category.css since this page doesn't load that file. */
+/* Static: sequential-text-reveal.js is no longer enqueued, so the */
+/* 3 H3 causes simply sit at their resting opacity/transform next  */
+/* to the photo (same flat treatment as the category page's own    */
+/* .molosoc-sequential-stage instances). The stage is a normal-    */
+/* flow block sized by its content, not the old 100vh scroll stage. */
 /* ============================================================= */
 
 .molosoc-sequential-heading {
@@ -141,13 +154,8 @@
 
 .molosoc-sequential-stage {
   position: relative;
-  height: 100vh;
-  overflow: hidden;
-  isolation: isolate;
-  display: flex;
-  align-items: flex-start;
   background: var(--color-bg);
-  padding: var(--space-l) var(--section-padding-x);
+  padding: var(--space-l) var(--section-padding-x) var(--space-xl);
 }
 
 .molosoc-sequential-stage__inner {
@@ -159,14 +167,6 @@
 .molosoc-sequential-entrance--text {
   opacity: 1;
   transform: none;
-}
-
-@media (max-width: 760px) {
-  .molosoc-sequential-stage {
-    height: auto;
-    padding-top: var(--space-l);
-    padding-bottom: var(--space-l);
-  }
 }
 
 .molosoc-argument {
@@ -184,13 +184,8 @@
   border-radius: 0;
 }
 
-/* This photo is never given its own scale/fade entrance — see the skill's
-   §4/§9: an animated image on a rounded/overflow-hidden wrapper produces a
-   visible edge-clipping artifact mid-transition. Sharp corners (above) sidestep
-   the artifact entirely, and no reveal class is ever added to this element. */
-.molosoc-argument__media .molosoc-media:hover img {
-  transform: none;
-}
+/* No hover zoom on any photo on these pages (components.css's generic
+   .molosoc-media:hover scale is overridden below, page-wide). */
 
 .molosoc-argument__text {
   display: flex;
@@ -216,12 +211,13 @@
 }
 
 /* ============================================================= */
-/* 3. WHEN CRACKED HEELS GO FROM DRY TO PAINFUL — editorial-feature-reveal */
-/* ~/.claude/skills/editorial-feature-reveal — Image A holds static,       */
-/* a clean circular mask opens to Image B in the same crop, then 3 cards   */
-/* emerge from center to their own tiered positions. Adapted from          */
-/* category.css's .molosoc-who-section — same mechanics, new selector      */
-/* names (assets/js/severity-reveal.js) since this is a different stage.   */
+/* 3. WHEN CRACKED HEELS GO FROM DRY TO PAINFUL — static photo + cards     */
+/* One 100vh box with Image B as a plain cover background and the 3       */
+/* severity cards at their tiered, hand-placed positions. This used to    */
+/* be a pinned editorial feature reveal (circular mask from Image A to    */
+/* Image B, cards flying out from center via severity-reveal.js); that    */
+/* motion was removed — same flat treatment as category.css's             */
+/* .molosoc-who-section. Image A stays in the markup but is never shown.  */
 /* ============================================================= */
 
 .molosoc-severity-section {
@@ -250,33 +246,10 @@
   background-repeat: no-repeat;
 }
 
+/* Image A was only ever the pre-reveal frame the mask opened from; with
+   the reveal gone, Image B is the section's photo at every width. */
 .molosoc-severity-section__bg--a {
-  /* Camera-iris reveal only — plain circular mask, no distortion/blur (see
-     the skill's §3: an organic/displaced edge was tried elsewhere on a
-     sibling pattern and explicitly reverted for reading as "smeared," not
-     premium). --severity-hole defaults to a fully-open mask — the no-JS/
-     reduced-motion baseline; severity-reveal.js pulls it to 0 at startup
-     and grows it back on scroll, never the reverse. */
-  -webkit-mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--severity-hole, 200vmax),
-    black calc(var(--severity-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-  mask-image: radial-gradient(
-    circle at 50% 50%,
-    transparent 0,
-    transparent var(--severity-hole, 200vmax),
-    black calc(var(--severity-hole, 200vmax) + 1.5px),
-    black 100%
-  );
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .molosoc-severity-section__bg--a {
-    display: none;
-  }
+  display: none;
 }
 
 .molosoc-severity-section__scrim {
@@ -335,20 +308,10 @@
     0 24px 48px -28px rgba(12, 17, 21, 0.12);
   text-decoration: none;
   color: var(--color-text);
-  /* Hover lift is GSAP-driven (severity-reveal.js), not CSS — GSAP writes
-     translate/scale as inline styles once a card's entrance has run, and
-     an inline style always beats a class rule for the same property. Only
-     box-shadow transitions through plain CSS here. */
-  transition: box-shadow var(--motion-duration-s) var(--motion-ease);
+  /* No hover lift/shadow swell — these cards are static copy, not links. */
+  transition: none;
   opacity: 1;
   transform: none;
-}
-
-.molosoc-severity-card:hover {
-  box-shadow:
-    0 2px 4px rgba(12, 17, 21, 0.05),
-    0 14px 28px -14px rgba(12, 17, 21, 0.14),
-    0 32px 64px -32px rgba(12, 17, 21, 0.16);
 }
 
 .molosoc-severity-card h3 {
@@ -393,8 +356,9 @@
 }
 
 @media (max-width: 760px) {
-  /* severity-reveal.js skips the pin below this width — plain stacked
-     fallback, same convention as category.css's .molosoc-who-section. */
+  /* Plain stacked layout below this width — photo, then heading, then
+     cards in normal flow, same convention as category.css's
+     .molosoc-who-section. */
   .molosoc-severity-section__stage {
     height: auto;
   }
@@ -402,10 +366,6 @@
   .molosoc-severity-section__media {
     position: relative;
     height: 70vh;
-  }
-
-  .molosoc-severity-section__bg--a {
-    display: none;
   }
 
   /* .molosoc-severity-section__scrim is position: absolute; inset: 0 —
@@ -462,29 +422,27 @@
 }
 
 /* ============================================================= */
-/* 4. WHY MOISTURIZER ALONE DOESN'T FIX IT — orbit-scroll-drawer  */
-/* .claude/skills/orbit-scroll-drawer — the molosoc-3d.glb model  */
-/* keeps rotating (its own auto-rotate, untouched by this script) */
-/* while it fades/blurs and a glass drawer carrying the 3 H3s      */
-/* slides up over it. Framed as the page's "here's the actual      */
-/* mechanism" bridge into the product, not as a hero — this exact  */
-/* glass-over-model treatment was tried and reverted for the        */
-/* PRODUCT page's own hero (see product.css's file-header comment); */
-/* using it here, mid-article, as a distinct transitional beat is   */
-/* a different placement, not a re-litigation of that call.         */
+/* 4. WHY MOISTURIZER ALONE DOESN'T FIX IT — static glass drawer   */
+/* over a still model. One 100svh scene: the molosoc-3d.glb model  */
+/* (model-viewer, NO auto-rotate — the templates omit it) centered */
+/* at full opacity, the glass drawer carrying the 3 H3s already    */
+/* settled along the bottom edge. This used to be the orbit-scroll- */
+/* drawer pattern (220vh sticky pin, model fading/blurring as the   */
+/* drawer slid up via mechanism-drawer.js); that motion was removed */
+/* and this is its end state rendered directly. Framed as the       */
+/* page's "here's the actual mechanism" bridge into the product.    */
 /* ============================================================= */
 
 .molosoc-mechanism-section {
   position: relative;
-  height: 220vh; /* real scroll distance for the fade/blur/slide to play across */
-  /* Reversed per explicit request — white background, black letters,
-     same fade/blur/slide animation untouched. Was var(--color-ink). */
+  height: 100svh;
+  /* Reversed per explicit request — white background, black letters.
+     Was var(--color-ink). */
   background: var(--color-white);
 }
 
 .molosoc-mechanism-pin {
-  position: sticky;
-  top: 0;
+  position: relative;
   height: 100svh;
   width: 100%;
   overflow: hidden;
@@ -498,8 +456,6 @@
   display: grid;
   place-items: center;
   isolation: isolate;
-  opacity: var(--mech-opacity, 1);
-  filter: blur(var(--mech-blur, 0px));
 }
 
 /* Soft ink-toned shadow, not the silver glow this replaced — a light
@@ -562,11 +518,6 @@
   border-bottom: none;
   padding: var(--space-l) var(--space-l) var(--space-m);
   color: var(--color-ink);
-  /* Defaults (--drawer-opacity:1, --drawer-offset:0) are the settled,
-     fully-visible state — the no-JS/reduced-motion baseline. JS pulls it
-     down off-screen at scroll-progress 0 and eases it back on scroll. */
-  transform: translateY(var(--drawer-offset, 0px));
-  opacity: var(--drawer-opacity, 1);
 }
 
 .molosoc-mechanism-drawer h2 {
@@ -612,16 +563,8 @@
   max-width: none;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .molosoc-mechanism-stage {
-    opacity: 1;
-    filter: none;
-  }
-}
-
-/* Mobile — skip the pin/scroll-drive entirely (skill §6): plain static
-   stack, model still auto-rotating (cheap CSS-free — model-viewer's own
-   attribute) behind a non-glass, non-blurred content block in normal flow. */
+/* Mobile — plain static stack: the still model above a non-glass content
+   block in normal flow. */
 @media (max-width: 760px) {
   .molosoc-mechanism-section {
     height: auto;
@@ -638,8 +581,6 @@
   .molosoc-mechanism-stage {
     position: relative;
     height: 20rem;
-    opacity: 1 !important;
-    filter: none !important;
   }
 
   .molosoc-mechanism-model {
@@ -661,8 +602,6 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     border: none;
-    transform: none !important;
-    opacity: 1 !important;
     padding: var(--space-l) var(--section-padding-x);
   }
 
@@ -689,10 +628,9 @@
 /* FINAL CTA — deep-links to the Product page's Persona 2 proof    */
 /* section (per docs/site-structure.md §7's "Deep-links to" note). */
 /* Same dark-photo-background + scrim convention as category.css's */
-/* .molosoc-category-final-cta, kept static (molosoc-reveal only)  */
-/* rather than reusing hero-breathing-zoom a second time — one      */
-/* ambient-motion moment per page reads as considered, two reads as */
-/* a mannerism. ---------- */
+/* .molosoc-category-final-cta. Fully static: the .molosoc-reveal   */
+/* fade-up is pinned at its settled state below (motion.js is not   */
+/* enqueued on these pages). ---------- */
 /* ============================================================= */
 
 .molosoc-pillar-final-cta {
@@ -752,4 +690,29 @@
 
 .molosoc-pillar-final-cta .molosoc-btn {
   margin-top: var(--space-l);
+}
+
+/* ============================================================= */
+/* PAGE-WIDE STATIC OVERRIDES — the only motion on a Journal       */
+/* article is the hero breathe (section 1). components.css's       */
+/* generic reveal/hover mechanics are pinned at their settled       */
+/* state here, same as homepage.css does for the card-hero variant. */
+/* ============================================================= */
+
+/* .molosoc-reveal (final CTA copy) — settled, no observer needed. */
+main .molosoc-reveal {
+  opacity: 1;
+  transform: none;
+  transition: none;
+  will-change: auto;
+}
+
+/* No hover zoom on any .molosoc-media photo (the "what causes it" photo,
+   the "Go deeper" thumbnails). */
+main .molosoc-media img {
+  transition: none;
+}
+
+main .molosoc-media:hover img {
+  transform: none;
 }

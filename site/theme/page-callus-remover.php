@@ -39,9 +39,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. WHAT ACTUALLY REMOVES HARD SKIN — fixed-image-text-reveal.
-	     pillar3_02_pumice.jpg (pumice stone) stays fixed; 3 H3 methods
-	     slide in from the right. -->
+	<!-- 2. WHAT ACTUALLY REMOVES HARD SKIN — static fixed image + text column.
+	     The photo and the 3 H3 points sit at rest (the old fixed-image-text-
+	     reveal entrance was removed 2026-09-22 — the only motion on this page
+	     is the hero breathe). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Poctivý pohled' : __( 'An honest look', 'molosoc' ) ); ?></p>
@@ -76,10 +77,11 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 3. HOW TO REMOVE THICK DEAD SKIN FROM FEET HOME REMEDY —
-	     editorial-feature-reveal. pillar3_01_foot_file.jpg (Image A) gives
-	     way to pillar3_03_texture.jpg (Image B) through a circular mask,
-	     then the 3 cards emerge. -->
+	<!-- 3. HOW TO REMOVE THICK DEAD SKIN FROM FEET HOME REMEDY — static photo
+	     + cards. Image B is the plain background and the 3 cards sit at their
+	     final tiered positions (the old editorial-feature-reveal mask + card
+	     flight was removed 2026-09-22; Image A stays in the markup, hidden by
+	     pillar1.css). -->
 	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Kuří oko odstranění' : __( 'How to remove thick dead skin from feet home remedy', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
@@ -110,8 +112,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 4. HOW TO GET RID OF HARD SKIN ON FEET PERMANENTLY —
-	     orbit-scroll-drawer. -->
+	<!-- 4. HOW TO GET RID OF HARD SKIN ON FEET PERMANENTLY — static glass
+	     drawer settled over the still (non-rotating) molosoc-3d.glb model (the
+	     old orbit-scroll-drawer fade/blur/slide and the model's auto-rotate
+	     were removed 2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč se kuří oko vrací' : __( 'How to get rid of hard skin on feet permanently', 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
@@ -121,8 +125,6 @@ get_header();
 					class="molosoc-mechanism-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"
