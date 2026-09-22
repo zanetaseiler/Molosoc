@@ -43,8 +43,8 @@ jobs:
 
       - name: Ensure CZ cart/checkout pages exist (draft)
         env:
-          WP_URL: ${{ secrets.WP_URL }}
-          WP_USER: ${{ secrets.WP_USER }}
-          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
         run: |
           python3 automations/content-sync/create_cart_checkout_cz_pages.py
