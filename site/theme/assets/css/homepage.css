@@ -760,13 +760,15 @@
 .molosoc-arc-reveal__heading {
   position: relative;
   z-index: 2;
-  /* Size/leading come from the shared <h2> rule (base.css, the
-     --text-display-2xl editorial scale) — this heading used to carry
-     its own clamp(3rem, 6vw + 1rem, 6rem). */
-  /* 46rem → 72rem: at this size the heading wrapped into a tight,
-     crowded centered stack; the wider measure lets it spread across
-     the section (still centered). */
-  max-width: 72rem;
+  /* One line whenever the viewport allows (explicit request): no column
+     cap, and a fluid size tuned so the 31-character Czech heading ("Proč
+     péče o nohy nikdy nevydrží") fits the section's inner width from
+     ~1024px up — ≈55px at 1024, 78px at 1440, 86px at 1590, capped at
+     the shared 110px on very wide screens. Below that it wraps to two
+     balanced lines. Leading comes from the shared <h2> rule. */
+  font-size: clamp(2.75rem, 5.4vw, 6.875rem);
+  max-width: none;
+  text-wrap: balance;
   margin: 0 auto;
   /* ~120px (--space-xl) of white space above the heading — enough that the
      hero-to-section hand-off reads as calm and intentional rather than
@@ -1686,4 +1688,4 @@ h2.molosoc-merge__text {
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.35 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.36 */
