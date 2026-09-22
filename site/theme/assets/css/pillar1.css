@@ -628,71 +628,117 @@
 }
 
 /* ============================================================= */
-/* FINAL CTA — deep-links to the Product page's Persona 2 proof    */
-/* section (per docs/site-structure.md §7's "Deep-links to" note). */
-/* Same dark-photo-background + scrim convention as category.css's */
-/* .molosoc-category-final-cta. Fully static: the .molosoc-reveal   */
-/* fade-up is pinned at its settled state below (motion.js is not   */
-/* enqueued on these pages). ---------- */
+/* 6. FINAL CTA — "See the real results" as one MOLOSOC elevated  */
+/* card (2026-09-22). Deep-links to the Product page's Persona 2   */
+/* proof section (per docs/site-structure.md §7's "Deep-links to"  */
+/* note). Was the category-style dark stage: the before/after      */
+/* photo stretched full-bleed behind a 55-80% ink scrim with the   */
+/* headline centered on top of it. Now a warm cream-deep band      */
+/* around one floating near-white card — the same surface language */
+/* as category.css's .molosoc-elevated-card and the mechanism card */
+/* above (hairline border, --shadow-soft, rounded corners) — with  */
+/* an editorial split inside: the photo untouched in a portrait    */
+/* column on the left (natural aspect ratio, no overlay, no crop,  */
+/* nothing laid over it), eyebrow + heading + one sentence + CTA   */
+/* on the right. A closing proof block, not another hero: the H2   */
+/* sits on --text-display-l, a step below the section-heading      */
+/* scale, and everything is left-aligned. Fully static — no reveal */
+/* class on the markup any more. Stacks image-first below 960px.   */
 /* ============================================================= */
 
 .molosoc-pillar-final-cta {
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-  color: var(--color-white);
-  background: var(--color-ink);
+  background: var(--color-bg-alt);
+  color: var(--color-ink);
 }
 
+.molosoc-pillar-final-cta__card {
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  display: grid;
+  /* Photo column capped near the source width of the three proof
+     photos in use (748-1143px wide, all portrait) so nothing is
+     upscaled soft; the copy takes the rest. */
+  grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.05);
+  border-radius: 22px;
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.03),
+    var(--shadow-soft);
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+/* The photo — displayed as-is. No object-fit crop, no aspect-ratio
+   box, no opacity, no scrim: the img keeps its own proportions and
+   only follows the column width. */
 .molosoc-pillar-final-cta__media {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--color-cream-deep);
 }
 
 .molosoc-pillar-final-cta__media img {
+  display: block;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.55;
+  height: auto;
 }
 
-.molosoc-pillar-final-cta__scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(
-    180deg,
-    rgba(12, 17, 21, 0.55) 0%,
-    rgba(12, 17, 21, 0.8) 100%
-  );
-}
-
-.molosoc-pillar-final-cta .molosoc-section__inner {
-  position: relative;
-  z-index: 2;
-  max-width: 34rem;
-}
-
-.molosoc-pillar-final-cta .molosoc-eyebrow {
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.molosoc-pillar-final-cta h2 {
-  color: var(--color-white);
-  /* Dark hero-like stage: moderated editorial scale (tokens.css). */
-  font-size: var(--text-display-2xl-soft);
-  line-height: 1.05;
-}
-
-.molosoc-pillar-final-cta p {
-  color: rgba(255, 255, 255, 0.8);
-  margin: var(--space-m) auto 0;
+.molosoc-pillar-final-cta__copy {
   max-width: 30rem;
 }
 
-.molosoc-pillar-final-cta .molosoc-btn {
-  margin-top: var(--space-l);
+.molosoc-pillar-final-cta__copy .molosoc-eyebrow {
+  color: color-mix(in srgb, var(--color-ink) 65%, transparent);
+}
+
+.molosoc-pillar-final-cta__copy h2 {
+  color: var(--color-ink);
+  margin-top: var(--space-2xs);
+  font-size: var(--text-display-l);
+  line-height: 1.05;
+}
+
+.molosoc-pillar-final-cta__copy > p:not(.molosoc-eyebrow) {
+  color: color-mix(in srgb, var(--color-ink) 75%, transparent);
+  margin-top: var(--space-s);
+  max-width: 28rem;
+  font-size: var(--text-body-l);
+}
+
+.molosoc-pillar-final-cta__copy .molosoc-btn {
+  margin-top: var(--space-m);
+}
+
+/* Tablet and phone — one column, photo first, copy underneath; still a
+   card (rounded, bordered, lifted). Stacks at the same 960px point the
+   mechanism card's points do: below that the copy column beside a
+   22rem photo drops under ~15rem and the heading wraps word-by-word.
+   The photo keeps its natural ratio and is capped to a phone-friendly
+   width so a 375px screen doesn't get a screen-and-a-half of image. */
+@media (max-width: 960px) {
+  .molosoc-pillar-final-cta__card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-m);
+  }
+
+  .molosoc-pillar-final-cta__media {
+    width: 100%;
+    max-width: 20rem;
+    margin-inline: auto;
+  }
+
+  .molosoc-pillar-final-cta__copy {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .molosoc-pillar-final-cta__card {
+    border-radius: 16px;
+  }
 }
 
 /* ============================================================= */
@@ -702,7 +748,9 @@
 /* state here, same as homepage.css does for the card-hero variant. */
 /* ============================================================= */
 
-/* .molosoc-reveal (final CTA copy) — settled, no observer needed. */
+/* .molosoc-reveal — no Journal template carries the class any more
+   (the final CTA card dropped it); kept as a guard so any leftover
+   instance renders settled rather than stuck at opacity 0. */
 main .molosoc-reveal {
   opacity: 1;
   transform: none;
