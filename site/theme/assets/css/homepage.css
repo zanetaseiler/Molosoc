@@ -1688,4 +1688,71 @@ h2.molosoc-merge__text {
   color: var(--color-ink);
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.42 */
+/* ---------- Card variant: the four story blocks as floating elevated cards ----------
+   Under "Proč péče o nohy nikdy nevydrží" each .molosoc-story (photo +
+   H3 + paragraph) is now one lifted ivory card — the same surface as the
+   category page's elevated cards and this page's own hero card (#fdfcf9,
+   hairline border, 18px radius, the deeper three-layer ink shadow).
+   Inside: photo on one side, text vertically centred on the other,
+   alternating with the existing --left/--right modifiers (the --right
+   stories put the photo on the right). The old editorial layout (bare
+   photo at --story-w, text tucked under it, alternating alignment) is
+   what these rules override; the inline --story-w custom property no
+   longer sizes anything here. Cards stack to a single column on phones. */
+
+.molosoc-front-page--card .molosoc-story {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+  width: 100%;
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.05);
+  border-radius: 18px;
+  box-shadow:
+    0 2px 4px rgba(12, 17, 21, 0.05),
+    0 18px 40px -18px rgba(12, 17, 21, 0.22),
+    0 48px 96px -32px rgba(12, 17, 21, 0.4);
+  padding: clamp(1.5rem, 3vw, 2.75rem);
+}
+
+.molosoc-front-page--card .molosoc-story--right .molosoc-story__media {
+  order: 2;
+}
+
+.molosoc-front-page--card .molosoc-story__media {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  /* Softly rounded inside the card (the bare editorial version was
+     deliberately sharp-cornered). */
+  border-radius: 12px;
+}
+
+.molosoc-front-page--card .molosoc-story__text,
+.molosoc-front-page--card .molosoc-story--right .molosoc-story__text,
+.molosoc-front-page--card .molosoc-story--center .molosoc-story__text {
+  width: auto;
+  max-width: 30rem;
+  margin: 0;
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .molosoc-front-page--card .molosoc-story {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-s);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+
+  /* Photo first on every card once they stack. */
+  .molosoc-front-page--card .molosoc-story--right .molosoc-story__media {
+    order: 0;
+  }
+
+  .molosoc-front-page--card .molosoc-story__text {
+    max-width: none;
+  }
+}
+
+/* rebuilt: card-hero variant + static-below-hero v0.2.46 */
