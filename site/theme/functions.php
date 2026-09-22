@@ -11,6 +11,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Bilingual WooCommerce purchase flow (CZ /cz/produkt → /cz/kosik →
+// /cz/pokladna, EN unchanged) for the one product this store sells — see
+// the file's own header comment for the full section map. Split out of
+// this already-large file rather than added inline, since it's a
+// self-contained, separately reviewable feature (GitHub Issue #53).
+require_once get_stylesheet_directory() . '/inc/woocommerce-lang.php';
+
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
@@ -204,6 +211,21 @@ function molosoc_enqueue_assets() {
 	// wc/store/cart data store, and gating it on is_cart()/is_checkout()
 	// would miss any future page embedding a cart/checkout block.
 	wp_enqueue_script( 'molosoc-cart-badge-sync', $theme_uri . '/assets/js/cart-badge-sync.js', array(), $theme_version, true );
+
+	// Store API language middleware (see the file's header comment) —
+	// cart/checkout only. is_cart()/is_checkout() resolve through the
+	// woocommerce_get_cart_page_id / woocommerce_get_checkout_page_id
+	// filters added in inc/woocommerce-lang.php, so this also covers the
+	// CZ kosik/pokladna twins once they exist — no separate slug check
+	// needed here, unlike the page-template branches below.
+	if ( function_exists( 'is_cart' ) && function_exists( 'is_checkout' ) && ( is_cart() || is_checkout() ) ) {
+		$molosoc_lang_for_js = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
+		wp_enqueue_script( 'molosoc-store-api-lang', $theme_uri . '/assets/js/store-api-lang.js', array( 'wp-api-fetch' ), $theme_version, true );
+		// window.molosocLang, not wp_localize_script's object wrapper, to
+		// match the plain 'cz'|'en' global the JS file reads. 'before' so
+		// it's defined ahead of the middleware registering itself.
+		wp_add_inline_script( 'molosoc-store-api-lang', 'window.molosocLang = ' . wp_json_encode( $molosoc_lang_for_js ) . ';', 'before' );
+	}
 
 	// Floating back-to-top button (see the file's header comment for why
 	// it jumps instantly instead of smooth-scrolling back through the
