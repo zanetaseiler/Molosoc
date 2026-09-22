@@ -112,7 +112,7 @@ get_header();
 							<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
 						<?php endif; ?>
 					</span>
-					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
+					<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
 				</div>
 			</div>
 			<div class="molosoc-orbit-drawer__cards">
@@ -351,7 +351,7 @@ get_header();
 					</div>
 				</div>
 				<div class="molosoc-product-buy">
-					<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní — 229 Kč' : __( 'Order Now — €10', 'molosoc' ) ); ?></a>
+					<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní — 229 Kč' : __( 'Order Now — €10', 'molosoc' ) ); ?></a>
 					<?php if ( ! $molosoc_is_cz ) : ?>
 						<p class="molosoc-price-note" translate="no"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></p>
 					<?php endif; ?>
@@ -371,7 +371,7 @@ get_header();
 			<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
 		<?php endif; ?>
 	</span>
-	<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/product/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
+	<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
 </div>
 
 <?php get_footer(); ?>

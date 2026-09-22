@@ -1,0 +1,43 @@
+name: Create CZ cart/checkout pages (draft)
+
+# One-shot creation of the two Czech cart/checkout page twins (slugs
+# "kosik" and "pokladna") that GitHub Issue #53's bilingual purchase flow
+# needs — see automations/content-sync/create_cart_checkout_cz_pages.py
+# for the full explanation (why content is fetched live from pages
+# 359/360, and why the Polylang translation link is a manual wp-admin
+# step after this runs).
+#
+# workflow_dispatch ONLY — never on push/PR — because this creates
+# production content (as drafts; a human still hits Publish) and is a
+# one-time setup step, not a recurring sync. Same pattern as
+# create-wp-page.yml.
+#
+# Run from the Actions tab -> "Create CZ cart/checkout pages (draft)" ->
+# Run workflow, on the branch/ref where inc/woocommerce-lang.php (the code
+# that resolves is_cart()/is_checkout() to these pages once they exist and
+# are Polylang-linked) is already deployed.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  create-cz-cart-checkout-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Ensure CZ cart/checkout pages exist (draft)
+        env:
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+        run: |
+          python3 automations/content-sync/create_cart_checkout_cz_pages.py

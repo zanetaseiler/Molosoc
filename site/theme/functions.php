@@ -11,6 +11,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// Bilingual WooCommerce purchase flow (CZ /cz/produkt → /cz/kosik →
+// /cz/pokladna, EN unchanged) for the one product this store sells — see
+// the file's own header comment for the full section map. Split out of
+// this already-large file rather than added inline, since it's a
+// self-contained, separately reviewable feature (GitHub Issue #53).
+require_once get_stylesheet_directory() . '/inc/woocommerce-lang.php';
+
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
@@ -97,6 +104,7 @@ function molosoc_sitemap_excluded_page_ids() {
 	$ids   = array();
 	$slugs = array(
 		'cart', 'checkout', 'my-account', 'thank-you',
+		'kosik', 'pokladna',
 		'home-2', 'blog-2', 'blog-legacy-2018',
 		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
 	);
@@ -204,6 +212,21 @@ function molosoc_enqueue_assets() {
 	// wc/store/cart data store, and gating it on is_cart()/is_checkout()
 	// would miss any future page embedding a cart/checkout block.
 	wp_enqueue_script( 'molosoc-cart-badge-sync', $theme_uri . '/assets/js/cart-badge-sync.js', array(), $theme_version, true );
+
+	// Store API language middleware (see the file's header comment) —
+	// cart/checkout only. is_cart()/is_checkout() resolve through the
+	// woocommerce_get_cart_page_id / woocommerce_get_checkout_page_id
+	// filters added in inc/woocommerce-lang.php, so this also covers the
+	// CZ kosik/pokladna twins once they exist — no separate slug check
+	// needed here, unlike the page-template branches below.
+	if ( function_exists( 'is_cart' ) && function_exists( 'is_checkout' ) && ( is_cart() || is_checkout() ) ) {
+		$molosoc_lang_for_js = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
+		wp_enqueue_script( 'molosoc-store-api-lang', $theme_uri . '/assets/js/store-api-lang.js', array( 'wp-api-fetch' ), $theme_version, true );
+		// window.molosocLang, not wp_localize_script's object wrapper, to
+		// match the plain 'cz'|'en' global the JS file reads. 'before' so
+		// it's defined ahead of the middleware registering itself.
+		wp_add_inline_script( 'molosoc-store-api-lang', 'window.molosocLang = ' . wp_json_encode( $molosoc_lang_for_js ) . ';', 'before' );
+	}
 
 	// Floating back-to-top button (see the file's header comment for why
 	// it jumps instantly instead of smooth-scrolling back through the
@@ -1744,6 +1767,7 @@ function molosoc_product_trust_bar_top() {
 	if ( ! is_product() ) {
 		return;
 	}
+	$molosoc_is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	?>
 	<div class="molosoc-trust-bar molosoc-trust-bar--top">
 		<div class="molosoc-trust-bar__inner">
@@ -1752,8 +1776,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M1 3h13v13H1z"/><path d="M14 8h4l4 4v4h-8V8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Fast Shipping', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'We ship within 24 hours', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Rychlé dodání' : __( 'Fast Shipping', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Odesíláme do 24 hodin' : __( 'We ship within 24 hours', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1761,8 +1785,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Easy Returns', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'No stress, no hassle', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Snadné vrácení' : __( 'Easy Returns', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Bez stresu, bez starostí' : __( 'No stress, no hassle', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1770,8 +1794,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Secure Payment', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( "100% protection for your data", 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Bezpečná platba' : __( 'Secure Payment', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? '100% ochrana vašich údajů' : __( '100% protection for your data', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -1790,6 +1814,7 @@ function molosoc_product_trust_bar_bottom() {
 	if ( ! is_product() ) {
 		return;
 	}
+	$molosoc_is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	?>
 	<div class="molosoc-trust-bar molosoc-trust-bar--bottom">
 		<div class="molosoc-trust-bar__inner">
@@ -1798,7 +1823,7 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.2.6-4.6 4.2 1.3 6.1L12 15.8 6.5 18.5l1.3-6.1L3.2 8.2l6.2-.6z"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Verified by Customers', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Ověřeno zákazníky' : __( 'Verified by Customers', 'molosoc' ) ); ?></p>
 					<p class="molosoc-trust-bar__sub">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
 				</div>
 			</div>
@@ -1807,8 +1832,8 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Secure Purchase', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'Your data protected', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Bezpečný nákup' : __( 'Secure Purchase', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Vaše údaje jsou chráněny' : __( 'Your data protected', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1816,8 +1841,8 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'In Stock', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'Ready to ship', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Skladem' : __( 'In Stock', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Připraveno k odeslání' : __( 'Ready to ship', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
