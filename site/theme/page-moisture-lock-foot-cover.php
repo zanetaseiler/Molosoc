@@ -268,21 +268,36 @@ get_header();
 		</div>
 	</section>
 
-	<!-- Brand story — a compact mother-and-daughter note (2026-09-22):
-	     one candid photo beside three short lines of copy, generous
-	     whitespace, no card/background/CTA. Deliberately small; not an
-	     About section. -->
-	<section class="molosoc-product-story" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?>">
-		<div class="molosoc-product-story__inner">
-			<div class="molosoc-product-story__media">
-				<img src="https://molosoc.com/wp-content/uploads/2026/01/Molosoc-Opening-Package-Mami.jpg"
-					alt="<?php echo esc_attr( $molosoc_is_cz ? 'Máma a dcera spolu otevírají balíček Molosoc u stolu doma' : __( 'A mother and daughter opening a Molosoc package together at the table at home', 'molosoc' ) ); ?>"
-					loading="lazy" decoding="async" width="1290" height="1434">
+	<!-- Brand story — a compact mother-and-daughter note (2026-09-22),
+	     restyled per follow-up to the exact pattern of the two persona
+	     sections above it: centered eyebrow + H2 (.molosoc-product-heading),
+	     then a reversed argument row — photo pair on the RIGHT (primary
+	     Mami photo, small inset Z-holding photo in the corner), the one
+	     short paragraph on the left. No card, no background, no CTA. -->
+	<div class="molosoc-product-heading">
+		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?></p>
+			<h2><?php echo esc_html( $molosoc_is_cz ? 'Vzniklo mezi mámou a dcerou' : __( 'Created by a mother and daughter', 'molosoc' ) ); ?></h2>
+		</div>
+	</div>
+	<section class="molosoc-sequential-stage molosoc-product-story" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?>">
+		<div class="molosoc-argument molosoc-argument--reverse">
+			<div class="molosoc-argument__media molosoc-argument__media--duo molosoc-argument__media--editorial">
+				<div class="molosoc-media molosoc-media--primary molosoc-media--static">
+					<img src="https://molosoc.com/wp-content/uploads/2026/01/Molosoc-Opening-Package-Mami.jpg"
+						alt="<?php echo esc_attr( $molosoc_is_cz ? 'Máma a dcera spolu otevírají balíček Molosoc u stolu doma' : __( 'A mother and daughter opening a Molosoc package together at the table at home', 'molosoc' ) ); ?>"
+						loading="lazy" decoding="async" width="1290" height="1434">
+				</div>
+				<div class="molosoc-media molosoc-media--secondary molosoc-media--static">
+					<img src="https://molosoc.com/wp-content/uploads/2026/01/Molosoc-Z-holding-Molosoc.jpg"
+						alt="<?php echo esc_attr( $molosoc_is_cz ? 'Žaneta drží návlek Molosoc' : __( 'Žaneta holding a Molosoc foot cover', 'molosoc' ) ); ?>"
+						loading="lazy" decoding="async" width="1283" height="1943">
+				</div>
 			</div>
-			<div class="molosoc-product-story__text">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?></p>
-				<h2><?php echo esc_html( $molosoc_is_cz ? 'Vzniklo mezi mámou a dcerou' : __( 'Created by a mother and daughter', 'molosoc' ) ); ?></h2>
-				<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc jsme vytvořily spolu — z jednoduché potřeby udělat každodenní péči o nohy snadnější a udržitelnou jako rutinu.' : __( 'We created Molosoc together — from a simple need to make everyday foot care easier and turn it into a routine you can actually keep.', 'molosoc' ) ); ?></p>
+			<div class="molosoc-argument__text">
+				<div class="molosoc-argument__item">
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc jsme vytvořily spolu — z jednoduché potřeby udělat každodenní péči o nohy snadnější a udržitelnou jako rutinu.' : __( 'We created Molosoc together — from a simple need to make everyday foot care easier and turn it into a routine you can actually keep.', 'molosoc' ) ); ?></p>
+				</div>
 			</div>
 		</div>
 	</section>

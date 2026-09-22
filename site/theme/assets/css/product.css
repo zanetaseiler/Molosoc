@@ -785,89 +785,16 @@
 }
 
 /* ---------- Brand story — "Created by a mother and daughter" ----------
-   A compact editorial row between "Give it as a gift" and "How it works":
-   the candid photo (1290×1434, near-square) on the left at just under
-   half the measure, three short lines (eyebrow, H2 on the shared
-   --text-display-2xl scale via base.css, one paragraph) vertically
-   centred on the right. Plain page background, no card, no shadow, no
-   CTA — the photo is shown as a photograph (sharp corners, natural
-   aspect), not a banner. Generous vertical whitespace so it reads as a
-   pause before the mechanism block. Stacks photo-then-text on phones. */
-
-.molosoc-product-story {
-  /* Narrow side gutters so the card, not the section padding, defines the
-     width — same section treatment as category.css's
-     .molosoc-elevated-card-section. */
-  padding: var(--space-2xl) clamp(1rem, 2vw, 2rem) var(--space-xl);
-}
-
-/* Floating Molosoc elevated card (per follow-up, 2026-09-22): the story
-   row now sits inside the same near-white/ivory card surface the
-   foot-covers page uses for its elevated blocks — #fdfcf9, hairline
-   border, 18px corners, the deeper --shadow-lift of that page's
-   "floating" variant so it visibly lifts off the cream. Tokens are
-   duplicated from category.css on purpose: that file isn't enqueued on
-   the product page. */
-.molosoc-product-story__inner {
-  max-width: var(--content-max-width-wide);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: var(--space-l) var(--space-xl);
-  align-items: center;
-  background: #fdfcf9;
-  border: 1px solid rgba(12, 17, 21, 0.05);
-  border-radius: 18px;
-  box-shadow:
-    0 1px 2px rgba(12, 17, 21, 0.04),
-    var(--shadow-lift);
-  padding: clamp(1.75rem, 4vw, 3.5rem);
-}
-
-.molosoc-product-story__media {
-  aspect-ratio: 9 / 10;
-  overflow: hidden;
-  /* Inside a rounded card the photo takes the site's standard media
-     radius (as the foot-covers cards' photos do) instead of sharp
-     editorial corners. */
-  border-radius: var(--radius-m);
-}
-
-.molosoc-product-story__media img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-
-.molosoc-product-story__text {
-  max-width: 30rem;
-}
-
-.molosoc-product-story__text h2 {
-  margin-top: var(--space-xs);
-}
-
-.molosoc-product-story__text p:last-child {
-  color: var(--color-text-muted);
-  margin: var(--space-m) 0 0;
-  font-size: var(--text-body-l);
-}
-
-@media (max-width: 760px) {
-  .molosoc-product-story {
-    padding: var(--space-xl) 1rem var(--space-l);
-  }
-
-  .molosoc-product-story__inner {
-    grid-template-columns: 1fr;
-    gap: var(--space-m);
-  }
-
-  .molosoc-product-story__text {
-    max-width: none;
-  }
+   Same pattern as the two persona sections above it (centered
+   .molosoc-product-heading, then a reversed .molosoc-argument row with the
+   editorial photo duo on the right and the copy on the left) — all of that
+   comes from the shared rules above; nothing bespoke here beyond the
+   spacing. The earlier standalone card/grid treatment (and the floating
+   elevated-card variant that briefly replaced it) is gone per follow-up.
+   The stage wrapper class it shares with those sections keeps the
+   heading-after-stage spacing rule consistent on both sides of it. */
+.molosoc-product-story .molosoc-argument {
+  padding-bottom: var(--space-l);
 }
 
 /* ---------- "How it works" background — 3d_turntable_01_front.png behind
