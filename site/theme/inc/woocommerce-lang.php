@@ -417,14 +417,23 @@ add_filter( 'woocommerce_get_checkout_order_received_url', 'molosoc_cz_order_rec
  * the default priority 10) to switch locale first; priority 20 (after) to
  * restore it once WC has finished composing/sending for that hook.
  */
+function molosoc_order_from_notification_arg( $arg ) {
+	// Most WooCommerce notification hooks pass a plain order ID; the
+	// customer-note notification instead passes an args array containing
+	// an 'order_id' key (WC_Email_Customer_Note::trigger()).
+	if ( is_array( $arg ) && isset( $arg['order_id'] ) ) {
+		$arg = $arg['order_id'];
+	}
+	return wc_get_order( $arg );
+}
 function molosoc_switch_locale_for_cz_order_email( $order_id ) {
-	$order = wc_get_order( $order_id );
+	$order = molosoc_order_from_notification_arg( $order_id );
 	if ( $order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
 		switch_to_locale( 'cs_CZ' );
 	}
 }
 function molosoc_restore_locale_after_cz_order_email( $order_id ) {
-	$order = wc_get_order( $order_id );
+	$order = molosoc_order_from_notification_arg( $order_id );
 	if ( $order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
 		restore_current_locale();
 	}
@@ -449,9 +458,35 @@ if ( function_exists( 'wc_get_order_statuses' ) ) {
 			$molosoc_transition_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_notification";
 			add_action( $molosoc_transition_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
 			add_action( $molosoc_transition_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+
+			// WC_Email_Customer_Invoice fires on this same from->to shape
+			// under its own "_customer_invoice" hook suffix, both for its
+			// few automatic transitions and for the admin "Resend order
+			// details" action — exact hook set not verifiable against the
+			// live plugin version from this sandbox (JUDGMENT CALL, same
+			// caveat as the size-attribute spellings above); a hook for a
+			// transition that never fires is simply never triggered, so
+			// this is the same safe superset as the "_notification" set.
+			$molosoc_invoice_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_customer_invoice";
+			add_action( $molosoc_invoice_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
+			add_action( $molosoc_invoice_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
 		}
 	}
-	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook );
+	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook, $molosoc_invoice_hook );
+
+	// Customer-facing emails that aren't tied to a status transition at
+	// all: partial/full refund notifications and the "customer note
+	// added" email.
+	$molosoc_extra_customer_email_hooks = array(
+		'woocommerce_order_partially_refunded_notification',
+		'woocommerce_order_fully_refunded_notification',
+		'woocommerce_new_customer_note_notification',
+	);
+	foreach ( $molosoc_extra_customer_email_hooks as $molosoc_extra_hook ) {
+		add_action( $molosoc_extra_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
+		add_action( $molosoc_extra_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+	}
+	unset( $molosoc_extra_customer_email_hooks, $molosoc_extra_hook );
 }
 
 /* =====================================================================
@@ -524,7 +559,7 @@ function molosoc_cz_attribute_label( $label, $name, $product = null ) {
 	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
 		return $label;
 	}
-	if ( $product instanceof WC_Product && MOLOSOC_PRODUCT_ID !== (int) $product->get_id() ) {
+	if ( $product instanceof WC_Product && ! molosoc_is_product_364_or_its_variation( $product ) ) {
 		return $label;
 	}
 	if ( false !== stripos( $label, 'size' ) || false !== stripos( (string) $name, 'size' ) ) {
@@ -636,7 +671,21 @@ function molosoc_size_cart_item_data( $item_data, $cart_item ) {
 	if ( ! molosoc_is_product_364_or_its_variation( $product ) || ! is_array( $item_data ) ) {
 		return $item_data;
 	}
+	$is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	foreach ( $item_data as $index => $data ) {
+		// The display KEY ("Size") is untouched by woocommerce_variation_
+		// option_name (which only ever supplies the value) — relabel it
+		// here too so cart/checkout rows don't show a Czech value under
+		// an English "Size" heading.
+		$key = isset( $data['key'] ) ? $data['key'] : ( isset( $data['name'] ) ? $data['name'] : '' );
+		if ( $is_cz && false !== stripos( (string) $key, 'size' ) ) {
+			if ( isset( $data['key'] ) ) {
+				$item_data[ $index ]['key'] = 'Velikost';
+			}
+			if ( isset( $data['name'] ) ) {
+				$item_data[ $index ]['name'] = 'Velikost';
+			}
+		}
 		$raw = isset( $data['value'] ) ? $data['value'] : ( isset( $data['display'] ) ? $data['display'] : '' );
 		if ( 2 === molosoc_size_value_rank( $raw ) ) {
 			continue; // Not a recognized size value — leave untouched.
@@ -670,6 +719,31 @@ function molosoc_size_order_item_meta_value( $display_value, $meta, $item ) {
 	return molosoc_size_label_for_value( $raw, $display_value );
 }
 add_filter( 'woocommerce_order_item_display_meta_value', 'molosoc_size_order_item_meta_value', 10, 3 );
+
+/**
+ * Order details / order emails / admin order screen "Size" meta LABEL —
+ * the key, not the value already handled above. Gated on the ORDER's own
+ * saved _molosoc_lang meta rather than pll_current_language(), because
+ * async/admin contexts (see molosoc_switch_locale_for_cz_order_email
+ * above) switch only the WordPress locale — Polylang's own request-
+ * language resolution is never established there, so pll_current_
+ * language() would wrongly read as non-cz for exactly the emails this is
+ * meant to cover. Same gating molosoc_cz_order_item_name() already uses.
+ */
+function molosoc_size_order_item_meta_key( $display_key, $meta, $item ) {
+	if ( ! is_a( $item, 'WC_Order_Item_Product' ) || ! molosoc_is_product_364_or_its_variation( $item->get_product() ) ) {
+		return $display_key;
+	}
+	$order = $item->get_order();
+	if ( ! $order instanceof WC_Order || 'cz' !== $order->get_meta( '_molosoc_lang' ) ) {
+		return $display_key;
+	}
+	if ( false === stripos( (string) $display_key, 'size' ) ) {
+		return $display_key;
+	}
+	return 'Velikost';
+}
+add_filter( 'woocommerce_order_item_display_meta_key', 'molosoc_size_order_item_meta_key', 10, 3 );
 
 /**
  * Czech product-name override in the cart line, product 364 only. Cart
