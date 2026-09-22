@@ -834,9 +834,10 @@
   width: 100%;
   max-width: 90rem;
   margin: 0 auto;
-  /* Gap between the heading and the first row below it. Smaller,
-     mobile-appropriate value in the @media block below. */
-  padding: 2.5rem var(--section-padding-x) var(--section-padding-y);
+  /* Gap between the heading and the first card below it: 2.5rem + 20px
+     (explicit "a little more padding" request). Smaller, mobile-
+     appropriate value in the @media block below. */
+  padding: 3.75rem var(--section-padding-x) var(--section-padding-y);
 }
 
 /* ---------- Story items — large editorial compositions, not cards ----------
@@ -1042,7 +1043,7 @@
   /* Smaller, mobile-appropriate version of the desktop gap between the
      heading and the first row below it. */
   .molosoc-arc-reveal__rows {
-    padding-top: var(--space-m);
+    padding-top: calc(var(--space-m) + 1.25rem);
   }
 }
 
@@ -1837,4 +1838,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.51 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.53 */
