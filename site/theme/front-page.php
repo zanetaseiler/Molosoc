@@ -165,7 +165,8 @@ $molosoc_home_card = molosoc_home_card_variant();
 		</div>
 		<div class="molosoc-hero__scrim"></div>
 		<div class="molosoc-hero__content">
-			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.75);"><?php bloginfo( 'name' ); ?></p>
+			<?php // The "Molosoc" eyebrow that sat above the H1 was removed
+			      // 2026-09-21 per explicit request; the headline opens the hero. ?>
 			<?php if ( $molosoc_is_cz ) : ?>
 				<h1>Péče o nohy, u které vydržíte</h1>
 				<p>Molosoc je značka péče o nohy postavená na jedné myšlence: krém, který už máte doma, obvykle funguje — jen se u něj většina lidí nedostane až k pravidelnému používání. Krém už na vás čeká v koupelně. Molosoc je ten chybějící krok, který mu pomůže konečně odvést svou práci.</p>
