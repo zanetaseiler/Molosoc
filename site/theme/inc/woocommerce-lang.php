@@ -775,6 +775,36 @@ function molosoc_cz_cart_item_name( $name, $cart_item, $cart_item_key ) {
 add_filter( 'woocommerce_cart_item_name', 'molosoc_cz_cart_item_name', 10, 3 );
 
 /**
+ * Same swap for the Store API (block Cart/Checkout — /cz/kosik/ and
+ * /cz/pokladna/'s Cart/Checkout blocks copy page 359/360's blocks
+ * verbatim, so they read cart line names straight off the
+ * wc/store/v1/cart REST response's own get_name() call, never through
+ * woocommerce_cart_item_name or the_title). This product is variable and
+ * always added to cart as variation 424/425, so `$cart_item['data']` the
+ * Store API schema reads is a WC_Product_Variation, whose own get_name()
+ * composes and filters through woocommerce_product_variation_name — not
+ * the plain product's get_name()/woocommerce_product_get_name path.
+ * Gated the same way as the rest of section 3: pll_current_language()
+ * reads 'cz' for this request because store-api-lang.js's apiFetch
+ * middleware appends ?lang=cz to the wc/store/* request itself. Also
+ * covers the parent product object via woocommerce_product_get_name, in
+ * case anything ever resolves get_name() against product 364 itself
+ * rather than a variation — a filter for a code path that's never hit is
+ * simply never triggered, so it's a safe superset.
+ */
+function molosoc_cz_store_api_product_name( $name, $product ) {
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
+		return $name;
+	}
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) ) {
+		return $name;
+	}
+	return 'Návlek na nohy Molosoc';
+}
+add_filter( 'woocommerce_product_variation_name', 'molosoc_cz_store_api_product_name', 10, 2 );
+add_filter( 'woocommerce_product_get_name', 'molosoc_cz_store_api_product_name', 10, 2 );
+
+/**
  * Same swap for order line items (emails, order-received page, My
  * Account > Orders, admin order screen) — gated on the ORDER's own saved
  * _molosoc_lang meta (section 4) rather than the current request's
