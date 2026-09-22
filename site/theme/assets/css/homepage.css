@@ -1172,6 +1172,9 @@ h2.molosoc-merge__text {
 }
 
 .molosoc-product-cta h2 {
+  /* Same fitted fluid size as the section's top heading so "Poznejte
+     návlek na nohy" sits on one line from ~1024px up; balanced below. */
+  font-size: clamp(2.75rem, 5.4vw, 6.875rem);
   text-wrap: balance;
 }
 
@@ -1777,4 +1780,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.49 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.50 */
