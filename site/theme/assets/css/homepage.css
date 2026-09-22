@@ -1417,6 +1417,48 @@ h2.molosoc-merge__text {
   text-align: center;
 }
 
+/* English homepage — five cards, same system as the Czech trio below
+   (explicit request): the same centred column of three, same card
+   width, same shared row height and same even top-to-bottom spread,
+   plus the remaining two cards beside the middle row, one on each side,
+   so the composition stays balanced. Desktop/tablet only — the ≤760px
+   block further down keeps its plain stacked-cards layout. Scoped away
+   from the Czech container, which has its own 3-row rules below. */
+@media (min-width: 761px) {
+  .molosoc-topics__cards:not(.molosoc-topics__cards--cz) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, clamp(15rem, 24vw, 19rem)));
+    grid-template-rows: repeat(3, minmax(auto, 12.5rem));
+    column-gap: clamp(1.5rem, 4vw, 4rem);
+    justify-content: center;
+    align-content: space-evenly;
+    padding: clamp(2rem, 5vh, 4rem) var(--space-m);
+    box-sizing: border-box;
+  }
+
+  .molosoc-feature-card--1,
+  .molosoc-feature-card--2,
+  .molosoc-feature-card--3,
+  .molosoc-feature-card--4,
+  .molosoc-feature-card--5 {
+    position: static;
+    width: auto;
+    margin: 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Centre column: cracked heels / ingrown toenails / hardened skin. */
+  .molosoc-feature-card--1 { grid-column: 2; grid-row: 1; }
+  .molosoc-feature-card--2 { grid-column: 2; grid-row: 2; }
+  .molosoc-feature-card--3 { grid-column: 2; grid-row: 3; }
+  /* Sides of the middle row: dry skin (left) / the cream page (right). */
+  .molosoc-feature-card--4 { grid-column: 1; grid-row: 2; }
+  .molosoc-feature-card--5 { grid-column: 3; grid-row: 2; }
+}
+
 /* Czech homepage shows only 3 of the 5 topics (see front-page.php).
    They used to sit in one row (left / centre / right at 42%); now
    (explicit request) they stack under each other in the centre of the
@@ -1849,4 +1891,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.56 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.57 */
