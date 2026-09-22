@@ -795,9 +795,19 @@
    pause before the mechanism block. Stacks photo-then-text on phones. */
 
 .molosoc-product-story {
-  padding: var(--space-2xl) var(--section-padding-x) var(--space-xl);
+  /* Narrow side gutters so the card, not the section padding, defines the
+     width — same section treatment as category.css's
+     .molosoc-elevated-card-section. */
+  padding: var(--space-2xl) clamp(1rem, 2vw, 2rem) var(--space-xl);
 }
 
+/* Floating Molosoc elevated card (per follow-up, 2026-09-22): the story
+   row now sits inside the same near-white/ivory card surface the
+   foot-covers page uses for its elevated blocks — #fdfcf9, hairline
+   border, 18px corners, the deeper --shadow-lift of that page's
+   "floating" variant so it visibly lifts off the cream. Tokens are
+   duplicated from category.css on purpose: that file isn't enqueued on
+   the product page. */
 .molosoc-product-story__inner {
   max-width: var(--content-max-width-wide);
   margin: 0 auto;
@@ -805,11 +815,22 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
   gap: var(--space-l) var(--space-xl);
   align-items: center;
+  background: #fdfcf9;
+  border: 1px solid rgba(12, 17, 21, 0.05);
+  border-radius: 18px;
+  box-shadow:
+    0 1px 2px rgba(12, 17, 21, 0.04),
+    var(--shadow-lift);
+  padding: clamp(1.75rem, 4vw, 3.5rem);
 }
 
 .molosoc-product-story__media {
   aspect-ratio: 9 / 10;
   overflow: hidden;
+  /* Inside a rounded card the photo takes the site's standard media
+     radius (as the foot-covers cards' photos do) instead of sharp
+     editorial corners. */
+  border-radius: var(--radius-m);
 }
 
 .molosoc-product-story__media img {
@@ -836,7 +857,7 @@
 
 @media (max-width: 760px) {
   .molosoc-product-story {
-    padding: var(--space-xl) var(--section-padding-x) var(--space-l);
+    padding: var(--space-xl) 1rem var(--space-l);
   }
 
   .molosoc-product-story__inner {
