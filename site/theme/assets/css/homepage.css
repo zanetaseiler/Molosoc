@@ -1093,10 +1093,14 @@
   opacity: 1;
 }
 
-/* Over the photo, in a 30rem column: moderated editorial scale. */
+/* Over the photo: moderated editorial scale. Spreads across the whole
+   72rem section column (the old inline 30rem cap stacked it into three
+   crowded lines) and balances whatever wrap is left. */
 h2.molosoc-merge__text {
   font-size: var(--text-display-2xl-soft);
   line-height: 1.05;
+  max-width: none;
+  text-wrap: balance;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1755,4 +1759,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.47 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.48 */

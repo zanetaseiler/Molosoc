@@ -287,7 +287,7 @@ $molosoc_home_card = molosoc_home_card_variant();
 		<div class="molosoc-section__scrim"></div>
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow molosoc-merge__text"><?php echo esc_html( $molosoc_is_cz ? 'Jak vám to pomůže' : __( 'How it helps', 'molosoc' ) ); ?></p>
-			<h2 class="molosoc-merge__text" style="max-width: 30rem; margin-top: var(--space-s);"><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už máte, konečně funguje' : __( 'The cream you own, finally finished', 'molosoc' ) ); ?></h2>
+			<h2 class="molosoc-merge__text" style="margin-top: var(--space-s);"><?php echo esc_html( $molosoc_is_cz ? 'Krém, který už máte, konečně funguje' : __( 'The cream you own, finally finished', 'molosoc' ) ); ?></h2>
 
 			<div class="molosoc-pillars">
 				<div class="molosoc-pillar molosoc-merge__text">
