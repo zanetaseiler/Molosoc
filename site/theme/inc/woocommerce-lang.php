@@ -781,16 +781,22 @@ add_filter( 'woocommerce_cart_item_name', 'molosoc_cz_cart_item_name', 10, 3 );
  * wc/store/v1/cart REST response's own get_name() call, never through
  * woocommerce_cart_item_name or the_title). This product is variable and
  * always added to cart as variation 424/425, so `$cart_item['data']` the
- * Store API schema reads is a WC_Product_Variation, whose own get_name()
- * composes and filters through woocommerce_product_variation_name — not
- * the plain product's get_name()/woocommerce_product_get_name path.
+ * Store API schema reads is a WC_Product_Variation. WC_Product_Variation
+ * doesn't override get_name() with its own formatting — it inherits
+ * WC_Product::get_name(), which is a plain get_prop( 'name' ) call, so the
+ * filter WC_Data applies is built from the variation class's own hook
+ * prefix: woocommerce_product_variation_get_name, not
+ * woocommerce_product_variation_name (that hook name was this file's own
+ * earlier, incorrect guess — corrected here after Codex re-flagged it,
+ * confirming get_prop()'s `$this->get_hook_prefix() . $prop` pattern is
+ * what actually fires for this getter).
  * Gated the same way as the rest of section 3: pll_current_language()
  * reads 'cz' for this request because store-api-lang.js's apiFetch
- * middleware appends ?lang=cz to the wc/store/* request itself. Also
- * covers the parent product object via woocommerce_product_get_name, in
- * case anything ever resolves get_name() against product 364 itself
- * rather than a variation — a filter for a code path that's never hit is
- * simply never triggered, so it's a safe superset.
+ * middleware appends ?lang=cz to the wc/store/* request itself. Also kept
+ * on woocommerce_product_variation_name and woocommerce_product_get_name
+ * as a defensive superset in case a differently-versioned WooCommerce core
+ * or another code path resolves get_name() through either of those instead
+ * — a filter for a hook that never fires is simply never triggered.
  */
 function molosoc_cz_store_api_product_name( $name, $product ) {
 	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
@@ -801,6 +807,7 @@ function molosoc_cz_store_api_product_name( $name, $product ) {
 	}
 	return 'Návlek na nohy Molosoc';
 }
+add_filter( 'woocommerce_product_variation_get_name', 'molosoc_cz_store_api_product_name', 10, 2 );
 add_filter( 'woocommerce_product_variation_name', 'molosoc_cz_store_api_product_name', 10, 2 );
 add_filter( 'woocommerce_product_get_name', 'molosoc_cz_store_api_product_name', 10, 2 );
 

@@ -13,6 +13,20 @@ site where:
      Polylang-linked to pages 359/360) already exist and are published —
      see automations/content-sync/create_cart_checkout_cz_pages.py.
 
+OPTIONAL: WP_USER / WP_APP_PASSWORD (a WooCommerce REST API-capable
+WordPress Application Password on that same WP_URL host, same convention
+as scripts/cleanup_test_order.py). When both are set, one extra check per
+language creates a real, non-paid WC_Order fixture (status "pending", one
+line item of product 364 / variation 424, tagged with the same
+`_molosoc_lang` meta this PR's checkout hook writes) to exercise
+molosoc_cz_order_received_url() itself — the bogus-order-id probe below
+only proves the order-received endpoint exists on each language's own
+checkout page, not that this filter routes a real order to the right one.
+The fixture order is always cancelled and trashed (force=false, same as
+cleanup_test_order.py) before the check returns, pass or fail. Without
+these two env vars, this extra check is SKIPped and the script's behavior
+is unchanged from before — still guest-HTTP-only, no order created.
+
 This script is NOT run by the PR that adds it. Both prerequisites above
 are production changes this PR deliberately does not make (see that
 script's own header, and the PR description's "not executed" note) — this
@@ -41,10 +55,13 @@ What it checks, per language (en, cz):
     for the mapped English labels (PPL pickup point, Bank transfer, Card
     payment (Comgate), etc.) instead of the Czech originals.
 
-Every request is read-only except the one non-destructive add-to-cart POST
-used for the shipping/payment-label check above, which only ever touches
-that ephemeral session's own cart — no order is created, no inventory is
-touched, nothing is submitted to checkout.
+Every guest-HTTP request is read-only except the one non-destructive
+add-to-cart POST used for the shipping/payment-label check above, which
+only ever touches that ephemeral session's own cart — no order is
+created, no inventory is touched, nothing is submitted to checkout. The
+one exception to "no order is created" is the OPTIONAL, credential-gated
+order-received fixture check described above, which is skipped entirely
+unless WP_USER/WP_APP_PASSWORD are explicitly provided.
 
 curl (not python's requests/urllib) for the same reason
 scripts/cleanup_test_order.py uses it: this repo has already observed
@@ -62,9 +79,11 @@ import tempfile
 import urllib.parse
 
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
+WP_USER = os.environ.get("WP_USER", "")
+WP_APP_PASSWORD = os.environ.get("WP_APP_PASSWORD", "")
 
 PRODUCT_ID = 364
-VARIATION_ID_L = 424  # noqa: not used directly, documented for reference
+VARIATION_ID_L = 424
 VARIATION_ID_M = 425  # noqa: not used directly, documented for reference
 
 EN = {
@@ -160,6 +179,55 @@ def curl(method, path, cookie_jar=None, data=None, follow_redirects=False, extra
     return code, final_url, body, headers, None
 
 
+def wc_api_call(method, path, payload=None):
+    """One WooCommerce REST API call (wp-json/wc/v3), authenticated via
+    WP_USER/WP_APP_PASSWORD. Same conventions as scripts/cleanup_test_order.py's
+    call() helper: curl (not requests/urllib, for the Cloudflare user-agent
+    reason documented at the top of this file), credentials passed through a
+    stdin config file so they never appear in the process argument list."""
+    url = "%s/wp-json/wc/v3%s" % (WP_URL, path)
+    body_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+    body_file.close()
+    cmd = [
+        "curl", "-sS", "-K", "-", "-o", body_file.name,
+        "-w", "%{http_code}", "-X", method, "--max-time", "60",
+        "-H", "Accept: application/json",
+    ]
+    if payload is not None:
+        cmd += ["-H", "Content-Type: application/json", "--data-raw", json.dumps(payload)]
+    cmd.append(url)
+
+    config = 'user = "%s:%s"\n' % (WP_USER, WP_APP_PASSWORD)
+    try:
+        proc = subprocess.run(cmd, input=config, capture_output=True, text=True, timeout=90)
+    except Exception as exc:
+        return 0, {"transport_error": "%s: %s" % (type(exc).__name__, exc)}
+
+    try:
+        code = int((proc.stdout or "0").strip() or 0)
+    except ValueError:
+        code = 0
+
+    raw = ""
+    try:
+        with open(body_file.name, encoding="utf-8", errors="replace") as fh:
+            raw = fh.read()
+    except OSError:
+        pass
+    finally:
+        try:
+            os.unlink(body_file.name)
+        except OSError:
+            pass
+
+    if not raw.strip():
+        return code, {}
+    try:
+        return code, json.loads(raw)
+    except ValueError:
+        return code, {"unparsed_body": raw[:400]}
+
+
 def check_no_redirect_chain(label, path):
     """A single hop must answer 200 directly — not a 301/302 (i.e. WP core's
     redirect_canonical, or a missing/incorrect rewrite, sending the visitor
@@ -244,11 +312,79 @@ def run_language_flow(lang_key, cfg):
     check_html_lang("%s: checkout page <html lang>" % lang_key, checkout_body, cfg["html_lang"])
 
     check_order_received_endpoint_routing(lang_key, cfg)
+    check_order_received_url_for_real_order(lang_key, cfg)
+
+
+def check_order_received_url_for_real_order(lang_key, cfg):
+    """OPTIONAL, credential-gated: the bogus-order-id probe below only proves
+    an order-received endpoint exists on this language's own checkout page —
+    it never creates an order, so it can't catch a regression in
+    molosoc_cz_order_received_url() itself (the filter deciding which
+    checkout twin's order-received endpoint a CZ order is actually sent to).
+    That filter only ever runs for a real WC_Order.
+
+    When WP_USER/WP_APP_PASSWORD (a WooCommerce REST API-capable WordPress
+    Application Password) are present, this creates a real, unpaid,
+    "pending" WC_Order fixture via the REST API — one line item of product
+    364/variation 424, tagged with the same `_molosoc_lang` order meta this
+    PR's woocommerce_checkout_create_order hook writes — fetches that
+    order's own order-received URL on this language's checkout page, and
+    confirms it resolves directly (no redirect) to a page that actually
+    shows this order (its id appears in the body), not a generic "order not
+    found" placeholder. The fixture is always cancelled and trashed
+    (force=false, same as scripts/cleanup_test_order.py) before returning,
+    pass or fail.
+
+    Without those two env vars this check is SKIPped and nothing is
+    created — matching this script's default guest-HTTP-only behavior.
+    """
+    label = "%s: real order's order-received URL routes to this language's checkout" % lang_key
+    if not (WP_USER and WP_APP_PASSWORD):
+        record(label, False,
+               "WP_USER/WP_APP_PASSWORD not set — skipping the real-order-fixture check; "
+               "the bogus-order-id endpoint probe above is the only coverage without it",
+               skip=True)
+        return
+
+    status, order = wc_api_call("POST", "/orders", {
+        "status": "pending",
+        "set_paid": False,
+        "line_items": [{"product_id": PRODUCT_ID, "variation_id": VARIATION_ID_L, "quantity": 1}],
+        "meta_data": [{"key": "_molosoc_lang", "value": lang_key}],
+    })
+    if status not in (200, 201) or not order.get("id"):
+        record(label, False, "could not create fixture order (HTTP %s): %s" % (status, order), skip=True)
+        return
+
+    order_id = order["id"]
+    order_key = order.get("order_key")
+    try:
+        if not order_key:
+            record(label, False, "created order %d but the response had no order_key" % order_id)
+            return
+        url = cfg["checkout_url"] + "order-received/%d/?key=%s" % (order_id, order_key)
+        code, _final, body, _headers, err = curl("GET", url, follow_redirects=False)
+        if err:
+            record(label, False, err)
+            return
+        order_id_shown = body is not None and str(order_id) in body
+        ok = code == 200 and order_id_shown
+        record(label, ok, "HTTP %s at %s, order id %s in body" % (
+            code, url, "found" if order_id_shown else "NOT found"))
+        if ok:
+            check_html_lang("%s: real order-received page <html lang>" % lang_key, body, cfg["html_lang"])
+    finally:
+        cancel_status, cancel_body = wc_api_call("PUT", "/orders/%d" % order_id, {"status": "cancelled"})
+        trash_status, trash_body = wc_api_call("DELETE", "/orders/%d?force=false" % order_id)
+        print("  (cleanup) order %d: cancel HTTP %s (status=%s), trash HTTP %s (status=%s)"
+              % (order_id, cancel_status, cancel_body.get("status"),
+                 trash_status, trash_body.get("status")))
 
 
 def check_order_received_endpoint_routing(lang_key, cfg):
-    """This script never submits a real order (non-destructive by design), so
-    it can't fetch a real order-received page. Instead, this is a focused
+    """This script never submits a real order via guest HTTP (non-destructive
+    by design), so on its own it can't fetch a real order-received page.
+    Instead, this is a focused
     check on the URL GENERATION this PR actually changes: WooCommerce's
     order-received endpoint (wc_get_endpoint_url('order-received', ...), which
     molosoc_cz_order_received_url() rebuilds off the CZ checkout twin's own
