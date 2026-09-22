@@ -268,6 +268,25 @@ get_header();
 		</div>
 	</section>
 
+	<!-- Brand story — a compact mother-and-daughter note (2026-09-22):
+	     one candid photo beside three short lines of copy, generous
+	     whitespace, no card/background/CTA. Deliberately small; not an
+	     About section. -->
+	<section class="molosoc-product-story" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?>">
+		<div class="molosoc-product-story__inner">
+			<div class="molosoc-product-story__media">
+				<img src="https://molosoc.com/wp-content/uploads/2026/01/Molosoc-Opening-Package-Mami.jpg"
+					alt="<?php echo esc_attr( $molosoc_is_cz ? 'Máma a dcera spolu otevírají balíček Molosoc u stolu doma' : __( 'A mother and daughter opening a Molosoc package together at the table at home', 'molosoc' ) ); ?>"
+					loading="lazy" decoding="async" width="1290" height="1434">
+			</div>
+			<div class="molosoc-product-story__text">
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Náš příběh' : __( 'Our story', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Vzniklo mezi mámou a dcerou' : __( 'Created by a mother and daughter', 'molosoc' ) ); ?></h2>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc jsme vytvořily spolu — z jednoduché potřeby udělat každodenní péči o nohy snadnější a udržitelnou jako rutinu.' : __( 'We created Molosoc together — from a simple need to make everyday foot care easier and turn it into a routine you can actually keep.', 'molosoc' ) ); ?></p>
+			</div>
+		</div>
+	</section>
+
 	<!-- H2: How it works. molosoc-product-how-block wraps the
 	     heading+content together so a 3D render image can sit as a
 	     background behind the whole block — same pattern as
