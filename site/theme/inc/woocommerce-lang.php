@@ -438,6 +438,16 @@ function molosoc_restore_locale_after_cz_order_email( $order_id ) {
 		restore_current_locale();
 	}
 }
+function molosoc_switch_locale_for_cz_resend_email( $order, $email_type ) {
+	if ( 'invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
+		switch_to_locale( 'cs_CZ' );
+	}
+}
+function molosoc_restore_locale_after_cz_resend_email( $order, $email_type ) {
+	if ( 'invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
+		restore_current_locale();
+	}
+}
 if ( function_exists( 'wc_get_order_statuses' ) ) {
 	$molosoc_order_statuses = array_map(
 		static function ( $status ) {
@@ -458,21 +468,9 @@ if ( function_exists( 'wc_get_order_statuses' ) ) {
 			$molosoc_transition_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_notification";
 			add_action( $molosoc_transition_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
 			add_action( $molosoc_transition_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
-
-			// WC_Email_Customer_Invoice fires on this same from->to shape
-			// under its own "_customer_invoice" hook suffix, both for its
-			// few automatic transitions and for the admin "Resend order
-			// details" action — exact hook set not verifiable against the
-			// live plugin version from this sandbox (JUDGMENT CALL, same
-			// caveat as the size-attribute spellings above); a hook for a
-			// transition that never fires is simply never triggered, so
-			// this is the same safe superset as the "_notification" set.
-			$molosoc_invoice_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_customer_invoice";
-			add_action( $molosoc_invoice_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
-			add_action( $molosoc_invoice_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
 		}
 	}
-	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook, $molosoc_invoice_hook );
+	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook );
 
 	// Customer-facing emails that aren't tied to a status transition at
 	// all: partial/full refund notifications and the "customer note
@@ -487,6 +485,16 @@ if ( function_exists( 'wc_get_order_statuses' ) ) {
 		add_action( $molosoc_extra_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
 	}
 	unset( $molosoc_extra_customer_email_hooks, $molosoc_extra_hook );
+
+	// Admin "Resend order details" order action does not go through any
+	// status-transition notification hook at all — WC_Meta_Box_Order_Actions
+	// calls WC()->mailer()->customer_invoice( $order ), which triggers
+	// WC_Email_Customer_Invoice directly. WooCommerce wraps that call in
+	// 'woocommerce_before_resend_order_emails' / '..._after_...', passing
+	// the email type ('invoice') as the second argument, so that's the only
+	// hook pair that actually fires around this send.
+	add_action( 'woocommerce_before_resend_order_emails', 'molosoc_switch_locale_for_cz_resend_email', 5, 2 );
+	add_action( 'woocommerce_after_resend_order_emails', 'molosoc_restore_locale_after_cz_resend_email', 20, 2 );
 }
 
 /* =====================================================================
