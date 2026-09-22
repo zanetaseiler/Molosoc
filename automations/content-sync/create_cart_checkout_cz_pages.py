@@ -11,6 +11,14 @@ still has to hit Publish in wp-admin. Safe to re-run — if a page with the
 target slug already exists (draft or published), it is skipped rather
 than duplicated or overwritten.
 
+Target verification (Issue #65): before reading or writing anything, this
+script confirms via the target's own authenticated /wp-json site identity
+and the source pages' own returned link URLs that WP_URL actually resolves
+to molosoc.com production — see verify_target_is_production() below. A
+prior run reported creating pages that do not exist on production
+molosoc.com; this check makes that kind of mismatch fail loudly in the
+run's own log instead of silently creating pages nobody can find.
+
 WHY content is fetched live via REST (content.raw on /wp/v2/pages/359 and
 /wp/v2/pages/360) rather than hardcoded here: the cart page is WooCommerce
 block markup and the checkout page is the [woocommerce_checkout] shortcode
@@ -52,6 +60,7 @@ Usage:
 
 import os
 import sys
+from urllib.parse import urlparse
 
 import requests
 
@@ -67,6 +76,10 @@ SOURCE_PAGES = (
     {"source_id": 360, "slug": "pokladna", "title": "Pokladna", "kind": "checkout"},
 )
 
+# The only hosts this script is ever allowed to write to. Same list as
+# automations/analytics/canonical_url.py's PRODUCTION_HOSTS.
+PRODUCTION_HOSTS = frozenset({"molosoc.com", "www.molosoc.com"})
+
 
 def wp_auth():
     if not (WP_URL and WP_USER and WP_APP_PASSWORD):
@@ -75,6 +88,52 @@ def wp_auth():
             "Set these as GitHub secrets or export them locally before running."
         )
     return (WP_USER, WP_APP_PASSWORD)
+
+
+def _host(url):
+    return (urlparse(url).hostname or "").lower()
+
+
+def verify_target_is_production():
+    """Prove, from the target's own public site identity, that WP_URL is
+    molosoc.com production — before this script reads or writes a single
+    page.
+
+    Issue #65: a prior run of this workflow reported creating pages
+    1075/1076, but page 1075 does not exist on production molosoc.com.
+    Nothing in that run's own output said which installation WP_URL
+    actually pointed at, so the mismatch only surfaced when a human
+    checked the live site afterward. This check never trusts the WP_URL
+    secret's own text (a secret can be wrong or point at
+    staging.molosoc.com and still "look like" a URL) — it asks the
+    target's authenticated /wp-json site index what host it actually
+    serves, prints that identity (site name + home URL — public
+    information, never a secret) to the run's own log, and refuses to
+    continue if it isn't production.
+    """
+    target_host = _host(WP_URL)
+    if target_host not in PRODUCTION_HOSTS:
+        sys.exit(
+            f"REFUSING TO RUN: WP_URL host is {target_host!r}, which is not a "
+            f"production host ({sorted(PRODUCTION_HOSTS)}). Nothing was read or "
+            f"created. Fix the WP_URL repository secret before re-running — see "
+            f"Issue #65."
+        )
+
+    resp = requests.get(f"{WP_URL}/wp-json", auth=wp_auth(), timeout=30)
+    resp.raise_for_status()
+    site = resp.json()
+    site_home = site.get("home") or site.get("url") or ""
+    site_host = _host(site_home)
+    print(f"Target site identity: name={site.get('name')!r} home={site_home!r}")
+    if site_host not in PRODUCTION_HOSTS:
+        sys.exit(
+            f"REFUSING TO RUN: WP_URL's host looked like production, but the "
+            f"target's own /wp-json identity reports home={site_home!r} (host "
+            f"{site_host!r}), which is not production. Nothing was read or "
+            f"created. This is exactly the WP_URL/installation mismatch Issue "
+            f"#65 reported — investigate before re-running."
+        )
 
 
 def fetch_source_content(source_id):
@@ -92,6 +151,17 @@ def fetch_source_content(source_id):
     )
     resp.raise_for_status()
     data = resp.json()
+
+    link = data.get("link") or ""
+    link_host = _host(link)
+    if link_host not in PRODUCTION_HOSTS:
+        sys.exit(
+            f"REFUSING TO CONTINUE: source page {source_id} resolved to "
+            f"link={link!r} (host {link_host!r}), which is not production. "
+            f"Nothing further was created. WP_URL is not the installation it "
+            f"claims to be — see Issue #65."
+        )
+
     raw = (data.get("content") or {}).get("raw")
     if raw is None:
         sys.exit(
@@ -102,6 +172,8 @@ def fetch_source_content(source_id):
 
 
 def main():
+    verify_target_is_production()
+
     # Every target page this run either finds already existing or creates
     # — NOT just the ones created this run. A prior run can have created
     # page 1, then failed (network error, page 2's create call rejected,

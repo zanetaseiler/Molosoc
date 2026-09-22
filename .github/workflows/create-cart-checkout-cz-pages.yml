@@ -16,6 +16,13 @@ name: Create CZ cart/checkout pages (draft)
 # Run workflow, on the branch/ref where inc/woocommerce-lang.php (the code
 # that resolves is_cart()/is_checkout() to these pages once they exist and
 # are Polylang-linked) is already deployed.
+#
+# Issue #65: before touching a single page, the script now verifies from
+# the target's own authenticated site identity (never from the WP_URL
+# secret's text) that WP_URL resolves to molosoc.com production, and
+# aborts with no reads or writes if it doesn't. See
+# automations/content-sync/create_cart_checkout_cz_pages.py's
+# verify_target_is_production() for details.
 
 on:
   workflow_dispatch: {}
