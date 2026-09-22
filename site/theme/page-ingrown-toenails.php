@@ -212,16 +212,17 @@ get_header();
 	     filters" H2 (Persona 2 — Ingrown-Nail/Hardened-Skin, this pillar's
 	     own persona). -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
-		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
-				alt="" loading="lazy" decoding="async">
-		</div>
-		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
-		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
-			<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
-			<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné zarostlé nehty, zahojené díky pravidelné péči — ne jednorázovému zásahu.' : __( 'Real ingrown toenails, treated through consistent care — not a one-time fix.', 'molosoc' ) ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
+		<div class="molosoc-pillar-final-cta__card">
+			<div class="molosoc-pillar-final-cta__media">
+				<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+					alt="" loading="lazy" decoding="async">
+			</div>
+			<div class="molosoc-pillar-final-cta__copy">
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
+				<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné zarostlé nehty, zahojené díky pravidelné péči — ne jednorázovému zásahu.' : __( 'Real ingrown toenails, treated through consistent care — not a one-time fix.', 'molosoc' ) ); ?></p>
+				<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
+			</div>
 		</div>
 	</section>
 

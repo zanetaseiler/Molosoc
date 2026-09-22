@@ -166,16 +166,17 @@ get_header();
 
 	<!-- FINAL CTA — Persona 2. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
-		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
-				alt="" loading="lazy" decoding="async">
-		</div>
-		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
-		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow">Podívejte se na skutečné výsledky</p>
-			<h2>Výsledky před/po, žádné filtry</h2>
-			<p>Časově doložené srovnání před/po ze ztvrdlé kůže, která změkla díky pravidelné péči.</p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Skutečné výsledky, žádné filtry</a>
+		<div class="molosoc-pillar-final-cta__card">
+			<div class="molosoc-pillar-final-cta__media">
+				<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+					alt="" loading="lazy" decoding="async">
+			</div>
+			<div class="molosoc-pillar-final-cta__copy">
+				<p class="molosoc-eyebrow">Podívejte se na skutečné výsledky</p>
+				<h2>Výsledky před/po, žádné filtry</h2>
+				<p>Časově doložené srovnání před/po ze ztvrdlé kůže, která změkla díky pravidelné péči.</p>
+				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Skutečné výsledky, žádné filtry</a>
+			</div>
 		</div>
 	</section>
 

@@ -161,16 +161,17 @@ get_header();
 
 	<!-- FINAL CTA — Persona 2. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
-		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
-				alt="" loading="lazy" decoding="async">
-		</div>
-		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
-		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( 'Time-stamped before/after results from cracked heels healed through consistent care.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+		<div class="molosoc-pillar-final-cta__card">
+			<div class="molosoc-pillar-final-cta__media">
+				<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
+					alt="" loading="lazy" decoding="async">
+			</div>
+			<div class="molosoc-pillar-final-cta__copy">
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
+				<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
+				<p><?php esc_html_e( 'Time-stamped before/after results from cracked heels healed through consistent care.', 'molosoc' ); ?></p>
+				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+			</div>
 		</div>
 	</section>
 

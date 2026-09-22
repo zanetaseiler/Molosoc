@@ -168,16 +168,17 @@ get_header();
 	     already own, finally working" H2 (Persona 1), not the usual
 	     "Real results" H2 — deliberate exception per site-structure.md §8. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
-		<div class="molosoc-pillar-final-cta__media" aria-hidden="true">
-			<img src="https://molosoc.com/wp-content/uploads/2026/07/homepage-cream-collection-cropped.png"
-				alt="" loading="lazy" decoding="async">
-		</div>
-		<div class="molosoc-pillar-final-cta__scrim" aria-hidden="true"></div>
-		<div class="molosoc-section__inner molosoc-reveal">
-			<p class="molosoc-eyebrow"><?php esc_html_e( 'The cream you already own', 'molosoc' ); ?></p>
-			<h2><?php esc_html_e( 'Finally working', 'molosoc' ); ?></h2>
-			<p><?php esc_html_e( 'This is exactly what Molosoc is built for — sealing whatever cream you already trust against your skin long enough to actually work.', 'molosoc' ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See how it works', 'molosoc' ); ?></a>
+		<div class="molosoc-pillar-final-cta__card">
+			<div class="molosoc-pillar-final-cta__media">
+				<img src="https://molosoc.com/wp-content/uploads/2026/07/homepage-cream-collection-cropped.png"
+					alt="" loading="lazy" decoding="async">
+			</div>
+			<div class="molosoc-pillar-final-cta__copy">
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'The cream you already own', 'molosoc' ); ?></p>
+				<h2><?php esc_html_e( 'Finally working', 'molosoc' ); ?></h2>
+				<p><?php esc_html_e( 'This is exactly what Molosoc is built for — sealing whatever cream you already trust against your skin long enough to actually work.', 'molosoc' ); ?></p>
+				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See how it works', 'molosoc' ); ?></a>
+			</div>
 		</div>
 	</section>
 
