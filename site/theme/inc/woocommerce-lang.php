@@ -164,7 +164,7 @@ add_filter( 'woocommerce_get_checkout_page_id', 'molosoc_cz_cart_checkout_page_i
 function molosoc_register_cz_product_rewrite() {
 	add_rewrite_rule(
 		'^cz/produkt/hydratacni-navlek-na-nohy/?$',
-		'index.php?product=moisture-lock-foot-cover',
+		'index.php?product=moisture-lock-foot-cover&lang=cz',
 		'top'
 	);
 

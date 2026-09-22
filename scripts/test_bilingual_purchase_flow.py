@@ -52,12 +52,14 @@ Cloudflare reject the default python-urllib user agent on this host with
 error 1010.
 """
 
+import html
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
 
@@ -241,13 +243,71 @@ def run_language_flow(lang_key, cfg):
     )
     check_html_lang("%s: checkout page <html lang>" % lang_key, checkout_body, cfg["html_lang"])
 
+    check_order_received_endpoint_routing(lang_key, cfg)
+
+
+def check_order_received_endpoint_routing(lang_key, cfg):
+    """This script never submits a real order (non-destructive by design), so
+    it can't fetch a real order-received page. Instead, this is a focused
+    check on the URL GENERATION this PR actually changes: WooCommerce's
+    order-received endpoint (wc_get_endpoint_url('order-received', ...), which
+    molosoc_cz_order_received_url() rebuilds off the CZ checkout twin's own
+    permalink) must be registered on THIS language's checkout URL at all.
+
+    A bogus order id/key on that endpoint still hits WooCommerce's own
+    checkout/order-received template — it responds 200 with an "order not
+    found" style notice, not a hard 404. A 404 here means the endpoint isn't
+    routed off this language's checkout permalink (e.g. a missing/incorrect
+    rewrite for the CZ twin), which is exactly the kind of regression in
+    molosoc_cz_order_received_url() / endpoint routing this check exists to
+    catch before it's silently skipped."""
+    url = cfg["checkout_url"] + "order-received/999999999/?key=wc_order_nonexistent_test_key"
+    code, _final, body, _headers, err = curl("GET", url, follow_redirects=True)
+    if err:
+        record("%s: order-received endpoint routes on a nonexistent order" % lang_key, False, err, skip=True)
+        return
+    routed_ok = code == 200
+    record(
+        "%s: order-received endpoint is routed (HTTP 200, not 404) off %s"
+        % (lang_key, cfg["checkout_url"]),
+        routed_ok,
+        "HTTP %s at %s" % (code, url),
+    )
+    if routed_ok:
+        check_html_lang("%s: order-received page <html lang>" % lang_key, body, cfg["html_lang"])
+
+
+def _variation_attributes_from_product_page(product_body, variation_id):
+    """Read the {attribute_slug: value} pairs WooCommerce itself declares for
+    this variation id out of the product page's own variation-form JSON
+    (the `data-product_variations` attribute WooCommerce renders on the
+    `.variations_form`), instead of guessing at an unconfirmed attribute
+    taxonomy/slug name (flagged elsewhere in this PR as not verifiable from
+    this sandbox). This is exactly what the real add-to-cart form itself
+    would submit for that variation."""
+    if not product_body:
+        return None
+    m = re.search(r'data-product_variations="([^"]*)"', product_body)
+    if not m:
+        return None
+    try:
+        variations = json.loads(html.unescape(m.group(1)))
+    except (ValueError, TypeError):
+        return None
+    for variation in variations:
+        if variation.get("variation_id") == variation_id:
+            return {k: v for k, v in (variation.get("attributes") or {}).items() if v}
+    return None
+
 
 def run_en_shipping_payment_label_check():
-    """Best-effort: adds product 364/variation 424 to an ephemeral cart
-    (own cookie-jar session) and checks the rendered EN checkout page for
-    the mapped English shipping/payment labels. Non-destructive — nothing
-    is submitted to checkout, no order is created; the cart only exists in
-    this session's own cookies, which are discarded when the script exits.
+    """Best-effort: adds product 364/variation 424 (with its real attribute
+    values, read off the product page's own variation-form data) to an
+    ephemeral cart (own cookie-jar session) and checks the rendered EN
+    checkout page for the mapped English shipping/payment labels.
+    Non-destructive — nothing is submitted to checkout, no order is created;
+    the cart only exists in this session's own cookies, which are discarded
+    when the script exits.
 
     SKIPped (not failed) if the add-to-cart doesn't visibly succeed, since
     shipping methods depend on the store's configured zones/rates actually
@@ -263,13 +323,26 @@ def run_en_shipping_payment_label_check():
     tmp_jar.close()
     jar = tmp_jar.name
     try:
-        add_path = "/?add-to-cart=%d&variation_id=%d&quantity=1" % (PRODUCT_ID, 424)
+        code, _final, product_body, _headers, err = curl("GET", EN["product_url"], follow_redirects=True)
+        if err or code != 200:
+            record("EN: fetch product page to read variation %d's attribute values" % VARIATION_ID_L,
+                   False, "HTTP %s%s" % (code, (" " + err) if err else ""), skip=True)
+            return
+        attrs = _variation_attributes_from_product_page(product_body, VARIATION_ID_L)
+        if not attrs:
+            record("EN: read variation %d's attribute values from the product page" % VARIATION_ID_L,
+                   False, "no data-product_variations entry found for this variation id", skip=True)
+            return
+
+        qs = "&".join(
+            "%s=%s" % (urllib.parse.quote(k), urllib.parse.quote(str(v))) for k, v in attrs.items()
+        )
+        add_path = "/?add-to-cart=%d&variation_id=%d&quantity=1&%s" % (PRODUCT_ID, VARIATION_ID_L, qs)
         code, _final, body, _headers, err = curl("GET", add_path, cookie_jar=jar, follow_redirects=True)
         if err or code != 200:
             record("EN: add product 364 to ephemeral cart", False,
                    "HTTP %s%s" % (code, (" " + err) if err else ""), skip=True)
             return
-        record("EN: add product 364 to ephemeral cart", True, "HTTP %s" % code)
 
         code, _final, checkout_body, _headers, err = curl(
             "GET", EN["checkout_url"], cookie_jar=jar, follow_redirects=True
@@ -277,6 +350,18 @@ def run_en_shipping_payment_label_check():
         if err or code != 200:
             record("EN: fetch checkout with item in ephemeral cart", False,
                    "HTTP %s%s" % (code, (" " + err) if err else ""), skip=True)
+            return
+
+        # The add-to-cart request answering 200 only means WooCommerce
+        # rendered *a* page — it can still reject an invalid/incomplete
+        # variation request with a notice while redirecting back to a normal
+        # 200 page. Confirm the item actually landed in the cart by checking
+        # the checkout page itself doesn't show WooCommerce's own "cart is
+        # empty" notice before trusting anything rendered below it.
+        cart_has_item = checkout_body is not None and "currently empty" not in checkout_body.lower()
+        record("EN: item actually present in cart at checkout (not WooCommerce's empty-cart notice)",
+               cart_has_item, "attributes submitted=%s" % attrs, skip=not cart_has_item)
+        if not cart_has_item:
             return
 
         for needle in EN_LABEL_NEEDLES:
