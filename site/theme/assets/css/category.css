@@ -42,10 +42,15 @@
    pure white so it merges seamlessly with the render's own white backdrop
    (no visible letterbox seam), and the scrim is white-tinted to match. ---------- */
 
+/* The photo owns the right HALF of the hero (2026-09-21): the render
+   (a centered product on pure white, same white as the hero background,
+   so the panel edge is invisible) fills a 50vw panel with cover, and the
+   headline is free to run over it. min-height tracks the width so that
+   panel stays close to square and cover never crops the product. */
 .molosoc-category-hero {
   position: relative;
   overflow: hidden;
-  min-height: 42rem;
+  min-height: max(42rem, 46vw);
   display: flex;
   align-items: center;
   padding: var(--space-2xl) var(--section-padding-x);
@@ -54,27 +59,28 @@
 
 .molosoc-category-hero__media {
   position: absolute;
-  inset: 0;
+  inset: 0 0 0 50%; /* right half of the hero */
   z-index: 0;
 }
 
 .molosoc-category-hero__media img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: right center;
+  object-fit: cover;
+  object-position: center;
 }
 
 .molosoc-category-hero__scrim {
   position: absolute;
   inset: 0;
   z-index: 1;
+  /* Only a soft fade on the left where the text lives; the photo half is
+     left untouched so it reads at full strength. */
   background: linear-gradient(
-    100deg,
-    rgba(255, 255, 255, 0.92) 0%,
-    rgba(255, 255, 255, 0.7) 32%,
-    rgba(255, 255, 255, 0.25) 55%,
-    rgba(255, 255, 255, 0.15) 100%
+    90deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.45) 45%,
+    rgba(255, 255, 255, 0) 62%
   );
 }
 
@@ -254,6 +260,15 @@
   .molosoc-category-hero {
     text-align: center;
     min-height: 36rem;
+  }
+
+  /* Phones: back to the full-width, whole-product backdrop. */
+  .molosoc-category-hero__media {
+    inset: 0;
+  }
+
+  .molosoc-category-hero__media img {
+    object-fit: contain;
   }
 
   .molosoc-category-hero__text {
