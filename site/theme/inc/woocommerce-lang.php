@@ -439,12 +439,12 @@ function molosoc_restore_locale_after_cz_order_email( $order_id ) {
 	}
 }
 function molosoc_switch_locale_for_cz_resend_email( $order, $email_type ) {
-	if ( 'invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
+	if ( 'customer_invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
 		switch_to_locale( 'cs_CZ' );
 	}
 }
 function molosoc_restore_locale_after_cz_resend_email( $order, $email_type ) {
-	if ( 'invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
+	if ( 'customer_invoice' === $email_type && $order instanceof WC_Order && 'cz' === $order->get_meta( '_molosoc_lang' ) ) {
 		restore_current_locale();
 	}
 }
@@ -490,11 +490,13 @@ if ( function_exists( 'wc_get_order_statuses' ) ) {
 	// status-transition notification hook at all — WC_Meta_Box_Order_Actions
 	// calls WC()->mailer()->customer_invoice( $order ), which triggers
 	// WC_Email_Customer_Invoice directly. WooCommerce wraps that call in
-	// 'woocommerce_before_resend_order_emails' / '..._after_...', passing
-	// the email type ('invoice') as the second argument, so that's the only
-	// hook pair that actually fires around this send.
+	// 'woocommerce_before_resend_order_emails' / '..._after_resend_order_email'
+	// (note the mismatched singular/plural hook names in WooCommerce core
+	// itself), passing the email type ('customer_invoice', not 'invoice') as
+	// the second argument, so that's the only hook pair that actually fires
+	// around this send.
 	add_action( 'woocommerce_before_resend_order_emails', 'molosoc_switch_locale_for_cz_resend_email', 5, 2 );
-	add_action( 'woocommerce_after_resend_order_emails', 'molosoc_restore_locale_after_cz_resend_email', 20, 2 );
+	add_action( 'woocommerce_after_resend_order_email', 'molosoc_restore_locale_after_cz_resend_email', 20, 2 );
 }
 
 /* =====================================================================
