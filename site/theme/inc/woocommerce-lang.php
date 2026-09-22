@@ -602,13 +602,16 @@ add_filter( 'woocommerce_dropdown_variation_attribute_options_args', 'molosoc_si
  * The rendered option text itself — same "M (36–39)" / "L (39.5–44)"
  * strings in BOTH languages (only the "Velikost"/"Size" label above
  * differs by language; the size values themselves are numbers + a letter,
- * not translated prose). This filter is also what WooCommerce's own cart/
- * order "Size: ..." meta line formatting reads from for a select-type
- * variation attribute, so gating it here — rather than duplicating the
- * mapping in the cart/order filters below — is enough to cover the
- * dropdown AND the cart/order Size lines the issue asks for. Gated to
- * product 364 in both languages (the values/order are the same either
- * way); left as WooCommerce's own text for every other product.
+ * not translated prose). This filter covers the size dropdown, where
+ * WooCommerce passes the PARENT product (364). It does NOT reliably cover
+ * cart/checkout or order/email meta lines: for a custom (non-taxonomy)
+ * attribute WooCommerce passes the cart's WC_Product_Variation (424/425)
+ * here instead of the parent, and for a taxonomy attribute neither cart
+ * nor order formatting calls this hook at all — see the explicit
+ * woocommerce_get_item_data / woocommerce_order_item_display_meta_value
+ * mappings below for those paths. Gated to product 364 in both languages
+ * (the values/order are the same either way); left as WooCommerce's own
+ * text for every other product.
  */
 function molosoc_size_option_label( $term_name, $term = null, $attribute = null, $product = null ) {
 	if ( ! $product instanceof WC_Product || MOLOSOC_PRODUCT_ID !== (int) $product->get_id() ) {
@@ -618,6 +621,55 @@ function molosoc_size_option_label( $term_name, $term = null, $attribute = null,
 	return molosoc_size_label_for_value( $value, $term_name );
 }
 add_filter( 'woocommerce_variation_option_name', 'molosoc_size_option_label', 10, 4 );
+
+/**
+ * Cart/checkout "Size: ..." line — wc_get_formatted_cart_item_data()
+ * resolves the item-data array (taxonomy term names already looked up,
+ * custom-attribute values passed through woocommerce_variation_option_name
+ * above with the variation rather than the parent) before applying this
+ * filter, so fixing it up here — keyed off the cart item's own product
+ * object via molosoc_is_product_364_or_its_variation() — covers both
+ * attribute types uniformly regardless of what happened upstream.
+ */
+function molosoc_size_cart_item_data( $item_data, $cart_item ) {
+	$product = isset( $cart_item['data'] ) ? $cart_item['data'] : null;
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) || ! is_array( $item_data ) ) {
+		return $item_data;
+	}
+	foreach ( $item_data as $index => $data ) {
+		$raw = isset( $data['value'] ) ? $data['value'] : ( isset( $data['display'] ) ? $data['display'] : '' );
+		if ( 2 === molosoc_size_value_rank( $raw ) ) {
+			continue; // Not a recognized size value — leave untouched.
+		}
+		$label = molosoc_size_label_for_value( $raw, $raw );
+		if ( isset( $data['value'] ) ) {
+			$item_data[ $index ]['value'] = $label;
+		}
+		if ( isset( $data['display'] ) ) {
+			$item_data[ $index ]['display'] = $label;
+		}
+	}
+	return $item_data;
+}
+add_filter( 'woocommerce_get_item_data', 'molosoc_size_cart_item_data', 10, 2 );
+
+/**
+ * Order details / order emails / admin order screen "Size: ..." meta
+ * line — WC_Order_Item::get_formatted_meta_data() runs each already-
+ * resolved meta value through this filter (not woocommerce_variation_
+ * option_name), for both taxonomy and custom attributes alike.
+ */
+function molosoc_size_order_item_meta_value( $display_value, $meta, $item ) {
+	if ( ! is_a( $item, 'WC_Order_Item_Product' ) || ! molosoc_is_product_364_or_its_variation( $item->get_product() ) ) {
+		return $display_value;
+	}
+	$raw = wp_strip_all_tags( (string) $display_value );
+	if ( 2 === molosoc_size_value_rank( $raw ) ) {
+		return $display_value; // Not a recognized size value — leave untouched.
+	}
+	return molosoc_size_label_for_value( $raw, $display_value );
+}
+add_filter( 'woocommerce_order_item_display_meta_value', 'molosoc_size_order_item_meta_value', 10, 3 );
 
 /**
  * Czech product-name override in the cart line, product 364 only. Cart

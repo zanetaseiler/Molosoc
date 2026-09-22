@@ -104,6 +104,7 @@ function molosoc_sitemap_excluded_page_ids() {
 	$ids   = array();
 	$slugs = array(
 		'cart', 'checkout', 'my-account', 'thank-you',
+		'kosik', 'pokladna',
 		'home-2', 'blog-2', 'blog-legacy-2018',
 		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
 	);

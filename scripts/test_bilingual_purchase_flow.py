@@ -255,25 +255,21 @@ def check_order_received_endpoint_routing(lang_key, cfg):
     permalink) must be registered on THIS language's checkout URL at all.
 
     A bogus order id/key on that endpoint still hits WooCommerce's own
-    checkout/order-received template — it responds 200 with an "order not
-    found" style notice, not a hard 404. A 404 here means the endpoint isn't
-    routed off this language's checkout permalink (e.g. a missing/incorrect
-    rewrite for the CZ twin), which is exactly the kind of regression in
-    molosoc_cz_order_received_url() / endpoint routing this check exists to
-    catch before it's silently skipped."""
+    checkout/order-received template — it responds 200 DIRECTLY (no
+    redirect) with an "order not found" style notice, not a hard 404 and
+    not a redirect elsewhere. Following redirects here would let a missing/
+    canonicalized-away endpoint silently pass by landing on the ordinary
+    checkout/cart/home page with the right <html lang> — exactly the
+    regression this check exists to catch — so this reuses
+    check_no_redirect_chain's single-hop, redirect-rejecting request rather
+    than following redirects."""
     url = cfg["checkout_url"] + "order-received/999999999/?key=wc_order_nonexistent_test_key"
-    code, _final, body, _headers, err = curl("GET", url, follow_redirects=True)
-    if err:
-        record("%s: order-received endpoint routes on a nonexistent order" % lang_key, False, err, skip=True)
-        return
-    routed_ok = code == 200
-    record(
-        "%s: order-received endpoint is routed (HTTP 200, not 404) off %s"
+    body = check_no_redirect_chain(
+        "%s: order-received endpoint is routed (HTTP 200, not 404/redirect) off %s"
         % (lang_key, cfg["checkout_url"]),
-        routed_ok,
-        "HTTP %s at %s" % (code, url),
+        url,
     )
-    if routed_ok:
+    if body is not None:
         check_html_lang("%s: order-received page <html lang>" % lang_key, body, cfg["html_lang"])
 
 
