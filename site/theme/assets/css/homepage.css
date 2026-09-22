@@ -1417,30 +1417,28 @@ h2.molosoc-merge__text {
   text-align: center;
 }
 
-/* Czech homepage shows only 3 of the 5 topics (see front-page.php) — a
-   single centered row instead of the 5-card magazine grid above, so the
-   trio reads as one composed, centered group rather than two cards from
-   a layout designed around five. */
-.molosoc-feature-card--cz-1 {
-  top: 42%;
-  left: 12%;
-  width: clamp(13rem, 21vw, 16.5rem);
+/* Czech homepage shows only 3 of the 5 topics (see front-page.php).
+   They used to sit in one row (left / centre / right at 42%); now
+   (explicit request) they stack under each other in the centre of the
+   photo, every card centred and text-centred like the old middle one,
+   with one even gap between them. The stage's card layer is the full
+   100vh box, so a centred flex column places the stack in the middle
+   of the photo without any hand-placed offsets. */
+.molosoc-topics__cards--cz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-s);
 }
 
-.molosoc-feature-card--cz-2 {
-  top: 42%;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  width: clamp(13rem, 21vw, 16.5rem);
-  text-align: center;
-}
-
+.molosoc-feature-card--cz-1,
+.molosoc-feature-card--cz-2,
 .molosoc-feature-card--cz-3 {
-  top: 42%;
-  right: 12%;
-  width: clamp(13rem, 21vw, 16.5rem);
+  position: static;
+  width: clamp(15rem, 24vw, 19rem);
+  margin: 0;
+  text-align: center;
 }
 
 @media (max-width: 760px) {
@@ -1838,4 +1836,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.53 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.54 */
