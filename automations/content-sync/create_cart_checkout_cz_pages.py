@@ -102,7 +102,15 @@ def fetch_source_content(source_id):
 
 
 def main():
-    created = []
+    # Every target page this run either finds already existing or creates
+    # — NOT just the ones created this run. A prior run can have created
+    # page 1, then failed (network error, page 2's create call rejected,
+    # etc.) before ever reaching the final follow-up print below; on a
+    # rerun, page 1 is found via the "already exists" branch and must
+    # still be carried into the follow-up list, or its still-pending
+    # manual Polylang-linking step is silently lost for good (it will
+    # never be selected by pll_get_post() until that step is done).
+    needs_follow_up = []
     for target in SOURCE_PAGES:
         slug = target["slug"]
 
@@ -120,6 +128,9 @@ def main():
                 f"Page {slug!r} already exists — id={page['id']}, "
                 f"status={page['status']}, link={page.get('link', '(none)')}. "
                 f"Nothing to do."
+            )
+            needs_follow_up.append(
+                {"id": page["id"], "slug": slug, "source_id": target["source_id"]}
             )
             continue
 
@@ -141,12 +152,14 @@ def main():
         data = resp.json()
         print(f"CREATED draft page — id={data['id']}, slug={slug!r}, title={target['title']!r}")
         print(f"Review/edit at: {WP_URL}/wp-admin/post.php?post={data['id']}&action=edit")
-        created.append({"id": data["id"], "slug": slug, "source_id": target["source_id"]})
+        needs_follow_up.append(
+            {"id": data["id"], "slug": slug, "source_id": target["source_id"]}
+        )
 
-    if created:
+    if needs_follow_up:
         print("")
         print("MANUAL FOLLOW-UP REQUIRED (see this script's own header comment for why):")
-        for c in created:
+        for c in needs_follow_up:
             print(
                 f"  - Open {WP_URL}/wp-admin/post.php?post={c['id']}&action=edit, "
                 f"set Language = Czech in the Languages meta box, and link it as "
@@ -154,6 +167,9 @@ def main():
             )
         print("  Then hit Publish on each once reviewed (same standing safety gate")
         print("  as every other page this repo's automations create as a draft).")
+        print("  (Listed above regardless of whether it was just created or already")
+        print("  existed — safe to skip if a given page's translation link is")
+        print("  already set; re-run this script any time to see this list again.)")
 
 
 if __name__ == "__main__":

@@ -399,23 +399,22 @@ add_filter( 'woocommerce_get_checkout_order_received_url', 'molosoc_cz_order_rec
  * the locale (and therefore string translations / date-number formatting)
  * used while WooCommerce composes and sends the customer-facing ones.
  *
- * WooCommerce's own core email classes are NOT all hooked to the generic
- * `woocommerce_order_status_{status}_notification` action — most listen on
- * the more specific `woocommerce_order_status_{from}_to_{status}_notification`
- * action instead (e.g. the customer-processing-order email only fires on
- * `..._pending_to_processing_notification`, never the generic
- * `..._processing_notification`). Hooking only the generic form silently
- * misses exactly the emails that matter most on the normal
- * pending->processing/completed path. Rather than hardcode WooCommerce's
- * internal per-email hook list (unverifiable against the live plugin
- * version from this sandbox), hook both the generic and every possible
- * from->to combination for the site's actually-registered order statuses —
- * a hook for a transition that never occurs on a given order is simply
- * never fired, so this is a safe superset.
- *
- * Priority 5 (before WooCommerce's own email-trigger methods, hooked at
- * the default priority 10) to switch locale first; priority 20 (after) to
- * restore it once WC has finished composing/sending for that hook.
+ * Several of WooCommerce's own admin emails ("New order", "Cancelled
+ * order", "Failed order") are, for a number of order-status transitions,
+ * bound to the exact same `woocommerce_order_status_{from}_to_{to}_notification`
+ * action as the matching customer email (e.g. both "New order" and
+ * "Customer processing order" fire on
+ * `..._pending_to_processing_notification`) — a blanket switch/restore
+ * around that whole shared action would therefore also compose the admin
+ * email in cs_CZ, which is never wanted (admin emails aren't customer-
+ * facing and don't get this locale treatment). Exactly which hook names
+ * collide is WooCommerce-email-class-internal, not reliably enumerable
+ * from this sandbox, and has differed across WC versions before, so
+ * rather than hardcode a hook/email allowlist, find wherever WooCommerce
+ * itself already bound each `customer_*` email class's own `trigger`
+ * callback and rewrap exactly that binding in place — any other callback
+ * sharing the same hook (an admin email's own trigger, in particular) is
+ * left completely untouched.
  */
 function molosoc_order_from_notification_arg( $arg ) {
 	// Most WooCommerce notification hooks pass a plain order ID; the
@@ -448,56 +447,110 @@ function molosoc_restore_locale_after_cz_resend_email( $order, $email_type ) {
 		restore_current_locale();
 	}
 }
-if ( function_exists( 'wc_get_order_statuses' ) ) {
-	$molosoc_order_statuses = array_map(
-		static function ( $status ) {
-			return preg_replace( '/^wc-/', '', $status );
-		},
-		array_keys( wc_get_order_statuses() )
-	);
 
-	foreach ( $molosoc_order_statuses as $molosoc_to_status ) {
-		$molosoc_generic_hook = "woocommerce_order_status_{$molosoc_to_status}_notification";
-		add_action( $molosoc_generic_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
-		add_action( $molosoc_generic_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+/**
+ * Resolve the order a WooCommerce email `trigger()` call is for, from
+ * whatever argument shape that specific hook happened to pass (see
+ * molosoc_order_from_notification_arg()'s own doc comment for the
+ * customer-note args-array case; some hooks pass the order object
+ * directly as the second argument instead of relying on a re-fetch).
+ */
+function molosoc_cz_order_from_trigger_args( $args ) {
+	$first = isset( $args[0] ) ? $args[0] : null;
+	if ( isset( $args[1] ) && $args[1] instanceof WC_Order ) {
+		return $args[1];
+	}
+	return molosoc_order_from_notification_arg( $first );
+}
 
-		foreach ( $molosoc_order_statuses as $molosoc_from_status ) {
-			if ( $molosoc_from_status === $molosoc_to_status ) {
+/**
+ * Find every already-registered `customer_*` WooCommerce email's own
+ * `trigger` callback, wherever WordPress core's own $wp_filter records it
+ * was bound, and replace it in place with a locale-aware wrapper that
+ * switches to cs_CZ only for that specific email/order before calling the
+ * original trigger(), then restores the prior locale. Deliberately never
+ * touches admin-facing email classes (id not prefixed `customer_`), so a
+ * hook shared with an admin email's own trigger is left exactly as
+ * WooCommerce itself registered it.
+ */
+function molosoc_wrap_customer_email_triggers_with_cz_locale() {
+	if ( ! function_exists( 'WC' ) || ! WC()->mailer() ) {
+		return;
+	}
+	global $wp_filter;
+	if ( empty( $wp_filter ) || ! is_array( $wp_filter ) ) {
+		return;
+	}
+	foreach ( WC()->mailer()->get_emails() as $molosoc_email ) {
+		if ( ! ( $molosoc_email instanceof WC_Email ) || 0 !== strpos( (string) $molosoc_email->id, 'customer_' ) ) {
+			continue; // Never rewrap a WooCommerce admin-facing email class.
+		}
+		foreach ( $wp_filter as $molosoc_hook_name => $molosoc_hook_obj ) {
+			if ( ! ( $molosoc_hook_obj instanceof WP_Hook ) ) {
 				continue;
 			}
-			$molosoc_transition_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_notification";
-			add_action( $molosoc_transition_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
-			add_action( $molosoc_transition_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+			foreach ( $molosoc_hook_obj->callbacks as $molosoc_priority => $molosoc_callbacks ) {
+				foreach ( $molosoc_callbacks as $molosoc_cb ) {
+					$molosoc_fn = isset( $molosoc_cb['function'] ) ? $molosoc_cb['function'] : null;
+					if ( ! is_array( $molosoc_fn ) || ! isset( $molosoc_fn[0], $molosoc_fn[1] ) || $molosoc_fn[0] !== $molosoc_email || 'trigger' !== $molosoc_fn[1] ) {
+						continue;
+					}
+					remove_action( $molosoc_hook_name, array( $molosoc_email, 'trigger' ), $molosoc_priority );
+					add_action(
+						$molosoc_hook_name,
+						function ( ...$molosoc_args ) use ( $molosoc_email ) {
+							$molosoc_order = molosoc_cz_order_from_trigger_args( $molosoc_args );
+							$molosoc_is_cz = $molosoc_order && 'cz' === $molosoc_order->get_meta( '_molosoc_lang' );
+							if ( $molosoc_is_cz ) {
+								switch_to_locale( 'cs_CZ' );
+							}
+							call_user_func_array( array( $molosoc_email, 'trigger' ), $molosoc_args );
+							if ( $molosoc_is_cz ) {
+								restore_current_locale();
+							}
+						},
+						$molosoc_priority,
+						$molosoc_cb['accepted_args']
+					);
+				}
+			}
 		}
 	}
-	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook );
-
-	// Customer-facing emails that aren't tied to a status transition at
-	// all: partial/full refund notifications and the "customer note
-	// added" email.
-	$molosoc_extra_customer_email_hooks = array(
-		'woocommerce_order_partially_refunded_notification',
-		'woocommerce_order_fully_refunded_notification',
-		'woocommerce_new_customer_note_notification',
-	);
-	foreach ( $molosoc_extra_customer_email_hooks as $molosoc_extra_hook ) {
-		add_action( $molosoc_extra_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
-		add_action( $molosoc_extra_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
-	}
-	unset( $molosoc_extra_customer_email_hooks, $molosoc_extra_hook );
-
-	// Admin "Resend order details" order action does not go through any
-	// status-transition notification hook at all — WC_Meta_Box_Order_Actions
-	// calls WC()->mailer()->customer_invoice( $order ), which triggers
-	// WC_Email_Customer_Invoice directly. WooCommerce wraps that call in
-	// 'woocommerce_before_resend_order_emails' / '..._after_resend_order_email'
-	// (note the mismatched singular/plural hook names in WooCommerce core
-	// itself), passing the email type ('customer_invoice', not 'invoice') as
-	// the second argument, so that's the only hook pair that actually fires
-	// around this send.
-	add_action( 'woocommerce_before_resend_order_emails', 'molosoc_switch_locale_for_cz_resend_email', 5, 2 );
-	add_action( 'woocommerce_after_resend_order_email', 'molosoc_restore_locale_after_cz_resend_email', 20, 2 );
 }
+// 'wp_loaded' (after 'init' has fully completed) rather than 'init'
+// itself, so WC_Emails::init_transactional_emails() — hooked on 'init' —
+// has definitely already instantiated every email class and registered
+// its own trigger callbacks by the time this looks for them.
+add_action( 'wp_loaded', 'molosoc_wrap_customer_email_triggers_with_cz_locale', 20 );
+
+// Customer-facing emails that aren't tied to a status transition at all:
+// partial/full refund notifications and the "customer note added" email.
+// None of these have an admin-email equivalent sharing the same hook, so
+// the blanket switch/restore pair above is safe to use directly.
+$molosoc_extra_customer_email_hooks = array(
+	'woocommerce_order_partially_refunded_notification',
+	'woocommerce_order_fully_refunded_notification',
+	'woocommerce_new_customer_note_notification',
+);
+foreach ( $molosoc_extra_customer_email_hooks as $molosoc_extra_hook ) {
+	add_action( $molosoc_extra_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
+	add_action( $molosoc_extra_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+}
+unset( $molosoc_extra_customer_email_hooks, $molosoc_extra_hook );
+
+// Admin "Resend order details" order action does not go through any
+// status-transition notification hook at all — WC_Meta_Box_Order_Actions
+// calls WC()->mailer()->customer_invoice( $order ), which triggers
+// WC_Email_Customer_Invoice directly via a plain method call, not a
+// shared action dispatch, so no admin-email collision is possible here
+// either. WooCommerce wraps that direct call in
+// 'woocommerce_before_resend_order_emails' / '..._after_resend_order_email'
+// (note the mismatched singular/plural hook names in WooCommerce core
+// itself), passing the email type ('customer_invoice', not 'invoice') as
+// the second argument, so that's the only hook pair that actually fires
+// around this send.
+add_action( 'woocommerce_before_resend_order_emails', 'molosoc_switch_locale_for_cz_resend_email', 5, 2 );
+add_action( 'woocommerce_after_resend_order_email', 'molosoc_restore_locale_after_cz_resend_email', 20, 2 );
 
 /* =====================================================================
  * 5. Presentation (data untouched — every hook below is gated to product
