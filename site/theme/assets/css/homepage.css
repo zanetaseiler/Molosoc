@@ -471,6 +471,16 @@
 
 .molosoc-hero__content h1 {
   color: var(--color-white);
+  /* Same editorial scale as every other major heading on this page
+     (base.css's shared <h2> rule → tokens.css --text-display-2xl, ≈110px
+     at 1440, tight 1.0 leading). base.css's <h1> default is the smaller
+     --text-display-xl, which left the hero headline reading smaller than
+     the H2s below it — per explicit request (2026-09-21) it now matches
+     them: bigger, wider, and (with the card's flex-start below) higher
+     on the photo. */
+  font-size: var(--text-display-2xl);
+  line-height: var(--leading-display);
+  overflow-wrap: break-word;
 }
 
 .molosoc-hero__content p {
@@ -571,9 +581,11 @@
   min-height: clamp(30rem, calc(100vh - 11rem), 60rem);
   min-height: clamp(30rem, calc(100svh - 11rem), 60rem);
   display: flex;
-  /* center, not the full-bleed hero's flex-end: the text block was
-     sitting on the card's bottom edge and needed to start much higher. */
-  align-items: center;
+  /* flex-start (was center, before that the full-bleed hero's flex-end):
+     with the headline now on the --text-display-2xl scale the block
+     should sit high on the photo, starting just under the card's top
+     padding, per explicit request (2026-09-21). */
+  align-items: flex-start;
   background: #fdfcf9;
   border: 1px solid rgba(12, 17, 21, 0.05);
   border-radius: 18px;
@@ -597,7 +609,11 @@
    Vertical padding is now symmetric because the block is vertically
    centered in the card (see .molosoc-hero__card). */
 .molosoc-hero--card .molosoc-hero__content {
-  max-width: 51rem;
+  /* 51rem → 64rem: the larger headline needs the wider measure so
+     "Péče o nohy, u které vydržíte" / "Foot care you'll actually stick
+     with" spreads across the photo instead of stacking into a narrow
+     column (the lede keeps its own 43rem cap below). */
+  max-width: 64rem;
   padding: clamp(3rem, 6vw, 5.5rem) clamp(2rem, 5vw, 5.5rem);
 }
 
