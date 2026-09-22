@@ -385,6 +385,40 @@ function molosoc_cz_order_received_url( $url, $order ) {
 add_filter( 'woocommerce_get_checkout_order_received_url', 'molosoc_cz_order_received_url', 10, 2 );
 
 /**
+ * Read-only WooCommerce REST API field exposing an order's actual
+ * get_checkout_order_received_url() — i.e. WooCommerce's own real computed
+ * redirect target, built through molosoc_cz_order_received_url() above —
+ * so scripts/test_bilingual_purchase_flow.py's credential-gated
+ * real-order-received check can assert on what WooCommerce itself would
+ * redirect/link a shopper to, instead of a URL the test script assembles
+ * by hand and could get "right" by coincidence even if that filter
+ * regressed. Gated to manage_woocommerce, the same capability already
+ * required to create/read orders over this REST API at all, so this adds
+ * no new exposure.
+ */
+function molosoc_register_order_received_url_rest_field() {
+	register_rest_field(
+		'shop_order',
+		'order_received_url',
+		array(
+			'get_callback' => function ( $order_data ) {
+				if ( ! current_user_can( 'manage_woocommerce' ) ) {
+					return null;
+				}
+				$order = wc_get_order( $order_data['id'] );
+				return $order ? $order->get_checkout_order_received_url() : null;
+			},
+			'schema'       => array(
+				'description' => __( "The order's actual checkout order-received URL, after language routing.", 'molosoc' ),
+				'type'        => 'string',
+				'context'     => array( 'view', 'edit' ),
+			),
+		)
+	);
+}
+add_action( 'rest_api_init', 'molosoc_register_order_received_url_rest_field' );
+
+/**
  * Customer order emails triggered from a request with no /cz/ URL context
  * at all — a payment gateway's async return/callback (e.g. Comgate's
  * server-to-server notification) running as its own HTTP request, or a

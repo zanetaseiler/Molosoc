@@ -22,7 +22,12 @@ line item of product 364 / variation 424, tagged with the same
 molosoc_cz_order_received_url() itself — the bogus-order-id probe below
 only proves the order-received endpoint exists on each language's own
 checkout page, not that this filter routes a real order to the right one.
-The fixture order is always cancelled and trashed (force=false, same as
+This check reads the order's `order_received_url` field back from the
+WooCommerce REST API (added by this PR's
+molosoc_register_order_received_url_rest_field(), which returns
+$order->get_checkout_order_received_url() itself) rather than assembling
+that URL by hand, so a regression in the filter is actually caught. The
+fixture order is always cancelled and trashed (force=false, same as
 cleanup_test_order.py) before the check returns, pass or fail. Without
 these two env vars, this extra check is SKIPped and the script's behavior
 is unchanged from before — still guest-HTTP-only, no order created.
@@ -327,13 +332,18 @@ def check_order_received_url_for_real_order(lang_key, cfg):
     Application Password) are present, this creates a real, unpaid,
     "pending" WC_Order fixture via the REST API — one line item of product
     364/variation 424, tagged with the same `_molosoc_lang` order meta this
-    PR's woocommerce_checkout_create_order hook writes — fetches that
-    order's own order-received URL on this language's checkout page, and
-    confirms it resolves directly (no redirect) to a page that actually
-    shows this order (its id appears in the body), not a generic "order not
-    found" placeholder. The fixture is always cancelled and trashed
-    (force=false, same as scripts/cleanup_test_order.py) before returning,
-    pass or fail.
+    PR's woocommerce_checkout_create_order hook writes — reads back the
+    order's actual `order_received_url` field (added by this PR's
+    molosoc_register_order_received_url_rest_field(), which returns
+    $order->get_checkout_order_received_url() — i.e. WooCommerce's own real
+    computed redirect target, built through molosoc_cz_order_received_url()
+    itself, not a URL this script assembles by hand and could get "right"
+    by coincidence even if that filter regressed), confirms it's actually
+    under this language's checkout URL, and confirms it resolves directly
+    (no redirect) to a page that actually shows this order (its id appears
+    in the body), not a generic "order not found" placeholder. The fixture
+    is always cancelled and trashed (force=false, same as
+    scripts/cleanup_test_order.py) before returning, pass or fail.
 
     Without those two env vars this check is SKIPped and nothing is
     created — matching this script's default guest-HTTP-only behavior.
@@ -353,7 +363,7 @@ def check_order_received_url_for_real_order(lang_key, cfg):
         "meta_data": [{"key": "_molosoc_lang", "value": lang_key}],
     })
     if status not in (200, 201) or not order.get("id"):
-        record(label, False, "could not create fixture order (HTTP %s): %s" % (status, order), skip=True)
+        record(label, False, "could not create fixture order (HTTP %s): %s" % (status, order))
         return
 
     order_id = order["id"]
@@ -362,15 +372,28 @@ def check_order_received_url_for_real_order(lang_key, cfg):
         if not order_key:
             record(label, False, "created order %d but the response had no order_key" % order_id)
             return
-        url = cfg["checkout_url"] + "order-received/%d/?key=%s" % (order_id, order_key)
-        code, _final, body, _headers, err = curl("GET", url, follow_redirects=False)
+        received_url = order.get("order_received_url")
+        if not received_url:
+            record(label, False,
+                   "order %d's REST response had no order_received_url field — is "
+                   "molosoc_register_order_received_url_rest_field() deployed?" % order_id)
+            return
+        expected_prefix = WP_URL + cfg["checkout_url"]
+        if not received_url.startswith(expected_prefix):
+            record(label, False,
+                   "WooCommerce's own get_checkout_order_received_url() returned %s for "
+                   "order %d, not under this language's checkout URL (%s) — "
+                   "molosoc_cz_order_received_url() is not routing this order correctly"
+                   % (received_url, order_id, expected_prefix))
+            return
+        code, _final, body, _headers, err = curl("GET", received_url, follow_redirects=False)
         if err:
             record(label, False, err)
             return
         order_id_shown = body is not None and str(order_id) in body
         ok = code == 200 and order_id_shown
         record(label, ok, "HTTP %s at %s, order id %s in body" % (
-            code, url, "found" if order_id_shown else "NOT found"))
+            code, received_url, "found" if order_id_shown else "NOT found"))
         if ok:
             check_html_lang("%s: real order-received page <html lang>" % lang_key, body, cfg["html_lang"])
     finally:
