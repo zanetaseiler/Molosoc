@@ -144,12 +144,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč namáčení a pilování nestačí' : __( "Why soaking and filing don't last", 'molosoc' ) ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč namáčení a pilování nestačí' : __( "Why soaking and filing don't last", 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Namáčení a pilování ztvrdlé kůže je rutina, kterou už většina lidí zná a zkouší.' : __( 'Soaking feet and filing down hardened skin is the routine most people already know and already do.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

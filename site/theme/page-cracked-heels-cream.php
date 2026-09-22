@@ -134,12 +134,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( "It's not the cream", 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( "Why a good cream still doesn't fix cracked heels", 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( "It's not the cream", 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( "Why a good cream still doesn't fix cracked heels", 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( "Cream applied and left uncovered rubs off on socks or floors within minutes, long before it's had time to actually absorb into cracked, thickened skin.", 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

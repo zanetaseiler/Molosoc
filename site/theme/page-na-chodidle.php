@@ -134,12 +134,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow">Kdy vyhledat pomoc</p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow">Kdy jít k lékaři</p>
+				<p class="molosoc-eyebrow">Kdy vyhledat pomoc</p>
 				<h2>Kdy jít k lékaři</h2>
 				<p>Pokud bolest natolik omezuje chůzi, že mění způsob, jak našlapujete, je čas nechat to posoudit odborníkem.</p>
 				<div class="molosoc-mechanism-drawer__cards">
