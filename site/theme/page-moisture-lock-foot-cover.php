@@ -88,7 +88,7 @@ get_header();
 						<span class="molosoc-hero-title__phrase"><?php esc_html_e( 'Foot Cover', 'molosoc' ); ?></span>
 					<?php endif; ?>
 				</h1>
-				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, žádné filtry. Opakovaně použitelný návlek, který udrží váš oblíbený krém na místě a usnadní pravidelnou péči.' : __( 'Real before/after results, not filters. The reusable foot cover that locks in your favorite cream, cuts the mess, and makes your routine actually stick.', 'molosoc' ) ); ?></p>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, žádné filtry. Opakovaně použitelný návlek, který udrží váš oblíbený krém na místě a usnadní pravidelnou péči.' : __( 'Real before/after results, no filters. A reusable foot cover that keeps your favorite cream in place and makes regular care easier.', 'molosoc' ) ); ?></p>
 			</div>
 
 		</div>
@@ -117,16 +117,16 @@ get_header();
 			</div>
 			<div class="molosoc-orbit-drawer__cards">
 				<article>
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč krémy často skončí v šuplíku' : __( 'Why creams get abandoned halfway through', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Ne vždy je problém v krému. Často je to rutina kolem něj — mastné ponožky, povlečení a péče, ke které se člověk přestane vracet.' : __( "Almost nobody stops using a foot cream because it didn't work. They stop because there was no structure to keep going — no reason the fifth night was any different from the first, except the mess.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Proč krémy často skončí v šuplíku' : __( 'Why creams end up in the drawer', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Ne vždy je problém v krému. Často je to rutina kolem něj — mastné ponožky, povlečení a péče, ke které se člověk přestane vracet.' : __( 'The problem isn\'t always the cream. Often it\'s the routine around it — greasy socks, bedsheets, and care you stop coming back to.', 'molosoc' ) ); ?></p>
 				</article>
 				<article>
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Méně nepořádku, jednodušší rutina' : __( 'What changes when the mess disappears', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek drží krém na chodidle a omezuje jeho otírání. Vy si jen uděláte chvíli na péči a necháte ho pracovat.' : __( "Take away the greasy sheets and the sock that won't stay put, and the only thing left is a short session where the cream actually gets to do its job. That's the entire difference between a cream that gets abandoned and one that gets finished.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Méně nepořádku, jednodušší rutina' : __( 'Less mess, a simpler routine', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Návlek drží krém na chodidle a omezuje jeho otírání. Vy si jen uděláte chvíli na péči a necháte ho pracovat.' : __( 'The cover keeps the cream on your foot and stops it rubbing off. You just take a moment for the care and let it work.', 'molosoc' ) ); ?></p>
 				</article>
 				<article>
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Použijte krém, který už máte' : __( 'Works with the cream in your drawer right now', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc není další kosmetická formule. Funguje s krémem nebo balzámem, kterému už důvěřujete.' : __( "Molosoc isn't a new formula to buy into. It's built to work with whatever's already in your bathroom — the balm you liked enough to buy, the one that's been sitting half-used. This is what finally lets it work.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Použijte krém, který už máte' : __( 'Use the cream you already have', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc není další kosmetická formule. Funguje s krémem nebo balzámem, kterému už důvěřujete.' : __( 'Molosoc isn\'t another skincare formula. It works with the cream or balm you already trust.', 'molosoc' ) ); ?></p>
 				</article>
 			</div>
 		</div>
@@ -154,32 +154,32 @@ get_header();
 			<section aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'Real results, no filters', 'molosoc' ) ); ?>">
 				<div class="molosoc-product-proof">
 					<article class="molosoc-product-proof__card">
-						<h3><?php echo esc_html( $molosoc_is_cz ? '3 měsíce mezi fotografiemi' : __( '3-month before/after', 'molosoc' ) ); ?></h3>
+						<h3><?php echo esc_html( $molosoc_is_cz ? '3 měsíce mezi fotografiemi' : __( '3 months between photos', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://molosoc.com/wp-content/uploads/2026/07/homepage-results-full.jpg"
 								alt="<?php esc_attr_e( 'Real 3-month before/after result, no filters — full unedited comparison', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Stejné nohy, fotografované s odstupem tří měsíců. Bez retuše a studiového osvětlení — jen pravidelná péče s krémem a návlekem.' : __( 'No retouching, no staged lighting — the same feet, photographed the same way, three months apart. Skin that was blackened and hardened around the nails healed visibly over that time, using nothing more than a cream already owned and a cover that kept it working every session.', 'molosoc' ) ); ?></p>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Stejné nohy, fotografované s odstupem tří měsíců. Bez retuše a studiového osvětlení — jen pravidelná péče s krémem a návlekem.' : __( 'The same feet, photographed three months apart. No retouching, no studio lighting — just regular care with cream and a cover.', 'molosoc' ) ); ?></p>
 					</article>
 					<article class="molosoc-product-proof__card">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty v čase' : __( 'What actually happens to cracked heels over time', 'molosoc' ) ); ?></h3>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Popraskané paty v čase' : __( 'Cracked heels over time', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://molosoc.com/wp-content/uploads/2026/07/Mom-Feet-cracked-heals-before-using-Molosoc.jpg"
 								alt="<?php esc_attr_e( "Mom's cracked heels before using Molosoc", 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Pravidelná péče může udělat velký rozdíl. Tady vidíte skutečný výsledek při opakovaném používání — bez změny na „zázračný“ krém.' : __( 'Cracked heels don\'t heal because a "better" cream shows up — they heal because the same cream gets a real chance to work, session after session, instead of rubbing off before it\'s absorbed. In one case, heels that were badly cracked improved by roughly 90% through regular use — not from a different product, but from a routine that finally held.', 'molosoc' ) ); ?></p>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Pravidelná péče může udělat velký rozdíl. Tady vidíte skutečný výsledek při opakovaném používání — bez změny na „zázračný“ krém.' : __( 'Regular care can make a big difference. This is a real result from repeated use — without switching to a "miracle" cream.', 'molosoc' ) ); ?></p>
 					</article>
 					<article class="molosoc-product-proof__card">
-						<h3><?php echo esc_html( $molosoc_is_cz ? 'Skutečná reakce' : __( 'Mom surprised with results', 'molosoc' ) ); ?></h3>
+						<h3><?php echo esc_html( $molosoc_is_cz ? 'Skutečná reakce' : __( 'A real reaction', 'molosoc' ) ); ?></h3>
 						<div class="molosoc-media molosoc-product-proof__media">
 							<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"
 								alt="<?php esc_attr_e( 'Nail comparison showing visible improvement, no filters', 'molosoc' ); ?>"
 								loading="lazy" decoding="async">
 						</div>
 						<p>
-							<?php echo esc_html( $molosoc_is_cz ? 'Žádný scénář ani nacvičená reakce. Jen moment, kdy si člověk všimne změny na vlastních nohou.' : __( 'The real moment a mom sees and reacts to her own results after a home pedicure session — caught as it happens, not staged for it. No script, no rehearsed delivery.', 'molosoc' ) ); ?>
+							<?php echo esc_html( $molosoc_is_cz ? 'Žádný scénář ani nacvičená reakce. Jen moment, kdy si člověk všimne změny na vlastních nohou.' : __( 'No script, no rehearsed reaction. Just the moment someone notices the change in their own feet.', 'molosoc' ) ); ?>
 							<a href="https://youtube.com/shorts/ajdjJg0OuYg?si=cXDSn79awbO0JLDy" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na reakci →' : __( 'Watch the reaction →', 'molosoc' ) ); ?></a>
 						</p>
 					</article>
@@ -214,16 +214,16 @@ get_header();
 			</div>
 			<div class="molosoc-argument__text">
 				<div class="molosoc-argument__item">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Péče nekončí odchodem ze salonu' : __( 'Why salon results fade in ~10 days', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Po pedikúře se pokožka postupně začne znovu vysušovat. Pravidelná domácí péče pomáhá udržovat chodidla mezi návštěvami.' : __( "A fresh pedicure looks its best for about a week to ten days before dryness starts creeping back in. That's not a flaw in the salon treatment — it's just what happens once the intensive care stops.", 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Péče nekončí odchodem ze salonu' : __( 'Care doesn\'t end when you leave the salon', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Po pedikúře se pokožka postupně začne znovu vysušovat. Pravidelná domácí péče pomáhá udržovat chodidla mezi návštěvami.' : __( 'After a pedicure, the skin gradually starts drying out again. Regular care at home helps keep your feet in shape between visits.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-argument__item">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Přibližně 23 Kč za použití' : __( 'Cost per use vs. another salon visit', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc stojí 229 Kč a vydrží alespoň 10 použití. To je méně než 23 Kč za jedno použití.' : __( 'A Molosoc cover costs €10 and holds up for at least 10 sessions — working out to about €1 per use. A single repeat salon visit to maintain that softness typically runs $15–30, depending on the level of pedicure. Maintaining the result at home costs a fraction of going back.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Přibližně 23 Kč za použití' : __( 'About €1 per use', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Molosoc stojí 229 Kč a vydrží alespoň 10 použití. To je méně než 23 Kč za jedno použití.' : __( 'Molosoc costs €10 and lasts at least 10 uses. That works out to about €1 per use.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-argument__item">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Domácí péče bez další rezervace' : __( 'Home spa, without the salon price', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Vlastní krém, návlek a chvíle pro sebe. Bez cesty do salonu a bez dalšího termínu.' : __( 'Ten to fifteen minutes with your own cream and a cover gets you most of what a touch-up appointment does, without the drive, the booking, or the bill.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Domácí péče bez další rezervace' : __( 'Home care without another booking', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Vlastní krém, návlek a chvíle pro sebe. Bez cesty do salonu a bez dalšího termínu.' : __( 'Your own cream, a cover, and a moment for yourself. No trip to the salon, no next appointment.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -254,15 +254,15 @@ get_header();
 			<div class="molosoc-argument__text">
 				<div class="molosoc-argument__item">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je pořád na nohou' : __( 'For someone always on her feet', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Jednoduchý dárek pro někoho, kdo na péči o sebe často nemá čas.' : __( "For the person who's on her feet all day and never quite gets around to taking care of her own — this is the easiest way to actually give her something she'll use.", 'molosoc' ) ); ?></p>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Jednoduchý dárek pro někoho, kdo na péči o sebe často nemá čas.' : __( 'A simple gift for someone who rarely has time to care for themselves.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-argument__item">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Výsledek, který je vidět' : __( 'One before/after photo says it all', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Fotografie před a po ukazují princip lépe než dlouhé vysvětlování.' : __( 'No explanation needed. Cracked, hardened skin on one side; soft, cared-for skin on the other. That\'s the entire pitch.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Výsledek, který je vidět' : __( 'A result you can see', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Fotografie před a po ukazují princip lépe než dlouhé vysvětlování.' : __( 'Before-and-after photos show the idea better than a long explanation.', 'molosoc' ) ); ?></p>
 				</div>
 				<div class="molosoc-argument__item">
-					<h3><?php echo esc_html( $molosoc_is_cz ? 'Jednoduché použití' : __( 'How to gift it (simple, low-effort framing)', 'molosoc' ) ); ?></h3>
-					<p><?php echo esc_html( $molosoc_is_cz ? 'Nanést vlastní krém, nasadit návlek a nechat působit. Žádná další kosmetika není potřeba.' : __( 'No assembly, no learning curve — open the box, use the cream you already have, done in one short session. The easiest self-care gift to actually hand someone and have them use.', 'molosoc' ) ); ?></p>
+					<h3><?php echo esc_html( $molosoc_is_cz ? 'Jednoduché použití' : __( 'Simple to use', 'molosoc' ) ); ?></h3>
+					<p><?php echo esc_html( $molosoc_is_cz ? 'Nanést vlastní krém, nasadit návlek a nechat působit. Žádná další kosmetika není potřeba.' : __( 'Apply your own cream, put on the cover, and let it work. No extra products needed.', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -304,15 +304,15 @@ get_header();
 					<div class="molosoc-argument__text">
 						<div class="molosoc-argument__item">
 							<h3><?php echo esc_html( $molosoc_is_cz ? 'Co najdete v balení' : __( "What's in the box", 'molosoc' ) ); ?></h3>
-							<p><?php echo esc_html( $molosoc_is_cz ? 'Opakovaně použitelný návlek na nohy připravený k použití s vaším vlastním krémem.' : __( 'One reusable moisture-lock foot cover, ready to use with any cream you already own — no separate formula included, no separate purchase required to get started.', 'molosoc' ) ); ?></p>
+							<p><?php echo esc_html( $molosoc_is_cz ? 'Opakovaně použitelný návlek na nohy připravený k použití s vaším vlastním krémem.' : __( 'A reusable foot cover, ready to use with your own cream.', 'molosoc' ) ); ?></p>
 						</div>
 						<div class="molosoc-argument__item">
-							<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak ho použít' : __( 'How to use it with any cream', 'molosoc' ) ); ?></h3>
-							<p><?php echo esc_html( $molosoc_is_cz ? 'Naneste krém, nasaďte návlek a nechte působit 30–60 minut. Potom návlek opláchněte a nechte uschnout.' : __( 'Apply your cream as usual, then slip the cover on and leave it sealed for 30 to 60 minutes. That\'s the entire routine — no extra steps, no waiting overnight.', 'molosoc' ) ); ?></p>
+							<h3><?php echo esc_html( $molosoc_is_cz ? 'Jak ho použít' : __( 'How to use it', 'molosoc' ) ); ?></h3>
+							<p><?php echo esc_html( $molosoc_is_cz ? 'Naneste krém, nasaďte návlek a nechte působit 30–60 minut. Potom návlek opláchněte a nechte uschnout.' : __( 'Apply your cream, put on the cover, and leave it on for 30–60 minutes. Then rinse the cover and let it dry.', 'molosoc' ) ); ?></p>
 						</div>
 						<div class="molosoc-argument__item">
-							<h3><?php echo esc_html( $molosoc_is_cz ? 'Použijte znovu' : __( 'Reusable — how many uses to expect', 'molosoc' ) ); ?></h3>
-							<p><?php echo esc_html( $molosoc_is_cz ? 'Jeden návlek vydrží alespoň 10 použití a při správné péči může vydržet déle.' : __( 'Built to hold up for at least 10 uses before it starts to stretch, and often lasts well beyond that with normal care. Rinse it out after each session and let it dry before the next one.', 'molosoc' ) ); ?></p>
+							<h3><?php echo esc_html( $molosoc_is_cz ? 'Použijte znovu' : __( 'Use it again', 'molosoc' ) ); ?></h3>
+							<p><?php echo esc_html( $molosoc_is_cz ? 'Jeden návlek vydrží alespoň 10 použití a při správné péči může vydržet déle.' : __( 'One cover lasts at least 10 uses, and with proper care it can last longer.', 'molosoc' ) ); ?></p>
 						</div>
 					</div>
 				</div>
