@@ -159,6 +159,9 @@
     position: absolute;
     top: 100%;
     left: 0;
+    /* Never narrower than the parent pill (100% = the li's padding box,
+       so +2px covers its two 1px borders); grows with longer labels. */
+    min-width: calc(100% + 2px);
     width: max-content;
     max-height: none;
     overflow: visible;
