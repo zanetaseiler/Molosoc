@@ -611,7 +611,11 @@
 }
 
 .molosoc-sequential-stage + .molosoc-product-heading {
-  padding-top: var(--space-m);
+  /* --space-m (2rem) → --space-l (4.5rem): the 4rem seam above "Darujte
+     ho dál" read too tight once live — "create more space on top of
+     Darujte ho dál" (2026-09-21). Now 6.5rem from the last pedicure point
+     to the eyebrow, still well under the old viewport-height gap. */
+  padding-top: var(--space-l);
 }
 
 @media (max-width: 760px) {
