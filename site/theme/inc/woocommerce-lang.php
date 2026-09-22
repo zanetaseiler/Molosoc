@@ -265,41 +265,23 @@ add_action( 'wp_head', 'molosoc_product_canonical_hreflang' );
  * to the homepage for any post type it doesn't translate — which includes
  * `product`, deliberately. On the product-364 singular specifically, map
  * the switcher link straight to the other language's product URL instead
- * of that homepage fallback, using the same $data-array shape Polylang's
- * own switcher building code passes through this filter (an associative
- * array carrying at least 'url' and 'slug'/language-code keys, keyed per
- * language it's building a link for).
+ * of that homepage fallback.
  *
- * JUDGMENT CALL / UNVERIFIED: this repo has no vendored Polylang source to
- * confirm the exact $data array shape and $language object's slug
- * property name against the live plugin version. The defensive isset()
- * checks below make this a safe no-op (falls through to Polylang's normal
- * homepage-fallback behavior) if the shape doesn't match what's expected
- * here — it will never fatal or corrupt session/cookie state, only
- * (at worst) leave the pre-existing fallback link in place. Confirm
- * against the live Polylang free 3.8.x source before merge if the
- * switcher doesn't show the direct product link on staging.
+ * Polylang passes the already-assembled target URL as the first argument
+ * and the target language's slug as the second — not a switcher data
+ * array — so this reads/returns a plain URL string, not an array.
  */
-function molosoc_product_language_switcher_link( $data, $language ) {
-	if ( ! is_array( $data ) || ! isset( $data['url'] ) ) {
-		return $data;
-	}
+function molosoc_product_language_switcher_link( $url, $slug ) {
 	if ( ! function_exists( 'is_product' ) || ! is_product() || MOLOSOC_PRODUCT_ID !== (int) get_queried_object_id() ) {
-		return $data;
+		return $url;
 	}
-
-	$target_lang = null;
-	if ( is_object( $language ) && isset( $language->slug ) ) {
-		$target_lang = $language->slug;
-	} elseif ( is_string( $language ) ) {
-		$target_lang = $language;
+	if ( 'cz' === $slug ) {
+		return MOLOSOC_PRODUCT_URL_CZ;
 	}
-	if ( 'cz' === $target_lang ) {
-		$data['url'] = MOLOSOC_PRODUCT_URL_CZ;
-	} elseif ( 'en' === $target_lang ) {
-		$data['url'] = MOLOSOC_PRODUCT_URL_EN;
+	if ( 'en' === $slug ) {
+		return MOLOSOC_PRODUCT_URL_EN;
 	}
-	return $data;
+	return $url;
 }
 add_filter( 'pll_the_language_link', 'molosoc_product_language_switcher_link', 10, 2 );
 
@@ -415,20 +397,21 @@ add_filter( 'woocommerce_get_checkout_order_received_url', 'molosoc_cz_order_rec
  *
  * This does NOT change which emails get sent, how many, or to whom — only
  * the locale (and therefore string translations / date-number formatting)
- * used while WooCommerce composes and sends the customer-facing ones. Admin
- * notification emails are untouched (WooCommerce fires separate
- * `_notification` actions per status regardless of a from->to transition;
- * hooking the generic `woocommerce_order_status_{status}_notification`
- * actions here — the ones WC_Order::status_transition() always fires
- * alongside the specific from->to variant — covers every core customer
- * email trigger without enumerating every from->to pair).
+ * used while WooCommerce composes and sends the customer-facing ones.
  *
- * UNVERIFIED against this specific live install: this relies on
- * WooCommerce core firing these generic per-status `_notification` hooks
- * (believed correct for WooCommerce core across recent versions), not on
- * any custom order status a plugin might add beyond WC's standard set.
- * Confirm on staging that a CZ order's processing/completed email actually
- * renders Czech strings before relying on this for a live CZ order.
+ * WooCommerce's own core email classes are NOT all hooked to the generic
+ * `woocommerce_order_status_{status}_notification` action — most listen on
+ * the more specific `woocommerce_order_status_{from}_to_{status}_notification`
+ * action instead (e.g. the customer-processing-order email only fires on
+ * `..._pending_to_processing_notification`, never the generic
+ * `..._processing_notification`). Hooking only the generic form silently
+ * misses exactly the emails that matter most on the normal
+ * pending->processing/completed path. Rather than hardcode WooCommerce's
+ * internal per-email hook list (unverifiable against the live plugin
+ * version from this sandbox), hook both the generic and every possible
+ * from->to combination for the site's actually-registered order statuses —
+ * a hook for a transition that never occurs on a given order is simply
+ * never fired, so this is a safe superset.
  *
  * Priority 5 (before WooCommerce's own email-trigger methods, hooked at
  * the default priority 10) to switch locale first; priority 20 (after) to
@@ -446,20 +429,30 @@ function molosoc_restore_locale_after_cz_order_email( $order_id ) {
 		restore_current_locale();
 	}
 }
-$molosoc_order_email_notification_hooks = array(
-	'woocommerce_order_status_pending_notification',
-	'woocommerce_order_status_processing_notification',
-	'woocommerce_order_status_on-hold_notification',
-	'woocommerce_order_status_completed_notification',
-	'woocommerce_order_status_cancelled_notification',
-	'woocommerce_order_status_refunded_notification',
-	'woocommerce_order_status_failed_notification',
-);
-foreach ( $molosoc_order_email_notification_hooks as $molosoc_hook ) {
-	add_action( $molosoc_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
-	add_action( $molosoc_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+if ( function_exists( 'wc_get_order_statuses' ) ) {
+	$molosoc_order_statuses = array_map(
+		static function ( $status ) {
+			return preg_replace( '/^wc-/', '', $status );
+		},
+		array_keys( wc_get_order_statuses() )
+	);
+
+	foreach ( $molosoc_order_statuses as $molosoc_to_status ) {
+		$molosoc_generic_hook = "woocommerce_order_status_{$molosoc_to_status}_notification";
+		add_action( $molosoc_generic_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
+		add_action( $molosoc_generic_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+
+		foreach ( $molosoc_order_statuses as $molosoc_from_status ) {
+			if ( $molosoc_from_status === $molosoc_to_status ) {
+				continue;
+			}
+			$molosoc_transition_hook = "woocommerce_order_status_{$molosoc_from_status}_to_{$molosoc_to_status}_notification";
+			add_action( $molosoc_transition_hook, 'molosoc_switch_locale_for_cz_order_email', 5, 1 );
+			add_action( $molosoc_transition_hook, 'molosoc_restore_locale_after_cz_order_email', 20, 1 );
+		}
+	}
+	unset( $molosoc_order_statuses, $molosoc_to_status, $molosoc_from_status, $molosoc_generic_hook, $molosoc_transition_hook );
 }
-unset( $molosoc_order_email_notification_hooks, $molosoc_hook );
 
 /* =====================================================================
  * 5. Presentation (data untouched — every hook below is gated to product
@@ -674,12 +667,29 @@ function molosoc_cz_order_item_name( $item_name, $item ) {
 add_filter( 'woocommerce_order_item_name', 'molosoc_cz_order_item_name', 10, 2 );
 
 /**
- * Single-product-page display price only, product 364 only. EN shows the
- * EUR headline price plus the CZK-charge clarifier (translate="no" — same
- * idiom page-moisture-lock-foot-cover.php already uses on every price
- * group/note, so Chrome's auto-translate on the EN page can't garble the
- * currency code the way it garbled "229 CZK" into "229 CZH" before).
- * CZ shows the plain CZK price. Deliberately does NOT hook
+ * True for product 364 itself or either of its variations (424=L, 425=M).
+ * WooCommerce resolves woocommerce_get_price_html separately per selected
+ * variation on the single-product page, so the display-only override below
+ * has to follow the parent relationship — an ID-only check against 364
+ * would miss the price shown as soon as a shopper picks a size.
+ */
+function molosoc_is_product_364_or_its_variation( $product ) {
+	if ( ! $product instanceof WC_Product ) {
+		return false;
+	}
+	if ( MOLOSOC_PRODUCT_ID === (int) $product->get_id() ) {
+		return true;
+	}
+	return $product instanceof WC_Product_Variation && MOLOSOC_PRODUCT_ID === (int) $product->get_parent_id();
+}
+
+/**
+ * Single-product-page display price only, product 364 (and its variations)
+ * only. EN shows the EUR headline price plus the CZK-charge clarifier
+ * (translate="no" — same idiom page-moisture-lock-foot-cover.php already
+ * uses on every price group/note, so Chrome's auto-translate on the EN page
+ * can't garble the currency code the way it garbled "229 CZK" into "229
+ * CZH" before). CZ shows the plain CZK price. Deliberately does NOT hook
  * woocommerce_cart_item_price / woocommerce_cart_item_subtotal / any
  * totals filter — cart, checkout, and the actual amount charged all stay
  * exactly 229,00 Kč / 229 CZK, untouched.
@@ -688,7 +698,7 @@ function molosoc_cz_product_price_html( $price_html, $product ) {
 	if ( ! function_exists( 'is_product' ) || ! is_product() ) {
 		return $price_html;
 	}
-	if ( ! $product instanceof WC_Product || MOLOSOC_PRODUCT_ID !== (int) $product->get_id() ) {
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) ) {
 		return $price_html;
 	}
 	$is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();

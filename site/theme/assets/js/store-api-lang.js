@@ -55,12 +55,9 @@
 		} );
 	}
 
-	// wp.apiFetch is registered by WooCommerce's own footer block scripts;
-	// window load runs after all of them, so no polling needed (same
-	// convention as cart-badge-sync.js).
-	if ( document.readyState === 'complete' ) {
-		init();
-	} else {
-		window.addEventListener( 'load', init );
-	}
+	// Enqueued with 'wp-api-fetch' as an explicit script dependency (see
+	// functions.php), so wp.apiFetch is already defined by the time this
+	// file runs — no need to wait for window load, and waiting missed the
+	// block cart's own initial wc/store request on some pages.
+	init();
 } )();
