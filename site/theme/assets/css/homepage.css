@@ -1428,8 +1428,13 @@ h2.molosoc-merge__text {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-s);
+  /* Spread evenly from the top of the photo to the bottom (explicit
+     request — a tight centred cluster read as crowded): equal space
+     above the first card, between each pair, and below the last, inside
+     a modest vertical inset so nothing touches the stage edges. */
+  justify-content: space-evenly;
+  padding: clamp(2rem, 5vh, 4rem) 0;
+  box-sizing: border-box;
 }
 
 .molosoc-feature-card--cz-1,
@@ -1836,4 +1841,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.54 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.55 */
