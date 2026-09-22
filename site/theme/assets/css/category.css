@@ -98,14 +98,15 @@
    lock moisture in — not just once") sits under it at the regular
    display-m size. Both are spans inside the one H1, so the accessible
    name is still the full sentence and the type-in reveal above still
-   plays on the whole headline. 5.2vw keeps the longer EN phrase clear
-   of the rings on the right at every desktop width. */
+   plays on the whole headline. The phrase is on the SAME scale as the
+   page's section H2s (--text-display-2xl, e.g. "Jednorázové masky vs.
+   návleky…") so the hero and the cards read as one type system. */
 
 .molosoc-category-hero__phrase {
   display: block;
-  font-size: clamp(3.25rem, 5.2vw, 5.75rem);
-  line-height: 0.95;
-  letter-spacing: 0.035em;
+  font-size: var(--text-display-2xl);
+  line-height: var(--leading-display);
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
@@ -119,9 +120,7 @@
 
 @media (max-width: 860px) {
   .molosoc-category-hero__phrase {
-    white-space: normal;
-    font-size: clamp(2.5rem, 10vw, 4rem);
-    line-height: 1;
+    white-space: normal; /* size stays on the shared H2 token */
   }
 
   .molosoc-category-hero__qualifier {
