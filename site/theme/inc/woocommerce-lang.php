@@ -481,9 +481,25 @@ function molosoc_wrap_customer_email_triggers_with_cz_locale() {
 	if ( empty( $wp_filter ) || ! is_array( $wp_filter ) ) {
 		return;
 	}
+	// Not every `customer_*` email id is order-related: the account-
+	// lifecycle emails below call trigger() with a user id, not an order
+	// id. wc_get_order() on that id can coincidentally resolve to an
+	// unrelated order that happens to share the same numeric id (user ids
+	// and order/post ids are independent namespaces), which would then
+	// wrongly localize a new-account or password-reset email that has
+	// nothing to do with that order. Only wrap the known order-related
+	// customer_* email classes.
+	$molosoc_order_customer_email_ids = array(
+		'customer_processing_order',
+		'customer_on_hold_order',
+		'customer_completed_order',
+		'customer_refunded_order',
+		'customer_invoice',
+		'customer_note',
+	);
 	foreach ( WC()->mailer()->get_emails() as $molosoc_email ) {
-		if ( ! ( $molosoc_email instanceof WC_Email ) || 0 !== strpos( (string) $molosoc_email->id, 'customer_' ) ) {
-			continue; // Never rewrap a WooCommerce admin-facing email class.
+		if ( ! ( $molosoc_email instanceof WC_Email ) || ! in_array( (string) $molosoc_email->id, $molosoc_order_customer_email_ids, true ) ) {
+			continue; // Never rewrap a non-order (e.g. account) email class.
 		}
 		foreach ( $wp_filter as $molosoc_hook_name => $molosoc_hook_obj ) {
 			if ( ! ( $molosoc_hook_obj instanceof WP_Hook ) ) {

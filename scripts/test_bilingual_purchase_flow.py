@@ -379,6 +379,15 @@ def check_order_received_url_for_real_order(lang_key, cfg):
         print("  (cleanup) order %d: cancel HTTP %s (status=%s), trash HTTP %s (status=%s)"
               % (order_id, cancel_status, cancel_body.get("status"),
                  trash_status, trash_body.get("status")))
+        if cancel_status not in (200, 201) or trash_status not in (200, 201):
+            record(
+                "%s: fixture order %d cleanup (cancel+trash)" % (lang_key, order_id),
+                False,
+                "cancel HTTP %s (status=%s), trash HTTP %s (status=%s) — order %d may still "
+                "exist in the store; remove it manually"
+                % (cancel_status, cancel_body.get("status"), trash_status,
+                   trash_body.get("status"), order_id),
+            )
 
 
 def check_order_received_endpoint_routing(lang_key, cfg):
