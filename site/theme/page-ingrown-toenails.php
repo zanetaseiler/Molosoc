@@ -17,10 +17,10 @@
  * (molosoc_pillar2_schema()) instead of being printed here, since
  * get_header() already owns the <head>.
  *
- * CSS/JS for this page (pillar1.css, sequential-text-reveal.js,
- * severity-reveal.js, mechanism-drawer.js, GSAP+ScrollTrigger,
- * scroll-refresh.js, model-viewer) are enqueued conditionally in
- * functions.php on is_page('ingrown-toenails') — reuses pillar1.css and
+ * CSS for this page (pillar1.css) plus model-viewer are enqueued in
+ * functions.php's shared Journal-article branch. No motion scripts are
+ * loaded: the only motion is the hero photo's pure-CSS breathing zoom;
+ * every section below it is static (2026-09-22).
  * its JS as-is, same as page-cracked-heels.php, since every class in that
  * file is generic (see that file's own comments).
  */
@@ -49,9 +49,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. WHAT CAUSES INGROWN TOENAILS — fixed image + text column.
-	     pillar2_02_trimming.jpg stays fixed/static; the 3 H3 causes slide
-	     in from the right together, as one unit, on arrival. -->
+	<!-- 2. WHAT CAUSES INGROWN TOENAILS — static fixed image + text column.
+	     The photo and the 3 H3 points sit at rest (the old fixed-image-text-
+	     reveal entrance was removed 2026-09-22 — the only motion on this page
+	     is the hero breathe). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Příčiny' : __( 'The causes', 'molosoc' ) ); ?></p>
@@ -86,10 +87,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 3. DO INGROWN TOENAILS GO AWAY — editorial-feature-reveal.
-	     pillar2_03_elevated.jpg (Image A) gives way to
-	     molosoc_ingrown_toenail.jpg (Image B) through a circular mask, then
-	     the 3 severity cards emerge from center to their tiered positions. -->
+	<!-- 3. DO INGROWN TOENAILS GO AWAY — static photo + cards. Image B is the
+	     plain background and the 3 cards sit at their final tiered positions
+	     (the old editorial-feature-reveal mask + card flight was removed
+	     2026-09-22; Image A stays in the markup, hidden by pillar1.css). -->
 	<section class="molosoc-severity-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Zmizí zarostlý nehet sám?' : __( 'Do ingrown toenails go away', 'molosoc' ) ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
@@ -120,9 +121,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 4. WHY CUTTING IT YOURSELF OFTEN BACKFIRES — orbit-scroll-drawer.
-	     The always-rotating molosoc-3d.glb model fades/blurs as a glass
-	     drawer carrying the 3 H3 points slides up over it. -->
+	<!-- 4. WHY CUTTING IT YOURSELF OFTEN BACKFIRES — static glass drawer
+	     settled over the still (non-rotating) molosoc-3d.glb model (the old
+	     orbit-scroll-drawer fade/blur/slide and the model's auto-rotate were
+	     removed 2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="<?php echo esc_attr( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?>">
 		<div class="molosoc-mechanism-pin">
 
@@ -132,8 +134,6 @@ get_header();
 					class="molosoc-mechanism-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"
@@ -231,14 +231,5 @@ get_header();
 
 </main>
 
-<script>
-	// motion.js gates .molosoc-hero, not .molosoc-pillar-hero — this page's
-	// own hero class — so its breathing-zoom start is triggered here
-	// instead, same one-line rAF gate as the static preview.
-	requestAnimationFrame( function () {
-		var hero = document.getElementById( 'pillarHero' );
-		if ( hero ) hero.classList.add( 'is-visible' );
-	} );
-</script>
 
 <?php get_footer(); ?>

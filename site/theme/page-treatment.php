@@ -49,9 +49,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 2. HOW TO TREAT INGROWN TOENAILS — fixed image + text column.
-	     molosoc_ingrown_toenail.jpg stays fixed/static; the 3 H3 steps
-	     slide in from the right together, as one unit, on arrival. -->
+	<!-- 2. HOW TO TREAT INGROWN TOENAILS — static fixed image + text column.
+	     The photo and the 3 H3 points sit at rest (the old fixed-image-text-
+	     reveal entrance was removed 2026-09-22 — the only motion on this page
+	     is the hero breathe). -->
 	<div class="molosoc-sequential-heading">
 		<div class="molosoc-sequential-heading__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Step by step', 'molosoc' ); ?></p>
@@ -86,11 +87,11 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 3. HOW TO GET RID OF INGROWN TOENAILS — editorial-feature-reveal.
-	     molosoc_pedicure_01.jpg (Image A, filing) gives way to
-	     pillar2_02_trimming.jpg (Image B, trimming) through a circular
-	     mask, then the 3 cards emerge from center to their tiered
-	     positions. -->
+	<!-- 3. HOW TO GET RID OF INGROWN TOENAILS — static photo + cards. Image B
+	     is the plain background and the 3 cards sit at their final tiered
+	     positions (the old editorial-feature-reveal mask + card flight was
+	     removed 2026-09-22; Image A stays in the markup, hidden by
+	     pillar1.css). -->
 	<section class="molosoc-severity-section" aria-label="<?php esc_attr_e( 'How to get rid of ingrown toenails', 'molosoc' ); ?>">
 		<div class="molosoc-severity-section__stage">
 			<div class="molosoc-severity-section__media" aria-hidden="true">
@@ -121,9 +122,10 @@ get_header();
 		</div>
 	</section>
 
-	<!-- 4. WHEN HOME TREATMENT ISN'T ENOUGH — orbit-scroll-drawer. The
-	     always-rotating molosoc-3d.glb model fades/blurs as a glass drawer
-	     carrying the 3 H3 points slides up over it. -->
+	<!-- 4. WHEN HOME TREATMENT ISN'T ENOUGH — static glass drawer settled over
+	     the still (non-rotating) molosoc-3d.glb model (the old orbit-scroll-
+	     drawer fade/blur/slide and the model's auto-rotate were removed
+	     2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( "When home treatment isn't enough", 'molosoc' ); ?>">
 		<div class="molosoc-mechanism-pin">
 
@@ -133,8 +135,6 @@ get_header();
 					class="molosoc-mechanism-model"
 					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
 					alt=""
-					auto-rotate
-					rotation-per-second="10deg"
 					camera-orbit="0deg 75deg 105%"
 					exposure="0.95"
 					shadow-intensity="0.7"
