@@ -1116,8 +1116,15 @@ h2.molosoc-merge__text {
 
 /* ---------- Beat 6 — Social proof ---------- */
 
+/* Full section column, not the old 34rem box: at the editorial H2
+   scale "Tři měsíce, žádné filtry" stacked into crowded lines. */
 .molosoc-proof__intro {
-  max-width: 34rem;
+  width: 100%;
+  max-width: none;
+}
+
+.molosoc-proof__intro h2 {
+  text-wrap: balance;
 }
 
 .molosoc-proof__media {
@@ -1154,10 +1161,18 @@ h2.molosoc-merge__text {
 
 /* ---------- Beat 7 — Product moment ---------- */
 
+/* 72rem, not the old 40rem: lets "Poznejte návlek na nohy" spread on
+   one line at the editorial H2 scale. The lede keeps its own 36rem
+   paragraph cap (base.css) and stays centred, so only the heading
+   widens. */
 .molosoc-product-cta {
   text-align: center;
-  max-width: 40rem;
+  max-width: var(--content-max-width-wide);
   margin: 0 auto;
+}
+
+.molosoc-product-cta h2 {
+  text-wrap: balance;
 }
 
 .molosoc-product-cta .molosoc-btn {
@@ -1670,7 +1685,10 @@ h2.molosoc-merge__text {
 
 .molosoc-final-cta h2 {
   color: var(--color-white);
-  max-width: 34rem;
+  /* No 34rem cap: "Co je hydratační návlek na nohy?" spreads across the
+     section instead of stacking; balanced if it still wraps. */
+  max-width: none;
+  text-wrap: balance;
   margin: 0 auto;
   /* Dark hero-like stage: moderated editorial scale. */
   font-size: var(--text-display-2xl-soft);
@@ -1759,4 +1777,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.48 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.49 */
