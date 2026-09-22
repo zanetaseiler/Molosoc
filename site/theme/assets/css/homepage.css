@@ -1127,6 +1127,17 @@ h2.molosoc-merge__text {
   text-wrap: balance;
 }
 
+/* base.css caps every <p> at 36rem with no auto margins, so once these
+   three blocks widened past that, their eyebrow <p> boxes sat flush
+   left with the text merely centred inside the narrow box. Centre the
+   box itself (same fix as category.css's sequential headings). */
+.molosoc-proof__intro .molosoc-eyebrow,
+.molosoc-product-cta .molosoc-eyebrow,
+.molosoc-final-cta .molosoc-eyebrow {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .molosoc-proof__media {
   width: 100%;
   max-width: 34rem;
@@ -1780,4 +1791,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.50 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.51 */
