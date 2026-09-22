@@ -127,12 +127,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Make it stick', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Building a prevention routine that actually sticks', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'Make it stick', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Building a prevention routine that actually sticks', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'Prevention habits fall off for the same reason treatment routines do — there\'s no structure keeping them going once the immediate problem has passed.', 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

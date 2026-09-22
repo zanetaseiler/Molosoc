@@ -129,12 +129,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Make it finish', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Building a treatment routine that actually finishes', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'Make it finish', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Building a treatment routine that actually finishes', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'The moment cracked heels start feeling better, the motivation to keep going drops — which is exactly when the underlying skin is still recovering and most likely to relapse.', 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

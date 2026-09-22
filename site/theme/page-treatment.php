@@ -144,12 +144,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'When to get help', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( "When home treatment isn't enough", 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'When to get help', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( "When home treatment isn't enough", 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'Increasing redness, warmth, swelling, or discharge around the nail are signs that go beyond what home care alone typically resolves.', 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

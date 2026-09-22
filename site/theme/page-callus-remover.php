@@ -134,12 +134,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Trvale, ne jen teď' : __( 'For good, not just for now', 'molosoc' ) ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč se kuří oko vrací' : __( 'How to get rid of hard skin on feet permanently', 'molosoc' ) ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Trvale, ne jen teď' : __( 'For good, not just for now', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč se kuří oko vrací' : __( 'How to get rid of hard skin on feet permanently', 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'I po úspěšném odstranění zůstává tlak nebo tření, které kuří oko způsobilo — ať je to obuv, chůze nebo konkrétní místo zátěže — obvykle beze změny.' : __( 'Even after a successful removal, whatever repeated pressure or friction caused the callus — footwear, gait, a specific pressure point — is usually still there.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

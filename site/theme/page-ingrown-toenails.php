@@ -143,12 +143,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč stříhání sami sobě většinou přitíží' : __( 'Why cutting it yourself often backfires', 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Vlastní zásah do zarostlého nehtu je obvykle první věc, kterou lidé zkouší, ještě před vyzkoušením čehokoliv jiného.' : __( 'Pain concentrated at the big toenail is almost always pressure-related — from the nail edge, from footwear, or both at once.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

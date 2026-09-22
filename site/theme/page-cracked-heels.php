@@ -143,12 +143,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné mastění problém nevyřeší' : __( "Why moisturizer alone doesn't fix it", 'molosoc' ) ); ?></p>
+				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné řešení' : __( 'The real fix', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Proč samotné mastění problém nevyřeší' : __( "Why moisturizer alone doesn't fix it", 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Většina lidí už mast na paty vlastní a pravidelně ji nanáší — samotná rutina není to, co chybí.' : __( 'Most people already own a foot cream and already apply it — the routine itself was never the problem.', 'molosoc' ) ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

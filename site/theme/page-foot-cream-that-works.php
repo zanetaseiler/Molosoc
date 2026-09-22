@@ -150,12 +150,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The cream graveyard problem', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'The cream graveyard problem', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'Each bottle usually got bought with real intent, used a handful of times, then stalled — not from one bad experience, but from the same mess-and-mid-routine drop-off repeating with every new cream.', 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

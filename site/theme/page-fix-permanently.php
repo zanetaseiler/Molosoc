@@ -128,12 +128,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'What sticks', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'What makes a fix stick, not just work once', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'What sticks', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'What makes a fix stick, not just work once', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( "A week of visible improvement is a sign the routine is working, not a sign it's safe to stop — the underlying dryness and pressure haven't gone anywhere.", 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">

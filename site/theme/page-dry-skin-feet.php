@@ -112,12 +112,8 @@ get_header();
 				</model-viewer>
 			</div>
 
-			<div class="molosoc-mechanism-intro">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
-			</div>
-
 			<div class="molosoc-mechanism-drawer">
-				<p class="molosoc-eyebrow"><?php esc_html_e( 'Why are my feet so dry even when I moisturize?', 'molosoc' ); ?></p>
+				<p class="molosoc-eyebrow"><?php esc_html_e( 'The real fix', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Why are my feet so dry even when I moisturize?', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( "Most people already apply cream regularly and still end up with dry feet — the routine itself isn't missing.", 'molosoc' ); ?></p>
 				<div class="molosoc-mechanism-drawer__cards">
