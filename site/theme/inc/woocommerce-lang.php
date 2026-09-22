@@ -751,18 +751,22 @@ add_filter( 'woocommerce_dropdown_variation_attribute_options_args', 'molosoc_si
  * strings in BOTH languages (only the "Velikost"/"Size" label above
  * differs by language; the size values themselves are numbers + a letter,
  * not translated prose). This filter covers the size dropdown, where
- * WooCommerce passes the PARENT product (364). It does NOT reliably cover
- * cart/checkout or order/email meta lines: for a custom (non-taxonomy)
- * attribute WooCommerce passes the cart's WC_Product_Variation (424/425)
- * here instead of the parent, and for a taxonomy attribute neither cart
- * nor order formatting calls this hook at all — see the explicit
- * woocommerce_get_item_data / woocommerce_order_item_display_meta_value
- * mappings below for those paths. Gated to product 364 in both languages
- * (the values/order are the same either way); left as WooCommerce's own
- * text for every other product.
+ * WooCommerce passes the PARENT product (364), and — since it's also
+ * exactly what both the classic cart's wc_get_formatted_cart_item_data()
+ * and the Store API's CartItemSchema::format_variation_data() call for a
+ * custom (non-taxonomy) attribute — the classic AND block Cart/Checkout
+ * "Size" line for this custom attribute too, where the product passed is
+ * the cart's WC_Product_Variation (424/425) rather than the parent; that's
+ * why the guard below accepts either. It does NOT cover a taxonomy
+ * attribute's cart/order line (neither call site invokes this hook for
+ * that case) — see the explicit woocommerce_get_item_data /
+ * woocommerce_order_item_display_meta_value mappings below for that path.
+ * Gated to product 364 (parent or variation) in both languages (the
+ * values/order are the same either way); left as WooCommerce's own text
+ * for every other product.
  */
 function molosoc_size_option_label( $term_name, $term = null, $attribute = null, $product = null ) {
-	if ( ! $product instanceof WC_Product || MOLOSOC_PRODUCT_ID !== (int) $product->get_id() ) {
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) ) {
 		return $term_name;
 	}
 	$value = ( is_object( $term ) && isset( $term->slug ) ) ? $term->slug : $term_name;

@@ -1915,6 +1915,7 @@ function molosoc_product_trust_bar_top() {
 	if ( ! is_product() ) {
 		return;
 	}
+	$molosoc_is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	?>
 	<div class="molosoc-trust-bar molosoc-trust-bar--top">
 		<div class="molosoc-trust-bar__inner">
@@ -1923,8 +1924,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M1 3h13v13H1z"/><path d="M14 8h4l4 4v4h-8V8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Fast Shipping', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'We ship within 24 hours', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Rychlé dodání' : __( 'Fast Shipping', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Odesíláme do 24 hodin' : __( 'We ship within 24 hours', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1932,8 +1933,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Easy Returns', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'No stress, no hassle', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Snadné vrácení' : __( 'Easy Returns', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Bez stresu, bez starostí' : __( 'No stress, no hassle', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1941,8 +1942,8 @@ function molosoc_product_trust_bar_top() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Secure Payment', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( "100% protection for your data", 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Bezpečná platba' : __( 'Secure Payment', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? '100% ochrana vašich údajů' : __( '100% protection for your data', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
@@ -1961,6 +1962,7 @@ function molosoc_product_trust_bar_bottom() {
 	if ( ! is_product() ) {
 		return;
 	}
+	$molosoc_is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	?>
 	<div class="molosoc-trust-bar molosoc-trust-bar--bottom">
 		<div class="molosoc-trust-bar__inner">
@@ -1969,7 +1971,7 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l2.6 5.6 6.2.6-4.6 4.2 1.3 6.1L12 15.8 6.5 18.5l1.3-6.1L3.2 8.2l6.2-.6z"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Verified by Customers', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Ověřeno zákazníky' : __( 'Verified by Customers', 'molosoc' ) ); ?></p>
 					<p class="molosoc-trust-bar__sub">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
 				</div>
 			</div>
@@ -1978,8 +1980,8 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'Secure Purchase', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'Your data protected', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Bezpečný nákup' : __( 'Secure Purchase', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Vaše údaje jsou chráněny' : __( 'Your data protected', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 			<div class="molosoc-trust-bar__item">
@@ -1987,8 +1989,8 @@ function molosoc_product_trust_bar_bottom() {
 					<svg viewBox="0 0 24 24"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
 				</span>
 				<div>
-					<p class="molosoc-trust-bar__label"><?php esc_html_e( 'In Stock', 'molosoc' ); ?></p>
-					<p class="molosoc-trust-bar__sub"><?php esc_html_e( 'Ready to ship', 'molosoc' ); ?></p>
+					<p class="molosoc-trust-bar__label"><?php echo esc_html( $molosoc_is_cz ? 'Skladem' : __( 'In Stock', 'molosoc' ) ); ?></p>
+					<p class="molosoc-trust-bar__sub"><?php echo esc_html( $molosoc_is_cz ? 'Připraveno k odeslání' : __( 'Ready to ship', 'molosoc' ) ); ?></p>
 				</div>
 			</div>
 		</div>
