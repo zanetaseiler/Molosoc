@@ -144,8 +144,9 @@
 }
 
 /* Desktop dropdown → a small floating menu card, not a bare list. Sized
-   to its content (no min-width), warm off-white fill, the same hairline
-   border as the nav pills, ~20px radius and a soft lift shadow; each item
+   to its content (no min-width), warm white fill a notch brighter than the
+   cream page so it separates, a darker hairline border than the pills,
+   ~20px radius and a clear lift shadow; each item
    is a left-aligned row with its own inner pill hover. The base
    max-height accordion above is for the ≤760px panel — here the card has
    padding + a border, so max-height: 0 would leave a visible sliver
@@ -160,10 +161,10 @@
     max-height: none;
     overflow: visible;
     padding: 0.375rem;
-    border: 1px solid rgba(36, 29, 23, 0.24);
+    border: 1px solid rgba(36, 29, 23, 0.42);
     border-radius: 20px;
-    background: rgba(252, 251, 248, 0.98);
-    box-shadow: 0 10px 28px -10px rgba(36, 29, 23, 0.22), 0 2px 6px rgba(36, 29, 23, 0.06);
+    background: #fffdf9;
+    box-shadow: 0 16px 40px -12px rgba(36, 29, 23, 0.4), 0 3px 10px rgba(36, 29, 23, 0.14);
     z-index: 30;
     opacity: 0;
     visibility: hidden;
@@ -199,7 +200,7 @@
   /* Hover — a very light warm-grey wash inside the card, label stays ink. */
   .molosoc-home-header__nav .sub-menu a:hover,
   .molosoc-home-header__nav .sub-menu a:focus-visible {
-    background: rgba(36, 29, 23, 0.06);
+    background: rgba(36, 29, 23, 0.09);
     color: var(--color-ink-warm);
     text-shadow: none;
     opacity: 1;
