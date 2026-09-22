@@ -1425,14 +1425,18 @@ h2.molosoc-merge__text {
    100vh box, so a centred flex column places the stack in the middle
    of the photo without any hand-placed offsets. */
 .molosoc-topics__cards--cz {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* Spread evenly from the top of the photo to the bottom (explicit
-     request — a tight centred cluster read as crowded): equal space
-     above the first card, between each pair, and below the last, inside
-     a modest vertical inset so nothing touches the stage edges. */
-  justify-content: space-evenly;
+  /* A 3-row grid rather than a flex column so all three cards share ONE
+     height (explicit request): every row is capped at 12.5rem and, as
+     long as the tallest card's text fits that, every row is exactly
+     12.5rem — the cards stretch to fill their row. If a row's text
+     ever needs more (very narrow desktop widths), that row alone grows
+     rather than clipping. Rows spread evenly from the top of the photo
+     to the bottom: equal space above the first card, between each pair,
+     and below the last, inside a modest vertical inset. */
+  display: grid;
+  grid-template-rows: repeat(3, minmax(auto, 12.5rem));
+  justify-items: center;
+  align-content: space-evenly;
   padding: clamp(2rem, 5vh, 4rem) 0;
   box-sizing: border-box;
 }
@@ -1444,6 +1448,10 @@ h2.molosoc-merge__text {
   width: clamp(15rem, 24vw, 19rem);
   margin: 0;
   text-align: center;
+  /* Text sits in the vertical middle of the shared-height card. */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 @media (max-width: 760px) {
@@ -1841,4 +1849,4 @@ h2.molosoc-merge__text {
   }
 }
 
-/* rebuilt: card-hero variant + static-below-hero v0.2.55 */
+/* rebuilt: card-hero variant + static-below-hero v0.2.56 */
