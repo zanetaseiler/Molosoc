@@ -4,12 +4,13 @@ Publishing one level deeper, and one client wider.
 
 The weekly dashboard publishes to `reports/molosoc/index.html`. The
 TrafficDom Growth report publishes to `reports/molosoc/growth/index.html`,
+the MOLOSOC Social report publishes to `reports/molosoc/social/index.html`,
 and — since the client-first cutover — the Zoe Social report publishes to
 `reports/zoe/social/index.html`, and the TrafficDom client directory page
-publishes to `reports/index.html` itself. All four go through this same
-publisher, over the same connection, with the same guards — deliberately,
-rather than through a second publisher that would have to re-earn all of
-them.
+publishes to `reports/index.html` itself. All of these go through this
+same publisher, over the same connection, with the same guards —
+deliberately, rather than through a second publisher that would have to
+re-earn all of them.
 
 What that means in practice is one question asked several ways: **can a
 run asked for one destination ever land on another one?** Growth must
@@ -51,6 +52,7 @@ GROWTH_DIR = f"{BASE}/molosoc/growth"
 EMAIL_DIR = f"{BASE}/molosoc/email-marketing"
 MOLOSOC_ANALYTICS_SECTION_DIR = f"{BASE}/molosoc/analytics"
 MOLOSOC_PAID_DIR = f"{BASE}/molosoc/paid"
+MOLOSOC_SOCIAL_DIR = f"{BASE}/molosoc/social"
 ZOE_DIR = f"{BASE}/zoe"
 ZOE_SOCIAL_DIR = f"{BASE}/zoe/social"
 
@@ -81,7 +83,7 @@ def test_the_allowed_clients_are_exactly_molosoc_and_zoe():
 
 def test_the_allowed_sections_are_scoped_per_client():
     assert pub.ALLOWED_SECTIONS == {
-        "molosoc": ("growth", "email-marketing", "analytics", "paid"),
+        "molosoc": ("growth", "email-marketing", "analytics", "paid", "social"),
         "zoe": ("social",),
     }
 
@@ -98,7 +100,14 @@ def test_a_section_valid_for_one_client_is_refused_for_another():
     with pytest.raises(pub.PublishError):
         pub.expected_tail("growth", client="zoe")
     with pytest.raises(pub.PublishError):
-        pub.expected_tail("social", client="molosoc")
+        pub.expected_tail("paid", client="zoe")
+
+
+def test_the_shared_section_name_social_is_valid_for_both_clients():
+    """`social` is the one section name both clients happen to share — it
+    must still resolve to each client's own directory, never the other's."""
+    assert pub.expected_tail("social", client="molosoc") == ("molosoc", "social")
+    assert pub.expected_tail("social", client="zoe") == ("zoe", "social")
 
 
 def test_an_unknown_section_is_refused_by_the_derivation_too():
@@ -135,6 +144,21 @@ def test_the_zoe_social_section_resolves_under_zoes_own_directory():
     assert pub.public_url("social", "zoe") == "https://trafficdom.com/reports/zoe/social/"
 
 
+def test_the_molosoc_social_section_resolves_alongside_its_siblings():
+    assert pub.expected_tail("social") == ("molosoc", "social")
+    assert pub.resolve_remote_dir(BASE, "social") == MOLOSOC_SOCIAL_DIR
+    assert pub.public_url("social") == "https://trafficdom.com/reports/molosoc/social/"
+
+
+def test_molosocs_social_section_and_zoes_social_section_can_never_collide():
+    """Same section name, two different clients — the client segment they
+    are appended to is what keeps them apart."""
+    assert pub.resolve_remote_dir(BASE, "social", "molosoc") != pub.resolve_remote_dir(
+        BASE, "social", "zoe")
+    assert pub.resolve_remote_dir(BASE, "social", "molosoc") == MOLOSOC_SOCIAL_DIR
+    assert pub.resolve_remote_dir(BASE, "social", "zoe") == ZOE_SOCIAL_DIR
+
+
 def test_zoe_and_molosoc_can_never_be_the_same_directory():
     assert pub.expected_tail(client="zoe") != pub.expected_tail(client="molosoc")
     assert pub.resolve_remote_dir(BASE, client="zoe") == ZOE_DIR
@@ -146,8 +170,8 @@ def test_the_two_molosoc_sections_can_never_be_the_same_directory():
     assert pub.expected_tail("growth") != pub.expected_tail("email-marketing")
 
 
-def test_none_of_the_four_molosoc_sections_can_ever_collide():
-    """Same property, one segment wider now that `paid` exists too."""
+def test_none_of_the_molosoc_sections_can_ever_collide():
+    """Same property, one segment wider now that `paid` and `social` exist too."""
     tails = {pub.expected_tail(s) for s in pub.ALLOWED_SECTIONS["molosoc"]}
     assert len(tails) == len(pub.ALLOWED_SECTIONS["molosoc"])
 
@@ -258,6 +282,20 @@ def test_the_location_check_passes_on_the_paid_ads_directory():
     assert pub.verify_location(sftp, MOLOSOC_PAID_DIR, "paid") == MOLOSOC_PAID_DIR
 
 
+def test_the_location_check_passes_on_the_molosoc_social_directory():
+    sftp = FakeSFTP(cwd=MOLOSOC_SOCIAL_DIR)
+    assert pub.verify_location(sftp, MOLOSOC_SOCIAL_DIR, "social") == MOLOSOC_SOCIAL_DIR
+
+
+def test_the_upload_is_abandoned_if_the_server_puts_us_in_zoes_social_dir():
+    """The shared section name `social` must not let a MOLOSOC run be
+    satisfied by landing in Zoe's social directory instead."""
+    sftp = FakeSFTP(cwd=ZOE_SOCIAL_DIR)
+    with pytest.raises(pub.PublishError):
+        pub.verify_location(sftp, MOLOSOC_SOCIAL_DIR, "social", "molosoc")
+    assert not sftp.stored
+
+
 def test_the_upload_is_abandoned_if_the_server_puts_us_in_growth_instead_of_paid():
     """The same chroot/symlink protection `growth` already has, proven for
     the newly-added section too rather than assumed from the shared code
@@ -350,6 +388,15 @@ def test_paid_is_created_inside_an_existing_molosoc_directory():
     entered = pub.enter_remote_dir(sftp, MOLOSOC_PAID_DIR, section="paid")
     assert entered == MOLOSOC_PAID_DIR
     assert sftp.made == [MOLOSOC_PAID_DIR]
+
+
+def test_molosoc_social_is_created_inside_an_existing_molosoc_directory():
+    """`molosoc/` must already exist; only `social/` may be made — the same
+    rule every other MOLOSOC section already follows."""
+    sftp = FakeSFTP(cwd="/", dirs={ANALYTICS_DIR})
+    entered = pub.enter_remote_dir(sftp, MOLOSOC_SOCIAL_DIR, section="social")
+    assert entered == MOLOSOC_SOCIAL_DIR
+    assert sftp.made == [MOLOSOC_SOCIAL_DIR]
 
 
 def test_zoes_directory_must_already_exist_too_before_its_section_is_created():
