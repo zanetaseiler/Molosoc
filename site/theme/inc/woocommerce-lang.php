@@ -1315,11 +1315,13 @@ add_filter( 'woocommerce_available_variation', 'molosoc_product_364_blank_variat
 /**
  * Concise shipping line in the variation/size area, in place of the
  * per-variation text blanked above. Hooked on
- * woocommerce_after_variations_form (fires right after the size dropdown
- * table, in both languages' identical markup) rather than anything inside
- * single_variation_wrap, so it's visible immediately on page load — not
- * only after a size is picked. translate="no" matches this file's existing
- * price/currency idiom so browser auto-translate can't garble "CZK".
+ * woocommerce_after_variations_table (fires right after the size dropdown
+ * table itself, before single_variation_wrap's price/quantity/add-to-cart
+ * controls, in both languages' identical markup), so it's visible
+ * immediately on page load — not only after a size is picked — and stays
+ * in the selector area rather than below the purchase controls.
+ * translate="no" matches this file's existing price/currency idiom so
+ * browser auto-translate can't garble "CZK".
  */
 function molosoc_product_364_shipping_note() {
 	global $product;
@@ -1332,4 +1334,4 @@ function molosoc_product_364_shipping_note() {
 		esc_html( $is_cz ? 'Doprava od 79 Kč' : 'Shipping from 79 CZK' )
 	);
 }
-add_action( 'woocommerce_after_variations_form', 'molosoc_product_364_shipping_note' );
+add_action( 'woocommerce_after_variations_table', 'molosoc_product_364_shipping_note' );

@@ -72,8 +72,10 @@
   (woocommerce-lang.php, molosoc_product_364_shipping_note()). Hidden
   outright as a belt-and-suspenders measure alongside the PHP filter that
   blanks its content, in case a future variation edit leaves it non-empty.
+  Scoped to product 364 (WordPress's own body class) so this never hides
+  the description on any other variable product.
 */
-.woocommerce div.product form.cart .woocommerce-variation-description {
+body.postid-364 .woocommerce div.product form.cart .woocommerce-variation-description {
   display: none;
 }
 
