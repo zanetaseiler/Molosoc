@@ -1256,3 +1256,80 @@ function molosoc_cz_woocommerce_ngettext( $translation, $single, $plural, $numbe
 	return 1 === (int) $number ? $map[ $key ][0] : $map[ $key ][1];
 }
 add_filter( 'ngettext', 'molosoc_cz_woocommerce_ngettext', 10, 5 );
+
+/* =====================================================================
+ * 7. Product-page polish before the sticky CTA (Issue #69). Both language
+ *    variants of the SAME product-364 page get the identical cleanup:
+ *      - the Description tab (WooCommerce's own the_content tab) is
+ *        removed — it duplicates the marketing/landing-page copy and
+ *        isn't needed here. Additional information and Reviews are left
+ *        exactly as WooCommerce builds them; no review data is touched.
+ *      - WooCommerce's own per-variation description text (rendered
+ *        client-side once a size is picked) is replaced with one concise
+ *        shipping line, shown immediately under the size selector.
+ *    Every hook is gated to product 364 (or its variation) specifically —
+ *    never a blanket filter across the shop — and touches presentation
+ *    only, never price, inventory, variations, or orders.
+ * =================================================================== */
+
+/**
+ * True only for the product-364 singular, in either language. Unlike
+ * molosoc_is_cz_product_364() above, this is NOT language-gated — both
+ * the CZ and EN cleanup in this section apply identically.
+ */
+function molosoc_is_product_364_page() {
+	return function_exists( 'is_product' ) && is_product() && MOLOSOC_PRODUCT_ID === (int) get_queried_object_id();
+}
+
+/**
+ * Remove the Description tab for product 364. Hooked before
+ * molosoc_cz_product_tabs() (priority 100) so that function's now-moot
+ * 'description' title tweak simply no-ops via its own isset() guard.
+ */
+function molosoc_product_364_remove_description_tab( $tabs ) {
+	if ( ! molosoc_is_product_364_page() ) {
+		return $tabs;
+	}
+	unset( $tabs['description'] );
+	return $tabs;
+}
+add_filter( 'woocommerce_product_tabs', 'molosoc_product_364_remove_description_tab', 90 );
+
+/**
+ * Blank WooCommerce's own per-variation "Description" text for product
+ * 364's variations (424/425) — the "unnecessary variation text" the issue
+ * asks to remove from the size area. This only clears the text WooCommerce
+ * would otherwise inject client-side once a size is selected; the CSS rule
+ * in product-form.css hides the (now-empty) wrapper outright as a
+ * belt-and-suspenders measure.
+ */
+function molosoc_product_364_blank_variation_description( $data, $product, $variation ) {
+	if ( ! molosoc_is_product_364_or_its_variation( $variation ) ) {
+		return $data;
+	}
+	$data['variation_description'] = '';
+	return $data;
+}
+add_filter( 'woocommerce_available_variation', 'molosoc_product_364_blank_variation_description', 10, 3 );
+
+/**
+ * Concise shipping line in the variation/size area, in place of the
+ * per-variation text blanked above. Hooked on
+ * woocommerce_after_variations_form (fires right after the size dropdown
+ * table, in both languages' identical markup) rather than anything inside
+ * single_variation_wrap, so it's visible immediately on page load — not
+ * only after a size is picked. translate="no" matches this file's existing
+ * price/currency idiom so browser auto-translate can't garble "CZK".
+ */
+function molosoc_product_364_shipping_note() {
+	global $product;
+	if ( ! $product instanceof WC_Product || ! molosoc_is_product_364_or_its_variation( $product ) ) {
+		return;
+	}
+	$is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
+	printf(
+		'<p class="molosoc-product-shipping-note" translate="no">%s</p>',
+		esc_html( $is_cz ? 'Doprava od 79 Kč' : 'Shipping from 79 CZK' )
+	);
+}
+add_action( 'woocommerce_after_variations_form', 'molosoc_product_364_shipping_note' );

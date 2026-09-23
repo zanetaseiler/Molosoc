@@ -65,3 +65,21 @@
   transform: none;
   cursor: not-allowed;
 }
+
+/*
+  Issue #69: WooCommerce's own per-variation description text is
+  unnecessary here — the theme replaces it with one concise shipping line
+  (woocommerce-lang.php, molosoc_product_364_shipping_note()). Hidden
+  outright as a belt-and-suspenders measure alongside the PHP filter that
+  blanks its content, in case a future variation edit leaves it non-empty.
+*/
+.woocommerce div.product form.cart .woocommerce-variation-description {
+  display: none;
+}
+
+.woocommerce div.product form.cart .molosoc-product-shipping-note {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+  margin: 0.5em 0 1.25em;
+}
