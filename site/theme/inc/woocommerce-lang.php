@@ -1087,3 +1087,172 @@ function molosoc_checkout_phone_label( $fields ) {
 	return $fields;
 }
 add_filter( 'woocommerce_checkout_fields', 'molosoc_checkout_phone_label' );
+
+/* =====================================================================
+ * 6. Add-to-cart UI/notices + remaining theme-controlled core strings
+ *    on the CZ product page (Issue #67). Same gate as section 5: every
+ *    hook here is scoped to product 364 (or its variation) AND the
+ *    current request resolving to 'cz' — never a blanket filter across
+ *    the shop, and the EN product page is untouched.
+ * =================================================================== */
+
+/**
+ * "Add to cart" button text on the single-product page itself. This is
+ * the single-product-specific filter (WC_Product::single_add_to_cart_text())
+ * — deliberately not woocommerce_product_add_to_cart_text, which is the
+ * shop/archive loop's own variant and isn't rendered on this page.
+ */
+function molosoc_cz_single_add_to_cart_text( $text, $product ) {
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) ) {
+		return $text;
+	}
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
+		return $text;
+	}
+	return 'Přidat do košíku';
+}
+add_filter( 'woocommerce_product_single_add_to_cart_text', 'molosoc_cz_single_add_to_cart_text', 10, 2 );
+
+/**
+ * The "'X' has been added to your cart. View cart" notice WooCommerce
+ * prints back on the product page itself after a non-AJAX add-to-cart
+ * (this product is variable, added via a form submit back to this same
+ * URL) — official documented filter over the fully-assembled HTML,
+ * rather than guessing at WooCommerce's internal _n()/sprintf() string
+ * shape. $products is the [product_id => qty] array the notice covers;
+ * only rewritten when product 364 is in it.
+ *
+ * For the normal variable-product form submission, WooCommerce builds
+ * this message from WC_Form_Handler::add_to_cart_action() on
+ * `wp_loaded`, before the main query has run — so is_product() (and
+ * therefore molosoc_is_cz_product_364()) is never true yet on this
+ * exact path. Gate directly on the Czech request language and the
+ * supplied $products IDs instead of the singular-page conditional.
+ */
+function molosoc_cz_add_to_cart_message( $message, $products ) {
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
+		return $message;
+	}
+	if ( ! is_array( $products ) || ! array_key_exists( MOLOSOC_PRODUCT_ID, $products ) ) {
+		return $message;
+	}
+	return sprintf(
+		'%s <a href="%s" class="button wc-forward" tabindex="1">%s</a>',
+		esc_html__( 'Návlek na nohy Molosoc byl přidán do košíku.', 'molosoc' ),
+		esc_url( wc_get_cart_url() ),
+		esc_html__( 'Zobrazit košík', 'molosoc' )
+	);
+}
+add_filter( 'wc_add_to_cart_message_html', 'molosoc_cz_add_to_cart_message', 10, 2 );
+
+/**
+ * Stock-availability text near the add-to-cart form ("In stock" /
+ * "Out of stock" / "On backorder") — official filter over the
+ * availability array, same best-effort substring approach as the EN
+ * shipping/gateway label map above (no live stock-status string variant
+ * was available to confirm from this sandbox, e.g. whether a quantity
+ * is appended).
+ */
+function molosoc_cz_stock_availability( $availability, $product ) {
+	if ( ! molosoc_is_product_364_or_its_variation( $product ) ) {
+		return $availability;
+	}
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
+		return $availability;
+	}
+	if ( empty( $availability['availability'] ) ) {
+		return $availability;
+	}
+	$map = array(
+		'Out of stock'   => 'Vyprodáno',
+		'On backorder'   => 'Dostupné na objednávku',
+		'In stock'       => 'Skladem',
+	);
+	foreach ( $map as $en => $cz ) {
+		if ( false !== stripos( $availability['availability'], $en ) ) {
+			$availability['availability'] = str_ireplace( $en, $cz, $availability['availability'] );
+			break;
+		}
+	}
+	return $availability;
+}
+add_filter( 'woocommerce_get_availability', 'molosoc_cz_stock_availability', 10, 2 );
+
+/**
+ * Description / Additional information / Reviews tab titles. Priority
+ * 100 so this runs after WooCommerce core registers the default tabs
+ * (its own callbacks are on the default priority 10) — modifying titles
+ * in place rather than replacing the tabs array. The Reviews tab title
+ * carries a live "(%d)" count from WooCommerce core; only the word
+ * itself is replaced so the count keeps rendering correctly.
+ */
+function molosoc_cz_product_tabs( $tabs ) {
+	if ( ! molosoc_is_cz_product_364() ) {
+		return $tabs;
+	}
+	if ( isset( $tabs['description']['title'] ) ) {
+		$tabs['description']['title'] = 'Popis';
+	}
+	if ( isset( $tabs['additional_information']['title'] ) ) {
+		$tabs['additional_information']['title'] = 'Další informace';
+	}
+	if ( isset( $tabs['reviews']['title'] ) ) {
+		$tabs['reviews']['title'] = preg_replace( '/^Reviews\b/i', 'Recenze', $tabs['reviews']['title'] );
+	}
+	return $tabs;
+}
+add_filter( 'woocommerce_product_tabs', 'molosoc_cz_product_tabs', 100 );
+
+/**
+ * Remaining core WooCommerce strings on this page with no equally
+ * precise dedicated filter (the quantity input's screen-reader label and
+ * the "Related products" section heading — the category/tag lines are
+ * handled separately below, via `ngettext`, since WooCommerce renders
+ * them through `_n()`). Scoped to the 'woocommerce' text domain AND
+ * molosoc_is_cz_product_364() (is_product() + this exact post), so it
+ * can never translate an unrelated page's identical WooCommerce string.
+ *
+ * The quantity label has two source forms depending on whether a
+ * product name is available to the template: the plain 'Quantity'
+ * string, or the formatted '%s quantity' string with the product name
+ * substituted in afterward via sprintf() — both are mapped here, and the
+ * '%s' placeholder is preserved so the substitution still works.
+ */
+function molosoc_cz_woocommerce_gettext( $translation, $text, $domain ) {
+	if ( 'woocommerce' !== $domain || ! molosoc_is_cz_product_364() ) {
+		return $translation;
+	}
+	$map = array(
+		'Quantity'          => 'Množství',
+		'%s quantity'       => 'Množství: %s',
+		'Related products'  => 'Podobné produkty',
+	);
+	return isset( $map[ $text ] ) ? $map[ $text ] : $translation;
+}
+add_filter( 'gettext', 'molosoc_cz_woocommerce_gettext', 10, 3 );
+
+/**
+ * Category:/Categories: and Tag:/Tags: labels in single-product/meta.php.
+ * WooCommerce obtains these through _n( $single, $plural, $count,
+ * 'woocommerce' ), which WordPress routes through the `ngettext` filter,
+ * not `gettext` — so they need their own handler, matched on the exact
+ * singular/plural source pair rather than an already-translated string.
+ * Same product/language gate as the map above. JUDGMENT CALL: whether
+ * this product actually has visible categories/tags assigned wasn't
+ * confirmable from this sandbox; this is a no-op if they're not shown.
+ */
+function molosoc_cz_woocommerce_ngettext( $translation, $single, $plural, $number, $domain ) {
+	if ( 'woocommerce' !== $domain || ! molosoc_is_cz_product_364() ) {
+		return $translation;
+	}
+	$map = array(
+		'Category:|Categories:' => array( 'Kategorie:', 'Kategorie:' ),
+		'Tag:|Tags:'            => array( 'Štítek:', 'Štítky:' ),
+	);
+	$key = $single . '|' . $plural;
+	if ( ! isset( $map[ $key ] ) ) {
+		return $translation;
+	}
+	return 1 === (int) $number ? $map[ $key ][0] : $map[ $key ][1];
+}
+add_filter( 'ngettext', 'molosoc_cz_woocommerce_ngettext', 10, 5 );
