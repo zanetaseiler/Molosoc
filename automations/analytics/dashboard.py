@@ -412,11 +412,17 @@ CLIENT = "molosoc"
 #:
 #: `paid` joins the shared default now that the Paid Ads report is actually
 #: live at `reports/molosoc/paid/` (publish-paid-ads-report.yml). `social`
-#: is deliberately NOT added here yet: no MOLOSOC Social report has been
-#: published through this publisher (only Zoe's has, at `reports/zoe/
-#: social/`), and marking a tab live before its page exists is exactly the
-#: dead link this design otherwise guarantees against — see
-#: `test_nothing_that_is_not_a_published_section_is_a_link` below.
+#: is deliberately NOT added here yet: `publish-molosoc-social-report.yml`
+#: (Issue #75) now exists and `social` is an allowed section, but nobody has
+#: run that workflow for real yet, so no MOLOSOC Social report is actually
+#: live at `reports/molosoc/social/` (only Zoe's is, at `reports/zoe/
+#: social/`). Marking a tab live before its page exists is exactly the dead
+#: link this design otherwise guarantees against — see
+#: `test_nothing_that_is_not_a_published_section_is_a_link` below. FOLLOW-UP:
+#: once a human runs publish-molosoc-social-report.yml and its live check
+#: passes, add `"social"` here and update that test's expected linked/
+#: disabled counts in the same change — exactly as `paid` was added only
+#: after its own first real publish, never before it.
 CLIENT_LIVE_REPORTS = td.LIVE_REPORTS + ("paid",)
 
 

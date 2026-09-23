@@ -106,20 +106,26 @@ ALLOWED_CLIENTS = ("molosoc", "zoe")
 #: MOLOSOC: Analytics itself sits at the client root (no section) and is
 #: never written by a sectioned run — with `--section` set, the path check
 #: REFUSES a destination ending in `molosoc` alone. `growth`, `email-
-#: marketing`, `analytics` and `paid` are its four siblings, all published
-#: by this same script, over the same connection, with the same guards —
-#: deliberately, rather than by a second publisher that would have to
-#: re-earn all of them. (`analytics` exists so the Analytics report can
+#: marketing`, `analytics`, `paid` and `social` are its five siblings, all
+#: published by this same script, over the same connection, with the same
+#: guards — deliberately, rather than by a second publisher that would have
+#: to re-earn all of them. (`analytics` exists so the Analytics report can
 #: also be published to its own segment, `molosoc/analytics/`, once the
 #: client root moves to the Brand Overview — ADR 0043 in the Growth Engine
 #: repository. `paid` publishes the Paid Ads report the Growth Engine's
 #: `paid_ads_analyst`/`paid_ads_report_render.py` pipeline already renders,
-#: unchanged, at `molosoc/paid/` — see publish-paid-ads-report.yml.)
+#: unchanged, at `molosoc/paid/` — see publish-paid-ads-report.yml. `social`
+#: publishes the Social report the Growth Engine's own
+#: `.github/workflows/molosoc-social-report.yml` already renders from live
+#: Social Analyst D1, unchanged, at `molosoc/social/` — see
+#: publish-molosoc-social-report.yml. It is a section distinct from ZOE's
+#: own `social` below: the client segment they are appended to is never
+#: shared, so the two can never resolve to the same directory.)
 #:
 #: ZOE: only `social` exists, because only the Social report is live for
 #: this client — see that repository's own `clients/zoe/channels.toml`.
 ALLOWED_SECTIONS = {
-    "molosoc": ("growth", "email-marketing", "analytics", "paid"),
+    "molosoc": ("growth", "email-marketing", "analytics", "paid", "social"),
     "zoe": ("social",),
 }
 

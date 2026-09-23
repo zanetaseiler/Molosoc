@@ -96,8 +96,9 @@ def test_nothing_that_is_not_a_published_section_is_a_link():
     from it: Paid Ads is live here, published through the same
     publish_dashboard.py --section mechanism as Growth and Email Marketing.
 
-    Social stays unlinked — no MOLOSOC Social report has been published
-    through this publisher (only Zoe's has, at reports/zoe/social/) — and
+    Social stays unlinked — publish-molosoc-social-report.yml (Issue #75)
+    now exists, but nobody has run it for real yet, so no MOLOSOC Social
+    report is actually live (only Zoe's is, at reports/zoe/social/) — and
     this assertion is exactly what stops that from silently drifting: a tab
     may not go live here before its page does."""
     bar = _bar()

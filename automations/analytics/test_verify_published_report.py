@@ -342,6 +342,7 @@ class TestTheRootGuardMarkerMatchesWhateverIsActuallyThere:
         "publish-growth-report.yml",
         "publish-email-report.yml",
         "publish-paid-ads-report.yml",
+        "publish-molosoc-social-report.yml",
     )
 
     def _uncommented(self, path):
@@ -422,3 +423,102 @@ class TestTheRootGuardMarkerMatchesWhateverIsActuallyThere:
                 assert fields.get("marker") == self.CURRENT_ROOT_MARKER
                 found = True
         assert found, "publish-overview-report.yml's own live-check block was not found"
+
+
+class TestMolosocSocialWorkflowIsolation:
+    """MOLOSOC Social (Issue #75) must be reachable through its own workflow
+    only, and must never be able to touch — or be satisfied by — Zoe's
+    existing Social report. Client isolation is the whole point of adding a
+    dedicated workflow file instead of editing Zoe's."""
+
+    WORKFLOWS = Path(__file__).parents[2] / ".github" / "workflows"
+    MOLOSOC_WORKFLOW = "publish-molosoc-social-report.yml"
+    ZOE_WORKFLOW = "publish-social-report.yml"
+
+    def _uncommented(self, path):
+        return "\n".join(line for line in
+                         path.read_text(encoding="utf-8").splitlines()
+                         if not line.lstrip().startswith("#"))
+
+    def test_molosoc_social_is_a_separate_workflow_file_from_zoes(self):
+        assert (self.WORKFLOWS / self.MOLOSOC_WORKFLOW).is_file()
+        assert (self.WORKFLOWS / self.ZOE_WORKFLOW).is_file()
+        assert self.MOLOSOC_WORKFLOW != self.ZOE_WORKFLOW
+
+    def test_zoes_social_workflow_is_unchanged_by_this(self):
+        """Adding MOLOSOC's Social publisher must not have touched a single
+        line of Zoe's: it still only ever publishes `--client zoe`."""
+        body = self._uncommented(self.WORKFLOWS / self.ZOE_WORKFLOW)
+        assert "--client zoe --section social" in body
+        assert "--client molosoc" not in body
+        assert "molosoc" not in body.lower()
+
+    def test_molosoc_social_workflow_never_publishes_to_zoe(self):
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        assert "--client molosoc --section social" in body
+        assert "--client zoe" not in body
+
+    def test_molosoc_social_workflow_guards_zoes_report_is_untouched(self):
+        """The one extra check this workflow carries that no other sectioned
+        MOLOSOC publisher needs: the shared section name `social` means a
+        wrong destination would land on Zoe's report specifically, so this
+        is verified from the outside after every publish."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        assert "https://trafficdom.com/reports/zoe/social/" in body
+
+    def test_molosoc_social_workflow_uses_a_distinct_artifact_default(self):
+        molosoc_body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        zoe_body = self._uncommented(self.WORKFLOWS / self.ZOE_WORKFLOW)
+        assert "default: molosoc-social-report" in molosoc_body
+        assert "default: zoe-social-report" in zoe_body
+
+    def test_molosoc_social_workflow_is_manual_only(self):
+        """Same human-gated shape as every other publisher: a
+        workflow_dispatch input, no schedule and no push/workflow_run
+        trigger — this changes what a client sees."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        assert "workflow_dispatch" in body
+        assert "schedule:" not in body
+        assert "workflow_run:" not in body
+        assert 'if [ "$CONFIRM" != "publish" ]' in body
+
+    def test_molosoc_social_workflow_rejects_zoes_artifact_by_title_alone(self):
+        """`artifact`/`run_id` are editable dispatch inputs, so an operator
+        could point this run at Zoe's Social artifact instead of MOLOSOC's.
+        Both reports share the client-agnostic "— Social" title suffix, so
+        the identity check must require MOLOSOC's own "MOLOSOC — Social"
+        title — not the bare suffix Zoe's report satisfies too — and must
+        explicitly refuse Zoe's title as a negative marker."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        assert "MOLOSOC — Social" in body
+        assert '"— Social"' not in body
+        assert '"Zoe — Social"' in body
+
+    def test_molosoc_social_workflow_live_check_does_not_use_the_bare_nav_label(self):
+        """Bare "Social" is the shared navigation's tab label
+        (trafficdom_design.REPORTS), present on every rendered report page
+        whether or not that tab is live — it cannot tell a real publish of
+        this report from a stale or wrong page returned with HTTP 200. The
+        "Verify the page is live" step for
+        https://trafficdom.com/reports/molosoc/social/ must use the same
+        unconditional "MOLOSOC — Social" identity marker already required
+        from the downloaded artifact, not the bare nav label."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        blocks = body.split("with:")[1:]
+        found = False
+        for block in blocks:
+            lines = block.splitlines()[1:12]
+            fields = {}
+            for line in lines:
+                stripped = line.strip()
+                if ":" not in stripped:
+                    break
+                key, _, value = stripped.partition(":")
+                fields[key.strip()] = value.strip()
+            if fields.get("url") == "https://trafficdom.com/reports/molosoc/social/":
+                assert fields.get("marker") == "MOLOSOC — Social", (
+                    f"live-check marker is {fields.get('marker')!r} — bare "
+                    "'Social' is the nav label present on every report page"
+                )
+                found = True
+        assert found, "MOLOSOC Social's own 'Verify the page is live' step was not found"
