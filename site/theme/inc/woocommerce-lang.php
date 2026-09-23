@@ -1335,3 +1335,47 @@ function molosoc_product_364_shipping_note() {
 	);
 }
 add_action( 'woocommerce_after_variations_table', 'molosoc_product_364_shipping_note' );
+
+/* =====================================================================
+ * 8. Concise Reviews on-page heading for product 364 (Issue #71). The
+ *    "Recenze"/"Reviews" tab PILL label is already short (section 5's
+ *    molosoc_cz_product_tabs() above only relabels the CZ word, the "(%d)"
+ *    count stays). This section is the separate, longer heading WooCommerce
+ *    prints INSIDE the Reviews tab content itself — its own single-product/
+ *    tabs/reviews.php template builds it via
+ *    `_n( '%1$s review for %2$s', '%1$s reviews for %2$s', $count, 'woocommerce' )`
+ *    and then sprintf()s the live count and product title into it (e.g. "2
+ *    reviews for MOLOSOC Moisture Lock Foot Cover" / the Czech `.mo`
+ *    translation's equivalent "2 recenze Návlek na nohy Molosoc").
+ *    Both languages get the same concise replacement (both the issue's
+ *    current-examples pair), so this fires in both languages, unlike the
+ *    CZ-only filters in section 5/6.
+ * =================================================================== */
+
+/**
+ * Intercept the exact singular/plural source pair WooCommerce's reviews
+ * template runs through `_n()` for that on-page heading, and substitute a
+ * plain "Reviews"/"Recenze" with no `%1$s`/`%2$s` placeholders — the
+ * template's own `printf( esc_html( $translated ), $count, $product_title )`
+ * call then simply has nothing to substitute, so the count and product name
+ * never appear, while the reviews themselves (count, authors, ratings,
+ * content) are entirely untouched; this only replaces the heading's label
+ * text. Gated to product 364's own singular page in EITHER language via
+ * molosoc_is_product_364_page() — never a blanket filter across the shop,
+ * and never applied to any other WooCommerce string sharing the `ngettext`
+ * hook.
+ */
+function molosoc_product_364_reviews_title_ngettext( $translation, $single, $plural, $number, $domain ) {
+	if ( 'woocommerce' !== $domain ) {
+		return $translation;
+	}
+	if ( '%1$s review for %2$s' !== $single || '%1$s reviews for %2$s' !== $plural ) {
+		return $translation;
+	}
+	if ( ! molosoc_is_product_364_page() ) {
+		return $translation;
+	}
+	$is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
+	return $is_cz ? 'Recenze' : 'Reviews';
+}
+add_filter( 'ngettext', 'molosoc_product_364_reviews_title_ngettext', 10, 5 );
