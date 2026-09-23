@@ -493,3 +493,32 @@ class TestMolosocSocialWorkflowIsolation:
         assert "MOLOSOC — Social" in body
         assert '"— Social"' not in body
         assert '"Zoe — Social"' in body
+
+    def test_molosoc_social_workflow_live_check_does_not_use_the_bare_nav_label(self):
+        """Bare "Social" is the shared navigation's tab label
+        (trafficdom_design.REPORTS), present on every rendered report page
+        whether or not that tab is live — it cannot tell a real publish of
+        this report from a stale or wrong page returned with HTTP 200. The
+        "Verify the page is live" step for
+        https://trafficdom.com/reports/molosoc/social/ must use the same
+        unconditional "MOLOSOC — Social" identity marker already required
+        from the downloaded artifact, not the bare nav label."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        blocks = body.split("with:")[1:]
+        found = False
+        for block in blocks:
+            lines = block.splitlines()[1:12]
+            fields = {}
+            for line in lines:
+                stripped = line.strip()
+                if ":" not in stripped:
+                    break
+                key, _, value = stripped.partition(":")
+                fields[key.strip()] = value.strip()
+            if fields.get("url") == "https://trafficdom.com/reports/molosoc/social/":
+                assert fields.get("marker") == "MOLOSOC — Social", (
+                    f"live-check marker is {fields.get('marker')!r} — bare "
+                    "'Social' is the nav label present on every report page"
+                )
+                found = True
+        assert found, "MOLOSOC Social's own 'Verify the page is live' step was not found"

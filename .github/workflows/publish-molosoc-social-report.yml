@@ -209,11 +209,17 @@ jobs:
           python3 automations/analytics/publish_dashboard.py \
             --client molosoc --section social --file incoming/index.html
 
+      # Bare "Social" is the shared nav's tab label, present on every report
+      # page whether or not that tab is live, so it cannot tell a real publish
+      # from a stale or wrong page returned with HTTP 200. The unconditional
+      # "MOLOSOC — Social" title — the same identity marker already required
+      # above from the downloaded artifact — is what actually proves this is
+      # the report.
       - name: Verify the page is live
         uses: ./.github/actions/verify-report
         with:
           url: https://trafficdom.com/reports/molosoc/social/
-          marker: Social
+          marker: MOLOSOC — Social
           label: the MOLOSOC Social report
           expect-sha256: ${{ inputs.sha256 }}
           user: ${{ secrets.REPORT_BASIC_AUTH_USER }}
