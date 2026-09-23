@@ -179,6 +179,20 @@ function molosoc_home_card_variant() {
 	return true;
 }
 
+/**
+ * Whether the global sticky "Buy now" CTA (GitHub Issue #73) should be
+ * hidden on the current request. Shared between molosoc_enqueue_assets()
+ * (which enqueues sticky-cta.js) and the wp_head hook below (which prints
+ * the window.molosocStickyCta data that file reads), so the two can never
+ * drift apart on which pages get the pill.
+ */
+function molosoc_sticky_cta_hidden() {
+	return ( function_exists( 'is_cart' ) && is_cart() )
+		|| ( function_exists( 'is_checkout' ) && is_checkout() )
+		|| ( function_exists( 'is_product' ) && is_product() )
+		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
+}
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
@@ -232,6 +246,27 @@ function molosoc_enqueue_assets() {
 	// it jumps instantly instead of smooth-scrolling back through the
 	// scroll animations). Unconditional: every page benefits.
 	wp_enqueue_script( 'molosoc-back-to-top', $theme_uri . '/assets/js/back-to-top.js', array(), $theme_version, true );
+
+	// Global bilingual sticky "Buy now" CTA — GitHub Issue #73. Hidden on
+	// Cart/Checkout (is_cart()/is_checkout() already resolve through the CZ
+	// kosik/pokladna filters in inc/woocommerce-lang.php, so this covers
+	// both languages with no separate slug check), on the single product
+	// page itself, and on the 'moisture-lock-foot-cover'/
+	// 'hydratacni-navlek-na-nohy' Pages — all three already have their own
+	// purchase CTAs (the hero's price+CTA row on desktop and
+	// .molosoc-sticky-buy on mobile, product.css) — so a second sticky buy
+	// pill there would duplicate and visually overlap them. The Page pair
+	// needs an explicit is_page() check because is_product() is false for
+	// them: they're regular WordPress Pages, not the WooCommerce product
+	// page (same is_page() convention used elsewhere in this file for
+	// slugs whose Czech translation isn't auto-matched).
+	//
+	// The window.molosocStickyCta data itself is NOT set here via
+	// wp_add_inline_script — see the wp_head hook below (molosoc_sticky_cta_hidden())
+	// for why.
+	if ( ! molosoc_sticky_cta_hidden() ) {
+		wp_enqueue_script( 'molosoc-sticky-cta', $theme_uri . '/assets/js/sticky-cta.js', array(), $theme_version, true );
+	}
 
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
@@ -359,6 +394,35 @@ function molosoc_enqueue_assets() {
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_enqueue_assets' );
+
+/**
+ * window.molosocStickyCta data for assets/js/sticky-cta.js (molosoc-sticky-cta
+ * handle, enqueued above). Printed as raw <script> markup directly on
+ * wp_head, NOT via wp_add_inline_script: WP-Optimize Minify combines this
+ * handle's file into a bundle with the site's other enqueued scripts on
+ * most pages, and silently drops any inline script attached to a bundled
+ * handle — the same gotcha documented on assets/js/scroll-refresh.js's own
+ * enqueue call above (search "Real file content, not wp_add_inline_script").
+ * Raw wp_head output is never attached to any script handle, so it survives
+ * that pipeline regardless of what gets bundled/minified together. wp_head
+ * always runs before the footer-enqueued sticky-cta.js prints and executes,
+ * so window.molosocStickyCta is set by the time that file reads it.
+ */
+add_action( 'wp_head', function () {
+	if ( molosoc_sticky_cta_hidden() ) {
+		return;
+	}
+	$lang = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
+	printf(
+		'<script>window.molosocStickyCta = %s;</script>' . "\n",
+		wp_json_encode(
+			array(
+				'url'   => molosoc_product_url( $lang ),
+				'label' => ( 'cz' === $lang ) ? 'Koupit nyní' : __( 'Buy now', 'molosoc' ),
+			)
+		)
+	);
+} );
 
 /**
  * model-viewer is an ES module, not a classic script — wp_enqueue_script()

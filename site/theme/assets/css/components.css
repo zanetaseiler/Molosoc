@@ -829,6 +829,53 @@
   }
 }
 
+/* ---------- Global sticky "Buy now" CTA ----------
+   Injected on every page by assets/js/sticky-cta.js (functions.php skips
+   enqueueing it on Cart/Checkout and the product page — see that file's
+   comment). Charcoal/warm-white pill, bottom-right, positioned to the
+   LEFT of .molosoc-back-to-top with a fixed gap so the two never overlap
+   regardless of back-to-top's own scroll-triggered visibility (it stays
+   in this same fixed slot whether shown or not, so no coordination
+   between the two scripts is needed). Lower z-index than the WPConsent
+   banner's own shadow-root stacking context, so the (bottom-center,
+   near-full-width on mobile) consent card always reads on top of this
+   pill rather than being covered by it. */
+.molosoc-sticky-cta {
+  position: fixed;
+  right: calc(var(--space-s) + 2.75rem + var(--space-xs));
+  bottom: var(--space-s);
+  z-index: 55;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-ink-warm);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0.85em 1.4em;
+  border-radius: 999px;
+  box-shadow: var(--shadow-soft);
+  transition: background-color 250ms ease, box-shadow 250ms ease, transform 250ms ease;
+}
+
+.molosoc-sticky-cta:hover {
+  background: var(--color-ink);
+  box-shadow: var(--shadow-lift);
+}
+
+@media (max-width: 760px) {
+  .molosoc-sticky-cta {
+    right: calc(var(--space-xs) + 2.5rem + var(--space-2xs));
+    bottom: var(--space-xs);
+    padding: 0.7em 1.1em;
+    font-size: 0.75rem;
+  }
+}
+
 @media (min-width: 761px) {
   /* The header is justify-content: space-between; with the cart as a
      third in-flow child that would strand the nav in the middle. The
