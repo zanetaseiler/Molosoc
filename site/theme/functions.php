@@ -236,14 +236,20 @@ function molosoc_enqueue_assets() {
 	// Global bilingual sticky "Buy now" CTA — GitHub Issue #73. Hidden on
 	// Cart/Checkout (is_cart()/is_checkout() already resolve through the CZ
 	// kosik/pokladna filters in inc/woocommerce-lang.php, so this covers
-	// both languages with no separate slug check) and on the single product
-	// page itself, which already has its own purchase CTAs — the hero's
-	// price+CTA row on desktop and .molosoc-sticky-buy on mobile
-	// (product.css) — so a second sticky buy pill there would duplicate and
-	// visually overlap them.
+	// both languages with no separate slug check), on the single product
+	// page itself, and on the 'moisture-lock-foot-cover'/
+	// 'hydratacni-navlek-na-nohy' Pages — all three already have their own
+	// purchase CTAs (the hero's price+CTA row on desktop and
+	// .molosoc-sticky-buy on mobile, product.css) — so a second sticky buy
+	// pill there would duplicate and visually overlap them. The Page pair
+	// needs an explicit is_page() check because is_product() is false for
+	// them: they're regular WordPress Pages, not the WooCommerce product
+	// page (same is_page() convention used elsewhere in this file for
+	// slugs whose Czech translation isn't auto-matched).
 	$molosoc_hide_sticky_cta = ( function_exists( 'is_cart' ) && is_cart() )
 		|| ( function_exists( 'is_checkout' ) && is_checkout() )
-		|| ( function_exists( 'is_product' ) && is_product() );
+		|| ( function_exists( 'is_product' ) && is_product() )
+		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
 
 	if ( ! $molosoc_hide_sticky_cta ) {
 		$molosoc_cta_lang = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
