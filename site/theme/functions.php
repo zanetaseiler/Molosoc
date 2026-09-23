@@ -233,6 +233,35 @@ function molosoc_enqueue_assets() {
 	// scroll animations). Unconditional: every page benefits.
 	wp_enqueue_script( 'molosoc-back-to-top', $theme_uri . '/assets/js/back-to-top.js', array(), $theme_version, true );
 
+	// Global bilingual sticky "Buy now" CTA — GitHub Issue #73. Hidden on
+	// Cart/Checkout (is_cart()/is_checkout() already resolve through the CZ
+	// kosik/pokladna filters in inc/woocommerce-lang.php, so this covers
+	// both languages with no separate slug check) and on the single product
+	// page itself, which already has its own purchase CTAs — the hero's
+	// price+CTA row on desktop and .molosoc-sticky-buy on mobile
+	// (product.css) — so a second sticky buy pill there would duplicate and
+	// visually overlap them.
+	$molosoc_hide_sticky_cta = ( function_exists( 'is_cart' ) && is_cart() )
+		|| ( function_exists( 'is_checkout' ) && is_checkout() )
+		|| ( function_exists( 'is_product' ) && is_product() );
+
+	if ( ! $molosoc_hide_sticky_cta ) {
+		$molosoc_cta_lang = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
+		wp_enqueue_script( 'molosoc-sticky-cta', $theme_uri . '/assets/js/sticky-cta.js', array(), $theme_version, true );
+		// window.molosocStickyCta, plain object like window.molosocLang above,
+		// read by the injected-markup script before it builds the pill.
+		wp_add_inline_script(
+			'molosoc-sticky-cta',
+			'window.molosocStickyCta = ' . wp_json_encode(
+				array(
+					'url'   => molosoc_product_url( $molosoc_cta_lang ),
+					'label' => ( 'cz' === $molosoc_cta_lang ) ? 'Koupit nyní' : __( 'Buy now', 'molosoc' ),
+				)
+			) . ';',
+			'before'
+		);
+	}
+
 	if ( is_front_page() ) {
 		wp_enqueue_style( 'molosoc-homepage', $theme_uri . '/assets/css/homepage.css', array( 'molosoc-components' ), $theme_version );
 		// motion.js stays on for BOTH variants: it is what adds .is-visible
