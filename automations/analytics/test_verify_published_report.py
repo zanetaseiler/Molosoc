@@ -481,3 +481,15 @@ class TestMolosocSocialWorkflowIsolation:
         assert "schedule:" not in body
         assert "workflow_run:" not in body
         assert 'if [ "$CONFIRM" != "publish" ]' in body
+
+    def test_molosoc_social_workflow_rejects_zoes_artifact_by_title_alone(self):
+        """`artifact`/`run_id` are editable dispatch inputs, so an operator
+        could point this run at Zoe's Social artifact instead of MOLOSOC's.
+        Both reports share the client-agnostic "— Social" title suffix, so
+        the identity check must require MOLOSOC's own "MOLOSOC — Social"
+        title — not the bare suffix Zoe's report satisfies too — and must
+        explicitly refuse Zoe's title as a negative marker."""
+        body = self._uncommented(self.WORKFLOWS / self.MOLOSOC_WORKFLOW)
+        assert "MOLOSOC — Social" in body
+        assert '"— Social"' not in body
+        assert '"Zoe — Social"' in body

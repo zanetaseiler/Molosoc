@@ -146,16 +146,24 @@ jobs:
           # state Zoe's report always shows) — unlike a state-specific
           # sentence, this can never go stale as the report's own data state
           # changes.
-          if ! grep -qi -- "— Social" incoming/index.html; then
-            echo "::error::index.html does not look like a TrafficDom Social report"
+          #
+          # `artifact` (and `run_id`) are editable workflow_dispatch inputs,
+          # so an operator could point this run at Zoe's Social artifact by
+          # mistake. Both reports share the client-agnostic "— Social" title
+          # suffix, so checking for that alone would accept either one; the
+          # check below requires MOLOSOC's own "MOLOSOC — Social" title, and
+          # the negative list explicitly names Zoe's title too, so a Zoe
+          # artifact is refused rather than silently published as MOLOSOC's.
+          if ! grep -qi -- "MOLOSOC — Social" incoming/index.html; then
+            echo "::error::index.html does not look like the MOLOSOC Social report"
             head -c 400 incoming/index.html
             exit 1
           fi
           for other in "Weekly Marketing Analysis" "Growth Report" \
                       "Email Marketing Report" "— Paid Ads" "— Overview" \
-                      "What happened this week"; do
+                      "What happened this week" "Zoe — Social"; do
             if grep -qi -- "$other" incoming/index.html; then
-              echo "::error::index.html looks like a different report ($other), not Social"
+              echo "::error::index.html looks like a different report ($other), not the MOLOSOC Social report"
               exit 1
             fi
           done
