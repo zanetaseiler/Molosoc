@@ -1121,9 +1121,16 @@ add_filter( 'woocommerce_product_single_add_to_cart_text', 'molosoc_cz_single_ad
  * rather than guessing at WooCommerce's internal _n()/sprintf() string
  * shape. $products is the [product_id => qty] array the notice covers;
  * only rewritten when product 364 is in it.
+ *
+ * For the normal variable-product form submission, WooCommerce builds
+ * this message from WC_Form_Handler::add_to_cart_action() on
+ * `wp_loaded`, before the main query has run — so is_product() (and
+ * therefore molosoc_is_cz_product_364()) is never true yet on this
+ * exact path. Gate directly on the Czech request language and the
+ * supplied $products IDs instead of the singular-page conditional.
  */
 function molosoc_cz_add_to_cart_message( $message, $products ) {
-	if ( ! molosoc_is_cz_product_364() ) {
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
 		return $message;
 	}
 	if ( ! is_array( $products ) || ! array_key_exists( MOLOSOC_PRODUCT_ID, $products ) ) {
@@ -1198,15 +1205,18 @@ add_filter( 'woocommerce_product_tabs', 'molosoc_cz_product_tabs', 100 );
 
 /**
  * Remaining core WooCommerce strings on this page with no equally
- * precise dedicated filter (the quantity input's screen-reader label,
- * the "Related products" section heading, and the category/tag lines in
- * single-product/meta.php — the last two are JUDGMENT CALL: whether this
- * product actually has visible categories/tags assigned wasn't
- * confirmable from this sandbox; the SKU line itself is already fully
- * disabled site-wide via wc_product_sku_enabled above, so no SKU string
- * needs covering here). Scoped to the 'woocommerce' text domain AND
+ * precise dedicated filter (the quantity input's screen-reader label and
+ * the "Related products" section heading — the category/tag lines are
+ * handled separately below, via `ngettext`, since WooCommerce renders
+ * them through `_n()`). Scoped to the 'woocommerce' text domain AND
  * molosoc_is_cz_product_364() (is_product() + this exact post), so it
  * can never translate an unrelated page's identical WooCommerce string.
+ *
+ * The quantity label has two source forms depending on whether a
+ * product name is available to the template: the plain 'Quantity'
+ * string, or the formatted '%s quantity' string with the product name
+ * substituted in afterward via sprintf() — both are mapped here, and the
+ * '%s' placeholder is preserved so the substitution still works.
  */
 function molosoc_cz_woocommerce_gettext( $translation, $text, $domain ) {
 	if ( 'woocommerce' !== $domain || ! molosoc_is_cz_product_364() ) {
@@ -1214,11 +1224,35 @@ function molosoc_cz_woocommerce_gettext( $translation, $text, $domain ) {
 	}
 	$map = array(
 		'Quantity'          => 'Množství',
+		'%s quantity'       => 'Množství: %s',
 		'Related products'  => 'Podobné produkty',
-		'Category:'         => 'Kategorie:',
-		'Categories:'       => 'Kategorie:',
-		'Tags:'             => 'Štítky:',
 	);
 	return isset( $map[ $text ] ) ? $map[ $text ] : $translation;
 }
 add_filter( 'gettext', 'molosoc_cz_woocommerce_gettext', 10, 3 );
+
+/**
+ * Category:/Categories: and Tag:/Tags: labels in single-product/meta.php.
+ * WooCommerce obtains these through _n( $single, $plural, $count,
+ * 'woocommerce' ), which WordPress routes through the `ngettext` filter,
+ * not `gettext` — so they need their own handler, matched on the exact
+ * singular/plural source pair rather than an already-translated string.
+ * Same product/language gate as the map above. JUDGMENT CALL: whether
+ * this product actually has visible categories/tags assigned wasn't
+ * confirmable from this sandbox; this is a no-op if they're not shown.
+ */
+function molosoc_cz_woocommerce_ngettext( $translation, $single, $plural, $number, $domain ) {
+	if ( 'woocommerce' !== $domain || ! molosoc_is_cz_product_364() ) {
+		return $translation;
+	}
+	$map = array(
+		'Category:|Categories:' => array( 'Kategorie:', 'Kategorie:' ),
+		'Tag:|Tags:'            => array( 'Štítek:', 'Štítky:' ),
+	);
+	$key = $single . '|' . $plural;
+	if ( ! isset( $map[ $key ] ) ) {
+		return $translation;
+	}
+	return 1 === (int) $number ? $map[ $key ][0] : $map[ $key ][1];
+}
+add_filter( 'ngettext', 'molosoc_cz_woocommerce_ngettext', 10, 5 );
