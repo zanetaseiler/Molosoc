@@ -1,5 +1,12 @@
 name: Santiago READY trigger
 
+# Claude -> Santiago handoff. A READY_FOR_SANTIAGO comment on a PR (or the
+# READY_FOR_SANTIAGO label) wakes Codex by posting "@codex review" as the
+# repository owner. All parsing lives in .github/scripts/harness_handoff.py
+# (offline-tested in tests/isolation/test_harness_handoff.py); a rejected
+# handoff posts HANDOFF_IGNORED with the reason instead of exiting silently.
+# See docs/HARNESS_TEMPLATE.md.
+
 on:
   pull_request:
     types: [labeled]
@@ -8,6 +15,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 concurrency:
   group: santiago-ready-${{ github.event.pull_request.number || github.event.issue.number }}
@@ -17,51 +26,27 @@ jobs:
   handoff-to-codex-review:
     if: >-
       (github.event_name == 'pull_request' && github.event.label.name == 'READY_FOR_SANTIAGO') ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null && github.event.comment.user.login == github.repository_owner && startsWith(github.event.comment.body, 'READY_FOR_SANTIAGO'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, 'READY_FOR_SANTIAGO'))
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Validate handoff and wake Codex as Zaneta
+      - name: Checkout this repository's own trusted default-branch code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate handoff and wake Codex as the owner
         env:
-          GH_TOKEN: ${{ secrets.SANTIAGO_CODEX_BRIDGE_TOKEN }}
-          REPO: ${{ github.repository }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-          COMMENT_BODY: ${{ github.event.comment.body || '' }}
+          GH_TOKEN: ${{ github.token }}
+          CODEX_WAKE_TOKEN: ${{ secrets.SANTIAGO_CODEX_BRIDGE_TOKEN }}
+          # The one human allowed to hand off. Never the repository owner:
+          # for an organization repo that is the org, not a person.
+          AUTHORIZED_HUMAN: ${{ vars.HARNESS_HUMAN_LOGIN }}
         run: |
-          set -euo pipefail
-
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "SANTIAGO_CODEX_BRIDGE_TOKEN is not configured" >&2
-            exit 1
-          fi
-
-          current_head="$(gh api "repos/${REPO}/pulls/${PR_NUMBER}" --jq '.head.sha')"
-          if [[ ! "${current_head}" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Could not resolve current PR head" >&2
-            exit 1
-          fi
-
-          if [[ "${EVENT_NAME}" == "issue_comment" ]]; then
-            first_nonblank="$(printf '%s\n' "${COMMENT_BODY}" | sed '/^[[:space:]]*$/d' | head -n1 | xargs)"
-            if [[ "${first_nonblank}" != "READY_FOR_SANTIAGO" ]]; then
-              echo "Ignoring non-handoff comment."
-              exit 0
-            fi
-
-            claimed_head="$(printf '%s\n' "${COMMENT_BODY}" | sed -nE 's/.*exact head commit SHA:[[:space:]]*`?([0-9a-f]{7,40})`?.*/\1/p' | head -n1)"
-            if [[ -z "${claimed_head}" ]]; then
-              echo "Ignoring READY_FOR_SANTIAGO without an exact-head claim."
-              exit 0
-            fi
-            if [[ "${current_head}" != "${claimed_head}"* ]]; then
-              echo "Ignoring stale READY_FOR_SANTIAGO: ${claimed_head} != ${current_head}"
-              exit 0
-            fi
-          fi
-
-          gh api \
-            --method POST \
-            "repos/${REPO}/issues/${PR_NUMBER}/comments" \
-            -f body='@codex review' >/dev/null
-
-          echo "Posted @codex review using SANTIAGO_CODEX_BRIDGE_TOKEN for PR #${PR_NUMBER} at ${current_head}."
+          python3 .github/scripts/harness_handoff.py \
+            --human "${AUTHORIZED_HUMAN:-zanetaseiler}" \
+            --repo "${{ github.repository }}" \
+            --number "${{ github.event.pull_request.number || github.event.issue.number }}" \
+            ${{ github.event_name == 'pull_request' && '--label-event' || '' }}
