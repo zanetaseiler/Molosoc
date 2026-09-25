@@ -15,11 +15,9 @@ concurrency:
 
 jobs:
   verify:
-    # Keep the expression gate deliberately simple. The script below validates
-    # actor, clean-review wording, reviewed SHA, and current PR head.
     if: github.event.issue.pull_request != null
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 30
     steps:
       - name: Validate clean Codex review against current head
         id: validate
@@ -41,9 +39,6 @@ jobs:
               return;
             }
 
-            // Codex currently renders the reviewed commit line as Markdown:
-            // **Reviewed commit:** `abcdef1234`
-            // Accept that form plus the earlier reversed wording.
             const reviewed = (
               body.match(/Reviewed commit:\*{0,2}\s*`?([0-9a-f]{7,40})`?/i) ||
               body.match(/Commit reviewed:\*{0,2}\s*`?([0-9a-f]{7,40})`?/i) ||
@@ -57,15 +52,9 @@ jobs:
 
             const { owner, repo } = context.repo;
             const pull_number = context.issue.number;
-            const { data: pr } = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number,
-            });
-
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number });
             const currentHead = pr.head.sha.toLowerCase();
             const reviewedHead = reviewed.toLowerCase();
-            core.info(`Codex reviewed ${reviewedHead}; current PR head is ${currentHead}.`);
 
             if (!currentHead.startsWith(reviewedHead)) {
               core.info(`Ignoring stale clean review: ${reviewedHead} != ${currentHead}.`);
@@ -90,7 +79,7 @@ jobs:
             core.setOutput("valid", "true");
             core.setOutput("head_sha", currentHead);
 
-      - name: Record VERIFIED and stop at human merge gate
+      - name: Record VERIFIED
         if: steps.validate.outputs.valid == 'true'
         uses: actions/github-script@v8
         env:
@@ -109,12 +98,7 @@ jobs:
               }
             }
 
-            await github.rest.issues.addLabels({
-              owner,
-              repo,
-              issue_number,
-              labels: ["VERIFIED"],
-            });
+            await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ["VERIFIED"] });
 
             const body = [
               "VERIFIED",
@@ -122,15 +106,33 @@ jobs:
               `- exact head commit SHA: \`${head}\``,
               "- reviewer: Santiago/Codex",
               "- result: Codex found no major issues on this exact head",
-              "- next: human merge gate; no merge performed",
+              "- next: automatic merge once every check on this head has passed",
               `- marker: VERIFIED:${head}`,
             ].join("\n");
 
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number,
-              body,
-            });
-
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
             core.info(`Recorded VERIFIED for PR #${issue_number} @ ${head}.`);
+
+      # Žaneta's standing decision (2026-09-25): a VERIFIED PR merges without
+      # waiting for her. The script pins the VERIFIED SHA, waits for checks,
+      # skips HOLD/draft/conflicted PRs and posts MERGED or AUTO_MERGE_SKIPPED.
+      # It merges with the owner's token so push-triggered workflows still run.
+      - name: Checkout this repository's own trusted default-branch code
+        if: steps.validate.outputs.valid == 'true'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Merge the VERIFIED head automatically
+        if: steps.validate.outputs.valid == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_TOKEN: ${{ secrets.SANTIAGO_CODEX_BRIDGE_TOKEN }}
+          HEAD_SHA: ${{ steps.validate.outputs.head_sha }}
+        run: |
+          python3 .github/scripts/harness_automerge.py \
+            --repo "${{ github.repository }}" \
+            --number "${{ github.event.issue.number }}" \
+            --head "$HEAD_SHA"
