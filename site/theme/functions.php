@@ -1614,7 +1614,7 @@ function molosoc_cz_schema() {
 		<?php
 	} elseif ( is_page( 'navleky-na-nohy' ) ) {
 		?>
-		<meta name="description" content="Většina masek na nohy je na jedno použití — návlek Molosoc je na stovky. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.">
+		<meta name="description" content="Většina masek na nohy je na jedno použití — návlek Molosoc vydrží alespoň 10 použití. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.">
 		<script type="application/ld+json">
 		{
 		  "@context": "https://schema.org",
@@ -1624,7 +1624,7 @@ function molosoc_cz_schema() {
 		      "@id": "https://molosoc.com/cz/navleky-na-nohy/#webpage",
 		      "url": "https://molosoc.com/cz/navleky-na-nohy/",
 		      "name": "Návleky na nohy | Hydratační návlek na nohy — Molosoc",
-		      "description": "Většina masek na nohy je na jedno použití — návlek Molosoc je na stovky. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.",
+		      "description": "Většina masek na nohy je na jedno použití — návlek Molosoc vydrží alespoň 10 použití. Funguje s krémem, který už doma máte: návlek zapečetí vlhkost, výběr krému zůstává na vás.",
 		      "isPartOf": { "@id": "https://molosoc.com/#website" },
 		      "about": { "@id": "https://molosoc.com/#organization" },
 		      "inLanguage": "cs"

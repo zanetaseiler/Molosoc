@@ -7,7 +7,7 @@
 
 ## H1: Reusable foot covers that lock moisture in — not just once
 
-Most foot masks on the shelf are built for one wear. Molosoc's cover is built for hundreds.
+Most foot masks on the shelf are built for one wear. Molosoc's cover is built for at least 10.
 
 ---
 
