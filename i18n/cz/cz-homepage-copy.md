@@ -48,7 +48,7 @@ Takhle Molosoc pomáhá už dnes. [Poznejte návlek na nohy →](https://molosoc
  
 ---
  
-## H2: Alternativa, kterou můžete používat pořád dokola
+## H2: Alternativa na opakované použití
  
 ### H3: Co je hydratační návlek na nohy?
 Ne každá maska na nohy funguje stejně. Tady je ta, které Molosoc věří. [Zjistit jak to funguje →](https://molosoc.com/cz/navleky-na-nohy/)

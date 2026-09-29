@@ -402,7 +402,7 @@ $molosoc_home_card = molosoc_home_card_variant();
 		</div>
 		<div class="molosoc-final-cta__scrim"></div>
 		<div class="molosoc-section__inner molosoc-reveal" style="text-align:center;">
-			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa, kterou můžete používat pořád dokola' : __( 'The reusable alternative', 'molosoc' ) ); ?></p>
+			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);"><?php echo esc_html( $molosoc_is_cz ? 'Alternativa na opakované použití' : __( 'The reusable alternative', 'molosoc' ) ); ?></p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Co je hydratační návlek na nohy?' : __( 'What is a moisture-lock foot cover?', 'molosoc' ) ); ?></h2>
 			<p><?php echo esc_html( $molosoc_is_cz ? 'Ne každá maska na nohy funguje stejně. Tady je ta, které Molosoc věří.' : __( "Not every foot mask works the same way. Here's the one Molosoc believes in.", 'molosoc' ) ); ?></p>
 			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/' ) : home_url( '/foot-covers/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Zjistit jak to funguje' : __( 'See how it works', 'molosoc' ) ); ?></a>
