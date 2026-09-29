@@ -52,6 +52,7 @@ GROWTH_DIR = f"{BASE}/molosoc/growth"
 EMAIL_DIR = f"{BASE}/molosoc/email-marketing"
 MOLOSOC_ANALYTICS_SECTION_DIR = f"{BASE}/molosoc/analytics"
 MOLOSOC_PAID_DIR = f"{BASE}/molosoc/paid"
+MOLOSOC_FINANCE_DIR = f"{BASE}/molosoc/finance"
 MOLOSOC_SOCIAL_DIR = f"{BASE}/molosoc/social"
 ZOE_DIR = f"{BASE}/zoe"
 ZOE_SOCIAL_DIR = f"{BASE}/zoe/social"
@@ -83,7 +84,7 @@ def test_the_allowed_clients_are_exactly_molosoc_and_zoe():
 
 def test_the_allowed_sections_are_scoped_per_client():
     assert pub.ALLOWED_SECTIONS == {
-        "molosoc": ("growth", "email-marketing", "analytics", "paid", "social"),
+        "molosoc": ("growth", "email-marketing", "analytics", "paid", "social", "finance"),
         "zoe": ("social",),
     }
 
@@ -101,6 +102,8 @@ def test_a_section_valid_for_one_client_is_refused_for_another():
         pub.expected_tail("growth", client="zoe")
     with pytest.raises(pub.PublishError):
         pub.expected_tail("paid", client="zoe")
+    with pytest.raises(pub.PublishError):
+        pub.expected_tail("finance", client="zoe")
 
 
 def test_the_shared_section_name_social_is_valid_for_both_clients():
@@ -479,3 +482,96 @@ def test_nothing_is_ever_deleted_or_renamed():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+# --------------------------------------------------------------------------
+# Finance (Issue #86): one more fixed section, same guards
+# --------------------------------------------------------------------------
+
+def test_the_finance_section_resolves_alongside_its_molosoc_siblings():
+    assert pub.expected_tail("finance") == ("molosoc", "finance")
+    assert pub.resolve_remote_dir(BASE, "finance") == MOLOSOC_FINANCE_DIR
+    assert pub.public_url("finance") == "https://trafficdom.com/reports/molosoc/finance/"
+
+
+def test_finance_is_only_a_molosoc_section():
+    assert "finance" not in pub.ALLOWED_SECTIONS["zoe"]
+    assert pub.parse_args(["--section", "finance"]).section == "finance"
+
+
+def test_finance_is_a_closed_choice_not_a_free_path():
+    with pytest.raises(SystemExit):
+        pub.parse_args(["--section", "finance/../analytics"])
+
+
+def test_the_location_check_passes_on_the_finance_directory():
+    sftp = FakeSFTP(cwd=MOLOSOC_FINANCE_DIR)
+    assert pub.verify_location(sftp, MOLOSOC_FINANCE_DIR, "finance") == MOLOSOC_FINANCE_DIR
+
+
+def test_the_upload_is_abandoned_if_the_server_puts_us_in_paid_instead_of_finance():
+    sftp = FakeSFTP(cwd=MOLOSOC_PAID_DIR)
+    with pytest.raises(pub.PublishError):
+        pub.verify_location(sftp, MOLOSOC_FINANCE_DIR, "finance")
+    assert not sftp.stored
+
+
+def test_finance_is_created_inside_an_existing_molosoc_directory():
+    sftp = FakeSFTP(cwd="/", dirs={ANALYTICS_DIR})
+    entered = pub.enter_remote_dir(sftp, MOLOSOC_FINANCE_DIR, section="finance")
+    assert entered == MOLOSOC_FINANCE_DIR
+    assert sftp.made == [MOLOSOC_FINANCE_DIR]
+
+
+def test_finance_is_refused_when_molosoc_does_not_exist():
+    sftp = FakeSFTP(cwd="/", dirs=set())
+    with pytest.raises(pub.PublishError):
+        pub.enter_remote_dir(sftp, MOLOSOC_FINANCE_DIR, section="finance")
+    assert sftp.made == []
+
+
+# --------------------------------------------------------------------------
+# The Finance publish workflow: shape and guards
+# --------------------------------------------------------------------------
+
+def _finance_workflow():
+    import pathlib
+    root = pathlib.Path(__file__).resolve().parents[2]
+    return (root / ".github/workflows/publish-finance-report.yml").read_text()
+
+
+def test_the_finance_workflow_is_manual_only_and_confirmed():
+    wf = _finance_workflow()
+    assert "workflow_dispatch:" in wf
+    for trigger in ("schedule:", "push:", "pull_request:", "workflow_run:"):
+        assert trigger not in wf
+    assert '"publish"' in wf and "confirm:" in wf
+
+
+def test_the_finance_workflow_takes_the_finance_artifact_and_shape_checks_it():
+    wf = _finance_workflow()
+    assert "default: finance-report-molosoc" in wf
+    assert "repository: zanetaseiler/trafficdom-growth-engine" in wf
+    assert "secrets.GROWTH_ENGINE_ARTIFACT_TOKEN" in wf
+    assert '"$COUNT" != "1"' in wf
+    assert "[ ! -s incoming/index.html ]" in wf
+    assert 'grep -qi "— Finance" incoming/index.html' in wf
+    for other in ("Growth Report", "Weekly Analytics", "— Paid Ads"):
+        assert other in wf
+
+
+def test_the_finance_workflow_dry_runs_before_publishing_only_finance():
+    wf = _finance_workflow()
+    dry = wf.index("--client molosoc --section finance --file incoming/index.html --dry-run")
+    live = wf.index("--client molosoc --section finance --file incoming/index.html\n", dry)
+    assert dry < live
+    assert "--section growth" not in wf and "--section paid" not in wf
+    assert "--directory" not in wf
+    assert "https://trafficdom.com/reports/molosoc/finance/" in wf
+
+
+def test_the_finance_workflow_rechecks_existing_pages_after_publishing():
+    wf = _finance_workflow()
+    after = wf[wf.index("Verify the page is live"):]
+    for url in ("/reports/molosoc/\n", "/reports/molosoc/analytics/", "/reports/molosoc/growth/"):
+        assert url in after.replace("\r", "")
