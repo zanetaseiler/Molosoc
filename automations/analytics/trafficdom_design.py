@@ -1,7 +1,7 @@
 """
 The TrafficDom reporting design system — VENDORED, DO NOT EDIT.
 
-Generated from the Growth Engine at fingerprint de0dc666b517baf1.
+Generated from the Growth Engine at fingerprint 48a4acc6158f6fcf.
 Regenerate with:
 
     python3 -m growth_engine design --export <this file>
@@ -16,7 +16,7 @@ what THIS report says, edit the report — the components take labels and data,
 and none of the wording is in here.
 """
 
-DESIGN_FINGERPRINT = "de0dc666b517baf1"
+DESIGN_FINGERPRINT = "48a4acc6158f6fcf"
 
 """
 The heading typeface, carried in the page rather than fetched by it.
@@ -1836,6 +1836,10 @@ REPORTS = (
     ("paid", "paid", "Paid"),
     ("cro", "cro", "CRO"),
     ("retention", "retention", "Retention"),
+    # ADR 0107: the read-only Finance view (owner dashboard first).
+    # Never in LIVE_REPORTS' default; a client's Finance tab is a link only
+    # when its renderer passes it in `live`.
+    ("finance", "finance", "Finance"),
 )
 
 #: The default live set, used whenever a caller does not supply its own —
@@ -2266,4 +2270,4 @@ def footer(theme=TRAFFICDOM, statement=None):
 # sha256 of every byte above this marker, first 16 hex characters. A consumer
 # splits on the marker, hashes what precedes it, and compares — needing to know
 # nothing about how this file was assembled.
-CONTENT_HASH = "9071ca42c709ed7b"
+CONTENT_HASH = "3f92ffed7059be21"

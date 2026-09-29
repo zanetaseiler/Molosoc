@@ -106,7 +106,7 @@ ALLOWED_CLIENTS = ("molosoc", "zoe")
 #: MOLOSOC: Analytics itself sits at the client root (no section) and is
 #: never written by a sectioned run — with `--section` set, the path check
 #: REFUSES a destination ending in `molosoc` alone. `growth`, `email-
-#: marketing`, `analytics`, `paid` and `social` are its five siblings, all
+#: marketing`, `analytics`, `paid`, `social` and `finance` are its six siblings, all
 #: published by this same script, over the same connection, with the same
 #: guards — deliberately, rather than by a second publisher that would have
 #: to re-earn all of them. (`analytics` exists so the Analytics report can
@@ -120,12 +120,15 @@ ALLOWED_CLIENTS = ("molosoc", "zoe")
 #: Social Analyst D1, unchanged, at `molosoc/social/` — see
 #: publish-molosoc-social-report.yml. It is a section distinct from ZOE's
 #: own `social` below: the client segment they are appended to is never
-#: shared, so the two can never resolve to the same directory.)
+#: shared, so the two can never resolve to the same directory. `finance`
+#: publishes the read-only owner-dashboard Finance report the Growth
+#: Engine's `molosoc-finance-report.yml` renders (ADR 0107 there), at
+#: `molosoc/finance/` — see publish-finance-report.yml.)
 #:
 #: ZOE: only `social` exists, because only the Social report is live for
 #: this client — see that repository's own `clients/zoe/channels.toml`.
 ALLOWED_SECTIONS = {
-    "molosoc": ("growth", "email-marketing", "analytics", "paid", "social"),
+    "molosoc": ("growth", "email-marketing", "analytics", "paid", "social", "finance"),
     "zoe": ("social",),
 }
 
