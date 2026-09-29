@@ -129,10 +129,11 @@ jobs:
 
           # The identity check uses the page's own title, which the Growth
           # Engine's finance_html.py renders unconditionally
-          # ("<client> — Finance | TrafficDom") — unlike a data-specific
+          # ("<client> — Finance | TrafficDom"), so the client name is matched too and a
+          # wrong-client Finance artifact is rejected — unlike a data-specific
           # sentence, this can never go stale as the figures change.
-          if ! grep -qi "— Finance" incoming/index.html; then
-            echo "::error::index.html does not look like a TrafficDom Finance report"
+          if ! grep -qi "MOLOSOC — Finance" incoming/index.html; then
+            echo "::error::index.html does not look like the MOLOSOC Finance report"
             head -c 400 incoming/index.html
             exit 1
           fi
@@ -190,7 +191,7 @@ jobs:
         uses: ./.github/actions/verify-report
         with:
           url: https://trafficdom.com/reports/molosoc/finance/
-          marker: "— Finance"
+          marker: "MOLOSOC — Finance"
           label: the MOLOSOC Finance report
           expect-sha256: ${{ inputs.sha256 }}
           user: ${{ secrets.REPORT_BASIC_AUTH_USER }}

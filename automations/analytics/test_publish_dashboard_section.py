@@ -555,7 +555,8 @@ def test_the_finance_workflow_takes_the_finance_artifact_and_shape_checks_it():
     assert "secrets.GROWTH_ENGINE_ARTIFACT_TOKEN" in wf
     assert '"$COUNT" != "1"' in wf
     assert "[ ! -s incoming/index.html ]" in wf
-    assert 'grep -qi "— Finance" incoming/index.html' in wf
+    assert 'grep -qi "MOLOSOC — Finance" incoming/index.html' in wf
+    assert 'marker: "MOLOSOC — Finance"' in wf
     for other in ("Growth Report", "Weekly Analytics", "— Paid Ads"):
         assert other in wf
 
