@@ -9,7 +9,7 @@ translation_of_en_slug: foot-covers
 ---
 # Návleky na nohy, které zadrží vlhkost — ne jen jednou
 
-Většina masek na nohy v obchodě je na jedno použití. Návlek od Molosoc je na stovky.
+Většina masek na nohy v obchodě je na jedno použití. Návlek od Molosoc vydrží alespoň 10 použití.
 
 ---
 
