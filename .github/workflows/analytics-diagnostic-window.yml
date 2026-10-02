@@ -1,0 +1,45 @@
+name: Analytics Diagnostic Window (manual, read-only)
+
+# Prints aggregated GA4 + stored-Clarity-history numbers for a short window
+# (Issue #96). workflow_dispatch ONLY: no push trigger, no schedule. Read-only:
+# GA4 runReport calls and GCS object reads; nothing is written anywhere and no
+# Clarity API call is made (history is read from the existing bucket).
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First day (YYYY-MM-DD)"
+        default: "2026-09-29"
+      end:
+        description: "Last day (YYYY-MM-DD), max 14 days"
+        default: "2026-10-01"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit test
+        run: python3 -m pytest automations/analytics/test_diagnostic_window.py -q
+
+      - name: Print the diagnostic window
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: python3 automations/analytics/diagnostic_window.py --start "$START" --end "$END"
