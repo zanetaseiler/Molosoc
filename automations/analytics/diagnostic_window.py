@@ -52,10 +52,13 @@ GA4_REPORTS = (
     ("Landing pages", ("landingPagePlusQueryString",), SESSION_METRICS, 40, False),
     ("Funnel events (overall)", ("eventName",), ("eventCount", "totalUsers"), 50, True),
     ("Funnel events by source / medium", ("sessionSourceMedium", "eventName"),
-     ("eventCount", "totalUsers"), 200, True),
+     ("eventCount", "totalUsers"), 1000, True),
     ("Funnel events by device", ("deviceCategory", "eventName"),
-     ("eventCount", "totalUsers"), 100, True),
+     ("eventCount", "totalUsers"), 200, True),
 )
+# Reports whose rows are grouped by their first dimension: keep the top groups
+# with ALL of their event rows, never a global top-N that drops rare stages.
+GROUPED_REPORTS = ("Funnel events by source / medium", "Funnel events by device")
 
 
 def window_dates(start, end):
@@ -112,6 +115,21 @@ def ga4_report(client, property_id, start, end, dimensions, metrics, limit,
             for r in response.rows]
 
 
+def top_groups(rows, n=TOP_N):
+    """Top n groups (first column) by total eventCount, keeping every row of each."""
+    totals = {}
+    for row in rows:
+        try:
+            totals[row[0]] = totals.get(row[0], 0) + float(row[2])
+        except (TypeError, ValueError, IndexError):
+            totals.setdefault(row[0], 0)
+    keep = set(sorted(totals, key=lambda g: -totals[g])[:n])
+    shown = [row for row in rows if row[0] in keep]
+    note = (f"\n(showing top {n} of {len(totals)} groups by eventCount, all events kept)"
+            if len(totals) > n else "")
+    return shown, note
+
+
 def run_ga4(client, property_id, start, end):
     sections, errors = [], []
     for title, dims, metrics, limit, events_only in GA4_REPORTS:
@@ -121,19 +139,33 @@ def run_ga4(client, property_id, start, end):
         except Exception as exc:  # noqa: BLE001 — reported, redacted, skipped
             errors.append(f"{title}: {describe_error(exc)}")
             continue
-        shown = rows if dims[0] == "date" else rows[:TOP_N * 4]
-        sections.append(table(f"GA4 — {title}", list(dims) + list(metrics), shown))
+        note = ""
+        if dims[0] == "date":
+            shown = rows
+        elif title in GROUPED_REPORTS:
+            shown, note = top_groups(rows)
+        else:
+            shown = rows[:TOP_N * 4]
+        if len(rows) >= limit:
+            note += f"\n(WARN: GA4 row limit {limit} reached; rows may be truncated)"
+        sections.append(table(f"GA4 — {title}", list(dims) + list(metrics), shown) + note)
     return sections, errors
 
 
 def clarity_section(store, dates):
     """Every stored Clarity fact for each day, grouped by entity type."""
-    sections, found = [], []
+    sections, found, failures = [], [], []
     for date in dates:
+        key = facts_key("clarity", date)
         try:
-            document = store.get_json(facts_key("clarity", date))
-        except StorageError:
-            sections.append(f"\n### Clarity {date}\n(no stored snapshot for this date)")
+            if not store.exists(key):
+                sections.append(f"\n### Clarity {date}\n(no stored snapshot for this date)")
+                continue
+            document = store.get_json(key)
+        except StorageError as exc:
+            # Not "missing": the read itself failed, so the day was NOT checked.
+            sections.append(f"\n### Clarity {date}\n(READ FAILED, day not checked)")
+            failures.append(f"Clarity {date} read failed: {describe_error(exc)}")
             continue
         found.append(date)
         records = document.get("records", [])
@@ -146,7 +178,7 @@ def clarity_section(store, dates):
             f"Clarity {date} — {len(records)} records (trailing-24h snapshot)",
             ["entity_type", "entity_id", "metric", "value", "sample_basis", "window_days"],
             rows))
-    return sections, found
+    return sections, found, failures
 
 
 def main(argv=None):
@@ -179,7 +211,8 @@ def main(argv=None):
     try:
         from storage_gcs import store_from_env
 
-        sections, found = clarity_section(store_from_env(), dates)
+        sections, found, read_failures = clarity_section(store_from_env(), dates)
+        failures += read_failures
         print("\n".join(sections))
         print(f"\nClarity snapshots found: {len(found)}/{len(dates)} ({', '.join(found) or 'none'})")
     except (Exception, SystemExit) as exc:  # noqa: BLE001
