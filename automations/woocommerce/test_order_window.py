@@ -97,8 +97,55 @@ def test_http_error_does_not_leak_body(monkeypatch):
     def boom(req, timeout=0):
         raise urllib.error.HTTPError(req.full_url, 401, "x", {}, io.BytesIO(b"secret body"))
 
-    monkeypatch.setattr(ow.urllib.request, "urlopen", boom)
+    monkeypatch.setattr(ow._OPENER, "open", boom)
     with pytest.raises(RuntimeError) as exc:
         ow.Client("https://x.test", "ck", "cs").get("/orders", {})
     assert "401" in str(exc.value) and "secret body" not in str(exc.value)
     assert "ck" not in str(exc.value)
+
+
+def test_clean_url_strips_userinfo():
+    out = ow.clean_url("https://name:tok3n@example.com:8443/p?utm_source=fb")
+    assert out == "example.com:8443/p?utm_source=fb"
+    assert "name" not in out and "tok3n" not in out and "@" not in out
+
+
+def test_cross_origin_redirect_is_refused_without_sending_credentials():
+    import http.server
+    import threading
+
+    seen = []
+
+    class Target(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append(self.headers.get("Authorization"))
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"[]")
+
+        def log_message(self, *a):
+            pass
+
+    target = http.server.HTTPServer(("127.0.0.1", 0), Target)
+
+    class Redirector(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(302)
+            self.send_header("Location", f"http://127.0.0.1:{target.server_port}/x")
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    redirector = http.server.HTTPServer(("127.0.0.1", 0), Redirector)
+    for srv in (target, redirector):
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        client = ow.Client(f"http://127.0.0.1:{redirector.server_port}", "ck", "cs")
+        with pytest.raises(RuntimeError) as exc:
+            client.get("/orders", {})
+        assert "302" in str(exc.value)
+        assert seen == []
+    finally:
+        for srv in (target, redirector):
+            srv.shutdown()

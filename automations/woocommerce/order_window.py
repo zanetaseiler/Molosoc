@@ -58,7 +58,15 @@ def clean_url(value):
         return parsed.path[:200]
     query = urllib.parse.parse_qs(parsed.query)
     kept = {k: query[k][0] for k in KEPT_QUERY_KEYS if k in query}
-    out = f"{parsed.netloc}{parsed.path}"
+    # Rebuild the authority from hostname + port only: netloc may carry userinfo.
+    try:
+        port = parsed.port
+    except ValueError:
+        port = None
+    host = parsed.hostname or ""
+    if ":" in host:
+        host = f"[{host}]"
+    out = f"{host}{':' + str(port) if port else ''}{parsed.path}"
     if kept:
         out += "?" + urllib.parse.urlencode(kept)
     if "fbclid" in query:
@@ -111,6 +119,16 @@ def sanitize_order(order):
     }
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Never follow redirects: urllib would forward the Authorization header."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
 class Client:
     def __init__(self, site, key, secret):
         self.base = site.rstrip("/") + "/wp-json/wc/v3"
@@ -122,7 +140,7 @@ class Client:
         url = f"{self.base}{path}?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(url, headers=self.headers, method="GET")
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with _OPENER.open(req, timeout=30) as resp:
                 return json.load(resp)
         except urllib.error.HTTPError as exc:
             # Status only: never echo the response body or the credentials.
