@@ -13,7 +13,6 @@ import argparse
 import base64
 import json
 import os
-import re
 import sys
 import urllib.error
 import urllib.parse
@@ -35,29 +34,21 @@ ATTRIBUTION_ALLOWED = (
 URL_FIELDS = ("referrer", "session_entry")
 KEPT_QUERY_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content",
                    "utm_term", "utm_id")
-SAFE_SEGMENT = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
-SAFE_VALUE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.+ -]{0,59}$")
+# Visitor-controlled text cannot be judged non-PII by its shape (a name looks like a
+# campaign label), so only values from this fixed vocabulary are ever printed.
+# Everything else is reported as present/redacted, never echoed.
+SAFE_VALUES = frozenset((
+    "fb", "facebook", "ig", "instagram", "meta", "google", "bing", "youtube", "tiktok",
+    "pinterest", "linkedin", "twitter", "x", "email", "newsletter", "sms", "direct",
+    "organic", "referral", "social", "paid", "paid_social", "cpc", "ppc", "display",
+    "affiliate", "(direct)", "(none)", "utm", "typein", "admin"))
 REDACTED = "[redacted]"
 
 
 def safe_value(value):
-    """Keep a visitor-controlled value only if it looks like a plain campaign label."""
-    text = str(value)
-    if "@" in text or not SAFE_VALUE.match(text) or re.search(r"\d{6,}", text):
-        return REDACTED
-    return text
-
-
-def safe_path(path):
-    """Keep only short lowercase slug segments; anything else (emails, ids, tokens) is masked."""
-    segs = []
-    for seg in path.split("/"):
-        if not seg or (SAFE_SEGMENT.match(seg) and not re.search(r"\d{6,}", seg)
-                       and not (len(seg) > 24 and re.search(r"\d", seg))):
-            segs.append(seg)
-        else:
-            segs.append("*")
-    return "/".join(segs)
+    """Print a visitor-controlled value only if it is in the fixed SAFE_VALUES vocabulary."""
+    text = str(value).strip()
+    return text if text.lower() in SAFE_VALUES else REDACTED
 
 
 def window_bounds(start, end):
@@ -74,12 +65,12 @@ def window_bounds(start, end):
 
 
 def clean_url(value):
-    """Reduce a URL to host + path + allowlisted utm_* params; flag fbclid presence."""
+    """Reduce a URL to host only + vocabulary-checked utm_* params; flag fbclid presence."""
     if not value or not isinstance(value, str):
         return value
     parsed = urllib.parse.urlsplit(value)
     if not parsed.scheme and not parsed.netloc:
-        return safe_path(parsed.path)[:200]
+        return REDACTED  # bare path: visitor-controlled, nothing safe to keep
     query = urllib.parse.parse_qs(parsed.query)
     kept = {k: safe_value(query[k][0]) for k in KEPT_QUERY_KEYS if k in query}
     # Rebuild the authority from hostname + port only: netloc may carry userinfo.
@@ -90,7 +81,8 @@ def clean_url(value):
     host = parsed.hostname or ""
     if ":" in host:
         host = f"[{host}]"
-    out = f"{host}{':' + str(port) if port else ''}{safe_path(parsed.path)}"
+    # The path is visitor-controlled and may hold PII; keep host (+port) only.
+    out = f"{host}{':' + str(port) if port else ''}"
     if kept:
         out += "?" + urllib.parse.urlencode(kept)
     if "fbclid" in query:

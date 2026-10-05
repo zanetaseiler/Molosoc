@@ -74,8 +74,8 @@ def test_attribution_allowlist_and_url_reduction():
     attr = ow.sanitize_order(RAW)["attribution"]
     assert attr["source_type"] == "utm" and attr["utm_medium"] == "paid"
     assert "user_agent" not in attr
-    assert attr["referrer"] == "m.facebook.com/l/"
-    assert attr["session_entry"] == "molosoc.com/cz/lp/?utm_source=fb [fbclid present]"
+    assert attr["referrer"] == "m.facebook.com"
+    assert attr["session_entry"] == "molosoc.com?utm_source=fb [fbclid present]"
 
 
 def test_fetch_orders_paginates_and_only_gets():
@@ -106,7 +106,7 @@ def test_http_error_does_not_leak_body(monkeypatch):
 
 def test_clean_url_strips_userinfo():
     out = ow.clean_url("https://name:tok3n@example.com:8443/p?utm_source=fb")
-    assert out == "example.com:8443/p?utm_source=fb"
+    assert out == "example.com:8443?utm_source=fb"
     assert "name" not in out and "tok3n" not in out and "@" not in out
 
 
@@ -154,9 +154,18 @@ def test_cross_origin_redirect_is_refused_without_sending_credentials():
 def test_clean_url_redacts_visitor_controlled_values():
     out = ow.clean_url("https://example.com/reset/jana@example.com?utm_campaign=jana@example.com&utm_source=fb")
     assert "jana" not in out and "@" not in out
-    assert out == "example.com/reset/*?utm_source=fb&utm_campaign=%5Bredacted%5D"
+    assert out == "example.com?utm_source=fb&utm_campaign=%5Bredacted%5D"
     attrs = ow.attribution([{"key": "_wc_order_attribution_utm_term", "value": "jana@example.com"}])
     assert attrs["utm_term"] == "[redacted]"
+
+
+def test_name_shaped_values_are_redacted_not_echoed():
+    out = ow.clean_url("https://example.com/customers/jana-novakova?utm_campaign=Jana Novakova&utm_medium=paid")
+    assert "jana" not in out.lower() and "novakova" not in out.lower()
+    assert out == "example.com?utm_medium=paid&utm_campaign=%5Bredacted%5D"
+    attrs = ow.attribution([{"key": "_wc_order_attribution_utm_campaign", "value": "Jana Novakova"}])
+    assert attrs["utm_campaign"] == "[redacted]"
+    assert ow.clean_url("/customers/jana-novakova") == "[redacted]"
 
 
 def test_fetch_orders_lower_bound_includes_window_start():
