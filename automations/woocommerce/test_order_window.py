@@ -141,7 +141,8 @@ def test_cross_origin_redirect_is_refused_without_sending_credentials():
     for srv in (target, redirector):
         threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
-        client = ow.Client(f"http://127.0.0.1:{redirector.server_port}", "ck", "cs")
+        client = ow.Client(f"http://127.0.0.1:{redirector.server_port}", "ck", "cs",
+                           allow_loopback_http=True)
         with pytest.raises(RuntimeError) as exc:
             client.get("/orders", {})
         assert "302" in str(exc.value)
@@ -216,6 +217,23 @@ def test_unapproved_hostnames_are_redacted():
         assert out == ow.REDACTED and "jana" not in out and "203" not in out
     assert ow.clean_url("https://l.facebook.com/x?utm_source=fb") == "l.facebook.com?utm_source=fb"
     assert ow.clean_url("https://evilmolosoc.com/") == ow.REDACTED
+
+
+def test_only_enumerated_hostnames_are_emitted():
+    for url in ("https://jana-novakova.molosoc.com/", "https://secret.wordpress.com/",
+                "https://a.l.facebook.com/"):
+        assert ow.clean_url(url) == ow.REDACTED
+    assert ow.clean_url("https://www.molosoc.com/x") == "www.molosoc.com"
+
+
+def test_plaintext_api_endpoints_are_rejected():
+    for site in ("http://molosoc.com", "http://127.0.0.1:8000", "ftp://molosoc.com", "molosoc.com"):
+        with pytest.raises(ValueError):
+            ow.Client(site, "ck", "cs")
+    ow.Client("https://molosoc.com", "ck", "cs")
+    ow.Client("http://127.0.0.1:8000", "ck", "cs", allow_loopback_http=True)
+    with pytest.raises(ValueError):
+        ow.Client("http://molosoc.com", "ck", "cs", allow_loopback_http=True)
 
 
 def test_window_with_exactly_page_cap_is_accepted():

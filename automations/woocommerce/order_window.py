@@ -44,13 +44,17 @@ SAFE_VALUES = frozenset((
     "organic", "referral", "social", "paid", "paid_social", "cpc", "ppc", "display",
     "affiliate", "(direct)", "(none)", "utm", "typein", "admin"))
 REDACTED = "[redacted]"
-# Hostnames can be visitor-controlled too (personal domains, IP literals), so only
-# these domains (and their subdomains) are printed; any other host is redacted.
-SAFE_HOST_DOMAINS = (
-    "molosoc.com", "google.com", "bing.com", "duckduckgo.com", "yahoo.com", "seznam.cz",
-    "facebook.com", "instagram.com", "l.facebook.com", "youtube.com", "tiktok.com",
-    "pinterest.com", "linkedin.com", "twitter.com", "t.co", "x.com", "paypal.com",
-    "stripe.com", "wordpress.com")
+# Hostnames can be visitor-controlled too (personal domains, IP literals, fabricated
+# subdomain labels), so only these exact hostnames are printed; any other host,
+# including any other subdomain of these domains, is redacted.
+SAFE_HOSTS = frozenset((
+    "molosoc.com", "www.molosoc.com", "google.com", "www.google.com", "bing.com",
+    "www.bing.com", "duckduckgo.com", "yahoo.com", "seznam.cz", "www.seznam.cz",
+    "facebook.com", "www.facebook.com", "m.facebook.com", "l.facebook.com",
+    "instagram.com", "www.instagram.com", "l.instagram.com", "youtube.com",
+    "www.youtube.com", "tiktok.com", "www.tiktok.com", "pinterest.com",
+    "www.pinterest.com", "linkedin.com", "www.linkedin.com", "twitter.com", "t.co",
+    "x.com", "paypal.com", "www.paypal.com", "stripe.com", "checkout.stripe.com"))
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
 DEVICE_TYPES = frozenset(("desktop", "mobile", "tablet", "unknown"))
@@ -76,10 +80,7 @@ def safe_value(value):
 
 def safe_host(host):
     host = (host or "").lower().rstrip(".")
-    for domain in SAFE_HOST_DOMAINS:
-        if host == domain or host.endswith("." + domain):
-            return host
-    return REDACTED
+    return host if host in SAFE_HOSTS else REDACTED
 
 
 def window_bounds(start, end):
@@ -192,7 +193,12 @@ _OPENER = urllib.request.build_opener(_NoRedirect)
 
 
 class Client:
-    def __init__(self, site, key, secret):
+    def __init__(self, site, key, secret, allow_loopback_http=False):
+        parts = urllib.parse.urlsplit(site)
+        loopback = parts.hostname in ("127.0.0.1", "localhost", "::1")
+        if parts.scheme != "https" and not (allow_loopback_http and loopback and parts.scheme == "http"):
+            # Basic auth over plaintext would expose the key and secret.
+            raise ValueError("WOO_SITE_URL must be an https:// URL")
         self.base = site.rstrip("/") + "/wp-json/wc/v3"
         token = base64.b64encode(f"{key}:{secret}".encode()).decode()
         self.headers = {"Authorization": f"Basic {token}", "Accept": "application/json",
