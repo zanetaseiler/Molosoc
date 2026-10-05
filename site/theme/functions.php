@@ -18,6 +18,10 @@ defined( 'ABSPATH' ) || exit;
 // self-contained, separately reviewable feature (GitHub Issue #53).
 require_once get_stylesheet_directory() . '/inc/woocommerce-lang.php';
 
+// Bilingual Thank You page hero + post-purchase gift add-on (GitHub Issue
+// #106). Depends on inc/woocommerce-lang.php above.
+require_once get_stylesheet_directory() . '/inc/thank-you-gift.php';
+
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
@@ -240,6 +244,13 @@ function molosoc_enqueue_assets() {
 		// match the plain 'cz'|'en' global the JS file reads. 'before' so
 		// it's defined ahead of the middleware registering itself.
 		wp_add_inline_script( 'molosoc-store-api-lang', 'window.molosocLang = ' . wp_json_encode( $molosoc_lang_for_js ) . ';', 'before' );
+	}
+
+	// Thank You page hero + gift add-on (inc/thank-you-gift.php) — the
+	// order-received endpoint only, so checkout itself loads nothing new.
+	if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-received' ) ) {
+		wp_enqueue_style( 'molosoc-thank-you', $theme_uri . '/assets/css/thank-you.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_script( 'molosoc-thank-you-gift', $theme_uri . '/assets/js/thank-you-gift.js', array(), $theme_version, true );
 	}
 
 	// Floating back-to-top button (see the file's header comment for why

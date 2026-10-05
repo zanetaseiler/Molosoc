@@ -1,0 +1,240 @@
+/*
+  Thank You / Order Received page (inc/thank-you-gift.php, GitHub Issue
+  #106). Loaded on the order-received endpoint only. WooCommerce's own
+  order overview/details markup is deliberately left unstyled here — this
+  file only sizes the hero heading and lays out the gift add-on section.
+*/
+
+/* ---------- Hero heading (index.php's own <h1>) ---------- */
+
+body.woocommerce-order-received .molosoc-main h1 {
+  font-size: var(--text-display-l);
+  line-height: 1.05;
+  margin: var(--space-m) 0 var(--space-s);
+}
+
+/* ---------- Gift add-on section ---------- */
+
+.molosoc-gift {
+  display: grid;
+  gap: var(--space-m);
+  margin-top: var(--space-l);
+  padding-top: var(--space-l);
+}
+
+.molosoc-gift [hidden] {
+  display: none !important;
+}
+
+.molosoc-gift fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.molosoc-gift__photo {
+  margin: 0;
+}
+
+.molosoc-gift__photo img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-m);
+}
+
+.molosoc-gift .molosoc-gift__title {
+  font-size: var(--text-display-l);
+  line-height: 1.05;
+  margin: 0 0 var(--space-s);
+}
+
+.molosoc-gift .molosoc-gift__copy {
+  max-width: 34rem;
+  margin: 0 0 var(--space-m);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+}
+
+/* Pair-count cards: full-width rows on a phone, three across from 30rem. */
+
+.molosoc-gift__choices {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.molosoc-gift:not(.is-enhanced) .molosoc-gift-card--multi {
+  display: none;
+}
+
+.molosoc-gift-card,
+.molosoc-gift-pill {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.molosoc-gift-card input,
+.molosoc-gift-pill input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.molosoc-gift-card__face {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: var(--space-s);
+  background: var(--color-white);
+  border-radius: var(--radius-m);
+  transition: background-color var(--motion-duration-s) var(--motion-ease),
+              color var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-gift-card__count {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+.molosoc-gift-card__price {
+  font-size: var(--text-small);
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.molosoc-gift-card input:checked + .molosoc-gift-card__face,
+.molosoc-gift-pill input:checked + .molosoc-gift-pill__face {
+  background: var(--color-ink-warm);
+  color: var(--color-cream);
+}
+
+.molosoc-gift-card input:focus-visible + .molosoc-gift-card__face,
+.molosoc-gift-pill input:focus-visible + .molosoc-gift-pill__face {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+/* One size selector per chosen pair. */
+
+.molosoc-gift__sizes {
+  display: grid;
+  gap: var(--space-s);
+  margin-top: var(--space-m);
+}
+
+.molosoc-gift-size {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.molosoc-gift-size__legend {
+  width: 100%;
+  margin-bottom: var(--space-2xs);
+  padding: 0;
+  font-size: var(--text-label);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.molosoc-gift-pill__face {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  padding: 0.8em 1.4em;
+  background: var(--color-white);
+  border-radius: 999px;
+  font-size: var(--text-small);
+  white-space: nowrap;
+  transition: background-color var(--motion-duration-s) var(--motion-ease),
+              color var(--motion-duration-s) var(--motion-ease);
+}
+
+.molosoc-gift-pill__price {
+  opacity: 0.75;
+}
+
+/* Total, CTA and the separate-order note. */
+
+.molosoc-gift .molosoc-gift__total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  margin: var(--space-m) 0 0;
+  font-size: var(--text-small);
+  color: var(--color-text-muted);
+}
+
+.molosoc-gift__total-amount {
+  font-family: var(--font-display);
+  font-size: var(--text-display-m);
+  color: var(--color-text);
+}
+
+.molosoc-gift__cta {
+  width: 100%;
+  margin-top: var(--space-s);
+}
+
+.molosoc-gift .molosoc-gift__note {
+  max-width: 30rem;
+  margin: var(--space-s) 0 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-snug);
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 30rem) {
+  .molosoc-gift__choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-xs);
+  }
+
+  .molosoc-gift-card__face {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    min-height: 7rem;
+    height: 100%;
+    padding: var(--space-s) var(--space-xs);
+    box-sizing: border-box;
+  }
+
+  .molosoc-gift-card__count {
+    font-size: clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .molosoc-gift__cta {
+    width: auto;
+  }
+}
+
+@media (min-width: 60rem) {
+  .molosoc-gift {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-l);
+    align-items: start;
+  }
+
+  .molosoc-gift-card__count {
+    font-size: clamp(1.25rem, 1.55vw, 1.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .molosoc-gift-card__face,
+  .molosoc-gift-pill__face {
+    transition: none;
+  }
+}
