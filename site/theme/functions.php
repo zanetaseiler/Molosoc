@@ -425,6 +425,39 @@ add_action( 'wp_head', function () {
 } );
 
 /**
+ * Early connection hints for the foot-cover landing page (EN
+ * 'moisture-lock-foot-cover' / CZ 'hydratacni-navlek-na-nohy') — Issue #99
+ * Test 1, "hints only, zero visual change". The page's hero loads the
+ * model-viewer module from unpkg.com and the Google Fonts CSS/files, all
+ * third-party origins on the critical path; preconnect lets the browser
+ * open those connections while it parses the head. Output is three <link>
+ * tags on this page only — no markup, copy, layout or asset change.
+ * (No .glb preload: it cannot be confirmed here that it would reuse
+ * model-viewer's own request instead of fetching the 4.1 MB file twice.)
+ *
+ * @return array[] Each entry: array( 'href' => string, 'crossorigin' => bool ).
+ */
+function molosoc_landing_preconnect_hints() {
+	if ( ! is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) ) ) {
+		return array();
+	}
+	return array(
+		array( 'href' => 'https://unpkg.com', 'crossorigin' => true ),
+		array( 'href' => 'https://fonts.googleapis.com', 'crossorigin' => false ),
+		array( 'href' => 'https://fonts.gstatic.com', 'crossorigin' => true ),
+	);
+}
+add_action( 'wp_head', function () {
+	foreach ( molosoc_landing_preconnect_hints() as $hint ) {
+		printf(
+			'<link rel="preconnect" href="%s"%s>' . "\n",
+			esc_url( $hint['href'] ),
+			$hint['crossorigin'] ? ' crossorigin' : ''
+		);
+	}
+}, 1 );
+
+/**
  * model-viewer is an ES module, not a classic script — wp_enqueue_script()
  * always outputs a plain <script src="...">. Swap in type="module" for
  * just this one handle rather than switching the whole enqueue API.
