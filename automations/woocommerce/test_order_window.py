@@ -317,3 +317,13 @@ def test_arbitrary_metadata_never_leaks_with_landing_fields():
     assert out["attribution"]["landing_page"] == "molosoc.com/cz/lp/"
     assert out["attribution"]["utm_campaign"] == ow.REDACTED
     assert out["attribution"]["utm_content"] == ow.REDACTED
+
+
+def test_landing_page_keeps_all_existing_site_routes():
+    for path in ("/cz/kurici-oko/jak-odstranit/", "/cz/kurici-oko/na-chodidle/",
+                 "/ingrown-toenails/treatment/", "/cracked-heels/cracked-heels-cream/",
+                 "/hardened-skin-calluses/callus-remover/", "/cz/popraskane-paty/",
+                 "/dry-skin-feet/vs-cracked-heels/", "/cz/zasady-dopravy/"):
+        assert ow.clean_landing("https://molosoc.com" + path) == "molosoc.com" + path
+    assert ow.clean_landing("https://molosoc.com/cz/kurici-oko/jana@example.com/") == \
+        "molosoc.com/cz/kurici-oko/[redacted]/"

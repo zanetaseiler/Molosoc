@@ -62,7 +62,16 @@ SAFE_PATH_SEGMENTS = frozenset((
     "hydratacni-navlek-na-nohy", "molosoc-hydratacni-navleky-na-nohy", "foot-covers",
     "moisture-lock-foot-cover", "cracked-heels", "ingrown-toenails",
     "hardened-skin-calluses", "dry-skin-feet", "foot-cream-that-works", "shop", "cart",
-    "checkout", "order-received"))
+    "checkout", "order-received",
+    # Remaining public routes: automations/migration/translation-map.json,
+    # site/theme/page-blog.php and the contact/legal pages.
+    "molosoc-home-cestina", "popraskane-paty", "zarostly-nehet", "kurici-oko",
+    "jak-odstranit", "na-chodidle", "vraceni-a-refundace", "zasady-dopravy",
+    "zasady-ochrany-osobnich-udaju", "obchodni-podminky", "blank-homepage",
+    "callus-remover", "refund-policy", "shipping-policy", "privacy-policies",
+    "terms-of-services", "legal-disclaimer", "contact-kontakt", "blog", "treatment",
+    "prevent", "cracked-heels-cream", "cracked-heels-treatment", "fix-permanently",
+    "dry-foot-skin-treatment", "home-remedies", "vs-cracked-heels"))
 MAX_PATH_SEGMENTS = 6
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
