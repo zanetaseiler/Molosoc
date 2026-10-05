@@ -1,0 +1,41 @@
+name: WooCommerce Order Window (manual, read-only)
+
+# Prints non-PII WooCommerce order facts for a short UTC window (Issue #100).
+# workflow_dispatch ONLY: no push trigger, no schedule. Read-only: GET
+# /wc/v3/orders with the dedicated read-only REST key. Does NOT use PROD_WP_*.
+# Nothing is written anywhere; output is a strict allowlist (no customer PII).
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First UTC day (YYYY-MM-DD)"
+        default: "2026-10-03"
+      end:
+        description: "Last UTC day (YYYY-MM-DD), inclusive, max 14 days"
+        default: "2026-10-05"
+
+permissions:
+  contents: read
+
+jobs:
+  orders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run offline unit test
+        run: pip install pytest && python3 -m pytest automations/woocommerce/test_order_window.py -q
+
+      - name: Print the order window
+        env:
+          WOO_RO_CONSUMER_KEY: ${{ secrets.WOO_RO_CONSUMER_KEY }}
+          WOO_RO_CONSUMER_SECRET: ${{ secrets.WOO_RO_CONSUMER_SECRET }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: python3 automations/woocommerce/order_window.py --start "$START" --end "$END"
