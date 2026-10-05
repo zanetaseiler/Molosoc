@@ -13,6 +13,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -34,6 +35,29 @@ ATTRIBUTION_ALLOWED = (
 URL_FIELDS = ("referrer", "session_entry")
 KEPT_QUERY_KEYS = ("utm_source", "utm_medium", "utm_campaign", "utm_content",
                    "utm_term", "utm_id")
+SAFE_SEGMENT = re.compile(r"^[a-z0-9][a-z0-9_-]{0,39}$")
+SAFE_VALUE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.+ -]{0,59}$")
+REDACTED = "[redacted]"
+
+
+def safe_value(value):
+    """Keep a visitor-controlled value only if it looks like a plain campaign label."""
+    text = str(value)
+    if "@" in text or not SAFE_VALUE.match(text) or re.search(r"\d{6,}", text):
+        return REDACTED
+    return text
+
+
+def safe_path(path):
+    """Keep only short lowercase slug segments; anything else (emails, ids, tokens) is masked."""
+    segs = []
+    for seg in path.split("/"):
+        if not seg or (SAFE_SEGMENT.match(seg) and not re.search(r"\d{6,}", seg)
+                       and not (len(seg) > 24 and re.search(r"\d", seg))):
+            segs.append(seg)
+        else:
+            segs.append("*")
+    return "/".join(segs)
 
 
 def window_bounds(start, end):
@@ -55,9 +79,9 @@ def clean_url(value):
         return value
     parsed = urllib.parse.urlsplit(value)
     if not parsed.scheme and not parsed.netloc:
-        return parsed.path[:200]
+        return safe_path(parsed.path)[:200]
     query = urllib.parse.parse_qs(parsed.query)
-    kept = {k: query[k][0] for k in KEPT_QUERY_KEYS if k in query}
+    kept = {k: safe_value(query[k][0]) for k in KEPT_QUERY_KEYS if k in query}
     # Rebuild the authority from hostname + port only: netloc may carry userinfo.
     try:
         port = parsed.port
@@ -66,7 +90,7 @@ def clean_url(value):
     host = parsed.hostname or ""
     if ":" in host:
         host = f"[{host}]"
-    out = f"{host}{':' + str(port) if port else ''}{parsed.path}"
+    out = f"{host}{':' + str(port) if port else ''}{safe_path(parsed.path)}"
     if kept:
         out += "?" + urllib.parse.urlencode(kept)
     if "fbclid" in query:
@@ -86,6 +110,8 @@ def attribution(meta_data):
         value = item.get("value")
         if name in URL_FIELDS:
             value = clean_url(value)
+        elif name.startswith("utm_") and value is not None:
+            value = safe_value(value)
         out[name] = value
     return out
 
@@ -151,9 +177,12 @@ class Client:
 
 def fetch_orders(client, after, before):
     orders = []
+    # WooCommerce `after` is an exclusive bound: step back 1s so an order created
+    # exactly at the window start is included.
+    query_after = (datetime.fromisoformat(after) - timedelta(seconds=1)).isoformat()
     for page in range(1, MAX_PAGES + 1):
         batch = client.get("/orders", {
-            "after": after, "before": before, "dates_are_gmt": "true",
+            "after": query_after, "before": before, "dates_are_gmt": "true",
             "status": "any", "per_page": PER_PAGE, "page": page,
             "orderby": "date", "order": "asc"})
         orders.extend(batch)

@@ -86,7 +86,7 @@ def test_fetch_orders_paginates_and_only_gets():
             calls.append((path, params["page"]))
             return [{"id": i} for i in range(ow.PER_PAGE)] if params["page"] == 1 else [{"id": 999}]
 
-    assert len(ow.fetch_orders(Fake(), "a", "b")) == ow.PER_PAGE + 1
+    assert len(ow.fetch_orders(Fake(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")) == ow.PER_PAGE + 1
     assert calls == [("/orders", 1), ("/orders", 2)]
 
 
@@ -149,3 +149,23 @@ def test_cross_origin_redirect_is_refused_without_sending_credentials():
     finally:
         for srv in (target, redirector):
             srv.shutdown()
+
+
+def test_clean_url_redacts_visitor_controlled_values():
+    out = ow.clean_url("https://example.com/reset/jana@example.com?utm_campaign=jana@example.com&utm_source=fb")
+    assert "jana" not in out and "@" not in out
+    assert out == "example.com/reset/*?utm_source=fb&utm_campaign=%5Bredacted%5D"
+    attrs = ow.attribution([{"key": "_wc_order_attribution_utm_term", "value": "jana@example.com"}])
+    assert attrs["utm_term"] == "[redacted]"
+
+
+def test_fetch_orders_lower_bound_includes_window_start():
+    seen = []
+
+    class C:
+        def get(self, path, params):
+            seen.append(params["after"])
+            return []
+
+    ow.fetch_orders(C(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")
+    assert seen == ["2026-09-30T23:59:59"]
