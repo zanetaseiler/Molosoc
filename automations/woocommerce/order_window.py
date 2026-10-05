@@ -55,6 +55,26 @@ SAFE_HOSTS = frozenset((
     "www.youtube.com", "tiktok.com", "www.tiktok.com", "pinterest.com",
     "www.pinterest.com", "linkedin.com", "www.linkedin.com", "twitter.com", "t.co",
     "x.com", "paypal.com", "www.paypal.com", "stripe.com", "checkout.stripe.com"))
+# Landing-page paths are visitor-controlled too (/reset/jana@example.com), so each path
+# segment is printed only if it is one of these fixed site slugs; others become REDACTED.
+SAFE_PATH_SEGMENTS = frozenset((
+    "cz", "cs", "en", "lp", "produkt", "product", "navleky-na-nohy",
+    "hydratacni-navlek-na-nohy", "molosoc-hydratacni-navleky-na-nohy", "foot-covers",
+    "moisture-lock-foot-cover", "cracked-heels", "ingrown-toenails",
+    "hardened-skin-calluses", "dry-skin-feet", "foot-cream-that-works", "shop", "cart",
+    "checkout", "order-received",
+    # Remaining public routes: automations/migration/translation-map.json,
+    # site/theme/page-blog.php and the contact/legal pages.
+    "molosoc-home-cestina", "popraskane-paty", "zarostly-nehet", "kurici-oko",
+    "jak-odstranit", "na-chodidle", "vraceni-a-refundace", "zasady-dopravy",
+    "zasady-ochrany-osobnich-udaju", "obchodni-podminky", "blank-homepage",
+    "callus-remover", "refund-policy", "shipping-policy", "privacy-policies",
+    "terms-of-services", "legal-disclaimer", "contact-kontakt", "blog", "treatment",
+    "prevent", "cracked-heels-cream", "cracked-heels-treatment", "fix-permanently",
+    "dry-foot-skin-treatment", "home-remedies", "vs-cracked-heels",
+    # Czech magazine and purchase-flow routes (page-magazin.php, woocommerce-lang.php).
+    "magazin", "kosik", "pokladna"))
+MAX_PATH_SEGMENTS = 6
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
 DEVICE_TYPES = frozenset(("desktop", "mobile", "tablet", "unknown"))
@@ -123,6 +143,26 @@ def clean_url(value):
     return out[:300]
 
 
+def clean_landing(value):
+    """Reduce a URL to host + path only (query, fragment, userinfo, port dropped)."""
+    if value is None or value == "":
+        return value
+    if not isinstance(value, str):
+        return REDACTED
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        host = safe_host(parsed.hostname)
+    except ValueError:
+        return REDACTED
+    if not parsed.netloc:
+        return REDACTED  # bare path: no host to attribute it to
+    segments = [s for s in parsed.path.split("/") if s]
+    if len(segments) > MAX_PATH_SEGMENTS:
+        segments = segments[:MAX_PATH_SEGMENTS] + [REDACTED]
+    kept = [s if s.lower() in SAFE_PATH_SEGMENTS else REDACTED for s in segments]
+    return (host + ("/" + "/".join(kept) + "/" if kept else "/"))[:300]
+
+
 def attribution(meta_data):
     out = {}
     for item in meta_data or []:
@@ -150,6 +190,8 @@ def attribution(meta_data):
         else:
             value = REDACTED  # allowlisted name without a validator: never echo
         out[name] = value
+        if name == "session_entry":
+            out["landing_page"] = clean_landing(item.get("value"))
     return out
 
 

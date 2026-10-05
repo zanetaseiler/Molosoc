@@ -253,3 +253,78 @@ def test_window_with_exactly_page_cap_is_accepted():
 
     with pytest.raises(RuntimeError):
         ow.fetch_orders(Over(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")
+
+
+def meta_entry(value, key="session_entry"):
+    return [{"key": f"_wc_order_attribution_{key}", "value": value}]
+
+
+def test_landing_page_is_host_and_path_only():
+    attr = ow.attribution(meta_entry(
+        "https://molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
+        "?utm_source=fb&fbclid=SECRETCLICK&email=jana@example.com#frag-jana"))
+    assert attr["landing_page"] == "molosoc.com/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
+    text = json.dumps(attr)
+    for bad in ("SECRETCLICK", "jana", "frag", "?", "#"):
+        assert bad not in attr["landing_page"] and "SECRETCLICK" not in text
+    assert attr["session_entry"] == "molosoc.com?utm_source=fb [fbclid present]"
+
+
+def test_landing_page_redacts_unapproved_path_segments_and_hosts():
+    out = ow.clean_landing("https://molosoc.com/cz/reset/jana@example.com/hydratacni-navlek-na-nohy")
+    assert out == "molosoc.com/cz/[redacted]/[redacted]/hydratacni-navlek-na-nohy/"
+    assert "jana" not in out
+    assert ow.clean_landing("https://jana-novakova.example/cz/") == "[redacted]/cz/"
+    assert ow.clean_landing("https://name:tok3n@molosoc.com:8443/cz/") == "molosoc.com/cz/"
+    assert ow.clean_landing("https://molosoc.com") == "molosoc.com/"
+    long = "https://molosoc.com/" + "/".join(["cz"] * 10)
+    assert ow.clean_landing(long).count("cz") == ow.MAX_PATH_SEGMENTS
+
+
+def test_landing_page_missing_empty_and_malformed():
+    assert "landing_page" not in ow.attribution([])
+    assert "landing_page" not in ow.attribution(meta_entry("x", key="utm_source"))
+    assert ow.attribution(meta_entry(""))["landing_page"] == ""
+    assert ow.attribution(meta_entry(None))["landing_page"] is None
+    for bad in ("https://[", "/cz/jana-novakova", {"email": "jana@example.com"}, ["a"], 42):
+        assert ow.attribution(meta_entry(bad))["landing_page"] == ow.REDACTED
+
+
+def test_campaign_and_content_numeric_and_free_text_redacted():
+    def meta(**kw):
+        return [{"key": f"_wc_order_attribution_{k}", "value": v} for k, v in kw.items()]
+
+    # numeric shape is visitor-controlled and can be a phone number/customer id
+    num = ow.attribution(meta(utm_campaign="420123456789", utm_content=" 987654321 "))
+    assert num == {"utm_campaign": ow.REDACTED, "utm_content": ow.REDACTED}
+    bad = ow.attribution(meta(utm_campaign="Jana Novakova", utm_content="jana@example.com"))
+    assert set(bad.values()) == {ow.REDACTED}
+    assert ow.attribution(meta(utm_source="12345678"))["utm_source"] == ow.REDACTED
+    assert ow.attribution(meta(utm_campaign=None)) == {"utm_campaign": None}
+
+
+def test_arbitrary_metadata_never_leaks_with_landing_fields():
+    raw = dict(RAW, meta_data=RAW["meta_data"] + [
+        {"key": "_wc_order_attribution_landing_secret", "value": "jana@example.com"},
+        {"key": "_wc_order_attribution_session_entry_extra", "value": "jana@example.com"},
+        {"key": "_wc_order_attribution_utm_campaign", "value": "120210000000001"},
+        {"key": "_wc_order_attribution_utm_content", "value": "ad-jana@example.com"},
+        {"key": "custom_landing", "value": "https://molosoc.com/jana"}])
+    out = ow.sanitize_order(raw)
+    text = json.dumps(out, ensure_ascii=False)
+    for secret in PII + ["custom_landing", "landing_secret", "extra"]:
+        assert secret not in text
+    assert out["attribution"]["landing_page"] == "molosoc.com/cz/lp/"
+    assert out["attribution"]["utm_campaign"] == ow.REDACTED
+    assert out["attribution"]["utm_content"] == ow.REDACTED
+
+
+def test_landing_page_keeps_all_existing_site_routes():
+    for path in ("/cz/kurici-oko/jak-odstranit/", "/cz/kurici-oko/na-chodidle/",
+                 "/ingrown-toenails/treatment/", "/cracked-heels/cracked-heels-cream/",
+                 "/hardened-skin-calluses/callus-remover/", "/cz/popraskane-paty/",
+                 "/dry-skin-feet/vs-cracked-heels/", "/cz/zasady-dopravy/",
+                 "/cz/magazin/", "/cz/kosik/", "/cz/pokladna/"):
+        assert ow.clean_landing("https://molosoc.com" + path) == "molosoc.com" + path
+    assert ow.clean_landing("https://molosoc.com/cz/kurici-oko/jana@example.com/") == \
+        "molosoc.com/cz/kurici-oko/[redacted]/"
