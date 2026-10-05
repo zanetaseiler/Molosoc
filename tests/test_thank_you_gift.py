@@ -33,7 +33,7 @@ function wp_list_pluck( $list, $field ) { return array_map( function ( $i ) use 
 function checked( $a, $b ) { if ( (string) $a === (string) $b ) { echo " checked='checked'"; } }
 function home_url( $path = '' ) { return 'https://example.test' . $path; }
 function wc_nocache_headers() {}
-function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ); }
+function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ); }
 function is_wc_endpoint_url( $e ) { return 'order-received' === $e && ! empty( $GLOBALS['t']['endpoint'] ); }
 function pll_current_language() { return $GLOBALS['t']['request_lang']; }
 function pll_get_post( $id, $lang ) { return 'cz' === $lang ? 900 : $id; }
@@ -66,9 +66,19 @@ function wc_get_product( $id ) {
 	return isset( $v[ $id ] ) ? new WC_Product_Variation( $id, $v[ $id ][0], $v[ $id ][1] ) : false;
 }
 class Molosoc_Test_Cart {
+	public $items;
+	function __construct() { $this->items = $GLOBALS['t']['cart']; }
+	function generate_cart_id( $product_id, $variation_id, $attrs ) { return 'line' . $variation_id; }
+	function find_product_in_cart( $id ) { return isset( $this->items[ $id ] ) ? $id : ''; }
+	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ] ) : array(); }
+	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
+	function remove_cart_item( $key ) { unset( $this->items[ $key ] ); }
 	function add_to_cart( $product_id, $qty, $variation_id, $attrs ) {
+		if ( $variation_id === $GLOBALS['t']['fail_variation'] ) { return false; }
 		$GLOBALS['added'][] = array( $product_id, $qty, $variation_id, $attrs );
-		return 'key';
+		$key = 'line' . $variation_id;
+		$this->items[ $key ] = ( isset( $this->items[ $key ] ) ? $this->items[ $key ] : 0 ) + $qty;
+		return $key;
 	}
 }
 class Molosoc_Test_WC { public $cart; function __construct() { $this->cart = new Molosoc_Test_Cart(); } }
@@ -81,6 +91,8 @@ DEFAULT = {
     "order_lang": "cz",
     "request_lang": "cz",
     "variations": {"425": [229, True], "424": [229, True]},
+    "cart": {},
+    "fail_variation": 0,
 }
 
 
@@ -260,6 +272,21 @@ class AddToCartHandler(unittest.TestCase):
         )
         self.assertEqual(redirect, "https://example.test/checkout/")
         self.assertEqual(added, [[364, 1, 424, {"attribute_size": "L"}]])
+
+    def test_partly_failed_selection_is_rolled_back_and_never_reaches_checkout(self):
+        post = {"molosoc_gift_pairs": "3", "molosoc_gift_lang": "cz", "molosoc_gift_size": ["M", "M", "L"]}
+        # L can't be added after M already was: M's addition is undone.
+        out = run_php({"fail_variation": 424}, self.BODY, post=post)
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertEqual(json.loads(re.search(r"CART:(.*)", out).group(1)), [])
+        # A line that was in the cart before keeps its earlier quantity.
+        out = run_php({"fail_variation": 424, "cart": {"line425": 1}}, self.BODY, post=post)
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertEqual(json.loads(re.search(r"CART:(.*)", out).group(1)), {"line425": 1})
+        # The first size failing leaves the cart untouched too.
+        out = run_php({"fail_variation": 425, "cart": {"line424": 2}}, self.BODY, post=post)
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertEqual(json.loads(re.search(r"CART:(.*)", out).group(1)), {"line424": 2})
 
     def test_never_more_than_three_pairs(self):
         _, added = self.submit(

@@ -309,15 +309,42 @@ function molosoc_gift_add_to_cart_action() {
 		$counts[ $key ] = isset( $counts[ $key ] ) ? $counts[ $key ] + 1 : 1;
 	}
 
-	$added = false;
+	// All or nothing: if any size can't be added (e.g. not enough stock for
+	// two of the same size), put the cart back exactly as it was before
+	// this request and send the customer to the product page, where
+	// WooCommerce's own notice explains why — never on to checkout with
+	// only part of what they chose.
+	$cart    = WC()->cart;
+	$restore = array();
+	$failed  = false;
 	foreach ( $counts as $key => $quantity ) {
-		$variation = $sizes[ $key ]['variation'];
-		if ( WC()->cart->add_to_cart( MOLOSOC_PRODUCT_ID, $quantity, $variation->get_id(), $variation->get_variation_attributes() ) ) {
-			$added = true;
+		$variation  = $sizes[ $key ]['variation'];
+		$attributes = $variation->get_variation_attributes();
+		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes ) );
+		$line       = $existing ? $cart->get_cart_item( $existing ) : array();
+		$before     = isset( $line['quantity'] ) ? (int) $line['quantity'] : 0;
+
+		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, $quantity, $variation->get_id(), $attributes );
+		if ( ! $item_key ) {
+			$failed = true;
+			break;
 		}
+		$restore[ $item_key ] = $before;
 	}
 
-	wp_safe_redirect( $added ? molosoc_gift_checkout_url( $lang ) : molosoc_product_url( $lang ) );
+	if ( $failed ) {
+		foreach ( $restore as $item_key => $before ) {
+			if ( $before > 0 ) {
+				$cart->set_quantity( $item_key, $before );
+			} else {
+				$cart->remove_cart_item( $item_key );
+			}
+		}
+		wp_safe_redirect( molosoc_product_url( $lang ) );
+		exit;
+	}
+
+	wp_safe_redirect( molosoc_gift_checkout_url( $lang ) );
 	exit;
 }
 add_action( 'wp_loaded', 'molosoc_gift_add_to_cart_action', 20 );
