@@ -323,7 +323,8 @@ def test_landing_page_keeps_all_existing_site_routes():
     for path in ("/cz/kurici-oko/jak-odstranit/", "/cz/kurici-oko/na-chodidle/",
                  "/ingrown-toenails/treatment/", "/cracked-heels/cracked-heels-cream/",
                  "/hardened-skin-calluses/callus-remover/", "/cz/popraskane-paty/",
-                 "/dry-skin-feet/vs-cracked-heels/", "/cz/zasady-dopravy/"):
+                 "/dry-skin-feet/vs-cracked-heels/", "/cz/zasady-dopravy/",
+                 "/cz/magazin/", "/cz/kosik/", "/cz/pokladna/"):
         assert ow.clean_landing("https://molosoc.com" + path) == "molosoc.com" + path
     assert ow.clean_landing("https://molosoc.com/cz/kurici-oko/jana@example.com/") == \
         "molosoc.com/cz/kurici-oko/[redacted]/"

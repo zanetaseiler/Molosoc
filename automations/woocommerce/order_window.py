@@ -71,7 +71,9 @@ SAFE_PATH_SEGMENTS = frozenset((
     "callus-remover", "refund-policy", "shipping-policy", "privacy-policies",
     "terms-of-services", "legal-disclaimer", "contact-kontakt", "blog", "treatment",
     "prevent", "cracked-heels-cream", "cracked-heels-treatment", "fix-permanently",
-    "dry-foot-skin-treatment", "home-remedies", "vs-cracked-heels"))
+    "dry-foot-skin-treatment", "home-remedies", "vs-cracked-heels",
+    # Czech magazine and purchase-flow routes (page-magazin.php, woocommerce-lang.php).
+    "magazin", "kosik", "pokladna"))
 MAX_PATH_SEGMENTS = 6
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
