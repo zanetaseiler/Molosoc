@@ -64,10 +64,6 @@ SAFE_PATH_SEGMENTS = frozenset((
     "hardened-skin-calluses", "dry-skin-feet", "foot-cream-that-works", "shop", "cart",
     "checkout", "order-received"))
 MAX_PATH_SEGMENTS = 6
-# Campaign/content labels are visitor-controlled free text, so besides the fixed
-# vocabulary only purely numeric platform ids (e.g. Meta campaign/ad ids) are echoed.
-ID_RE = re.compile(r"[0-9]{6,20}")
-ID_FIELDS = ("utm_campaign", "utm_content")
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
 DEVICE_TYPES = frozenset(("desktop", "mobile", "tablet", "unknown"))
@@ -170,8 +166,6 @@ def attribution(meta_data):
             value = clean_url(value)
         elif value is None:
             pass
-        elif name in ID_FIELDS and ID_RE.fullmatch(str(value).strip()):
-            value = str(value).strip()
         elif name.startswith("utm_"):
             value = safe_value(value)
         elif name == "source_type":

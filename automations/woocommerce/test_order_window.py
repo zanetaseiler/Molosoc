@@ -290,12 +290,13 @@ def test_landing_page_missing_empty_and_malformed():
         assert ow.attribution(meta_entry(bad))["landing_page"] == ow.REDACTED
 
 
-def test_campaign_and_content_ids_allowed_free_text_redacted():
+def test_campaign_and_content_numeric_and_free_text_redacted():
     def meta(**kw):
         return [{"key": f"_wc_order_attribution_{k}", "value": v} for k, v in kw.items()]
 
-    ok = ow.attribution(meta(utm_campaign="120210000000001", utm_content=" 987654321 "))
-    assert ok == {"utm_campaign": "120210000000001", "utm_content": "987654321"}
+    # numeric shape is visitor-controlled and can be a phone number/customer id
+    num = ow.attribution(meta(utm_campaign="420123456789", utm_content=" 987654321 "))
+    assert num == {"utm_campaign": ow.REDACTED, "utm_content": ow.REDACTED}
     bad = ow.attribution(meta(utm_campaign="Jana Novakova", utm_content="jana@example.com"))
     assert set(bad.values()) == {ow.REDACTED}
     assert ow.attribution(meta(utm_source="12345678"))["utm_source"] == ow.REDACTED
@@ -314,5 +315,5 @@ def test_arbitrary_metadata_never_leaks_with_landing_fields():
     for secret in PII + ["custom_landing", "landing_secret", "extra"]:
         assert secret not in text
     assert out["attribution"]["landing_page"] == "molosoc.com/cz/lp/"
-    assert out["attribution"]["utm_campaign"] == "120210000000001"
+    assert out["attribution"]["utm_campaign"] == ow.REDACTED
     assert out["attribution"]["utm_content"] == ow.REDACTED
