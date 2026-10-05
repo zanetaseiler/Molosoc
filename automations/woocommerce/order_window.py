@@ -14,6 +14,7 @@ import base64
 import json
 import os
 import sys
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -43,6 +44,21 @@ SAFE_VALUES = frozenset((
     "organic", "referral", "social", "paid", "paid_social", "cpc", "ppc", "display",
     "affiliate", "(direct)", "(none)", "utm", "typein", "admin"))
 REDACTED = "[redacted]"
+# Non-text attribution fields are validated against their expected type/vocabulary.
+SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
+DEVICE_TYPES = frozenset(("desktop", "mobile", "tablet", "unknown"))
+COUNT_RE = re.compile(r"[0-9]{1,6}")
+START_TIME_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}")
+
+
+def vocab_value(value, vocabulary):
+    text = str(value).strip()
+    return text if text.lower() in vocabulary else REDACTED
+
+
+def pattern_value(value, pattern):
+    text = str(value).strip()
+    return text if pattern.fullmatch(text) else REDACTED
 
 
 def safe_value(value):
@@ -68,17 +84,20 @@ def clean_url(value):
     """Reduce a URL to host only + vocabulary-checked utm_* params; flag fbclid presence."""
     if not value or not isinstance(value, str):
         return value
-    parsed = urllib.parse.urlsplit(value)
+    try:
+        parsed = urllib.parse.urlsplit(value)
+        query = urllib.parse.parse_qs(parsed.query)
+    except ValueError:
+        return REDACTED  # malformed (e.g. "https://["): never abort the extraction
     if not parsed.scheme and not parsed.netloc:
         return REDACTED  # bare path: visitor-controlled, nothing safe to keep
-    query = urllib.parse.parse_qs(parsed.query)
     kept = {k: safe_value(query[k][0]) for k in KEPT_QUERY_KEYS if k in query}
     # Rebuild the authority from hostname + port only: netloc may carry userinfo.
     try:
         port = parsed.port
+        host = parsed.hostname or ""
     except ValueError:
-        port = None
-    host = parsed.hostname or ""
+        return REDACTED
     if ":" in host:
         host = f"[{host}]"
     # The path is visitor-controlled and may hold PII; keep host (+port) only.
@@ -102,8 +121,20 @@ def attribution(meta_data):
         value = item.get("value")
         if name in URL_FIELDS:
             value = clean_url(value)
-        elif name.startswith("utm_") and value is not None:
+        elif value is None:
+            pass
+        elif name.startswith("utm_"):
             value = safe_value(value)
+        elif name == "source_type":
+            value = vocab_value(value, SOURCE_TYPES)
+        elif name == "device_type":
+            value = vocab_value(value, DEVICE_TYPES)
+        elif name in ("session_pages", "session_count"):
+            value = pattern_value(value, COUNT_RE)
+        elif name == "session_start_time":
+            value = pattern_value(value, START_TIME_RE)
+        else:
+            value = REDACTED  # allowlisted name without a validator: never echo
         out[name] = value
     return out
 

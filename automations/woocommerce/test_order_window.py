@@ -178,3 +178,25 @@ def test_fetch_orders_lower_bound_includes_window_start():
 
     ow.fetch_orders(C(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")
     assert seen == ["2026-09-30T23:59:59"]
+
+
+def test_every_attribution_field_is_validated():
+    def meta(**kw):
+        return [{"key": f"_wc_order_attribution_{k}", "value": v} for k, v in kw.items()]
+
+    bad = ow.attribution(meta(
+        source_type="jana@example.com", device_type="Jana Novakova",
+        session_pages="jana@example.com", session_count="Jana",
+        session_start_time="Jana Novakova"))
+    assert set(bad.values()) == {ow.REDACTED}
+    good = ow.attribution(meta(
+        source_type="organic", device_type="Mobile", session_pages="3",
+        session_count="2", session_start_time="2026-10-01 12:30:00"))
+    assert good == {"source_type": "organic", "device_type": "Mobile", "session_pages": "3",
+                    "session_count": "2", "session_start_time": "2026-10-01 12:30:00"}
+
+
+def test_malformed_url_is_redacted_not_raised():
+    assert ow.clean_url("https://[") == ow.REDACTED
+    assert ow.attribution([{"key": "_wc_order_attribution_referrer",
+                            "value": "https://["}]) == {"referrer": ow.REDACTED}
