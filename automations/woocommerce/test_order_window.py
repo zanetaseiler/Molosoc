@@ -105,8 +105,8 @@ def test_http_error_does_not_leak_body(monkeypatch):
 
 
 def test_clean_url_strips_userinfo():
-    out = ow.clean_url("https://name:tok3n@example.com:8443/p?utm_source=fb")
-    assert out == "example.com:8443?utm_source=fb"
+    out = ow.clean_url("https://name:tok3n@molosoc.com:8443/p?utm_source=fb")
+    assert out == "molosoc.com?utm_source=fb"
     assert "name" not in out and "tok3n" not in out and "@" not in out
 
 
@@ -152,17 +152,17 @@ def test_cross_origin_redirect_is_refused_without_sending_credentials():
 
 
 def test_clean_url_redacts_visitor_controlled_values():
-    out = ow.clean_url("https://example.com/reset/jana@example.com?utm_campaign=jana@example.com&utm_source=fb")
+    out = ow.clean_url("https://molosoc.com/reset/jana@example.com?utm_campaign=jana@example.com&utm_source=fb")
     assert "jana" not in out and "@" not in out
-    assert out == "example.com?utm_source=fb&utm_campaign=%5Bredacted%5D"
+    assert out == "molosoc.com?utm_source=fb&utm_campaign=%5Bredacted%5D"
     attrs = ow.attribution([{"key": "_wc_order_attribution_utm_term", "value": "jana@example.com"}])
     assert attrs["utm_term"] == "[redacted]"
 
 
 def test_name_shaped_values_are_redacted_not_echoed():
-    out = ow.clean_url("https://example.com/customers/jana-novakova?utm_campaign=Jana Novakova&utm_medium=paid")
+    out = ow.clean_url("https://molosoc.com/customers/jana-novakova?utm_campaign=Jana Novakova&utm_medium=paid")
     assert "jana" not in out.lower() and "novakova" not in out.lower()
-    assert out == "example.com?utm_medium=paid&utm_campaign=%5Bredacted%5D"
+    assert out == "molosoc.com?utm_medium=paid&utm_campaign=%5Bredacted%5D"
     attrs = ow.attribution([{"key": "_wc_order_attribution_utm_campaign", "value": "Jana Novakova"}])
     assert attrs["utm_campaign"] == "[redacted]"
     assert ow.clean_url("/customers/jana-novakova") == "[redacted]"
@@ -200,3 +200,38 @@ def test_malformed_url_is_redacted_not_raised():
     assert ow.clean_url("https://[") == ow.REDACTED
     assert ow.attribution([{"key": "_wc_order_attribution_referrer",
                             "value": "https://["}]) == {"referrer": ow.REDACTED}
+
+
+def test_non_string_url_metadata_is_redacted():
+    for bad in ({"email": "jana@example.com"}, ["jana@example.com"], 42, True):
+        assert ow.clean_url(bad) == ow.REDACTED
+    attrs = ow.attribution([{"key": "_wc_order_attribution_referrer",
+                             "value": {"email": "jana@example.com"}}])
+    assert "jana" not in json.dumps(attrs)
+
+
+def test_unapproved_hostnames_are_redacted():
+    for url in ("https://jana-novakova.example/", "http://203.0.113.9/", "http://[2001:db8::1]/"):
+        out = ow.clean_url(url)
+        assert out == ow.REDACTED and "jana" not in out and "203" not in out
+    assert ow.clean_url("https://l.facebook.com/x?utm_source=fb") == "l.facebook.com?utm_source=fb"
+    assert ow.clean_url("https://evilmolosoc.com/") == ow.REDACTED
+
+
+def test_window_with_exactly_page_cap_is_accepted():
+    cap = ow.MAX_PAGES * ow.PER_PAGE
+
+    class C:
+        def get(self, path, params):
+            if params["page"] <= ow.MAX_PAGES:
+                return [{"id": i} for i in range(ow.PER_PAGE)]
+            return []
+
+    assert len(ow.fetch_orders(C(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")) == cap
+
+    class Over(C):
+        def get(self, path, params):
+            return [{"id": 1}] if params["page"] > ow.MAX_PAGES else super().get(path, params)
+
+    with pytest.raises(RuntimeError):
+        ow.fetch_orders(Over(), "2026-10-01T00:00:00", "2026-10-02T00:00:00")

@@ -44,6 +44,13 @@ SAFE_VALUES = frozenset((
     "organic", "referral", "social", "paid", "paid_social", "cpc", "ppc", "display",
     "affiliate", "(direct)", "(none)", "utm", "typein", "admin"))
 REDACTED = "[redacted]"
+# Hostnames can be visitor-controlled too (personal domains, IP literals), so only
+# these domains (and their subdomains) are printed; any other host is redacted.
+SAFE_HOST_DOMAINS = (
+    "molosoc.com", "google.com", "bing.com", "duckduckgo.com", "yahoo.com", "seznam.cz",
+    "facebook.com", "instagram.com", "l.facebook.com", "youtube.com", "tiktok.com",
+    "pinterest.com", "linkedin.com", "twitter.com", "t.co", "x.com", "paypal.com",
+    "stripe.com", "wordpress.com")
 # Non-text attribution fields are validated against their expected type/vocabulary.
 SOURCE_TYPES = frozenset(("typein", "organic", "referral", "utm", "admin", "unknown"))
 DEVICE_TYPES = frozenset(("desktop", "mobile", "tablet", "unknown"))
@@ -67,6 +74,14 @@ def safe_value(value):
     return text if text.lower() in SAFE_VALUES else REDACTED
 
 
+def safe_host(host):
+    host = (host or "").lower().rstrip(".")
+    for domain in SAFE_HOST_DOMAINS:
+        if host == domain or host.endswith("." + domain):
+            return host
+    return REDACTED
+
+
 def window_bounds(start, end):
     """(after, before) ISO strings, UTC; end day is inclusive. Max MAX_DAYS days."""
     s = date.fromisoformat(start)
@@ -82,8 +97,10 @@ def window_bounds(start, end):
 
 def clean_url(value):
     """Reduce a URL to host only + vocabulary-checked utm_* params; flag fbclid presence."""
-    if not value or not isinstance(value, str):
+    if value is None or value == "":
         return value
+    if not isinstance(value, str):
+        return REDACTED  # dicts/lists/numbers must never reach the log
     try:
         parsed = urllib.parse.urlsplit(value)
         query = urllib.parse.parse_qs(parsed.query)
@@ -92,16 +109,12 @@ def clean_url(value):
     if not parsed.scheme and not parsed.netloc:
         return REDACTED  # bare path: visitor-controlled, nothing safe to keep
     kept = {k: safe_value(query[k][0]) for k in KEPT_QUERY_KEYS if k in query}
-    # Rebuild the authority from hostname + port only: netloc may carry userinfo.
     try:
-        port = parsed.port
-        host = parsed.hostname or ""
+        host = safe_host(parsed.hostname)
     except ValueError:
         return REDACTED
-    if ":" in host:
-        host = f"[{host}]"
-    # The path is visitor-controlled and may hold PII; keep host (+port) only.
-    out = f"{host}{':' + str(port) if port else ''}"
+    # Host only: userinfo, port and the visitor-controlled path are all dropped.
+    out = host
     if kept:
         out += "?" + urllib.parse.urlencode(kept)
     if "fbclid" in query:
@@ -203,15 +216,19 @@ def fetch_orders(client, after, before):
     # WooCommerce `after` is an exclusive bound: step back 1s so an order created
     # exactly at the window start is included.
     query_after = (datetime.fromisoformat(after) - timedelta(seconds=1)).isoformat()
-    for page in range(1, MAX_PAGES + 1):
+    for page in range(1, MAX_PAGES + 2):
         batch = client.get("/orders", {
             "after": query_after, "before": before, "dates_are_gmt": "true",
             "status": "any", "per_page": PER_PAGE, "page": page,
             "orderby": "date", "order": "asc"})
+        if page > MAX_PAGES:
+            # Probe page: a full final batch is fine; any extra record means overflow.
+            if batch:
+                raise RuntimeError(f"more than {MAX_PAGES * PER_PAGE} orders in window; narrow it")
+            return orders
         orders.extend(batch)
         if len(batch) < PER_PAGE:
             return orders
-    raise RuntimeError(f"more than {MAX_PAGES * PER_PAGE} orders in window; narrow it")
 
 
 def main(argv=None):
