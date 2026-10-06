@@ -319,12 +319,17 @@ class Rendering(unittest.TestCase):
 
     def test_gift_order_thank_you_names_the_order_it_ships_with(self):
         body = "echo molosoc_thankyou_received_text( 'x', wc_get_order( 77 ) );"
-        linked = {"meta": {"77": {"_molosoc_gift_parent_order": 88}}}
+        linked = {"meta": {"77": {"_molosoc_gift_parent_order": 88, "_molosoc_gift_parent_order_noted": "yes"}}}
         self.assertEqual(run_php(linked, body, get=KEY), "Vaši objednávku jsme přijali. Pošleme ji společně s objednávkou č. 88.")
         self.assertEqual(
             run_php(dict(linked, order_lang="en"), body, get=KEY),
             "Your order has been received. It ships together with order #88.",
         )
+
+    def test_gift_order_with_payment_still_pending_makes_no_ship_together_promise(self):
+        body = "echo molosoc_thankyou_received_text( 'x', wc_get_order( 77 ) );"
+        pending = {"meta": {"77": {"_molosoc_gift_parent_order": 88}}}
+        self.assertEqual(run_php(pending, body, get=KEY), "Vaši objednávku jsme přijali.")
 
     def test_manually_routed_gift_order_makes_no_ship_together_promise(self):
         body = "echo molosoc_thankyou_received_text( 'x', wc_get_order( 77 ) );"
@@ -396,7 +401,7 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(customer["billing_first_name"], "Jana")
         self.assertEqual(customer["billing_email"], "jana@example.test")
         self.assertEqual(customer["shipping_city"], "Praha")
-        self.assertNotIn("billing_phone", customer)  # empty values are not copied
+        self.assertEqual(customer["billing_phone"], "")  # blank parent fields clear stale session values
         self.assertEqual(customer["saved"], 1)  # session-backed customer saved so checkout sees the address
 
     def test_preloaded_rows_of_a_chosen_size_are_rejected_and_untouched(self):

@@ -176,8 +176,9 @@ function molosoc_thankyou_received_text( $text, $order = null ) {
 	$is_cz  = 'cz' === molosoc_thankyou_lang( $order );
 	$text   = $is_cz ? 'Vaši objednávku jsme přijali.' : 'Your order has been received.';
 	$parent = molosoc_gift_parent_order( $order );
-	// Not promised when payment-time revalidation routed the order to manual handling.
-	if ( $parent && 'manual' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
+	// Promised only once payment confirmation linked the orders ('yes'): not while
+	// payment is still pending (unset), nor when routed to manual handling.
+	if ( $parent && 'yes' === (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
 		$text .= ' ' . sprintf(
 			$is_cz ? 'Pošleme ji společně s objednávkou č. %s.' : 'It ships together with order #%s.',
 			$parent->get_order_number()
@@ -547,7 +548,9 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 	foreach ( array( 'billing', 'shipping' ) as $type ) {
 		foreach ( (array) $parent->get_address( $type ) as $field => $value ) {
 			$setter = 'set_' . $type . '_' . $field;
-			if ( '' === (string) $value || ! method_exists( $customer, $setter ) ) {
+			// Blank parent fields clear the session's stale value too, so the
+			// checkout address is exactly the original order's.
+			if ( ! method_exists( $customer, $setter ) ) {
 				continue;
 			}
 			try {
