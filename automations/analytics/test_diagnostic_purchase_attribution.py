@@ -113,3 +113,43 @@ def test_aggregate_reports_run_first_and_are_read_only(monkeypatch):
 def test_not_set_reports_are_not_labelled_as_event_paths():
     for title, *_ in dpa.NOT_SET_REPORTS:
         assert "path" not in title.lower().replace("pagepath", "")
+
+
+def test_funnel_report_is_the_single_requested_shape():
+    assert len(dpa.FUNNEL_REPORTS) == 1
+    title, dims, metrics, limit, (field, values) = dpa.FUNNEL_REPORTS[0]
+    assert dims == ("eventName", "sessionSource", "sessionMedium", "platform", "streamId")
+    assert metrics == ("eventCount",) and field == "eventName"
+    assert set(values) == {"session_start", "first_visit", "page_view", "view_item",
+                           "add_to_cart", "begin_checkout", "add_payment_info", "purchase"}
+
+
+def test_funnel_report_renders_and_failure_is_isolated(monkeypatch):
+    row = ["page_view", "(not set)", "(not set)", "web", "1", "5"]
+    monkeypatch.setattr(dpa, "ga4_report", lambda *a, **k: [row])
+    sections, errors = dpa.run_reports(None, "1", "2026-10-05", "2026-10-05", dpa.FUNNEL_REPORTS)
+    assert errors == []
+    assert "page_view" in sections[0] and "streamId" in sections[0]
+
+    def boom(*a, **k):
+        raise RuntimeError("rejected")
+
+    monkeypatch.setattr(dpa, "ga4_report", boom)
+    sections, errors = dpa.run_reports(None, "1", "2026-10-05", "2026-10-05", dpa.FUNNEL_REPORTS)
+    assert len(errors) == 1 and "REPORT FAILED" in sections[0]
+
+
+def test_ga4_report_uses_in_list_filter_for_funnel(monkeypatch):
+    pytest = __import__("pytest")
+    pytest.importorskip("google.analytics.data_v1beta")
+    captured = {}
+
+    class Client:
+        def run_report(self, request):
+            captured["req"] = request
+            return SimpleNamespace(rows=[])
+
+    dpa.ga4_report(Client(), "1", "2026-10-05", "2026-10-05",
+                   ("eventName",), ("eventCount",), 10, ("eventName", dpa.FUNNEL_EVENTS))
+    assert list(captured["req"].dimension_filter.filter.in_list_filter.values) == list(
+        dpa.FUNNEL_EVENTS)

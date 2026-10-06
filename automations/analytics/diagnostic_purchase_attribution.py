@@ -13,7 +13,12 @@ is lost, for a short window (default: 2026-10-05, the day of order 1026):
      sessions whose sessionSourceMedium is `(not set)`, including whether
      `session_start` exists. These are counts only: no session id, timestamp or
      event order, so they do NOT establish an event path or funnel sequence;
-  3. whether `ga_session_id` / `client_id` are registered as custom
+  3. one funnel-event report (Issue #116): eventName x sessionSource x
+     sessionMedium x platform x streamId event counts for session_start,
+     first_visit, page_view and the ecommerce funnel, to tell a separate
+     sender / stream (platform, streamId) from consent-timing or
+     session-cookie loss (page_view vs session_start in the `(not set)` bucket);
+  4. whether `ga_session_id` / `client_id` are registered as custom
      dimensions (property metadata), i.e. whether they can be reported at all.
 
 Only runReport and getMetadata calls are made. Nothing is written, no GA4,
@@ -86,6 +91,16 @@ NOT_SET_REPORTS = (
      ("eventCount",), 500, ("eventName", "session_start")),
 )
 
+# Issue #116: the single added report. Counts only (eventCount); the filter is
+# an exact in-list on eventName. Failure of this report never aborts the others.
+FUNNEL_EVENTS = ("session_start", "first_visit", "page_view", "view_item",
+                 "add_to_cart", "begin_checkout", "add_payment_info", "purchase")
+FUNNEL_REPORTS = (
+    ("Funnel events by session source / medium, platform and stream",
+     ("eventName", "sessionSource", "sessionMedium", "platform", "streamId"),
+     ("eventCount",), 500, ("eventName", FUNNEL_EVENTS)),
+)
+
 
 def ga4_report(client, property_id, start, end, dimensions, metrics, limit, match):
     """One read-only runReport with an exact-match dimension filter."""
@@ -95,19 +110,28 @@ def ga4_report(client, property_id, start, end, dimensions, metrics, limit, matc
     )
 
     field, value = match
+    if isinstance(value, (tuple, list)):
+        field_filter = Filter(field_name=field,
+                              in_list_filter=Filter.InListFilter(values=list(value)))
+    else:
+        field_filter = Filter(
+            field_name=field,
+            string_filter=Filter.StringFilter(
+                value=value, match_type=Filter.StringFilter.MatchType.EXACT))
     response = client.run_report(RunReportRequest(
         property=f"properties/{property_id}",
         date_ranges=[DateRange(start_date=start, end_date=end)],
         dimensions=[Dimension(name=d) for d in dimensions],
         metrics=[Metric(name=m) for m in metrics],
-        dimension_filter=FilterExpression(filter=Filter(
-            field_name=field,
-            string_filter=Filter.StringFilter(
-                value=value, match_type=Filter.StringFilter.MatchType.EXACT))),
+        dimension_filter=FilterExpression(filter=field_filter),
         order_bys=[OrderBy(metric=OrderBy.MetricOrderBy(metric_name=metrics[0]), desc=True)],
         limit=limit))
     return [[v.value for v in r.dimension_values] + [v.value for v in r.metric_values]
             for r in response.rows]
+
+
+def format_match(value):
+    return " | ".join(value) if isinstance(value, (tuple, list)) else value
 
 
 def run_reports(client, property_id, start, end, reports):
@@ -121,7 +145,7 @@ def run_reports(client, property_id, start, end, reports):
             continue
         note = (f"\n(WARN: GA4 row limit {limit} reached; rows may be truncated)"
                 if len(rows) >= limit else "")
-        sections.append(table(f"GA4 — {title} [{match[0]} = {match[1]}]",
+        sections.append(table(f"GA4 — {title} [{match[0]} = {format_match(match[1])}]",
                               list(dims) + list(metrics), rows) + note)
     return sections, errors
 
@@ -187,7 +211,8 @@ def main(argv=None):
 
         client = BetaAnalyticsDataClient(
             credentials=build_credentials(load_service_account_info(), [GA4_SCOPE]))
-        for reports in (AGGREGATE_PURCHASE_REPORTS, PURCHASE_REPORTS, NOT_SET_REPORTS):
+        for reports in (AGGREGATE_PURCHASE_REPORTS, PURCHASE_REPORTS, NOT_SET_REPORTS,
+                        FUNNEL_REPORTS):
             sections, errors = run_reports(client, args.property_id, args.start, args.end, reports)
             print("\n".join(sections))
             failures += [f"GA4 {e}" for e in errors]
