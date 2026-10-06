@@ -9,9 +9,10 @@ is lost, for a short window (default: 2026-10-05, the day of order 1026):
   1. purchase events with every attribution dimension side by side
      (session, session-manual, first-user, event-scoped) plus transactionId,
      hostName, pagePath, and purchase metrics;
-  2. the event path (eventName x pagePath, and x pageReferrer) of sessions whose
-     sessionSourceMedium is `(not set)`, to show where in the funnel the
-     session context changes, including whether `session_start` exists;
+  2. an aggregate event inventory (eventName x pagePath, and x pageReferrer) of
+     sessions whose sessionSourceMedium is `(not set)`, including whether
+     `session_start` exists. These are counts only: no session id, timestamp or
+     event order, so they do NOT establish an event path or funnel sequence;
   3. whether `ga_session_id` / `client_id` are registered as custom
      dimensions (property metadata), i.e. whether they can be reported at all.
 
@@ -41,6 +42,8 @@ SESSION_IDENTITY_NAMES = ("ga_session_id", "client_id")
 PURCHASE_METRICS = ("eventCount", "purchaseRevenue", "ecommercePurchases")
 PATH_METRICS = ("eventCount", "totalUsers")
 
+# Every purchase report carries transactionId so each attribution row stays
+# tied to its order (a row can never blend several orders' metrics).
 # (title, dimensions, metrics, row limit, (filter field, value)). Dimension
 # groups are split because GA4 rejects some scope combinations; each report
 # succeeds or fails on its own.
@@ -48,19 +51,19 @@ PURCHASE_REPORTS = (
     ("Purchase: transaction, host, page", ("transactionId", "hostName", "pagePath"),
      PURCHASE_METRICS, 50, ("eventName", "purchase")),
     ("Purchase: session-scoped attribution",
-     ("sessionSourceMedium", "sessionManualSourceMedium", "sessionDefaultChannelGroup",
-      "landingPage"), PURCHASE_METRICS, 50, ("eventName", "purchase")),
+     ("transactionId", "sessionSourceMedium", "sessionManualSourceMedium",
+      "sessionDefaultChannelGroup", "landingPage"), PURCHASE_METRICS, 50, ("eventName", "purchase")),
     ("Purchase: first-user attribution",
-     ("firstUserSourceMedium", "firstUserManualSourceMedium"),
+     ("transactionId", "firstUserSourceMedium", "firstUserManualSourceMedium"),
      PURCHASE_METRICS, 50, ("eventName", "purchase")),
     ("Purchase: event-scoped attribution",
-     ("manualSourceMedium", "source", "medium"),
+     ("transactionId", "manualSourceMedium", "source", "medium"),
      PURCHASE_METRICS, 50, ("eventName", "purchase")),
 )
 NOT_SET_REPORTS = (
-    ("(not set) sessions: events by page", ("eventName", "pagePath"), PATH_METRICS, 200,
+    ("(not set) sessions: aggregate event inventory by page", ("eventName", "pagePath"), PATH_METRICS, 200,
      ("sessionSourceMedium", NOT_SET)),
-    ("(not set) sessions: events by referrer", ("eventName", "pageReferrer"),
+    ("(not set) sessions: aggregate event inventory by referrer", ("eventName", "pageReferrer"),
      PATH_METRICS, 200, ("sessionSourceMedium", NOT_SET)),
     ("(not set) sessions: landing page and device",
      ("landingPage", "deviceCategory", "sessionDefaultChannelGroup"),
@@ -113,6 +116,8 @@ def classify_identity_dimensions(api_names):
     """Which of ga_session_id / client_id are registered custom dimensions.
 
     `api_names` are the property's dimension API names (from getMetadata).
+    The suffix is compared exactly (case-sensitive): `customUser:Client_ID` does
+    not register `client_id`.
     Returns {name: [matching api names]}; an empty list means NOT registered
     (so not reportable), never "absent from the data".
     """
@@ -120,7 +125,7 @@ def classify_identity_dimensions(api_names):
     for api_name in api_names:
         if not api_name.startswith(("customEvent:", "customUser:")):
             continue
-        suffix = api_name.split(":", 1)[1].lower()
+        suffix = api_name.split(":", 1)[1]
         for name in SESSION_IDENTITY_NAMES:
             if suffix == name:
                 found[name].append(api_name)

@@ -19,7 +19,9 @@ def test_classify_identity_dimensions():
              "customEvent:other", "sessionSourceMedium"]
     found = dpa.classify_identity_dimensions(names)
     assert found["ga_session_id"] == ["customEvent:ga_session_id"]
-    assert found["client_id"] == ["customUser:Client_ID"]
+    assert found["client_id"] == []  # case differs: not the client_id parameter
+    assert dpa.classify_identity_dimensions(["customUser:client_id"])["client_id"] == [
+        "customUser:client_id"]
     assert dpa.classify_identity_dimensions(["date"]) == {"ga_session_id": [], "client_id": []}
 
 
@@ -65,3 +67,13 @@ def test_empty_result_is_not_zero(monkeypatch):
 def test_reports_are_read_only_exact_filters():
     for _, dims, metrics, limit, match in dpa.PURCHASE_REPORTS + dpa.NOT_SET_REPORTS:
         assert dims and metrics and limit > 0 and len(match) == 2
+
+
+def test_every_purchase_report_keeps_transaction_id():
+    for title, dims, *_ in dpa.PURCHASE_REPORTS:
+        assert "transactionId" in dims, title
+
+
+def test_not_set_reports_are_not_labelled_as_event_paths():
+    for title, *_ in dpa.NOT_SET_REPORTS:
+        assert "path" not in title.lower().replace("pagepath", "")
