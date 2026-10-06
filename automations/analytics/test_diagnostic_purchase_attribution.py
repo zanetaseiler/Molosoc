@@ -65,13 +65,49 @@ def test_empty_result_is_not_zero(monkeypatch):
 
 
 def test_reports_are_read_only_exact_filters():
-    for _, dims, metrics, limit, match in dpa.PURCHASE_REPORTS + dpa.NOT_SET_REPORTS:
+    for _, dims, metrics, limit, match in dpa.AGGREGATE_PURCHASE_REPORTS + dpa.PURCHASE_REPORTS + dpa.NOT_SET_REPORTS:
         assert dims and metrics and limit > 0 and len(match) == 2
 
 
 def test_every_purchase_report_keeps_transaction_id():
     for title, dims, *_ in dpa.PURCHASE_REPORTS:
         assert "transactionId" in dims, title
+
+
+def test_event_scoped_attribution_is_not_one_combined_query():
+    event_scoped = [dims for title, dims, *_ in dpa.PURCHASE_REPORTS
+                    if "event-scoped" in title]
+    assert event_scoped
+    attribution = {"manualSourceMedium", "source", "medium"}
+    for dims in event_scoped:
+        assert "transactionId" in dims
+        assert len(attribution & set(dims)) == 1, dims
+    assert attribution == {d for dims in event_scoped for d in dims} - {"transactionId"}
+
+
+def test_duplicate_purchase_check_counts_hits_per_transaction():
+    by_title = {r[0]: r for r in dpa.AGGREGATE_PURCHASE_REPORTS}
+    _, dims, metrics, limit, match = by_title[
+        "Purchase: hits per transactionId (duplicate check)"]
+    assert dims == ("transactionId",) and metrics == ("eventCount",)
+    assert match == ("eventName", "purchase") and limit > 0
+
+
+def test_purchase_by_host_and_page_is_aggregate_purchase_only():
+    by_title = {r[0]: r for r in dpa.AGGREGATE_PURCHASE_REPORTS}
+    _, dims, metrics, _, match = by_title["Purchase: hits by host and page"]
+    assert dims == ("hostName", "pagePath") and metrics == ("eventCount",)
+    assert match == ("eventName", "purchase")
+
+
+def test_aggregate_reports_run_first_and_are_read_only(monkeypatch):
+    seen = []
+    monkeypatch.setattr(dpa, "ga4_report",
+                        lambda c, p, s, e, dims, m, lim, match: seen.append(match) or [])
+    sections, errors = dpa.run_reports(None, "1", "2026-10-05", "2026-10-05",
+                                       dpa.AGGREGATE_PURCHASE_REPORTS)
+    assert len(sections) == len(dpa.AGGREGATE_PURCHASE_REPORTS) and errors == []
+    assert set(seen) == {("eventName", "purchase")}
 
 
 def test_not_set_reports_are_not_labelled_as_event_paths():

@@ -6,9 +6,9 @@ GA4 shows purchase attribution as `(not set)` while WooCommerce keeps
 `ig / paid`. This prints the evidence needed to say where the session identity
 is lost, for a short window (default: 2026-10-05, the day of order 1026):
 
-  1. purchase events with every attribution dimension side by side
-     (session, session-manual, first-user, event-scoped) plus transactionId,
-     hostName, pagePath, and purchase metrics;
+  1. purchase events: hits per transactionId (duplicate check), hits by
+     hostName x pagePath, and per-transactionId attribution (session,
+     session-manual, first-user, event-scoped) with purchase metrics;
   2. an aggregate event inventory (eventName x pagePath, and x pageReferrer) of
      sessions whose sessionSourceMedium is `(not set)`, including whether
      `session_start` exists. These are counts only: no session id, timestamp or
@@ -42,23 +42,37 @@ SESSION_IDENTITY_NAMES = ("ga_session_id", "client_id")
 PURCHASE_METRICS = ("eventCount", "purchaseRevenue", "ecommercePurchases")
 PATH_METRICS = ("eventCount", "totalUsers")
 
-# Every purchase report carries transactionId so each attribution row stays
-# tied to its order (a row can never blend several orders' metrics).
+# Purchase reports carry transactionId so each attribution row stays tied to its
+# order (a row can never blend several orders' metrics). The two aggregate
+# reports in AGGREGATE_PURCHASE_REPORTS deliberately do not: they count purchase
+# hits per transactionId (duplicates) and per host / page.
 # (title, dimensions, metrics, row limit, (filter field, value)). Dimension
 # groups are split because GA4 rejects some scope combinations; each report
-# succeeds or fails on its own.
+# succeeds or fails on its own. The event-scoped attribution dimensions are
+# requested one group at a time with transactionId: the single combined query
+# (manualSourceMedium + source + medium) was rejected by GA4 as incompatible.
+PURCHASE_FILTER = ("eventName", "purchase")
+AGGREGATE_PURCHASE_REPORTS = (
+    ("Purchase: hits per transactionId (duplicate check)", ("transactionId",),
+     ("eventCount",), 100, PURCHASE_FILTER),
+    ("Purchase: hits by host and page", ("hostName", "pagePath"),
+     ("eventCount",), 100, PURCHASE_FILTER),
+)
 PURCHASE_REPORTS = (
     ("Purchase: transaction, host, page", ("transactionId", "hostName", "pagePath"),
-     PURCHASE_METRICS, 50, ("eventName", "purchase")),
+     PURCHASE_METRICS, 50, PURCHASE_FILTER),
     ("Purchase: session-scoped attribution",
      ("transactionId", "sessionSourceMedium", "sessionManualSourceMedium",
-      "sessionDefaultChannelGroup", "landingPage"), PURCHASE_METRICS, 50, ("eventName", "purchase")),
+      "sessionDefaultChannelGroup", "landingPage"), PURCHASE_METRICS, 50, PURCHASE_FILTER),
     ("Purchase: first-user attribution",
      ("transactionId", "firstUserSourceMedium", "firstUserManualSourceMedium"),
-     PURCHASE_METRICS, 50, ("eventName", "purchase")),
-    ("Purchase: event-scoped attribution",
-     ("transactionId", "manualSourceMedium", "source", "medium"),
-     PURCHASE_METRICS, 50, ("eventName", "purchase")),
+     PURCHASE_METRICS, 50, PURCHASE_FILTER),
+    ("Purchase: event-scoped manual source / medium",
+     ("transactionId", "manualSourceMedium"), ("eventCount",), 50, PURCHASE_FILTER),
+    ("Purchase: event-scoped source",
+     ("transactionId", "source"), ("eventCount",), 50, PURCHASE_FILTER),
+    ("Purchase: event-scoped medium",
+     ("transactionId", "medium"), ("eventCount",), 50, PURCHASE_FILTER),
 )
 NOT_SET_REPORTS = (
     ("(not set) sessions: aggregate event inventory by page", ("eventName", "pagePath"), PATH_METRICS, 200,
@@ -173,7 +187,7 @@ def main(argv=None):
 
         client = BetaAnalyticsDataClient(
             credentials=build_credentials(load_service_account_info(), [GA4_SCOPE]))
-        for reports in (PURCHASE_REPORTS, NOT_SET_REPORTS):
+        for reports in (AGGREGATE_PURCHASE_REPORTS, PURCHASE_REPORTS, NOT_SET_REPORTS):
             sections, errors = run_reports(client, args.property_id, args.start, args.end, reports)
             print("\n".join(sections))
             failures += [f"GA4 {e}" for e in errors]
