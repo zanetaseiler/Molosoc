@@ -567,6 +567,20 @@ class LinkedCheckout(unittest.TestCase):
         out = run_php({"session": {"molosoc_gift_parent": LINK}}, body)  # an ordinary order: untouched
         self.assertIn("molosoc_gift_parent", json.loads(out))
 
+    def test_shipping_cache_key_follows_the_link_state(self):
+        body = """
+        echo json_encode( molosoc_gift_shipping_package_state( array( array( 'contents' => array() ), array( 'contents' => array() ) ) ) );
+        """
+        linked = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        self.assertEqual([p["molosoc_gift_parent"] for p in linked], [77, 77])
+        for scenario in (
+            {"cart": {"line425": 2}},                                                     # no link
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "status": {"77": "completed"}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "age": {"77": 48 * 3600}},
+        ):
+            unlinked = json.loads(run_php(scenario, body))
+            self.assertEqual([p["molosoc_gift_parent"] for p in unlinked], [0, 0], scenario)
+
     def test_unlinked_checkout_is_untouched(self):
         body = """
         $new = wc_get_order( 88 );

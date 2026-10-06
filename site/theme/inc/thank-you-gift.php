@@ -608,6 +608,25 @@ function molosoc_gift_shipping_rates( $rates, $package ) {
 add_filter( 'woocommerce_package_rates', 'molosoc_gift_shipping_rates', 100, 2 );
 
 /**
+ * WooCommerce caches a package's rates under a hash of the package (contents,
+ * destination, ...) and only runs woocommerce_package_rates on a cache miss.
+ * Whether the gift link is currently valid is not part of that hash, so a
+ * cached 0-cost rate could outlive the link (parent expired or dispatched) and
+ * cached paid rates could survive linking an otherwise unchanged cart. Put the
+ * linked order's ID (0 when there is no valid link) into every package: the
+ * hash changes exactly when the link's validity does, forcing a recalculation.
+ */
+function molosoc_gift_shipping_package_state( $packages ) {
+	$link  = molosoc_gift_cart_link();
+	$state = $link ? $link['order']->get_id() : 0;
+	foreach ( (array) $packages as $i => $package ) {
+		$packages[ $i ]['molosoc_gift_parent'] = $state;
+	}
+	return $packages;
+}
+add_filter( 'woocommerce_cart_shipping_packages', 'molosoc_gift_shipping_package_state', 100, 1 );
+
+/**
  * Stamp the new order with the original order's ID the moment checkout
  * creates it. Classic checkout fires woocommerce_checkout_create_order
  * (before the order is saved); the block checkout's Store API fires
