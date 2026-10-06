@@ -1,13 +1,26 @@
 <?php
 /**
  * Bilingual Thank You / Order Received page — hero heading plus a
- * post-purchase gift add-on section (GitHub Issue #106).
+ * post-purchase gift add-on section (GitHub Issues #106, #108).
  *
  * The paid order is NEVER modified and the customer is NEVER charged from
  * this page. The Comgate plugin is not vendored in this repository, so no
  * tokenised "one-click" charge can be confirmed safe; the gift CTA instead
  * adds the chosen pairs to the cart and sends the customer through the
- * normal, unchanged checkout as a new, separate order — and says so.
+ * normal, unchanged checkout as a new order that is LINKED to the original
+ * one (#108):
+ *   - shipping is 0 — one "Ships with order #N" rate replaces the normal
+ *     rates while the cart is linked, since the customer already paid
+ *     shipping on the original order;
+ *   - the checkout address is pre-filled from the original order;
+ *   - the new order carries `_molosoc_gift_parent_order`, both orders get
+ *     a private order note, and the admin order screen shows the link, so
+ *     fulfilment packs the two together.
+ * The link lives in the WooCommerce session between the Thank You page
+ * and checkout, and is re-validated against the original order every time
+ * it is used. The offer only appears while the original order can still be
+ * combined: processing/on-hold (never completed = dispatched), placed
+ * within MOLOSOC_GIFT_WINDOW_HOURS, and not itself a gift add-on.
  *
  * Presentation goes through WooCommerce's own hooks only (no
  * checkout/thankyou.php override), so the order overview/details, the
@@ -24,6 +37,24 @@ defined( 'ABSPATH' ) || exit;
 // The most pairs one gift checkout can start with.
 if ( ! defined( 'MOLOSOC_GIFT_MAX_PAIRS' ) ) {
 	define( 'MOLOSOC_GIFT_MAX_PAIRS', 3 );
+}
+
+// How long after the original order was placed the gift add-on (and its
+// "ships with your original order" promise) is still offered. JUDGMENT
+// CALL: the real dispatch cadence isn't known from this repository; the
+// status gate (never a completed order) is the hard rule, this window is
+// the safety margin on top of it.
+if ( ! defined( 'MOLOSOC_GIFT_WINDOW_HOURS' ) ) {
+	define( 'MOLOSOC_GIFT_WINDOW_HOURS', 24 );
+}
+
+// Order meta on the gift order pointing at the original order; session key
+// carrying the link from the Thank You page to checkout.
+if ( ! defined( 'MOLOSOC_GIFT_PARENT_META' ) ) {
+	define( 'MOLOSOC_GIFT_PARENT_META', '_molosoc_gift_parent_order' );
+}
+if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
+	define( 'MOLOSOC_GIFT_SESSION_KEY', 'molosoc_gift_parent' );
 }
 
 /**
@@ -70,6 +101,28 @@ function molosoc_thankyou_lang( $order ) {
 }
 
 /**
+ * True while gift pairs can still be packed together with $order: it is
+ * paid-or-awaiting-payment but not dispatched (processing/on-hold; a
+ * completed order has left the building), it was placed within the window,
+ * and it is not itself a gift add-on (one link only, never a chain).
+ * Used by the Thank You page to decide whether to show the offer at all,
+ * and again by the cart/checkout hooks before they rely on the link.
+ */
+function molosoc_gift_can_ship_with( $order ) {
+	if ( ! $order instanceof WC_Order || ! $order->has_status( array( 'processing', 'on-hold' ) ) ) {
+		return false;
+	}
+	if ( '' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META ) ) {
+		return false;
+	}
+	$created = $order->get_date_created();
+	if ( ! $created ) {
+		return false;
+	}
+	return ( time() - $created->getTimestamp() ) <= MOLOSOC_GIFT_WINDOW_HOURS * HOUR_IN_SECONDS;
+}
+
+/**
  * Hero heading. index.php already prints the page's <h1> from the_title(),
  * which WooCommerce swaps for its endpoint title ("Order received") on
  * this endpoint — replacing that title keeps one H1 and adds no markup.
@@ -86,15 +139,37 @@ add_filter( 'woocommerce_endpoint_order-received_title', 'molosoc_thankyou_title
 /**
  * WooCommerce's own confirmation line under the heading ("Thank you. Your
  * order has been received.") would repeat the hero word for word, so it
- * keeps only the confirmation half.
+ * keeps only the confirmation half. A gift add-on order's own Thank You
+ * page adds which order it ships with.
  */
 function molosoc_thankyou_received_text( $text, $order = null ) {
 	if ( ! $order instanceof WC_Order || ! molosoc_thankyou_order() ) {
 		return $text;
 	}
-	return ( 'cz' === molosoc_thankyou_lang( $order ) ) ? 'Vaši objednávku jsme přijali.' : 'Your order has been received.';
+	$is_cz  = 'cz' === molosoc_thankyou_lang( $order );
+	$text   = $is_cz ? 'Vaši objednávku jsme přijali.' : 'Your order has been received.';
+	$parent = molosoc_gift_parent_order( $order );
+	if ( $parent ) {
+		$text .= ' ' . sprintf(
+			$is_cz ? 'Pošleme ji společně s objednávkou č. %s.' : 'It ships together with order #%s.',
+			$parent->get_order_number()
+		);
+	}
+	return $text;
 }
 add_filter( 'woocommerce_thankyou_order_received_text', 'molosoc_thankyou_received_text', 10, 2 );
+
+/**
+ * The original order a gift add-on order points at, or null.
+ */
+function molosoc_gift_parent_order( $order ) {
+	if ( ! $order instanceof WC_Order ) {
+		return null;
+	}
+	$parent_id = absint( $order->get_meta( MOLOSOC_GIFT_PARENT_META ) );
+	$parent    = $parent_id ? wc_get_order( $parent_id ) : false;
+	return $parent instanceof WC_Order ? $parent : null;
+}
 
 /**
  * The sizes a gift pair can be ordered in right now, M before L, read from
@@ -146,10 +221,13 @@ function molosoc_gift_checkout_url( $lang ) {
 /**
  * Gift add-on section, printed after WooCommerce's own order details
  * (woocommerce_order_details_table runs on this hook at priority 10).
+ * Only while the order can still ship together with the gift pairs — the
+ * section's whole promise is "no additional shipping", so it is not shown
+ * at all once that can't be kept.
  */
 function molosoc_thankyou_gift_section( $order_id ) {
 	$order = molosoc_thankyou_order();
-	if ( ! $order || (int) $order_id !== (int) $order->get_id() ) {
+	if ( ! $order || (int) $order_id !== (int) $order->get_id() || ! molosoc_gift_can_ship_with( $order ) ) {
 		return;
 	}
 	$sizes = molosoc_gift_sizes();
@@ -199,14 +277,16 @@ function molosoc_thankyou_gift_section( $order_id ) {
 				<?php
 				echo esc_html(
 					$is_cz
-						? 'MOLOSOC vznikl mezi mámou a dcerou. Pokud už máte jedny pro sebe, můžete přidat další pro mámu, partnera nebo kamarádku — protože popraskané paty opravdu nemusí být dárek, se kterým člověk žije.'
-						: 'MOLOSOC started with a mom and daughter. If you already have yours, add another for your mom, partner or friend — because crusty, cracked feet don\'t have to be something they simply live with.'
+						? 'MOLOSOC vznikl mezi mámou a dcerou. Pokud už máte jedny pro sebe, přidejte další pro maminku, partnera nebo kamarádku — malý dárek, který jim pomůže pečovat o nohy stejně jednoduše.'
+						: 'MOLOSOC started with a mom and daughter. If you already have yours, add one for your mom, partner or friend — a small gift that helps them take better care of their feet, too.'
 				);
 				?>
 			</p>
 
 			<form class="molosoc-gift__form" method="post" action="<?php echo esc_url( home_url( $is_cz ? '/cz/' : '/' ) ); ?>">
 				<input type="hidden" name="molosoc_gift_lang" value="<?php echo $is_cz ? 'cz' : 'en'; ?>">
+				<input type="hidden" name="molosoc_gift_order" value="<?php echo (int) $order->get_id(); ?>">
+				<input type="hidden" name="molosoc_gift_key" value="<?php echo esc_attr( $order->get_order_key() ); ?>">
 
 				<fieldset class="molosoc-gift__choices">
 					<legend class="molosoc-visually-hidden"><?php echo esc_html( $is_cz ? 'Kolik párů přidat' : 'How many pairs to add' ); ?></legend>
@@ -253,17 +333,19 @@ function molosoc_thankyou_gift_section( $order_id ) {
 				<p class="molosoc-gift__total" data-molosoc-gift-total hidden>
 					<span><?php echo esc_html( $is_cz ? 'Celkem' : 'Total' ); ?></span>
 					<span class="molosoc-gift__total-amount" translate="no" data-molosoc-gift-total-amount></span>
-					<span><?php echo esc_html( $is_cz ? '+ doprava' : '+ shipping' ); ?></span>
+				</p>
+				<p class="molosoc-gift__shipping">
+					<?php echo esc_html( $is_cz ? 'Pošleme s vaší původní objednávkou — bez dalšího poštovného.' : 'Ships with your original order — no additional shipping.' ); ?>
 				</p>
 
-				<button type="submit" class="molosoc-btn molosoc-gift__cta"><?php echo esc_html( $is_cz ? 'Přidat k objednávce' : 'Add to my order' ); ?></button>
+				<button type="submit" class="molosoc-btn molosoc-gift__cta"><?php echo esc_html( $is_cz ? 'Přidat dárkové páry' : 'Add gift pairs' ); ?></button>
 
 				<p class="molosoc-gift__note">
 					<?php
 					echo esc_html(
 						$is_cz
-							? 'Dárkové páry vyřídíme jako novou, samostatnou objednávku s vlastní platbou a dopravou. Vaše právě dokončená objednávka zůstává beze změny.'
-							: 'Gift pairs are placed as a new, separate order with its own payment and shipping. The order you just completed stays exactly as it is.'
+							? 'Přibalíme je k objednávce, kterou jste právě vytvořili, takže další dopravu neplatíte. Dárkové páry zaplatíte zvlášť v pokladně.'
+							: 'We’ll pack them with the order you just placed, so you won’t pay shipping again. You pay for the gift pairs separately at checkout.'
 					);
 					?>
 				</p>
@@ -277,26 +359,46 @@ add_action( 'woocommerce_thankyou', 'molosoc_thankyou_gift_section', 20 );
 /**
  * Handle the gift form: add the chosen pairs to the cart through
  * WooCommerce's own add_to_cart() (so its stock, purchasability and
- * validation rules all apply) and continue to the normal checkout in the
- * form's language. Never reads, edits or charges an existing order.
+ * validation rules all apply), remember which original order they ship
+ * with, pre-fill the checkout address from that order, and continue to the
+ * normal checkout in the form's language. Never reads, edits or charges an
+ * existing order.
  *
  * Runs on wp_loaded at priority 20, the same point WooCommerce's own
  * add-to-cart form handler uses (session and cart are ready). A missing or
- * unavailable size is never guessed at: the customer is sent to the
- * product page to choose there instead.
+ * unavailable size is never guessed at, and a form whose original order can
+ * no longer ship together is not honoured: in both cases the customer is
+ * sent to the product page (where nothing about combined shipping is
+ * promised) to choose there instead.
  */
 function molosoc_gift_add_to_cart_action() {
-	// phpcs:disable WordPress.Security.NonceVerification.Missing -- adds catalogue items to the visitor's own cart, exactly what WooCommerce's nonce-less ?add-to-cart= already allows.
+	// phpcs:disable WordPress.Security.NonceVerification.Missing -- adds catalogue items to the visitor's own cart, exactly what WooCommerce's nonce-less ?add-to-cart= already allows; the original order is only read, and only with its order key.
 	if ( ! isset( $_POST['molosoc_gift_pairs'] ) || ! function_exists( 'WC' ) || ! WC()->cart ) {
 		return;
 	}
 
-	$lang   = ( isset( $_POST['molosoc_gift_lang'] ) && 'cz' === $_POST['molosoc_gift_lang'] ) ? 'cz' : 'en';
-	$pairs  = min( MOLOSOC_GIFT_MAX_PAIRS, max( 1, absint( wp_unslash( $_POST['molosoc_gift_pairs'] ) ) ) );
-	$posted = ( isset( $_POST['molosoc_gift_size'] ) && is_array( $_POST['molosoc_gift_size'] ) ) ? wp_unslash( $_POST['molosoc_gift_size'] ) : array();
+	$lang      = ( isset( $_POST['molosoc_gift_lang'] ) && 'cz' === $_POST['molosoc_gift_lang'] ) ? 'cz' : 'en';
+	$pairs     = min( MOLOSOC_GIFT_MAX_PAIRS, max( 1, absint( wp_unslash( $_POST['molosoc_gift_pairs'] ) ) ) );
+	$posted    = ( isset( $_POST['molosoc_gift_size'] ) && is_array( $_POST['molosoc_gift_size'] ) ) ? wp_unslash( $_POST['molosoc_gift_size'] ) : array();
+	$parent_id = isset( $_POST['molosoc_gift_order'] ) ? absint( wp_unslash( $_POST['molosoc_gift_order'] ) ) : 0;
+	$order_key = isset( $_POST['molosoc_gift_key'] ) && is_string( $_POST['molosoc_gift_key'] ) ? wc_clean( wp_unslash( $_POST['molosoc_gift_key'] ) ) : '';
 	// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 	wc_nocache_headers();
+
+	// The original order must be the one this form was printed for (order
+	// key, exactly like the Thank You page itself) and must still be able
+	// to ship together with the gift pairs — otherwise the "no additional
+	// shipping" promise on that page can't be kept, and nothing is added.
+	$parent = $parent_id ? wc_get_order( $parent_id ) : false;
+	if ( ! $parent instanceof WC_Order
+		|| '' === $order_key
+		|| ! hash_equals( $parent->get_order_key(), $order_key )
+		|| ! molosoc_gift_can_ship_with( $parent )
+	) {
+		wp_safe_redirect( molosoc_product_url( $lang ) );
+		exit;
+	}
 
 	$sizes  = molosoc_gift_sizes();
 	$counts = array();
@@ -344,7 +446,199 @@ function molosoc_gift_add_to_cart_action() {
 		exit;
 	}
 
+	molosoc_gift_link_cart_to_order( $parent, $lang );
+
 	wp_safe_redirect( molosoc_gift_checkout_url( $lang ) );
 	exit;
 }
 add_action( 'wp_loaded', 'molosoc_gift_add_to_cart_action', 20 );
+
+/**
+ * Remember, in the WooCommerce session, which original order this cart's
+ * gift pairs ship with, and pre-fill the checkout address from it. The
+ * session link stores the order key too, so every later reader re-checks
+ * it is still the same, still-combinable order rather than trusting the
+ * session blindly. Copying the address is the same data the customer just
+ * saw on their own Thank You page; setters that reject a value (e.g. an
+ * invalid email) are simply skipped.
+ */
+function molosoc_gift_link_cart_to_order( $parent, $lang ) {
+	if ( ! WC()->session ) {
+		return;
+	}
+	WC()->session->set(
+		MOLOSOC_GIFT_SESSION_KEY,
+		array(
+			'order_id' => $parent->get_id(),
+			'key'      => $parent->get_order_key(),
+			'lang'     => $lang,
+			'time'     => time(),
+		)
+	);
+
+	$customer = WC()->customer;
+	if ( ! $customer ) {
+		return;
+	}
+	foreach ( array( 'billing', 'shipping' ) as $type ) {
+		foreach ( (array) $parent->get_address( $type ) as $field => $value ) {
+			$setter = 'set_' . $type . '_' . $field;
+			if ( '' === (string) $value || ! method_exists( $customer, $setter ) ) {
+				continue;
+			}
+			try {
+				$customer->$setter( $value );
+			} catch ( Exception $e ) {
+				continue;
+			}
+		}
+	}
+	$customer->save();
+}
+
+/**
+ * The original order the current cart is linked to, re-validated: the
+ * session link must name an order whose key still matches and that can
+ * still ship together, and every line in the cart must be the gift product
+ * (nothing else could be added on this store today, but the free rate below
+ * must never apply to anything other than gift pairs). Null otherwise.
+ * Returns array( 'order' => WC_Order, 'lang' => 'cz'|'en' ).
+ */
+function molosoc_gift_cart_link() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session || ! WC()->cart ) {
+		return null;
+	}
+	$link = WC()->session->get( MOLOSOC_GIFT_SESSION_KEY );
+	if ( ! is_array( $link ) || empty( $link['order_id'] ) || empty( $link['key'] ) ) {
+		return null;
+	}
+	$parent = wc_get_order( absint( $link['order_id'] ) );
+	if ( ! $parent instanceof WC_Order
+		|| ! hash_equals( $parent->get_order_key(), (string) $link['key'] )
+		|| ! molosoc_gift_can_ship_with( $parent )
+	) {
+		return null;
+	}
+	$items = WC()->cart->get_cart();
+	if ( empty( $items ) ) {
+		return null;
+	}
+	foreach ( $items as $item ) {
+		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+			return null;
+		}
+	}
+	return array(
+		'order' => $parent,
+		'lang'  => ( isset( $link['lang'] ) && 'cz' === $link['lang'] ) ? 'cz' : 'en',
+	);
+}
+
+/**
+ * While the cart is linked to an original order, the only shipping option
+ * is a single 0-cost "Ships with order #N" rate — the customer already paid
+ * shipping on that order. Replacing (not reducing) the normal rates
+ * means no pickup-point or carrier choice is asked for again; fulfilment
+ * ships the add-on inside the original parcel. WooCommerce runs this
+ * filter for the classic checkout and the Store API (block cart/checkout)
+ * alike, after its own rate cache, so it applies on every recalculation.
+ */
+function molosoc_gift_shipping_rates( $rates, $package ) {
+	$link = molosoc_gift_cart_link();
+	if ( ! $link ) {
+		return $rates;
+	}
+	$is_cz = ( function_exists( 'pll_current_language' ) && pll_current_language() )
+		? ( 'cz' === pll_current_language() )
+		: ( 'cz' === $link['lang'] );
+	$label = sprintf(
+		$is_cz ? 'Pošleme s objednávkou č. %s — bez dalšího poštovného' : 'Ships with order #%s — no additional shipping',
+		$link['order']->get_order_number()
+	);
+	$rate = new WC_Shipping_Rate( 'molosoc_gift_combined', $label, 0, array(), 'molosoc_gift_combined', 0 );
+	return array( 'molosoc_gift_combined' => $rate );
+}
+add_filter( 'woocommerce_package_rates', 'molosoc_gift_shipping_rates', 100, 2 );
+
+/**
+ * Stamp the new order with the original order's ID the moment checkout
+ * creates it. Classic checkout fires woocommerce_checkout_create_order
+ * (before the order is saved); the block checkout's Store API fires
+ * woocommerce_store_api_checkout_update_order_meta instead (WooCommerce
+ * saves the order right after). Both hooks pass the new order first.
+ */
+function molosoc_gift_stamp_new_order( $order ) {
+	if ( ! $order instanceof WC_Order ) {
+		return;
+	}
+	$link = molosoc_gift_cart_link();
+	if ( ! $link ) {
+		return;
+	}
+	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META, $link['order']->get_id() );
+}
+add_action( 'woocommerce_checkout_create_order', 'molosoc_gift_stamp_new_order', 10, 1 );
+add_action( 'woocommerce_store_api_checkout_update_order_meta', 'molosoc_gift_stamp_new_order', 10, 1 );
+
+/**
+ * Once the new order exists: a private order note on BOTH orders so
+ * fulfilment sees the link from either side, then drop the session link so
+ * a later, unrelated purchase from the same browser is a normal order
+ * again. Notes are admin-only (never emailed to the customer) and are the
+ * only thing ever written to the original order. Idempotent via a meta
+ * flag, since the classic and Store API hooks below can't both fire for
+ * one order but a retried checkout could.
+ */
+function molosoc_gift_note_orders( $order ) {
+	if ( ! $order instanceof WC_Order ) {
+		return;
+	}
+	$parent = molosoc_gift_parent_order( $order );
+	if ( ! $parent || 'yes' === $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
+		return;
+	}
+	$pairs = 0;
+	foreach ( $order->get_items() as $item ) {
+		$pairs += (int) $item->get_quantity();
+	}
+	$order->add_order_note(
+		sprintf(
+			'Dárkový doplněk k objednávce č. %1$s — odeslat společně s ní, poštovné 0 (zákazník ho zaplatil v objednávce č. %1$s). / Gift add-on to order #%1$s — ship together with it, shipping 0 (paid on #%1$s).',
+			$parent->get_order_number()
+		)
+	);
+	$parent->add_order_note(
+		sprintf(
+			'Dárkový doplněk: objednávka č. %1$s (%2$d ks) — odeslat společně s touto objednávkou. / Gift add-on: order #%1$s (%2$d pairs) — ship together with this order.',
+			$order->get_order_number(),
+			$pairs
+		)
+	);
+	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_noted', 'yes' );
+	$order->save();
+
+	if ( function_exists( 'WC' ) && WC()->session ) {
+		WC()->session->set( MOLOSOC_GIFT_SESSION_KEY, null );
+	}
+}
+add_action( 'woocommerce_checkout_order_created', 'molosoc_gift_note_orders', 10, 1 );
+add_action( 'woocommerce_store_api_checkout_order_processed', 'molosoc_gift_note_orders', 10, 1 );
+
+/**
+ * Admin order screen: one line under the order details naming the original
+ * order (linked) so the relationship is visible without opening the notes.
+ */
+function molosoc_gift_admin_order_line( $order ) {
+	$parent = molosoc_gift_parent_order( $order );
+	if ( ! $parent ) {
+		return;
+	}
+	printf(
+		'<p class="form-field form-field-wide molosoc-gift-admin-link"><strong>%s</strong> <a href="%s">#%s</a> — %s</p>',
+		esc_html( 'Dárkový doplněk k objednávce / Gift add-on to order' ),
+		esc_url( $parent->get_edit_order_url() ),
+		esc_html( $parent->get_order_number() ),
+		esc_html( 'odeslat společně, poštovné 0 / ship together, shipping 0' )
+	);
+}
+add_action( 'woocommerce_admin_order_data_after_order_details', 'molosoc_gift_admin_order_line', 10, 1 );
