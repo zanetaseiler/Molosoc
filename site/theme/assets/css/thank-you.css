@@ -182,6 +182,14 @@ body.woocommerce-order-received .molosoc-main h1 {
   color: var(--color-text);
 }
 
+.molosoc-gift .molosoc-gift__shipping {
+  max-width: 30rem;
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
+
 .molosoc-gift__cta {
   width: 100%;
   margin-top: var(--space-s);
