@@ -1,5 +1,6 @@
-"""Issues #106/#108: bilingual Thank You page hero + post-purchase gift add-on
-that ships together with the original order."""
+"""Issues #106/#108/#110: bilingual Thank You page hero + post-purchase gift add-on
+that ships together with the original order, with offer pricing by the original
+order's pair count."""
 import json
 import re
 import shutil
@@ -51,8 +52,15 @@ function molosoc_product_url( $lang = null ) { return 'https://example.test/prod
 function molosoc_size_label_for_value( $v, $f ) { return 'M' === $v ? 'M (36–39)' : 'L (39.5–44)'; }
 function wc_price( $amount ) { return '<span class="amount">' . number_format( $amount, 0, ',', ' ' ) . '&nbsp;K&#269;</span>'; }
 function wc_get_price_to_display( $p ) { return $p->price; }
+function get_woocommerce_currency() { return $GLOBALS['t']['currency']; }
 class Molosoc_Test_Date { public $ts; function __construct( $ts ) { $this->ts = $ts; } function getTimestamp() { return $this->ts; } }
-class WC_Order_Item { public $qty; function __construct( $q ) { $this->qty = $q; } function get_quantity() { return $this->qty; } }
+class WC_Order_Item {
+	public $pid; public $qty; public $meta = array();
+	function __construct( $pid, $q ) { $this->pid = $pid; $this->qty = $q; }
+	function get_product_id() { return $this->pid; }
+	function get_quantity() { return $this->qty; }
+	function add_meta_data( $k, $v, $unique = false ) { $this->meta[ $k ] = $v; }
+}
 class WC_Order {
 	public $id; public $meta = array(); public $saved = 0;
 	function __construct( $id ) { $this->id = $id; $this->meta = isset( $GLOBALS['t']['meta'][ $id ] ) ? $GLOBALS['t']['meta'][ $id ] : array(); }
@@ -66,7 +74,11 @@ class WC_Order {
 	function has_status( $s ) { return in_array( $GLOBALS['t']['status'][ $this->id ], (array) $s, true ); }
 	function get_date_created() { return new Molosoc_Test_Date( time() - $GLOBALS['t']['age'][ $this->id ] ); }
 	function get_address( $type ) { return 'billing' === $type ? array( 'first_name' => 'Jana', 'email' => $GLOBALS['t']['email'], 'phone' => '' ) : array( 'first_name' => 'Jana', 'city' => 'Praha' ); }
-	function get_items() { return array( new WC_Order_Item( 2 ), new WC_Order_Item( 1 ) ); }
+	function get_items() {
+		$out = array();
+		foreach ( $GLOBALS['t']['items'][ $this->id ] as $row ) { $out[] = new WC_Order_Item( $row[0], $row[1] ); }
+		return $out;
+	}
 	function add_order_note( $n ) { $GLOBALS['notes'][] = array( $this->id, $n ); }
 	function get_edit_order_url() { return 'https://example.test/wp-admin/order/' . $this->id; }
 }
@@ -105,23 +117,36 @@ class WC_Shipping_Rate {
 	public $args;
 	function __construct( ...$args ) { $this->args = $args; }
 }
+class Molosoc_Test_Product {
+	public $price = 229;
+	function set_price( $p ) { $this->price = $p; }
+	function get_regular_price() { return '229'; }
+}
 class Molosoc_Test_Cart {
-	public $items;
-	function __construct() { $this->items = $GLOBALS['t']['cart']; }
-	function generate_cart_id( $product_id, $variation_id, $attrs ) { return 'line' . $variation_id; }
+	public $items; public $products = array();
+	function __construct() {
+		$this->items = $GLOBALS['t']['cart'];
+		foreach ( $this->items as $key => $qty ) { $this->products[ $key ] = new Molosoc_Test_Product(); }
+	}
+	function generate_cart_id( $product_id, $variation_id, $attrs, $data = array() ) { return 'line' . $variation_id . ( $data ? 's' . $data['molosoc_gift_slot'] : '' ); }
 	function find_product_in_cart( $id ) { return isset( $this->items[ $id ] ) ? $id : ''; }
 	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ] ) : array(); }
 	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
 	function remove_cart_item( $key ) { unset( $this->items[ $key ] ); }
 	function get_cart() {
 		$out = array();
-		foreach ( $this->items as $key => $qty ) { $out[ $key ] = array( 'product_id' => 'lineX' === $key ? 999 : 364, 'quantity' => $qty ); }
+		foreach ( $this->items as $key => $qty ) {
+			$row = array( 'product_id' => 'lineX' === $key ? 999 : 364, 'quantity' => $qty, 'data' => $this->products[ $key ] );
+			if ( preg_match( '/s(\\d)$/', $key, $m ) ) { $row['molosoc_gift_slot'] = (int) $m[1]; }
+			$out[ $key ] = $row;
+		}
 		return $out;
 	}
-	function add_to_cart( $product_id, $qty, $variation_id, $attrs ) {
+	function add_to_cart( $product_id, $qty, $variation_id, $attrs, $data = array() ) {
 		if ( $variation_id === $GLOBALS['t']['fail_variation'] ) { return false; }
-		$GLOBALS['added'][] = array( $product_id, $qty, $variation_id, $attrs );
-		$key = 'line' . $variation_id;
+		$GLOBALS['added'][] = array( $product_id, $qty, $variation_id, $attrs, $data );
+		$key = $this->generate_cart_id( $product_id, $variation_id, $attrs, $data );
+		$this->products[ $key ] = new Molosoc_Test_Product();
 		$this->items[ $key ] = ( isset( $this->items[ $key ] ) ? $this->items[ $key ] : 0 ) + $qty;
 		return $key;
 	}
@@ -157,12 +182,17 @@ DEFAULT = {
     "request_lang": "cz",
     "variations": {"425": [229, True], "424": [229, True]},
     "cart": {},
+    "currency": "CZK",
+    "items": {"77": [[364, 1]], "88": [[364, 2], [364, 1]]},
     "fail_variation": 0,
     "session": {},
     "email": "jana@example.test",
 }
 
-LINK = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "time": 0, "lines": {"line425": 2}}
+# Original order 77 holds one pair; the linked cart holds pair #2 (M) and #3 (L).
+LINK = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "time": 0,
+        "lines": {"line425s2": 1, "line424s3": 1}, "slots": {"line425s2": 2, "line424s3": 3}}
+LINKED_CART = {"line425s2": 1, "line424s3": 1}
 
 
 def scenario_with(scenario):
@@ -221,9 +251,16 @@ class StaticContract(unittest.TestCase):
                           "calculate_totals(", "wc_create_order(", "process_payment(", "empty_cart("):
             self.assertNotIn(forbidden, self.src)
 
-    def test_no_hard_coded_price_or_discount_wording(self):
-        self.assertIsNone(re.search(r"\b(229|199|10)\s*(Kč|CZK|€)|&euro;", self.src))
-        for word in ("discount", "sleva", "bundle", "Save ", "Ušetř"):
+    def test_normal_price_is_never_hard_coded_or_overridden(self):
+        # 229 comes from the live product; only the two offer prices are defined here,
+        # and they are applied to cart rows, never to the product or a coupon.
+        self.assertIsNone(re.search(r"\b(229|199|209|10)\s*(Kč|CZK|€)|&euro;|\b229\b", self.src))
+        self.assertIn("define( 'MOLOSOC_GIFT_PRICE_PAIR_2', 209 )", self.src)
+        self.assertIn("define( 'MOLOSOC_GIFT_PRICE_PAIR_3', 199 )", self.src)
+        for forbidden in ("WC_Coupon", "add_discount", "apply_coupon", "woocommerce_product_get_price",
+                          "woocommerce_get_price", "set_regular_price", "set_sale_price"):
+            self.assertNotIn(forbidden, self.src)
+        for word in ("bundle", "Save ", "Ušetř"):
             self.assertNotIn(word, self.src)
 
     def test_requested_copy_is_verbatim(self):
@@ -265,7 +302,9 @@ class StaticContract(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("php"), "php not installed")
 class Rendering(unittest.TestCase):
-    def test_czech_order_gets_czech_section_with_live_totals(self):
+    def test_original_one_pair_offers_up_to_two_more_at_209_and_199(self):
+        # Original order of 1 pair; the base variation prices (229 / 249) are
+        # irrelevant to the offer and must not leak into it.
         out = run_php({"variations": {"425": [229, True], "424": [249, True]}}, RENDER, get=KEY)
         self.assertIn('lang="cs"', out)
         self.assertIn("Ještě jedny pro někoho, koho máte rádi?", out)
@@ -274,19 +313,43 @@ class Rendering(unittest.TestCase):
         self.assertIn('action="https://example.test/cz/"', out)
         self.assertIn('name="molosoc_gift_order" value="77"', out)
         self.assertIn('name="molosoc_gift_key" value="wc_order_key77"', out)
+        self.assertIn("Přidejte další za 209\xa0Kč — nebo dva za 408\xa0Kč celkem.", out)
+        self.assertIn("Druhý přidaný pár stojí 199\xa0Kč.", out)
         totals = json.loads(
             re.search(r'data-totals="([^"]+)"', out).group(1).replace("&quot;", '"')
         )
-        self.assertEqual(len(totals), 9)
-        self.assertEqual(totals["1-0"], "229 Kč")
-        self.assertEqual(totals["0-1"], "249 Kč")
-        self.assertEqual(totals["2-1"], "707 Kč")
-        self.assertNotIn("3-1", totals)
-        # Sizes cost different amounts, so no card can state a total up front.
-        self.assertNotIn("molosoc-gift-card__price", out)
-        self.assertEqual(out.count('name="molosoc_gift_pairs"'), 3)
-        self.assertEqual(out.count("M (36–39)"), 3)
-        self.assertEqual(out.count("L (39.5–44)"), 3)
+        self.assertEqual(totals, {"1-0": "209\xa0Kč", "0-1": "209\xa0Kč", "2-0": "408\xa0Kč", "1-1": "408\xa0Kč", "0-2": "408\xa0Kč"})
+        self.assertEqual(out.count('name="molosoc_gift_pairs"'), 2)  # no irrelevant third card
+        self.assertEqual(re.findall(r'molosoc-gift-card__price" translate="no">([^<]+)<', out), ["209\xa0Kč", "408\xa0Kč"])
+        self.assertEqual(out.count("M (36–39)"), 2)  # one size selector per possible pair
+        self.assertEqual(out.count("L (39.5–44)"), 2)
+        self.assertNotIn("229", out)
+        self.assertNotIn("+ 3", out)
+
+    def test_original_two_pairs_offers_exactly_one_more_at_199(self):
+        out = run_php({"items": {"77": [[364, 1], [364, 1]]}}, RENDER, get=KEY)
+        self.assertIn("Přidejte třetí pár za 199\xa0Kč.", out)
+        self.assertNotIn("molosoc-gift-card", out)  # no choice of count
+        self.assertEqual(out.count('name="molosoc_gift_pairs"'), 1)
+        self.assertIn('type="hidden" name="molosoc_gift_pairs" value="1"', out)
+        self.assertEqual(out.count("M (36–39)"), 1)
+        totals = json.loads(re.search(r'data-totals="([^"]+)"', out).group(1).replace("&quot;", '"'))
+        self.assertEqual(totals, {"1-0": "199\xa0Kč", "0-1": "199\xa0Kč"})
+        self.assertNotIn("209", out)
+        # The same for a single line item of quantity 2, and across variation lines.
+        self.assertIn("Přidejte třetí pár", run_php({"items": {"77": [[364, 2]]}}, RENDER, get=KEY))
+
+    def test_original_three_or_more_pairs_renders_no_upsell_at_all(self):
+        body = RENDER + "echo '|', call_user_func( $GLOBALS['hooks']['woocommerce_endpoint_order-received_title'], 'Order received' );"
+        for items in ([[364, 3]], [[364, 1], [364, 2]], [[364, 5]], [[364, 1], [364, 1], [364, 1]]):
+            out = run_php({"items": {"77": items}}, body, get=KEY)
+            self.assertNotIn("molosoc-gift", out, items)
+            self.assertTrue(out.startswith("|Děkujeme za vaši objednávku."), items)  # normal Thank You page
+        # Other products in the order do not count towards the pair total.
+        out = run_php({"items": {"77": [[364, 1], [555, 5]]}}, RENDER, get=KEY)
+        self.assertIn("Přidejte další za 209", out)
+        # An order without a MOLOSOC pair has nothing to extend.
+        self.assertEqual(run_php({"items": {"77": [[555, 1]]}}, RENDER, get=KEY), "")
 
     def test_english_order_gets_english_section_even_on_a_czech_request(self):
         out = run_php({"order_lang": "en"}, RENDER, get=KEY)
@@ -296,12 +359,14 @@ class Rendering(unittest.TestCase):
         self.assertIn("no additional shipping", out)
         self.assertIn('action="https://example.test/"', out)
         self.assertIn("+ 1 pair<", out)
-        self.assertIn("+ 3 pairs<", out)
-        # Same price for both sizes: each card shows count x live price.
-        self.assertEqual(
-            re.findall(r'molosoc-gift-card__price" translate="no">([^<]+)<', out),
-            ["229 Kč", "458 Kč", "687 Kč"],
-        )
+        self.assertIn("+ 2 pairs<", out)
+        self.assertIn("Add another for 209\xa0CZK — or two for 408\xa0CZK total.", out)
+        self.assertIn("The second additional pair is 199\xa0CZK.", out)
+        out = run_php({"order_lang": "en", "items": {"77": [[364, 2]]}}, RENDER, get=KEY)
+        self.assertIn("Add a third pair for 199\xa0CZK.", out)
+
+    def test_no_offer_when_the_shop_currency_is_not_czk(self):
+        self.assertEqual(run_php({"currency": "EUR"}, RENDER, get=KEY), "")
 
     def test_hero_and_confirmation_text_follow_the_order_language(self):
         body = """
@@ -389,15 +454,19 @@ class AddToCartHandler(unittest.TestCase):
 
     def test_adds_each_size_links_the_cart_and_prefills_checkout(self):
         redirect, added, out = self.submit(
-            dict(FORM, molosoc_gift_pairs="3", molosoc_gift_size=["M", "L", "M"])
+            dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         )
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        # One quantity-1 row per pair, each tagged with its overall pair number.
         self.assertEqual(
             added,
-            [[364, 2, 425, {"attribute_size": "M"}], [364, 1, 424, {"attribute_size": "L"}]],
+            [[364, 1, 425, {"attribute_size": "M"}, {"molosoc_gift_slot": 2}],
+             [364, 1, 424, {"attribute_size": "L"}, {"molosoc_gift_slot": 3}]],
         )
         link = section(out, "SESSION")["molosoc_gift_parent"]
         self.assertEqual((link["order_id"], link["key"], link["lang"]), (77, "wc_order_key77", "cz"))
+        self.assertEqual(link["lines"], {"line425s2": 1, "line424s3": 1})
+        self.assertEqual(link["slots"], {"line425s2": 2, "line424s3": 3})
         customer = section(out, "CUSTOMER")
         self.assertEqual(customer["billing_first_name"], "Jana")
         self.assertEqual(customer["billing_email"], "jana@example.test")
@@ -405,21 +474,11 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(customer["billing_phone"], "")  # blank parent fields clear stale session values
         self.assertEqual(customer["saved"], 1)  # session-backed customer saved so checkout sees the address
 
-    def test_preloaded_rows_of_a_chosen_size_are_rejected_and_untouched(self):
-        # A row the shopper already had (same variation) is never merged into
-        # or shrunk: the add is rolled back and nothing is linked.
+    def test_preloaded_rows_are_rejected_and_untouched(self):
+        # A row the shopper already had (the same pair, or any ordinary pair) is
+        # never merged into or shrunk: the add is rolled back and nothing is linked.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425": 3}, {"line424": 1}):
-            redirect, _, out = self.submit(post, {"cart": cart})
-            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
-            self.assertEqual(section(out, "CART"), cart)
-            self.assertEqual(section(out, "SESSION"), {})
-
-    def test_unrelated_cart_rows_are_never_deleted(self):
-        # Another product (or another gift size) in the cart: the add is rolled
-        # back, the cart is exactly as it was, nothing is linked.
-        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}):
+        for cart in ({"line425s2": 1}, {"line425": 3}, {"line424": 1}, {"line999": 2}, {"line999": 2, "line425": 3}):
             redirect, _, out = self.submit(post, {"cart": cart})
             self.assertEqual(redirect, "https://example.test/product-cz/", cart)
             self.assertEqual(section(out, "CART"), cart)
@@ -430,7 +489,23 @@ class AddToCartHandler(unittest.TestCase):
             dict(FORM, molosoc_gift_lang="en", molosoc_gift_size=["L"]), {"request_lang": "en"}
         )
         self.assertEqual(redirect, "https://example.test/checkout/")
-        self.assertEqual(added, [[364, 1, 424, {"attribute_size": "L"}]])
+        self.assertEqual(added, [[364, 1, 424, {"attribute_size": "L"}, {"molosoc_gift_slot": 2}]])
+
+    def test_original_two_pairs_may_add_only_the_third_pair(self):
+        two = {"items": {"77": [[364, 2]]}}
+        _, added, out = self.submit(dict(FORM, molosoc_gift_size=["L"]), two)
+        self.assertEqual(added, [[364, 1, 424, {"attribute_size": "L"}, {"molosoc_gift_slot": 3}]])
+        self.assertEqual(section(out, "SESSION")["molosoc_gift_parent"]["slots"], {"line424s3": 3})
+        # Asking for two is rejected, not trimmed to one.
+        redirect, added, out = self.submit(dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"]), two)
+        self.assertEqual(redirect, "https://example.test/product-cz/")
+        self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, {}, {}))
+
+    def test_original_three_or_more_pairs_gets_no_gift_cart_at_all(self):
+        for items in ([[364, 3]], [[364, 1], [364, 2]], [[364, 4]]):
+            redirect, added, out = self.submit(FORM, {"items": {"77": items}})
+            self.assertEqual(redirect, "https://example.test/product-cz/", items)
+            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, {}, {}))
 
     def test_form_for_an_order_that_cannot_ship_together_adds_nothing(self):
         for post, scenario in (
@@ -448,27 +523,31 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(added, {})
             self.assertEqual(section(out, "SESSION"), {})
 
+    def test_more_pairs_than_allowed_is_rejected_never_trimmed_to_a_discounted_fourth_pair(self):
+        for pairs in ("3", "4", "50", "0", "abc"):
+            redirect, added, out = self.submit(dict(FORM, molosoc_gift_pairs=pairs, molosoc_gift_size=["M"] * 50))
+            self.assertEqual(redirect, "https://example.test/product-cz/", pairs)
+            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, {}, {}), pairs)
+        redirect, _, _ = self.submit(dict(FORM, molosoc_gift_pairs=["2"], molosoc_gift_size=["M", "M"]))
+        self.assertEqual(redirect, "https://example.test/product-cz/")
+
+    def test_only_the_chosen_number_of_pairs_is_added(self):
+        _, added, _ = self.submit(dict(FORM, molosoc_gift_size=["M", "L", "L"]))
+        self.assertEqual(added, [[364, 1, 425, {"attribute_size": "M"}, {"molosoc_gift_slot": 2}]])
+
     def test_partly_failed_selection_is_rolled_back_and_never_reaches_checkout(self):
-        post = dict(FORM, molosoc_gift_pairs="3", molosoc_gift_size=["M", "M", "L"])
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         # L can't be added after M already was: M's addition is undone.
         _, _, out = self.submit(post, {"fail_variation": 424})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {})
         self.assertEqual(section(out, "SESSION"), {})
-        # A line that was in the cart before keeps its earlier quantity.
+        # Rows that were in the cart before keep their quantity.
         _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}})
         self.assertEqual(section(out, "CART"), {"line425": 1})
         # The first size failing leaves the cart untouched too.
         _, _, out = self.submit(post, {"fail_variation": 425, "cart": {"line424": 2}})
         self.assertEqual(section(out, "CART"), {"line424": 2})
-
-    def test_never_more_than_three_pairs(self):
-        _, added, _ = self.submit(dict(FORM, molosoc_gift_pairs="50", molosoc_gift_size=["M"] * 50))
-        self.assertEqual(added, [[364, 3, 425, {"attribute_size": "M"}]])
-
-    def test_only_the_chosen_number_of_pairs_is_added(self):
-        _, added, _ = self.submit(dict(FORM, molosoc_gift_size=["M", "L", "L"]))
-        self.assertEqual(added, [[364, 1, 425, {"attribute_size": "M"}]])
 
     def test_missing_invalid_or_unavailable_size_adds_nothing(self):
         for post, scenario in (
@@ -476,6 +555,7 @@ class AddToCartHandler(unittest.TestCase):
             (dict(FORM, molosoc_gift_size=["XL"]), {}),
             ({k: v for k, v in FORM.items() if k != "molosoc_gift_size"}, {}),
             (dict(FORM, molosoc_gift_size="M"), {}),
+            (dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "XL"]), {}),
             (dict(FORM, molosoc_gift_size=["L"]), {"variations": {"425": [229, True], "424": [229, False]}}),
         ):
             redirect, added, _ = self.submit(post, scenario)
@@ -499,27 +579,32 @@ class LinkedCheckout(unittest.TestCase):
     """
 
     def test_linked_cart_gets_one_free_ships_with_rate(self):
-        out = run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, self.RATES)
+        out = run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, self.RATES)
         self.assertEqual(
             json.loads(out),
             {"molosoc_gift_combined": ["molosoc_gift_combined", "Pošleme s objednávkou č. 77 — bez dalšího poštovného", 0, [], "molosoc_gift_combined", 0]},
         )
-        out = run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "request_lang": "en"}, self.RATES)
+        out = run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART, "request_lang": "en"}, self.RATES)
         self.assertEqual(json.loads(out)["molosoc_gift_combined"][1], "Ships with order #77 — no additional shipping")
 
     def test_normal_rates_stay_whenever_the_link_is_not_valid(self):
         normal = {"flat_rate:1": "normal", "zasilkovna": "pickup"}
+        S = {"molosoc_gift_parent": LINK}
         for scenario in (
             {"cart": {"line425": 1}},                                                 # no link at all
-            {"session": {"molosoc_gift_parent": dict(LINK, key="stale")}, "cart": {"line425": 1}},
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {}},                   # empty cart
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1, "lineX": 1}},  # another product
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1}},       # quantity changed
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 5}},       # more than was added
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2, "line424": 1}},  # extra pre-loaded row
-            {"session": {"molosoc_gift_parent": {k: v for k, v in LINK.items() if k != "lines"}}, "cart": {"line425": 2}},
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "status": {"77": "completed"}},
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "age": {"77": 48 * 3600}},
+            {"session": {"molosoc_gift_parent": dict(LINK, key="stale")}, "cart": LINKED_CART},
+            {"session": S, "cart": {}},                                               # empty cart
+            {"session": S, "cart": dict(LINKED_CART, lineX=1)},                       # another product
+            {"session": S, "cart": {"line425s2": 2, "line424s3": 1}},                 # quantity changed
+            {"session": S, "cart": {"line425s2": 1, "line424s3": 1, "line425": 1}},   # extra ordinary pair
+            {"session": S, "cart": {"line425s2": 1, "line424s3": 1, "line425s3": 1}}, # a third gift row
+            {"session": S, "cart": {"line425s2": 1}},                                 # a row removed
+            {"session": {"molosoc_gift_parent": {k: v for k, v in LINK.items() if k != "lines"}}, "cart": LINKED_CART},
+            {"session": {"molosoc_gift_parent": {k: v for k, v in LINK.items() if k != "slots"}}, "cart": LINKED_CART},
+            {"session": S, "cart": LINKED_CART, "status": {"77": "completed"}},
+            {"session": S, "cart": LINKED_CART, "age": {"77": 48 * 3600}},
+            {"session": S, "cart": LINKED_CART, "items": {"77": [[364, 3]]}},         # original now 3 pairs
+            {"session": S, "cart": LINKED_CART, "items": {"77": [[364, 2]]}},         # original now 2: one allowed
         ):
             self.assertEqual(json.loads(run_php(scenario, self.RATES)), normal, scenario)
 
@@ -532,7 +617,7 @@ class LinkedCheckout(unittest.TestCase):
         molosoc_gift_note_orders_by_id( 88 ); // several payment hooks fire for one order: note once
         echo json_encode( array( 'created' => $created, 'meta' => $new->meta, 'saved' => $new->saved, 'notes' => $GLOBALS['notes'], 'session' => $GLOBALS['session'], 'parent_saved' => wc_get_order( 77 )->saved ) );
         """
-        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, body))
         # Nothing is noted and the link survives until payment is confirmed.
         self.assertEqual(out["created"]["notes"], 0)
         self.assertEqual(out["created"]["session"]["molosoc_gift_parent"]["order_id"], 77)
@@ -556,7 +641,7 @@ class LinkedCheckout(unittest.TestCase):
         molosoc_gift_stamp_new_order( $new );
         echo json_encode( array( 'first' => $first, 'after' => isset( $new->meta['_molosoc_gift_parent_order'] ) ) );
         """
-        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, body))
         self.assertTrue(out["first"])
         self.assertFalse(out["after"])
 
@@ -588,7 +673,7 @@ class LinkedCheckout(unittest.TestCase):
     def test_a_confirmed_addon_makes_any_stale_session_link_worthless(self):
         # The link in the browser session survives (a gateway callback cannot
         # clear it), but the order-backed flag stops it granting free shipping again.
-        scenario = {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2},
+        scenario = {"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART,
                     "meta": {"88": {"_molosoc_gift_parent_order": 77, "_molosoc_gift_parent_order_noted": "yes"}}}
         normal = {"flat_rate:1": "normal", "zasilkovna": "pickup"}
         self.assertEqual(json.loads(run_php(scenario, self.RATES)), normal)
@@ -612,12 +697,12 @@ class LinkedCheckout(unittest.TestCase):
         body = """
         echo json_encode( molosoc_gift_shipping_package_state( array( array( 'contents' => array() ), array( 'contents' => array() ) ) ) );
         """
-        linked = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        linked = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, body))
         self.assertEqual([p["molosoc_gift_parent"] for p in linked], [77, 77])
         for scenario in (
             {"cart": {"line425": 2}},                                                     # no link
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "status": {"77": "completed"}},
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "age": {"77": 48 * 3600}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART, "status": {"77": "completed"}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART, "age": {"77": 48 * 3600}},
         ):
             unlinked = json.loads(run_php(scenario, body))
             self.assertEqual([p["molosoc_gift_parent"] for p in unlinked], [0, 0], scenario)
@@ -643,6 +728,139 @@ class LinkedCheckout(unittest.TestCase):
         out = run_php({"meta": {"88": {"_molosoc_gift_parent_order": 77, "_molosoc_gift_parent_order_noted": "manual"}}}, body)
         self.assertIn("handle manually", out)
         self.assertNotIn("ship together,", out)
+
+
+@unittest.skipUnless(shutil.which("php"), "php not installed")
+class OfferPricing(unittest.TestCase):
+    """The 209 / 199 prices (#110) exist only on a valid, linked gift cart."""
+
+    PRICES = """
+    molosoc_gift_apply_prices( WC()->cart );
+    $out = array();
+    foreach ( WC()->cart->get_cart() as $key => $item ) { $out[ $key ] = $item['data']->price; }
+    echo json_encode( $out );
+    """
+
+    def prices(self, cart, link=None, **extra):
+        scenario = dict({"session": {"molosoc_gift_parent": link or LINK}, "cart": cart}, **extra)
+        return json.loads(run_php(scenario, self.PRICES))
+
+    def link(self, slots, **extra):
+        return dict(LINK, lines={k: 1 for k in slots}, slots=slots, **extra)
+
+    def test_original_one_pair_plus_one_addon_is_209(self):
+        slots = {"line425s2": 2}
+        self.assertEqual(self.prices({"line425s2": 1}, self.link(slots)), {"line425s2": 209})
+
+    def test_original_one_pair_plus_two_addons_is_209_plus_199_for_408(self):
+        prices = self.prices(LINKED_CART)  # pair #2 in M, pair #3 in L
+        self.assertEqual(prices, {"line425s2": 209, "line424s3": 199})
+        self.assertEqual(sum(prices.values()), 408)
+
+    def test_mixed_and_same_sizes_price_by_pair_number_not_by_size(self):
+        for first, second in (("425", "425"), ("424", "424"), ("424", "425"), ("425", "424")):
+            slots = {"line%ss2" % first: 2, "line%ss3" % second: 3}
+            prices = self.prices({k: 1 for k in slots}, self.link(slots))
+            self.assertEqual(prices, {"line%ss2" % first: 209, "line%ss3" % second: 199}, (first, second))
+        # Different base variation prices change nothing.
+        out = run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART,
+                       "variations": {"425": [229, True], "424": [249, True]}}, self.PRICES)
+        self.assertEqual(json.loads(out), {"line425s2": 209, "line424s3": 199})
+
+    def test_original_two_pairs_plus_one_addon_is_199(self):
+        link = self.link({"line424s3": 3})
+        self.assertEqual(self.prices({"line424s3": 1}, link, items={"77": [[364, 1], [364, 1]]}), {"line424s3": 199})
+        self.assertEqual(self.prices({"line424s3": 1}, link, items={"77": [[364, 2]]}), {"line424s3": 199})
+
+    def test_no_offer_price_for_original_three_or_more_pairs(self):
+        for items in ([[364, 3]], [[364, 4]], [[364, 1], [364, 2]]):
+            self.assertEqual(self.prices(LINKED_CART, items={"77": items}), {"line425s2": 229, "line424s3": 229}, items)
+
+    def test_a_fourth_pair_or_forged_slots_never_get_the_offer_price(self):
+        forged = (
+            {"line425s2": 2, "line424s3": 3, "line425s4": 4},   # a fourth pair overall
+            {"line425s3": 3, "line424s3": 3},                    # same slot twice (cannot collide in a real cart, still rejected)
+            {"line425s3": 3, "line424s4": 4},                    # skips pair #2
+            {"line425s1": 1},                                    # slot 1 = the original pair
+        )
+        for slots in forged:
+            cart = {k: 1 for k in slots}
+            normal = {k: 229 for k in slots}
+            self.assertEqual(self.prices(cart, self.link(slots)), normal, slots)
+        # Original order of two pairs: slot 2 is not on offer, and two add-ons are one too many.
+        two = {"items": {"77": [[364, 2]]}}
+        self.assertEqual(self.prices({"line425s2": 1}, self.link({"line425s2": 2}), **two), {"line425s2": 229})
+        self.assertEqual(self.prices(LINKED_CART, **two), {"line425s2": 229, "line424s3": 229})
+        # A row whose own slot tag disagrees with the link, or whose quantity grew.
+        self.assertEqual(self.prices({"line425s2": 1, "line424s3": 1}, dict(LINK, slots={"line425s2": 2, "line424s3": 2})),
+                         {"line425s2": 229, "line424s3": 229})
+        self.assertEqual(self.prices({"line425s2": 2, "line424s3": 1}), {"line425s2": 229, "line424s3": 229})
+
+    def test_expired_or_ineligible_parent_gets_no_price_and_no_free_shipping(self):
+        rates = LinkedCheckout.RATES
+        normal = {"flat_rate:1": "normal", "zasilkovna": "pickup"}
+        for extra in (
+            {"status": {"77": "completed"}},
+            {"status": {"77": "on-hold"}},
+            {"age": {"77": 24 * 3600 + 1}},
+            {"meta": {"77": {"_molosoc_gift_parent_order": 88}}},
+            {"meta": {"88": {"_molosoc_gift_parent_order": 77, "_molosoc_gift_parent_order_noted": "yes"}}},
+            {"currency": "EUR"},
+        ):
+            self.assertEqual(self.prices(LINKED_CART, **extra), {"line425s2": 229, "line424s3": 229}, extra)
+            scenario = dict({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, **extra)
+            self.assertEqual(json.loads(run_php(scenario, rates)), normal, extra)
+        # Wrong order key in the session: same.
+        self.assertEqual(self.prices(LINKED_CART, dict(LINK, key="forged")), {"line425s2": 229, "line424s3": 229})
+
+    def test_normal_cart_and_product_stay_229(self):
+        # No session link, or an ordinary product row: never touched.
+        for cart in ({"line425": 1}, {"line425": 3, "line424": 1}, {"line425s2": 1}):
+            out = run_php({"cart": cart}, self.PRICES)
+            self.assertEqual(json.loads(out), {k: 229 for k in cart}, cart)
+        # An ordinary row beside a valid gift cart is a different cart: nothing is discounted.
+        mixed = {"line425": 1, "line425s2": 1, "line424s3": 1}
+        self.assertEqual(self.prices(mixed), {k: 229 for k in mixed})
+        # The offer prices never go through the product or a coupon.
+        src = GIFT.read_text(encoding="utf-8")
+        self.assertIn("'woocommerce_before_calculate_totals'", src)
+        self.assertNotIn("add_filter( 'woocommerce_product", src)
+
+    def test_order_keeps_the_pricing_audit_trail(self):
+        body = """
+        $new = wc_get_order( 88 );
+        molosoc_gift_stamp_new_order( $new );
+        $item = new WC_Order_Item( 364, 1 );
+        $cart = WC()->cart->get_cart();
+        molosoc_gift_stamp_order_line( $item, 'line424s3', $cart['line424s3'], $new );
+        $plain = new WC_Order_Item( 364, 1 );
+        molosoc_gift_stamp_order_line( $plain, 'line999', array( 'data' => new Molosoc_Test_Product() ), $new );
+        molosoc_gift_note_orders_by_id( 88 );
+        echo json_encode( array( 'meta' => $new->meta, 'item' => $item->meta, 'plain' => $plain->meta, 'notes' => $GLOBALS['notes'] ) );
+        """
+        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, body))
+        self.assertEqual(out["meta"]["_molosoc_gift_parent_order"], 77)
+        self.assertEqual(out["meta"]["_molosoc_gift_parent_order_original_qty"], 1)
+        self.assertEqual(json.loads(out["meta"]["_molosoc_gift_parent_order_pricing"]), {"2": 209, "3": 199})
+        self.assertEqual(out["item"], {"_molosoc_gift_pair_number": 3, "_molosoc_gift_unit_price": "199", "_molosoc_gift_list_price": "229"})
+        self.assertIn(out["plain"], ([], {}))  # rows the link did not price carry no offer record
+        self.assertIn("pair #2 = 209, #3 = 199", out["notes"][0][1])  # private note on the add-on order
+        self.assertNotIn("209", out["notes"][1][1])                    # the original order only gets its link note
+
+    def test_parent_order_and_linkage_still_work_with_the_offer(self):
+        rates = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, LinkedCheckout.RATES))
+        self.assertEqual(list(rates), ["molosoc_gift_combined"])
+        self.assertEqual(rates["molosoc_gift_combined"][2], 0)
+        body = "$o = wc_get_order( 88 ); molosoc_gift_note_orders_by_id( 88 ); echo json_encode( array( $o->meta, $GLOBALS['notes'], wc_get_order( 77 )->saved ) );"
+        meta, notes, parent_saved = json.loads(run_php({"meta": {"88": {"_molosoc_gift_parent_order": 77}}}, body))
+        self.assertEqual(meta["_molosoc_gift_parent_order_noted"], "yes")
+        self.assertEqual([n[0] for n in notes], [88, 77])
+        self.assertEqual(parent_saved, 0)  # the paid original order is only annotated, never saved
+
+    def test_manual_handling_note_flags_that_offer_prices_were_charged(self):
+        body = "molosoc_gift_note_orders_by_id( 88 ); echo json_encode( $GLOBALS['notes'] );"
+        notes = json.loads(run_php({"status": {"77": "completed"}, "meta": {"88": {"_molosoc_gift_parent_order": 77}}}, body))
+        self.assertIn("offer prices were charged", notes[0][1])
 
 
 if __name__ == "__main__":
