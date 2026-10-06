@@ -61,6 +61,7 @@ class WC_Order {
 	function get_order_key() { return 'wc_order_key' . $this->id; }
 	function get_meta( $k ) { if ( '_molosoc_lang' === $k ) { return $GLOBALS['t']['order_lang']; } return isset( $this->meta[ $k ] ) ? $this->meta[ $k ] : ''; }
 	function update_meta_data( $k, $v ) { $this->meta[ $k ] = $v; }
+	function delete_meta_data( $k ) { unset( $this->meta[ $k ] ); }
 	function save() { $this->saved++; $GLOBALS['t']['meta'][ $this->id ] = $this->meta; }
 	function has_status( $s ) { return in_array( $GLOBALS['t']['status'][ $this->id ], (array) $s, true ); }
 	function get_date_created() { return new Molosoc_Test_Date( time() - $GLOBALS['t']['age'][ $this->id ] ); }
@@ -545,6 +546,19 @@ class LinkedCheckout(unittest.TestCase):
         self.assertIn("Gift add-on: order #88 (3 pairs)", out["notes"][1][1])
         # The gateway callback may not hold the shopper's session: untouched here.
         self.assertEqual(out["session"]["molosoc_gift_parent"]["order_id"], 77)
+
+    def test_stale_stamp_is_removed_when_the_link_stops_being_valid(self):
+        body = """
+        $new = wc_get_order( 88 );
+        molosoc_gift_stamp_new_order( $new );
+        $first = isset( $new->meta['_molosoc_gift_parent_order'] );
+        $GLOBALS['session']['molosoc_gift_parent'] = null; // link gone: draft updated again
+        molosoc_gift_stamp_new_order( $new );
+        echo json_encode( array( 'first' => $first, 'after' => isset( $new->meta['_molosoc_gift_parent_order'] ) ) );
+        """
+        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        self.assertTrue(out["first"])
+        self.assertFalse(out["after"])
 
     def test_notes_wait_for_confirmed_payment(self):
         body = """

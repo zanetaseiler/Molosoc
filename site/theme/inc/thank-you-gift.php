@@ -667,6 +667,12 @@ function molosoc_gift_stamp_new_order( $order ) {
 	}
 	$link = molosoc_gift_cart_link();
 	if ( ! $link ) {
+		// A draft order (block checkout) is updated repeatedly: a stamp from an
+		// earlier, valid state must not outlive the link, or a normal paid-shipping
+		// order would later be treated as a gift add-on.
+		if ( $order->get_meta( MOLOSOC_GIFT_PARENT_META ) ) {
+			$order->delete_meta_data( MOLOSOC_GIFT_PARENT_META );
+		}
 		return;
 	}
 	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META, $link['order']->get_id() );
