@@ -397,7 +397,7 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(customer["billing_email"], "jana@example.test")
         self.assertEqual(customer["shipping_city"], "Praha")
         self.assertNotIn("billing_phone", customer)  # empty values are not copied
-        self.assertNotIn("saved", customer)  # session defaults only, never saved to the account
+        self.assertEqual(customer["saved"], 1)  # session-backed customer saved so checkout sees the address
 
     def test_preloaded_rows_of_a_chosen_size_are_rejected_and_untouched(self):
         # A row the shopper already had (same variation) is never merged into
@@ -618,6 +618,12 @@ class LinkedCheckout(unittest.TestCase):
         self.assertIn('href="https://example.test/wp-admin/order/77">#77</a>', out)
         self.assertIn("ship together, shipping 0", out)
         self.assertEqual(run_php({}, body), "")
+
+    def test_admin_line_does_not_say_ship_together_for_manual_orders(self):
+        body = "molosoc_gift_admin_order_line( wc_get_order( 88 ) );"
+        out = run_php({"meta": {"88": {"_molosoc_gift_parent_order": 77, "_molosoc_gift_parent_order_noted": "manual"}}}, body)
+        self.assertIn("handle manually", out)
+        self.assertNotIn("ship together,", out)
 
 
 if __name__ == "__main__":

@@ -540,7 +540,6 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 			'time'     => time(),
 		)
 	);
-
 	$customer = WC()->customer;
 	if ( ! $customer ) {
 		return;
@@ -558,10 +557,11 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 			}
 		}
 	}
-	// No $customer->save(): these are checkout defaults for this session. The
-	// customer object persists them to the session on its own; saving here
-	// could write a historical order's address over a logged-in shopper's
-	// newer saved one.
+	// WC()->customer is the session-backed customer: save() serialises it into
+	// the WooCommerce session only (WC_Customer_Data_Store_Session), without
+	// touching the account's stored address. Without it the redirect to checkout
+	// would reload the previous address.
+	$customer->save();
 }
 
 /**
@@ -764,12 +764,13 @@ function molosoc_gift_admin_order_line( $order ) {
 	if ( ! $parent ) {
 		return;
 	}
+	$manual = 'manual' === (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' );
 	printf(
 		'<p class="form-field form-field-wide molosoc-gift-admin-link"><strong>%s</strong> <a href="%s">#%s</a> — %s</p>',
 		esc_html( 'Dárkový doplněk k objednávce / Gift add-on to order' ),
 		esc_url( $parent->get_edit_order_url() ),
 		esc_html( $parent->get_order_number() ),
-		esc_html( 'odeslat společně, poštovné 0 / ship together, shipping 0' )
+		esc_html( $manual ? 'nelze odeslat společně — vyřiďte ručně, poštovné 0 / cannot ship together — handle manually, shipping 0' : 'odeslat společně, poštovné 0 / ship together, shipping 0' )
 	);
 }
 add_action( 'woocommerce_admin_order_data_after_order_details', 'molosoc_gift_admin_order_line', 10, 1 );
