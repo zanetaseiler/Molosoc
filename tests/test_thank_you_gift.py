@@ -326,6 +326,11 @@ class Rendering(unittest.TestCase):
             "Your order has been received. It ships together with order #88.",
         )
 
+    def test_manually_routed_gift_order_makes_no_ship_together_promise(self):
+        body = "echo molosoc_thankyou_received_text( 'x', wc_get_order( 77 ) );"
+        manual = {"meta": {"77": {"_molosoc_gift_parent_order": 88, "_molosoc_gift_parent_order_noted": "manual"}}}
+        self.assertEqual(run_php(manual, body, get=KEY), "Vaši objednávku jsme přijali.")
+
     def test_nothing_changes_without_a_successful_order_the_visitor_holds(self):
         body = RENDER + """
         echo call_user_func( $GLOBALS['hooks']['woocommerce_endpoint_order-received_title'], 'Order received' );
@@ -394,14 +399,15 @@ class AddToCartHandler(unittest.TestCase):
         self.assertNotIn("billing_phone", customer)  # empty values are not copied
         self.assertNotIn("saved", customer)  # session defaults only, never saved to the account
 
-    def test_preloaded_or_repeated_rows_never_ride_the_free_rate(self):
-        # A pre-loaded quantity of a chosen size is reset to exactly what this
-        # form submitted, and the link records it.
+    def test_preloaded_rows_of_a_chosen_size_are_rejected_and_untouched(self):
+        # A row the shopper already had (same variation) is never merged into
+        # or shrunk: the add is rolled back and nothing is linked.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        _, _, out = self.submit(post, {"cart": {"line425": 3}})
-        self.assertEqual(section(out, "CART"), {"line425": 1, "line424": 1})
-        link = section(out, "SESSION")["molosoc_gift_parent"]
-        self.assertEqual(link["lines"], {"line425": 1, "line424": 1})
+        for cart in ({"line425": 3}, {"line424": 1}):
+            redirect, _, out = self.submit(post, {"cart": cart})
+            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
+            self.assertEqual(section(out, "CART"), cart)
+            self.assertEqual(section(out, "SESSION"), {})
 
     def test_unrelated_cart_rows_are_never_deleted(self):
         # Another product (or another gift size) in the cart: the add is rolled

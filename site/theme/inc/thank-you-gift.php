@@ -176,7 +176,8 @@ function molosoc_thankyou_received_text( $text, $order = null ) {
 	$is_cz  = 'cz' === molosoc_thankyou_lang( $order );
 	$text   = $is_cz ? 'Vaši objednávku jsme přijali.' : 'Your order has been received.';
 	$parent = molosoc_gift_parent_order( $order );
-	if ( $parent ) {
+	// Not promised when payment-time revalidation routed the order to manual handling.
+	if ( $parent && 'manual' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
 		$text .= ' ' . sprintf(
 			$is_cz ? 'Pošleme ji společně s objednávkou č. %s.' : 'It ships together with order #%s.',
 			$parent->get_order_number()
@@ -453,6 +454,11 @@ function molosoc_gift_add_to_cart_action() {
 		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes ) );
 		$line       = $existing ? $cart->get_cart_item( $existing ) : array();
 		$before     = isset( $line['quantity'] ) ? (int) $line['quantity'] : 0;
+		if ( $before > 0 ) {
+			// Never merge into, or shrink, a row the shopper already had.
+			$failed = true;
+			break;
+		}
 
 		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, $quantity, $variation->get_id(), $attributes );
 		if ( ! $item_key ) {
