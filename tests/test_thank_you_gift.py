@@ -149,7 +149,7 @@ DEFAULT = {
     "email": "jana@example.test",
 }
 
-LINK = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "time": 0}
+LINK = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "time": 0, "lines": {"line425": 2}}
 
 
 def scenario_with(scenario):
@@ -381,6 +381,15 @@ class AddToCartHandler(unittest.TestCase):
         self.assertNotIn("billing_phone", customer)  # empty values are not copied
         self.assertEqual(customer["saved"], 1)
 
+    def test_preloaded_or_repeated_rows_never_ride_the_free_rate(self):
+        # A pre-loaded quantity of the same size and an unrelated line are
+        # reset to exactly what this form submitted, and the link records it.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        _, _, out = self.submit(post, {"cart": {"line425": 3, "line999": 2}})
+        self.assertEqual(section(out, "CART"), {"line425": 1, "line424": 1})
+        link = section(out, "SESSION")["molosoc_gift_parent"]
+        self.assertEqual(link["lines"], {"line425": 1, "line424": 1})
+
     def test_english_form_goes_to_the_english_checkout(self):
         redirect, added, _ = self.submit(
             dict(FORM, molosoc_gift_lang="en", molosoc_gift_size=["L"]), {"request_lang": "en"}
@@ -469,8 +478,12 @@ class LinkedCheckout(unittest.TestCase):
             {"session": {"molosoc_gift_parent": dict(LINK, key="stale")}, "cart": {"line425": 1}},
             {"session": {"molosoc_gift_parent": LINK}, "cart": {}},                   # empty cart
             {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1, "lineX": 1}},  # another product
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1}, "status": {"77": "completed"}},
-            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1}, "age": {"77": 48 * 3600}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 1}},       # quantity changed
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 5}},       # more than was added
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2, "line424": 1}},  # extra pre-loaded row
+            {"session": {"molosoc_gift_parent": {k: v for k, v in LINK.items() if k != "lines"}}, "cart": {"line425": 2}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "status": {"77": "completed"}},
+            {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}, "age": {"77": 48 * 3600}},
         ):
             self.assertEqual(json.loads(run_php(scenario, self.RATES)), normal, scenario)
 
@@ -478,11 +491,15 @@ class LinkedCheckout(unittest.TestCase):
         body = """
         $new = wc_get_order( 88 );
         molosoc_gift_stamp_new_order( $new );
-        molosoc_gift_note_orders( $new );
-        molosoc_gift_note_orders( $new ); // a retried checkout must not note twice
-        echo json_encode( array( 'meta' => $new->meta, 'saved' => $new->saved, 'notes' => $GLOBALS['notes'], 'session' => $GLOBALS['session'], 'parent_saved' => wc_get_order( 77 )->saved ) );
+        $created = array( 'notes' => count( $GLOBALS['notes'] ), 'session' => $GLOBALS['session'] );
+        molosoc_gift_note_orders_by_id( 88 );
+        molosoc_gift_note_orders_by_id( 88 ); // several payment hooks fire for one order: note once
+        echo json_encode( array( 'created' => $created, 'meta' => $new->meta, 'saved' => $new->saved, 'notes' => $GLOBALS['notes'], 'session' => $GLOBALS['session'], 'parent_saved' => wc_get_order( 77 )->saved ) );
         """
-        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2, "line424": 1}}, body))
+        out = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2}}, body))
+        # Nothing is noted and the link survives until payment is confirmed.
+        self.assertEqual(out["created"]["notes"], 0)
+        self.assertEqual(out["created"]["session"]["molosoc_gift_parent"]["order_id"], 77)
         self.assertEqual(out["meta"]["_molosoc_gift_parent_order"], 77)
         self.assertEqual(out["meta"]["_molosoc_gift_parent_order_noted"], "yes")
         self.assertEqual(out["saved"], 1)
@@ -492,6 +509,16 @@ class LinkedCheckout(unittest.TestCase):
         self.assertIn("shipping 0", out["notes"][0][1])
         self.assertIn("Gift add-on: order #88 (3 pairs)", out["notes"][1][1])
         self.assertIn(out["session"], ({}, []))
+
+    def test_notes_wait_for_confirmed_payment(self):
+        body = """
+        echo json_encode( array_keys( $GLOBALS['hooks'] ) );
+        """
+        hooks = json.loads(run_php({}, body))
+        for tag in ("woocommerce_payment_complete", "woocommerce_order_status_processing", "woocommerce_order_status_on-hold"):
+            self.assertIn(tag, hooks)
+        for tag in ("woocommerce_checkout_order_created", "woocommerce_store_api_checkout_order_processed"):
+            self.assertNotIn(tag, hooks)
 
     def test_unlinked_checkout_is_untouched(self):
         body = """

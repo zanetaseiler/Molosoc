@@ -418,6 +418,7 @@ function molosoc_gift_add_to_cart_action() {
 	// only part of what they chose.
 	$cart    = WC()->cart;
 	$restore = array();
+	$wanted  = array();
 	$failed  = false;
 	foreach ( $counts as $key => $quantity ) {
 		$variation  = $sizes[ $key ]['variation'];
@@ -432,6 +433,7 @@ function molosoc_gift_add_to_cart_action() {
 			break;
 		}
 		$restore[ $item_key ] = $before;
+		$wanted[ $item_key ]  = $quantity;
 	}
 
 	if ( $failed ) {
@@ -446,7 +448,20 @@ function molosoc_gift_add_to_cart_action() {
 		exit;
 	}
 
-	molosoc_gift_link_cart_to_order( $parent, $lang );
+	// The free rate must cover exactly the rows chosen on this form: drop
+	// every other line and pin the added lines to the submitted quantities, so
+	// pre-loaded rows or a repeated submit can never accumulate more than
+	// MOLOSOC_GIFT_MAX_PAIRS pairs at shipping 0.
+	foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
+		if ( ! isset( $wanted[ $item_key ] ) ) {
+			$cart->remove_cart_item( $item_key );
+		}
+	}
+	foreach ( $wanted as $item_key => $quantity ) {
+		$cart->set_quantity( $item_key, $quantity );
+	}
+
+	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted );
 
 	wp_safe_redirect( molosoc_gift_checkout_url( $lang ) );
 	exit;
@@ -460,9 +475,10 @@ add_action( 'wp_loaded', 'molosoc_gift_add_to_cart_action', 20 );
  * it is still the same, still-combinable order rather than trusting the
  * session blindly. Copying the address is the same data the customer just
  * saw on their own Thank You page; setters that reject a value (e.g. an
- * invalid email) are simply skipped.
+ * invalid email) are simply skipped. 'lines' (cart item key => quantity) is
+ * the exact set of rows the form added; see molosoc_gift_cart_link().
  */
-function molosoc_gift_link_cart_to_order( $parent, $lang ) {
+function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 	if ( ! WC()->session ) {
 		return;
 	}
@@ -472,6 +488,7 @@ function molosoc_gift_link_cart_to_order( $parent, $lang ) {
 			'order_id' => $parent->get_id(),
 			'key'      => $parent->get_order_key(),
 			'lang'     => $lang,
+			'lines'    => $lines,
 			'time'     => time(),
 		)
 	);
@@ -499,9 +516,9 @@ function molosoc_gift_link_cart_to_order( $parent, $lang ) {
 /**
  * The original order the current cart is linked to, re-validated: the
  * session link must name an order whose key still matches and that can
- * still ship together, and every line in the cart must be the gift product
- * (nothing else could be added on this store today, but the free rate below
- * must never apply to anything other than gift pairs). Null otherwise.
+ * still ship together, and the cart must hold exactly the rows and quantities
+ * the gift form added (so the free rate never covers anything else, e.g. a
+ * pre-loaded or later-increased quantity). Null otherwise.
  * Returns array( 'order' => WC_Order, 'lang' => 'cz'|'en' ).
  */
 function molosoc_gift_cart_link() {
@@ -519,12 +536,16 @@ function molosoc_gift_cart_link() {
 	) {
 		return null;
 	}
+	$lines = ( isset( $link['lines'] ) && is_array( $link['lines'] ) ) ? $link['lines'] : array();
 	$items = WC()->cart->get_cart();
-	if ( empty( $items ) ) {
+	if ( empty( $items ) || empty( $lines ) || count( $items ) !== count( $lines ) || array_sum( $lines ) > MOLOSOC_GIFT_MAX_PAIRS ) {
 		return null;
 	}
-	foreach ( $items as $item ) {
-		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+	foreach ( $items as $key => $item ) {
+		if ( ! isset( $lines[ $key ], $item['product_id'], $item['quantity'] )
+			|| MOLOSOC_PRODUCT_ID !== (int) $item['product_id']
+			|| (int) $lines[ $key ] !== (int) $item['quantity']
+		) {
 			return null;
 		}
 	}
@@ -581,13 +602,19 @@ add_action( 'woocommerce_checkout_create_order', 'molosoc_gift_stamp_new_order',
 add_action( 'woocommerce_store_api_checkout_update_order_meta', 'molosoc_gift_stamp_new_order', 10, 1 );
 
 /**
- * Once the new order exists: a private order note on BOTH orders so
- * fulfilment sees the link from either side, then drop the session link so
- * a later, unrelated purchase from the same browser is a normal order
- * again. Notes are admin-only (never emailed to the customer) and are the
- * only thing ever written to the original order. Idempotent via a meta
- * flag, since the classic and Store API hooks below can't both fire for
- * one order but a retried checkout could.
+ * Once the new order's payment is confirmed: a private order note on BOTH
+ * orders so fulfilment sees the link from either side, then drop the session
+ * link so a later, unrelated purchase from the same browser is a normal
+ * order again. Deliberately NOT run when the order is merely created: the
+ * gateway may still reject it or the shopper abandon the redirect, and a
+ * "ship together" note on the paid parent for an unpaid add-on would be
+ * wrong — while clearing the link early would make a retry ship normally.
+ * Payment confirmed means woocommerce_payment_complete or the order
+ * reaching processing, or on-hold (a deliberate offline/manual payment
+ * method; WooCommerce itself reduces stock and treats it as placed). Notes
+ * are admin-only (never emailed to the customer) and are the only thing
+ * ever written to the original order. Idempotent via a meta flag, since
+ * several of these hooks fire for one successful order.
  */
 function molosoc_gift_note_orders( $order ) {
 	if ( ! $order instanceof WC_Order ) {
@@ -621,8 +648,13 @@ function molosoc_gift_note_orders( $order ) {
 		WC()->session->set( MOLOSOC_GIFT_SESSION_KEY, null );
 	}
 }
-add_action( 'woocommerce_checkout_order_created', 'molosoc_gift_note_orders', 10, 1 );
-add_action( 'woocommerce_store_api_checkout_order_processed', 'molosoc_gift_note_orders', 10, 1 );
+
+function molosoc_gift_note_orders_by_id( $order_id ) {
+	molosoc_gift_note_orders( wc_get_order( $order_id ) );
+}
+add_action( 'woocommerce_payment_complete', 'molosoc_gift_note_orders_by_id', 10, 1 );
+add_action( 'woocommerce_order_status_processing', 'molosoc_gift_note_orders_by_id', 10, 1 );
+add_action( 'woocommerce_order_status_on-hold', 'molosoc_gift_note_orders_by_id', 10, 1 );
 
 /**
  * Admin order screen: one line under the order details naming the original
