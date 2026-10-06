@@ -1,0 +1,44 @@
+name: Analytics Diagnostic Purchase Attribution (manual, read-only)
+
+# Issue #112: prints GA4 purchase attribution dimensions, the `(not set)`
+# session event path, and whether ga_session_id / client_id are registered
+# custom dimensions. workflow_dispatch ONLY: no push trigger, no schedule.
+# Read-only: GA4 runReport/getMetadata calls; nothing is written anywhere and
+# no GA4, WordPress, WooCommerce, WPConsent or GTM setting is changed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First day (YYYY-MM-DD)"
+        default: "2026-10-05"
+      end:
+        description: "Last day (YYYY-MM-DD), max 7 days"
+        default: "2026-10-05"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit test
+        run: python3 -m pytest automations/analytics/test_diagnostic_purchase_attribution.py -q
+
+      - name: Print the purchase attribution diagnostic
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: python3 automations/analytics/diagnostic_purchase_attribution.py --start "$START" --end "$END"
