@@ -104,7 +104,9 @@ function molosoc_thankyou_lang( $order ) {
  * True while gift pairs can still be packed together with $order: it is
  * paid-or-awaiting-payment but not dispatched (processing/on-hold; a
  * completed order has left the building), it was placed within the window,
- * and it is not itself a gift add-on (one link only, never a chain).
+ * it is not itself a gift add-on (one link only, never a chain), and no
+ * add-on has already been confirmed for it (order-backed, so a stale session
+ * link in any browser can never grant a second free shipping).
  * Used by the Thank You page to decide whether to show the offer at all,
  * and again by the cart/checkout hooks before they rely on the link.
  */
@@ -119,7 +121,31 @@ function molosoc_gift_can_ship_with( $order ) {
 	if ( ! $created ) {
 		return false;
 	}
-	return ( time() - $created->getTimestamp() ) <= MOLOSOC_GIFT_WINDOW_HOURS * HOUR_IN_SECONDS;
+	if ( ( time() - $created->getTimestamp() ) > MOLOSOC_GIFT_WINDOW_HOURS * HOUR_IN_SECONDS ) {
+		return false;
+	}
+	return ! molosoc_gift_has_confirmed_addon( $order );
+}
+
+/**
+ * True once a gift add-on for $order has been confirmed (noted, or sent to
+ * manual handling). Read from the add-on orders' own meta, not the session,
+ * because the payment confirmation can arrive in a gateway's server-to-server
+ * request that has no access to the shopper's browser session.
+ */
+function molosoc_gift_has_confirmed_addon( $order ) {
+	$found = wc_get_orders(
+		array(
+			'limit'      => 1,
+			'return'     => 'ids',
+			'status'     => 'any',
+			'meta_query' => array(
+				array( 'key' => MOLOSOC_GIFT_PARENT_META, 'value' => $order->get_id() ),
+				array( 'key' => MOLOSOC_GIFT_PARENT_META . '_noted', 'compare' => 'EXISTS' ),
+			),
+		)
+	);
+	return ! empty( $found );
 }
 
 /**
@@ -603,25 +629,39 @@ add_action( 'woocommerce_store_api_checkout_update_order_meta', 'molosoc_gift_st
 
 /**
  * Once the new order's payment is confirmed: a private order note on BOTH
- * orders so fulfilment sees the link from either side, then drop the session
- * link so a later, unrelated purchase from the same browser is a normal
- * order again. Deliberately NOT run when the order is merely created: the
- * gateway may still reject it or the shopper abandon the redirect, and a
- * "ship together" note on the paid parent for an unpaid add-on would be
- * wrong — while clearing the link early would make a retry ship normally.
- * Payment confirmed means woocommerce_payment_complete or the order
- * reaching processing, or on-hold (a deliberate offline/manual payment
- * method; WooCommerce itself reduces stock and treats it as placed). Notes
- * are admin-only (never emailed to the customer) and are the only thing
- * ever written to the original order. Idempotent via a meta flag, since
- * several of these hooks fire for one successful order.
+ * orders so fulfilment sees the link from either side. Deliberately NOT run
+ * when the order is merely created (the gateway may still reject it or the
+ * shopper abandon the redirect) and NOT on on-hold, which WooCommerce defines
+ * as awaiting payment: an offline/delayed method's add-on stays linked by its
+ * meta and admin line, and gets its notes when it reaches processing or
+ * payment_complete fires. The original order is re-validated at this moment
+ * (it may have been dispatched, or the window may have passed, while the
+ * add-on was being paid); if it can no longer ship together, only the add-on
+ * order gets a note, telling fulfilment to handle it manually, and the
+ * original order is left alone. Notes are admin-only (never emailed to the
+ * customer) and are the only thing ever written to the original order.
+ * Idempotent via a meta flag, since several of these hooks fire for one
+ * successful order. The shopper's session link is not touched here (this can
+ * run in a gateway callback with another session); molosoc_gift_can_ship_with()
+ * stops honouring it once the flag exists.
  */
 function molosoc_gift_note_orders( $order ) {
 	if ( ! $order instanceof WC_Order ) {
 		return;
 	}
 	$parent = molosoc_gift_parent_order( $order );
-	if ( ! $parent || 'yes' === $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
+	if ( ! $parent || '' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_noted' ) ) {
+		return;
+	}
+	if ( ! molosoc_gift_can_ship_with( $parent ) ) {
+		$order->add_order_note(
+			sprintf(
+				'POZOR: původní objednávka č. %1$s už nejde odeslat společně (odeslána, mimo časové okno nebo už má jiný doplněk) — vyřiďte ručně, poštovné 0 bylo účtováno. / ATTENTION: original order #%1$s can no longer ship together (dispatched, outside the window or already has another add-on) — handle manually, shipping 0 was charged.',
+				$parent->get_order_number()
+			)
+		);
+		$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_noted', 'manual' );
+		$order->save();
 		return;
 	}
 	$pairs = 0;
@@ -643,10 +683,6 @@ function molosoc_gift_note_orders( $order ) {
 	);
 	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_noted', 'yes' );
 	$order->save();
-
-	if ( function_exists( 'WC' ) && WC()->session ) {
-		WC()->session->set( MOLOSOC_GIFT_SESSION_KEY, null );
-	}
 }
 
 function molosoc_gift_note_orders_by_id( $order_id ) {
@@ -654,7 +690,19 @@ function molosoc_gift_note_orders_by_id( $order_id ) {
 }
 add_action( 'woocommerce_payment_complete', 'molosoc_gift_note_orders_by_id', 10, 1 );
 add_action( 'woocommerce_order_status_processing', 'molosoc_gift_note_orders_by_id', 10, 1 );
-add_action( 'woocommerce_order_status_on-hold', 'molosoc_gift_note_orders_by_id', 10, 1 );
+
+/**
+ * Drop the shopper's session link on the add-on order's own Thank You page,
+ * a browser request with the shopper's own session, so a later unrelated
+ * purchase from the same browser is a normal order.
+ */
+function molosoc_gift_clear_session_link( $order_id ) {
+	$order = wc_get_order( $order_id );
+	if ( molosoc_gift_parent_order( $order ) && function_exists( 'WC' ) && WC()->session ) {
+		WC()->session->set( MOLOSOC_GIFT_SESSION_KEY, null );
+	}
+}
+add_action( 'woocommerce_thankyou', 'molosoc_gift_clear_session_link', 5, 1 );
 
 /**
  * Admin order screen: one line under the order details naming the original

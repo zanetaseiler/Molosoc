@@ -75,6 +75,18 @@ function wc_get_order( $id ) {
 	if ( ! isset( $GLOBALS['orders'][ $id ] ) ) { $GLOBALS['orders'][ $id ] = new WC_Order( (int) $id ); }
 	return $GLOBALS['orders'][ $id ];
 }
+function wc_get_orders( $args ) {
+	$parent = null; $need_noted = false;
+	foreach ( $args['meta_query'] as $q ) {
+		if ( '_molosoc_gift_parent_order' === $q['key'] ) { $parent = (int) $q['value']; }
+		if ( '_molosoc_gift_parent_order_noted' === $q['key'] ) { $need_noted = true; }
+	}
+	$ids = array();
+	foreach ( $GLOBALS['t']['meta'] as $id => $meta ) {
+		if ( isset( $meta['_molosoc_gift_parent_order'] ) && (int) $meta['_molosoc_gift_parent_order'] === $parent && ( ! $need_noted || isset( $meta['_molosoc_gift_parent_order_noted'] ) ) ) { $ids[] = (int) $id; }
+	}
+	return $ids;
+}
 class WC_Product_Variation {
 	public $id; public $price; public $stock;
 	function __construct( $id, $price, $stock ) { $this->id = $id; $this->price = $price; $this->stock = $stock; }
@@ -487,7 +499,7 @@ class LinkedCheckout(unittest.TestCase):
         ):
             self.assertEqual(json.loads(run_php(scenario, self.RATES)), normal, scenario)
 
-    def test_new_order_is_stamped_noted_on_both_sides_and_the_link_dropped(self):
+    def test_new_order_is_stamped_and_noted_on_both_sides_once_paid(self):
         body = """
         $new = wc_get_order( 88 );
         molosoc_gift_stamp_new_order( $new );
@@ -508,17 +520,52 @@ class LinkedCheckout(unittest.TestCase):
         self.assertIn("Gift add-on to order #77", out["notes"][0][1])
         self.assertIn("shipping 0", out["notes"][0][1])
         self.assertIn("Gift add-on: order #88 (3 pairs)", out["notes"][1][1])
-        self.assertIn(out["session"], ({}, []))
+        # The gateway callback may not hold the shopper's session: untouched here.
+        self.assertEqual(out["session"]["molosoc_gift_parent"]["order_id"], 77)
 
     def test_notes_wait_for_confirmed_payment(self):
         body = """
         echo json_encode( array_keys( $GLOBALS['hooks'] ) );
         """
         hooks = json.loads(run_php({}, body))
-        for tag in ("woocommerce_payment_complete", "woocommerce_order_status_processing", "woocommerce_order_status_on-hold"):
+        for tag in ("woocommerce_payment_complete", "woocommerce_order_status_processing"):
             self.assertIn(tag, hooks)
-        for tag in ("woocommerce_checkout_order_created", "woocommerce_store_api_checkout_order_processed"):
+        # on-hold means awaiting payment: it must never trigger the notes.
+        for tag in ("woocommerce_order_status_on-hold", "woocommerce_checkout_order_created", "woocommerce_store_api_checkout_order_processed"):
             self.assertNotIn(tag, hooks)
+
+    def test_payment_after_the_original_order_became_ineligible_goes_to_manual_handling(self):
+        body = """
+        $new = wc_get_order( 88 );
+        molosoc_gift_note_orders_by_id( 88 );
+        molosoc_gift_note_orders_by_id( 88 );
+        echo json_encode( array( 'meta' => $new->meta, 'notes' => $GLOBALS['notes'] ) );
+        """
+        for scenario in ({"status": {"77": "completed"}}, {"age": {"77": 48 * 3600}}):
+            scenario = dict(scenario, meta={"88": {"_molosoc_gift_parent_order": 77}})
+            out = json.loads(run_php(scenario, body))
+            self.assertEqual(out["meta"]["_molosoc_gift_parent_order_noted"], "manual", scenario)
+            self.assertEqual([n[0] for n in out["notes"]], [88], scenario)  # nothing written to the original
+            self.assertIn("handle manually", out["notes"][0][1])
+
+    def test_a_confirmed_addon_makes_any_stale_session_link_worthless(self):
+        # The link in the browser session survives (a gateway callback cannot
+        # clear it), but the order-backed flag stops it granting free shipping again.
+        scenario = {"session": {"molosoc_gift_parent": LINK}, "cart": {"line425": 2},
+                    "meta": {"88": {"_molosoc_gift_parent_order": 77, "_molosoc_gift_parent_order_noted": "yes"}}}
+        normal = {"flat_rate:1": "normal", "zasilkovna": "pickup"}
+        self.assertEqual(json.loads(run_php(scenario, self.RATES)), normal)
+        self.assertNotIn("molosoc-gift", run_php(scenario, RENDER, get=KEY))
+        # An add-on that was only created (not yet confirmed) does not block a retry.
+        scenario["meta"] = {"88": {"_molosoc_gift_parent_order": 77}}
+        self.assertIn("molosoc_gift_combined", json.loads(run_php(scenario, self.RATES)))
+
+    def test_gift_orders_own_thank_you_page_drops_the_session_link(self):
+        body = "molosoc_gift_clear_session_link( 88 ); echo json_encode( $GLOBALS['session'] );"
+        out = run_php({"session": {"molosoc_gift_parent": LINK}, "meta": {"88": {"_molosoc_gift_parent_order": 77}}}, body)
+        self.assertIn(json.loads(out), ({}, []))
+        out = run_php({"session": {"molosoc_gift_parent": LINK}}, body)  # an ordinary order: untouched
+        self.assertIn("molosoc_gift_parent", json.loads(out))
 
     def test_unlinked_checkout_is_untouched(self):
         body = """
