@@ -351,7 +351,8 @@ class Rendering(unittest.TestCase):
             self.assertNotIn("molosoc-gift", out, scenario)
             self.assertTrue(out.endswith("|Děkujeme za vaši objednávku."), scenario)  # hero still shows
         self.assertIn("molosoc-gift", run_php({"age": {"77": 24 * 3600 - 60}}, RENDER, get=KEY))
-        self.assertIn("molosoc-gift", run_php({"status": {"77": "on-hold"}}, RENDER, get=KEY))
+        # on-hold = payment unconfirmed: the original may still fail, so no offer.
+        self.assertNotIn("molosoc-gift", run_php({"status": {"77": "on-hold"}}, RENDER, get=KEY))
 
     def test_out_of_stock_size_is_not_offered_and_no_stock_hides_the_section(self):
         out = run_php({"variations": {"425": [229, True], "424": [229, False]}}, RENDER, get=KEY)
@@ -391,16 +392,26 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(customer["billing_email"], "jana@example.test")
         self.assertEqual(customer["shipping_city"], "Praha")
         self.assertNotIn("billing_phone", customer)  # empty values are not copied
-        self.assertEqual(customer["saved"], 1)
+        self.assertNotIn("saved", customer)  # session defaults only, never saved to the account
 
     def test_preloaded_or_repeated_rows_never_ride_the_free_rate(self):
-        # A pre-loaded quantity of the same size and an unrelated line are
-        # reset to exactly what this form submitted, and the link records it.
+        # A pre-loaded quantity of a chosen size is reset to exactly what this
+        # form submitted, and the link records it.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        _, _, out = self.submit(post, {"cart": {"line425": 3, "line999": 2}})
+        _, _, out = self.submit(post, {"cart": {"line425": 3}})
         self.assertEqual(section(out, "CART"), {"line425": 1, "line424": 1})
         link = section(out, "SESSION")["molosoc_gift_parent"]
         self.assertEqual(link["lines"], {"line425": 1, "line424": 1})
+
+    def test_unrelated_cart_rows_are_never_deleted(self):
+        # Another product (or another gift size) in the cart: the add is rolled
+        # back, the cart is exactly as it was, nothing is linked.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}):
+            redirect, _, out = self.submit(post, {"cart": cart})
+            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
+            self.assertEqual(section(out, "CART"), cart)
+            self.assertEqual(section(out, "SESSION"), {})
 
     def test_english_form_goes_to_the_english_checkout(self):
         redirect, added, _ = self.submit(
@@ -416,6 +427,7 @@ class AddToCartHandler(unittest.TestCase):
             ({k: v for k, v in FORM.items() if k not in ("molosoc_gift_order", "molosoc_gift_key")}, {}),
             (FORM, {"status": {"77": "completed"}}),
             (FORM, {"status": {"77": "pending"}}),
+            (FORM, {"status": {"77": "on-hold"}}),
             (FORM, {"age": {"77": 30 * 3600}}),
             (FORM, {"meta": {"77": {"_molosoc_gift_parent_order": 88}}}),
         ):
@@ -566,6 +578,10 @@ class LinkedCheckout(unittest.TestCase):
         self.assertIn(json.loads(out), ({}, []))
         out = run_php({"session": {"molosoc_gift_parent": LINK}}, body)  # an ordinary order: untouched
         self.assertIn("molosoc_gift_parent", json.loads(out))
+        # A link for a different original order (another tab) is not this add-on's to drop.
+        other = dict(LINK, order_id=55)
+        out = run_php({"session": {"molosoc_gift_parent": other}, "meta": {"88": {"_molosoc_gift_parent_order": 77}}}, body)
+        self.assertEqual(json.loads(out)["molosoc_gift_parent"]["order_id"], 55)
 
     def test_shipping_cache_key_follows_the_link_state(self):
         body = """

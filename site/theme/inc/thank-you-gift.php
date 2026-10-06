@@ -102,8 +102,9 @@ function molosoc_thankyou_lang( $order ) {
 
 /**
  * True while gift pairs can still be packed together with $order: it is
- * paid-or-awaiting-payment but not dispatched (processing/on-hold; a
- * completed order has left the building), it was placed within the window,
+ * paid and not dispatched (processing only: on-hold means payment is still
+ * unconfirmed and may yet fail, a completed order has left the building), it
+ * was placed within the window,
  * it is not itself a gift add-on (one link only, never a chain), and no
  * add-on has already been confirmed for it (order-backed, so a stale session
  * link in any browser can never grant a second free shipping).
@@ -111,7 +112,7 @@ function molosoc_thankyou_lang( $order ) {
  * and again by the cart/checkout hooks before they rely on the link.
  */
 function molosoc_gift_can_ship_with( $order ) {
-	if ( ! $order instanceof WC_Order || ! $order->has_status( array( 'processing', 'on-hold' ) ) ) {
+	if ( ! $order instanceof WC_Order || ! $order->has_status( 'processing' ) ) {
 		return false;
 	}
 	if ( '' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META ) ) {
@@ -474,14 +475,29 @@ function molosoc_gift_add_to_cart_action() {
 		exit;
 	}
 
-	// The free rate must cover exactly the rows chosen on this form: drop
-	// every other line and pin the added lines to the submitted quantities, so
-	// pre-loaded rows or a repeated submit can never accumulate more than
-	// MOLOSOC_GIFT_MAX_PAIRS pairs at shipping 0.
+	// The free rate must cover exactly the rows chosen on this form. A cart
+	// that also holds anything else (another product added in another tab,
+	// another size of the gift) is never emptied behind the shopper's back:
+	// the add is rolled back like a failed one and they choose on the product
+	// page instead. Rows of the chosen sizes are pinned to the submitted
+	// quantities, so a pre-loaded row or a repeated submit can never
+	// accumulate more than MOLOSOC_GIFT_MAX_PAIRS pairs at shipping 0.
 	foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
 		if ( ! isset( $wanted[ $item_key ] ) ) {
-			$cart->remove_cart_item( $item_key );
+			$failed = true;
+			break;
 		}
+	}
+	if ( $failed ) {
+		foreach ( $restore as $item_key => $before ) {
+			if ( $before > 0 ) {
+				$cart->set_quantity( $item_key, $before );
+			} else {
+				$cart->remove_cart_item( $item_key );
+			}
+		}
+		wp_safe_redirect( molosoc_product_url( $lang ) );
+		exit;
 	}
 	foreach ( $wanted as $item_key => $quantity ) {
 		$cart->set_quantity( $item_key, $quantity );
@@ -536,7 +552,10 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 			}
 		}
 	}
-	$customer->save();
+	// No $customer->save(): these are checkout defaults for this session. The
+	// customer object persists them to the session on its own; saving here
+	// could write a historical order's address over a logged-in shopper's
+	// newer saved one.
 }
 
 /**
@@ -716,8 +735,15 @@ add_action( 'woocommerce_order_status_processing', 'molosoc_gift_note_orders_by_
  * purchase from the same browser is a normal order.
  */
 function molosoc_gift_clear_session_link( $order_id ) {
-	$order = wc_get_order( $order_id );
-	if ( molosoc_gift_parent_order( $order ) && function_exists( 'WC' ) && WC()->session ) {
+	$order  = wc_get_order( $order_id );
+	$parent = molosoc_gift_parent_order( $order );
+	if ( ! $parent || ! function_exists( 'WC' ) || ! WC()->session ) {
+		return;
+	}
+	// Only the link this add-on consumed: a gift checkout already started for
+	// another original order (another tab) keeps its own link.
+	$link = WC()->session->get( MOLOSOC_GIFT_SESSION_KEY );
+	if ( is_array( $link ) && isset( $link['order_id'] ) && absint( $link['order_id'] ) === $parent->get_id() ) {
 		WC()->session->set( MOLOSOC_GIFT_SESSION_KEY, null );
 	}
 }
