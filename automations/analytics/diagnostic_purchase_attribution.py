@@ -8,7 +8,7 @@ is lost, for a short window (default: 2026-10-05, the day of order 1026):
 
   1. purchase events: hits per transactionId (duplicate check), hits by
      hostName x pagePath, and per-transactionId attribution (session,
-     session-manual, first-user, event-scoped) with purchase metrics;
+     session-manual, first-user) with purchase metrics;
   2. an aggregate event inventory (eventName x pagePath, and x pageReferrer) of
      sessions whose sessionSourceMedium is `(not set)`, including whether
      `session_start` exists. These are counts only: no session id, timestamp or
@@ -53,9 +53,9 @@ PATH_METRICS = ("eventCount", "totalUsers")
 # hits per transactionId (duplicates) and per host / page.
 # (title, dimensions, metrics, row limit, (filter field, value)). Dimension
 # groups are split because GA4 rejects some scope combinations; each report
-# succeeds or fails on its own. The event-scoped attribution dimensions are
-# requested one group at a time with transactionId: the single combined query
-# (manualSourceMedium + source + medium) was rejected by GA4 as incompatible.
+# succeeds or fails on its own. Event-scoped attribution queries (transactionId
+# with manualSourceMedium / source / medium and eventCount) were removed in
+# Issue #118: GA4 rejects those dimension / metric combinations.
 PURCHASE_FILTER = ("eventName", "purchase")
 AGGREGATE_PURCHASE_REPORTS = (
     ("Purchase: hits per transactionId (duplicate check)", ("transactionId",),
@@ -72,12 +72,6 @@ PURCHASE_REPORTS = (
     ("Purchase: first-user attribution",
      ("transactionId", "firstUserSourceMedium", "firstUserManualSourceMedium"),
      PURCHASE_METRICS, 50, PURCHASE_FILTER),
-    ("Purchase: event-scoped manual source / medium",
-     ("transactionId", "manualSourceMedium"), ("eventCount",), 50, PURCHASE_FILTER),
-    ("Purchase: event-scoped source",
-     ("transactionId", "source"), ("eventCount",), 50, PURCHASE_FILTER),
-    ("Purchase: event-scoped medium",
-     ("transactionId", "medium"), ("eventCount",), 50, PURCHASE_FILTER),
 )
 NOT_SET_REPORTS = (
     ("(not set) sessions: aggregate event inventory by page", ("eventName", "pagePath"), PATH_METRICS, 200,

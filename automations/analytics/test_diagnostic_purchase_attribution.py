@@ -74,15 +74,10 @@ def test_every_purchase_report_keeps_transaction_id():
         assert "transactionId" in dims, title
 
 
-def test_event_scoped_attribution_is_not_one_combined_query():
-    event_scoped = [dims for title, dims, *_ in dpa.PURCHASE_REPORTS
-                    if "event-scoped" in title]
-    assert event_scoped
-    attribution = {"manualSourceMedium", "source", "medium"}
-    for dims in event_scoped:
-        assert "transactionId" in dims
-        assert len(attribution & set(dims)) == 1, dims
-    assert attribution == {d for dims in event_scoped for d in dims} - {"transactionId"}
+def test_no_ga4_incompatible_event_scoped_attribution_reports():
+    for title, dims, metrics, *_ in dpa.PURCHASE_REPORTS:
+        assert "event-scoped" not in title, title
+        assert not ({"manualSourceMedium", "source", "medium"} & set(dims)), title
 
 
 def test_duplicate_purchase_check_counts_hits_per_transaction():
