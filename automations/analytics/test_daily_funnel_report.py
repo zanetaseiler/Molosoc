@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import daily_funnel_report as d  # noqa: E402
-from storage import InMemoryStore, facts_key  # noqa: E402
+from storage import InMemoryStore, StorageError, facts_key  # noqa: E402
 
 D = dt.date
 
@@ -174,9 +174,30 @@ def _ga4_report(fail_dims=None, sm_rows=None):
 def test_landing_paths_are_redacted_and_merged():
     out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), _ga4_report())
     pages = {r["page"]: r for r in out["landing"]}
-    assert set(pages) == {"/reset/*", "/products/abc", "/t/*"}
-    assert pages["/reset/*"]["sessions"] == 10
+    assert set(pages) == {"/*/*"}
+    assert pages["/*/*"]["sessions"] == 15
     assert "example" not in str(out["landing"])
+
+
+def test_landing_path_allowlist_blocks_short_pii_shaped_segments():
+    for pii in ("/reset/Jana-Novakova", "/customer/420123456", "/profile/jana.novakova"):
+        assert d.redact_path(pii) == "/*/*"
+    assert d.redact_path("/foot-covers/moisture-lock-foot-cover/?x=1") == \
+        "/foot-covers/moisture-lock-foot-cover"
+    assert d.redact_path("/") == "/"
+
+
+def test_source_medium_is_allowlisted_and_paid_flag_kept():
+    rows = [["jana@example.com / promo|x", "5", "3", "0.6", "10", "0.4"],
+            ["other-thing / whatever", "2", "1", "0.5", "10", "0.5"],
+            ["facebook / paid_social", "7", "4", "0.5", "10", "0.5"],
+            ["fb-jana@example.com / cpc", "1", "1", "1", "1", "0"]]
+    out = d.merge_source_medium(rows)
+    labels = {r["source_medium"]: r for r in out}
+    assert set(labels) == {"other / other", "facebook / paid_social", "other / cpc"}
+    assert labels["other / other"]["sessions"] == 7 and not labels["other / other"]["paid"]
+    assert labels["other / cpc"]["paid"]
+    assert "example" not in str(out)
 
 
 def test_failed_source_medium_is_unavailable_not_zero():
@@ -197,6 +218,51 @@ def test_funnel_does_not_skip_absent_stage():
               "purchase": {"users": 2.0}}
     steps = dict((s, c) for s, _, c in d.funnel_steps(events))
     assert steps["begin_checkout"] is None and steps["purchase"] is None
+
+
+def test_funnel_is_labelled_non_cohort_and_ratio_may_exceed_100():
+    report = {"window": {"start": "2026-10-06", "end": "2026-10-06"},
+              "prior_window": {"start": "2026-10-05", "end": "2026-10-05"},
+              "generated_at": "x", "notes": [], "status": {}, "limits": [],
+              "ga4": {"totals": None, "events": {"begin_checkout": {"users": 1.0},
+                                                 "purchase": {"users": 3.0}}},
+              "ga4_prior": None, "woo": None, "woo_prior": None,
+              "clarity": {"days_found": [], "days_missing": []},
+              "clarity_prior": {}}
+    text = d.render(report)
+    assert "NOT a cohort funnel" in text and "Ratio to previous stage" in text
+    assert "drop-off" not in text.lower().replace("not a true conversion or drop-off rate", "")
+
+
+def test_paid_funnel_withheld_when_truncated():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == ("sessionSourceMedium", "eventName"):
+            return [["fb / paid", "add_to_cart", "1", "1"]] * 1000
+        return []
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), report)
+    assert out["events_paid"] == {} and out["events_paid_truncated"] is True
+    assert any("not reported" in e for e in out["errors"])
+
+
+def test_clarity_read_failure_counts_as_gap_and_suppresses_comparison():
+    class Boom(InMemoryStore):
+        def get_json(self, key):
+            if "2026-10-08" in key:
+                raise StorageError("unreadable")
+            return super().get_json(key)
+    store = Boom()
+    _snap(store, "2026-10-07", 100, 1.0)
+    _snap(store, "2026-10-08", 100, 1.0)
+    out = d.clarity_window(store, D(2026, 10, 6), D(2026, 10, 7))
+    assert out["days_failed"] == ["2026-10-07"] and out["days_found"] == ["2026-10-06"]
+    report = {"window": {"start": "2026-10-06", "end": "2026-10-07"},
+              "prior_window": {"start": "2026-10-04", "end": "2026-10-05"},
+              "generated_at": "x", "notes": [], "status": {}, "limits": [],
+              "ga4": None, "ga4_prior": None, "woo": None, "woo_prior": None,
+              "clarity": out, "clarity_prior": out}
+    text = d.render(report)
+    assert "Days covered: 1/2" in text and "unreadable 2026-10-07" in text
+    assert "Changes are n/a" in text
 
 
 def test_clarity_omitted_metric_is_na_and_gaps_suppress_comparison():

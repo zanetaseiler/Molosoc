@@ -732,7 +732,7 @@ non-PII report (Markdown + JSON artifact, plus the Actions job summary) combinin
 
 | Section | Source | Credential (existing) |
 |---|---|---|
-| Sessions, paid/Meta sessions, source/medium, landing-page engagement, funnel (view_item → add_to_cart → begin_checkout → purchase) with drop-offs | GA4 | `GOOGLE_SERVICE_ACCOUNT_JSON` |
+| Sessions, paid/Meta sessions, source/medium, landing-page engagement, funnel (view_item → add_to_cart → begin_checkout → purchase) with observed-user ratios (not a cohort funnel) | GA4 | `GOOGLE_SERVICE_ACCOUNT_JSON` |
 | Orders, paid vs unpaid, paid revenue, Meta-attributed paid orders | WooCommerce `GET /orders` | `WOO_RO_CONSUMER_KEY/SECRET` |
 | Sessions, bots, pages/session, scroll depth, active time, rage/dead clicks, quick-backs, script errors | stored Clarity daily facts | `ANALYTICS_STORAGE_SA_JSON`, `ANALYTICS_BUCKET` |
 

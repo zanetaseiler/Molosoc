@@ -47,7 +47,23 @@ from google_hydrate import DEFAULT_GA4_PROPERTY_ID
 PRAGUE = ZoneInfo("Europe/Prague")
 MAX_DAYS = 14
 SOURCE_MEDIUM_LIMIT = 250
-SLUG = re.compile(r"[A-Za-z0-9_.~-]{1,40}")
+# Allowlists: only these known static values are ever published; anything else is `*`/`other`.
+ROUTE_SEGMENTS = frozenset({
+    "foot-covers", "moisture-lock-foot-cover", "cracked-heels", "ingrown-toenails",
+    "hardened-skin-calluses", "dry-skin-feet", "foot-cream-that-works", "product",
+    "molosoc-hydratacni-navleky-na-nohy", "cart", "checkout", "order-received",
+    "shop", "blog", "about", "contact", "faq", "my-account", "search", "404",
+    "cs", "en", "sk", "de", "pl", "hu"})
+SOURCES = frozenset({
+    "google", "bing", "yahoo", "duckduckgo", "seznam.cz", "seznam", "ecosia.org",
+    "facebook", "m.facebook.com", "l.facebook.com", "lm.facebook.com", "fb", "instagram",
+    "l.instagram.com", "ig", "meta", "youtube", "linkedin", "pinterest", "tiktok",
+    "klaviyo", "newsletter", "email", "chatgpt.com", "(direct)", "(not set)",
+    "(data not available)"})
+MEDIUMS = frozenset({
+    "organic", "cpc", "ppc", "paid", "paid_social", "paidsocial", "paid-social",
+    "referral", "email", "social", "display", "affiliate", "(none)", "(not set)",
+    "(data not available)"})
 DEFAULT_DAYS = 3
 FUNNEL = ("view_item", "add_to_cart", "begin_checkout", "purchase")
 FUNNEL_EVENTS = ("session_start", "page_view") + FUNNEL
@@ -171,7 +187,7 @@ def ga4_window(client, property_id, start, end, report=None):
     s, e = start.isoformat(), end.isoformat()
     out = {"errors": [], "totals": None, "source_medium": None, "landing": [],
            "source_medium_truncated": False,
-           "events": {}, "events_paid": {}}
+           "events": {}, "events_paid": {}, "events_paid_truncated": False}
 
     def run(name, dims, metrics, limit, events_only=False):
         try:
@@ -199,9 +215,7 @@ def ga4_window(client, property_id, start, end, report=None):
             out["source_medium_truncated"] = True
             out["errors"].append("source/medium: row limit reached; paid/Meta session "
                                  "total may be incomplete and is not reported")
-        out["source_medium"] = [{"source_medium": r[0], "sessions": num(r[1]),
-                                 "engaged": num(r[2]), "paid": is_meta_paid(r[0])}
-                                for r in rows]
+        out["source_medium"] = merge_source_medium(rows)
     rows = run("landing pages", ("landingPage",), SESSION_METRICS, 100)
     if rows is not None:
         out["landing"] = merge_landing(rows)
@@ -220,20 +234,42 @@ def ga4_window(client, property_id, start, end, report=None):
                 slot["users"] += num(users) or 0
         out["events_paid"] = paid
         if len(rows) >= 1000:
+            out["events_paid"] = {}
+            out["events_paid_truncated"] = True
             out["errors"].append("funnel events by source/medium: row limit reached; "
-                                 "paid figures may be truncated")
+                                 "paid funnel figures are incomplete and not reported")
     return out
+
+
+def redact_source_medium(value):
+    """Allowlisted `source / medium` label; visitor-controlled utm text becomes `other`."""
+    source, _, medium = (value or "").lower().partition(" / ")
+    source, medium = source.strip(), medium.strip()
+    return (f"{source if source in SOURCES else 'other'} / "
+            f"{medium if medium in MEDIUMS else 'other'}")
+
+
+def merge_source_medium(rows):
+    """Redact labels (paid flag computed from the raw value first), merge collisions."""
+    merged = {}
+    for r in rows:
+        label = redact_source_medium(r[0])
+        slot = merged.setdefault(label, {"source_medium": label, "sessions": 0.0,
+                                         "engaged": 0.0, "paid": False})
+        slot["sessions"] += num(r[1]) or 0.0
+        slot["engaged"] += num(r[2]) or 0.0
+        slot["paid"] = slot["paid"] or is_meta_paid(r[0])
+    return sorted(merged.values(), key=lambda x: -x["sessions"])
 
 
 def redact_path(path):
     """Canonical, non-PII landing path: query/fragment dropped, percent-decoded, and any
-    segment that is not a short plain slug (emails, tokens, ids) replaced by `*`."""
+    segment not on the static route allowlist (names, emails, ids, tokens) replaced by `*`."""
     path = unquote((path or "").split("?")[0].split("#")[0]) or "/"
     segments = [seg for seg in path.split("/") if seg]
     kept = []
     for seg in segments[:4]:
-        plain = bool(SLUG.fullmatch(seg)) and not (len(seg) >= 16 and any(c.isdigit() for c in seg))
-        kept.append(seg.lower() if plain else "*")
+        kept.append(seg.lower() if seg.lower() in ROUTE_SEGMENTS else "*")
     if len(segments) > 4:
         kept.append("…")
     return "/" + "/".join(kept)
@@ -268,7 +304,8 @@ def paid_sessions(ga4):
 
 
 def funnel_steps(events):
-    """[(stage, users, step conversion % vs previous stage)] for the funnel stages."""
+    """[(stage, users, ratio % of this stage's users to the previous stage's)].
+    Per-event user sets are independent (not a cohort), so the ratio can exceed 100."""
     steps, previous = [], None
     for stage in FUNNEL:
         users = (events.get(stage) or {}).get("users")
@@ -332,7 +369,7 @@ def clarity_window(store, start, end):
     weighted = {m: 0.0 for m in CLARITY_AVG}
     absent = set()  # metrics missing from at least one found day -> n/a, never zero
     weight = 0.0
-    found, missing, failures = [], [], []
+    found, missing, failures, failed_days = [], [], [], []
     for day in days_of(start, end):
         snap = (parse_day(day) + dt.timedelta(days=1)).isoformat()
         key = facts_key("clarity", snap)
@@ -343,6 +380,7 @@ def clarity_window(store, start, end):
             records = store.get_json(key).get("records", [])
         except StorageError as exc:
             failures.append(f"Clarity {snap}: {describe_error(exc)}")
+            failed_days.append(day)
             continue
         site = {r.get("metric"): num(r.get("value")) for r in records
                 if r.get("entity_type") == "site"}
@@ -362,7 +400,8 @@ def clarity_window(store, start, end):
                 absent.add(m)
             else:
                 weighted[m] += site[m] * w
-    out = {"days_found": found, "days_missing": missing, "failures": failures}
+    out = {"days_found": found, "days_missing": missing, "days_failed": failed_days,
+           "failures": failures}
     if found:
         out["sums"] = {m: (None if m in absent else v) for m, v in sums.items()}
         out["averages"] = {m: (weighted[m] / weight if weight and m not in absent else None)
@@ -421,18 +460,24 @@ def render(report):
             add(f"| {r['page']} | {fmt(r['sessions'])} | {fmt(r['engagement_rate'], 1)} | "
                 f"{fmt(r['avg_duration'])} |")
 
-    add("\n## Funnel (GA4 users per stage)")
+    add("\n## Funnel (GA4 observed users per event; not a cohort)")
     if g is None or not g.get("events"):
         add("No GA4 funnel-event data (unavailable or none recorded).")
     else:
-        add("| Stage | Users | Step conv. % | Previous users | Change |\n|---|---:|---:|---:|---:|")
+        add("| Stage | Users | Ratio to previous stage % | Previous users | Change |\n|---|---:|---:|---:|---:|")
         prev_steps = dict((s, u) for s, u, _ in funnel_steps((gp or {}).get("events") or {}))
         for stage, users, step in funnel_steps(g["events"]):
             add(f"| {stage} | {fmt(users)} | {fmt(step, 1)} | {fmt(prev_steps.get(stage))} | "
                 f"{fmt_change(users, prev_steps.get(stage))} |")
-        add("\nStep conv. % = users at this stage / users at the previous stage "
-            "(drop-off = 100 − value). Events that GA4 never recorded show n/a, not 0.")
-        if g.get("events_paid"):
+        add("\nRatio = users who fired this event / users who fired the previous stage's "
+            "event. These are independent per-event user counts, NOT a cohort funnel: a "
+            "returning customer can purchase without a checkout event in the window, so "
+            "the ratio can exceed 100% and is not a true conversion or drop-off rate. "
+            "Events that GA4 never recorded show n/a, not 0.")
+        if g.get("events_paid_truncated"):
+            add("\n**Paid / Meta funnel**: unavailable (GA4 row limit reached; figures "
+                "would be incomplete).")
+        elif g.get("events_paid"):
             add("\n**Paid / Meta funnel** (events: count / users)")
             add("Users are summed across paid source/medium rows, so a user seen under "
                 "two paid sources is counted twice: treat Users as an upper bound.")
@@ -473,20 +518,20 @@ def render(report):
     else:
         s, a = c["sums"], c["averages"]
         sp, ap = (cp.get("sums"), cp.get("averages")) if cp.get("days_found") else ({}, {})
-        comparable = (not c["days_missing"] and not cp.get("days_missing")
-                      and bool(cp.get("days_found")))
+        gaps = lambda x: list(x.get("days_missing") or []) + list(x.get("days_failed") or [])  # noqa: E731
+        comparable = not gaps(c) and not gaps(cp) and bool(cp.get("days_found"))
 
         def chg(cur_v, prev_v, digits=0):
             return fmt_change(cur_v, prev_v, digits) if comparable else "n/a"
-        add(f"Days covered: {len(c['days_found'])}/{len(c['days_found']) + len(c['days_missing'])}"
-            + (f" (missing {', '.join(c['days_missing'])})" if c["days_missing"] else "")
+        add(f"Days covered: {len(c['days_found'])}/{len(c['days_found']) + len(gaps(c))}"
+            + (f" (missing or unreadable {', '.join(sorted(gaps(c)))})" if gaps(c) else "")
             + ". Each snapshot is a trailing 24 h window ending ~03:20–04:20 Prague, so a "
               "Prague day is approximated by the next UTC date's snapshot; session counts "
               "include bots.")
-        if cp.get("days_missing"):
+        if gaps(cp):
             add(f"Previous window coverage: {len(cp.get('days_found') or [])}/"
-                f"{len(cp.get('days_found') or []) + len(cp['days_missing'])} days "
-                f"(missing {', '.join(cp['days_missing'])}).")
+                f"{len(cp.get('days_found') or []) + len(gaps(cp))} days "
+                f"(missing or unreadable {', '.join(sorted(gaps(cp)))}).")
         if not comparable:
             add("Changes are n/a because snapshot coverage is incomplete in one or both "
                 "windows, so the sums are not comparable.")
