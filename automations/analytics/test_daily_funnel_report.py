@@ -329,3 +329,15 @@ def test_landing_truncation_withholds_table_and_flags_error():
     out = d.ga4_window(object(), "1", D(2026, 10, 6), D(2026, 10, 7), report)
     assert out["landing"] == [] and out["landing_truncated"]
     assert any(e.startswith("landing pages: row limit") for e in out["errors"])
+
+
+def test_source_medium_truncation_withholds_table_and_paid_total():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == ("sessionSourceMedium",):
+            return [(f"src{i} / referral", 1, 1, 0.5, 1, 0.5)
+                    for i in range(d.SOURCE_MEDIUM_LIMIT)]
+        return []
+    out = d.ga4_window(object(), "1", D(2026, 10, 6), D(2026, 10, 7), report)
+    assert out["source_medium"] is None and out["source_medium_truncated"]
+    assert d.paid_sessions(out) is None
+    assert any(e.startswith("source/medium: row limit") for e in out["errors"])

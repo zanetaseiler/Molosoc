@@ -214,9 +214,11 @@ def ga4_window(client, property_id, start, end, report=None):
     if rows is not None:
         if len(rows) >= SOURCE_MEDIUM_LIMIT:
             out["source_medium_truncated"] = True
-            out["errors"].append("source/medium: row limit reached; paid/Meta session "
-                                 "total may be incomplete and is not reported")
-        out["source_medium"] = merge_source_medium(rows)
+            out["errors"].append("source/medium: row limit reached; source/medium "
+                                 "table and paid/Meta session total are incomplete "
+                                 "and are not reported")
+        else:
+            out["source_medium"] = merge_source_medium(rows)
     rows = run("landing pages", ("landingPage",), SESSION_METRICS, LANDING_LIMIT)
     if rows is not None:
         if len(rows) >= LANDING_LIMIT:
