@@ -723,3 +723,31 @@ gsutil -m rm -r gs://molosoc-analytics-history/_verification/
 ```
 
 Do **not** widen the writer's permissions to automate this.
+
+
+## Daily funnel report (Issue #120)
+
+`daily_funnel_report.py` + `.github/workflows/daily-funnel-report.yml` produce one
+non-PII report (Markdown + JSON artifact, plus the Actions job summary) combining:
+
+| Section | Source | Credential (existing) |
+|---|---|---|
+| Sessions, paid/Meta sessions, source/medium, landing-page engagement, funnel (view_item → add_to_cart → begin_checkout → purchase) with drop-offs | GA4 | `GOOGLE_SERVICE_ACCOUNT_JSON` |
+| Orders, paid vs unpaid, paid revenue, Meta-attributed paid orders | WooCommerce `GET /orders` | `WOO_RO_CONSUMER_KEY/SECRET` |
+| Sessions, bots, pages/session, scroll depth, active time, rage/dead clicks, quick-backs, script errors | stored Clarity daily facts | `ANALYTICS_STORAGE_SA_JSON`, `ANALYTICS_BUCKET` |
+
+Every figure is compared with the immediately preceding window of equal length.
+
+- **Schedule:** 05:30 UTC daily (07:30 CEST / 06:30 CET). Window = last 3 complete
+  Europe/Prague days ending yesterday. **Backfill:** dispatch with `start`/`end`
+  (e.g. `2026-10-06` / `2026-10-09`, previous window `2026-10-02..05`).
+- **Timezones:** Woo uses exact Prague-midnight UTC instants. GA4 buckets by the
+  property timezone (not readable by this tool; Prague assumed, confirm in GA4 Admin).
+  A Clarity snapshot is a trailing 24 h window taken ~03:20–04:20 Prague, so Prague
+  day X is approximated by the snapshot dated X+1.
+- **Honesty:** failed/empty sources are "unavailable"/"n/a", never zero; zero sales is
+  stated only when Woo was read successfully; today (partial) is flagged; the run exits
+  non-zero if any source failed. GA4 may lag up to ~48 h.
+- **Not collected:** LCP/INP (no GA4 event, not in Clarity's export API); Clarity has no
+  paid/Meta split. Nothing is estimated.
+- **No Clarity API calls, no notification channel, no new service or secret.**

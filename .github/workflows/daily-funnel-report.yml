@@ -1,0 +1,83 @@
+name: Daily Funnel Report (GA4 + WooCommerce + Clarity, read-only)
+
+# Issue #120. One consolidated, non-PII conversion-funnel report with a
+# comparison against the previous equal window. Read-only: GA4 runReport, the
+# read-only WooCommerce REST key (GET /orders) and stored Clarity daily facts in
+# the existing bucket. NO Clarity API call is made, nothing is written to any
+# source, and no notification channel is used: the output is the Actions job
+# summary plus a downloadable artifact.
+#
+# SCHEDULE (UTC): 05:30 daily = 07:30 Prague in summer (CEST), 06:30 in winter
+# (CET). That is after the 02:20 UTC Clarity collection and well after Prague
+# midnight, so the default window (the last 3 COMPLETE Europe/Prague days,
+# ending yesterday) is stable; GA4 may still revise it for up to ~48 h, which
+# the report states. GitHub runs `schedule` only for the default branch and
+# can delay runs by tens of minutes.
+#
+# MANUAL BACKFILL: dispatch with start/end (Prague days, inclusive, max 14).
+# e.g. start=2026-10-06 end=2026-10-09; the comparison window is the equal
+# window immediately before it (2026-10-02..05 unless 3 days are requested).
+
+on:
+  schedule:
+    - cron: "30 5 * * *"
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First Prague day (YYYY-MM-DD); leave empty with end for the rolling default"
+        required: false
+        default: ""
+      end:
+        description: "Last Prague day, inclusive (YYYY-MM-DD)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-funnel-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r automations/analytics/requirements.txt pytest
+
+      - name: Run offline unit tests
+        run: python3 -m pytest automations/analytics/test_daily_funnel_report.py -q
+
+      - name: Build the funnel report
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          WOO_RO_CONSUMER_KEY: ${{ secrets.WOO_RO_CONSUMER_KEY }}
+          WOO_RO_CONSUMER_SECRET: ${{ secrets.WOO_RO_CONSUMER_SECRET }}
+          ANALYTICS_STORAGE_SA_JSON: ${{ secrets.ANALYTICS_STORAGE_SA_JSON }}
+          ANALYTICS_BUCKET: ${{ vars.ANALYTICS_BUCKET }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: |
+          if [ -n "$START" ] || [ -n "$END" ]; then
+            python3 automations/analytics/daily_funnel_report.py --start "$START" --end "$END" --out-dir funnel-report
+          else
+            python3 automations/analytics/daily_funnel_report.py --out-dir funnel-report
+          fi
+
+      - name: Upload the report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: funnel-report
+          path: funnel-report/
+          if-no-files-found: ignore
+          retention-days: 30
