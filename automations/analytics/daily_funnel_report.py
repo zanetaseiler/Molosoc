@@ -197,7 +197,7 @@ def ga4_window(client, property_id, start, end, report=None):
         from diagnostic_window import ga4_report
         report = ga4_report
     s, e = start.isoformat(), end.isoformat()
-    out = {"errors": [], "totals": None, "source_medium": None, "landing": [],
+    out = {"errors": [], "totals": None, "source_medium": None, "landing": None,
            "source_medium_truncated": False, "landing_truncated": False,
            "events": {}, "events_paid": {}, "events_paid_truncated": False}
 
@@ -454,6 +454,29 @@ def clarity_window(store, start, end):
 
 # ----------------------------------------------------------------------- rendering
 
+def _prior_rows(cur, prior, key, truncated_key):
+    """Prior-window breakdown rows, or None when either window's table is unavailable,
+    truncated or built from incomplete GA4 dates (so a comparison would mislead)."""
+    if not prior or cur.get(key) is None or prior.get(key) is None:
+        return None
+    if prior.get(truncated_key) or cur.get(truncated_key):
+        return None
+    if prior.get("days_missing") or cur.get("days_missing"):
+        return None
+    return prior[key]
+
+
+def _prior_value(rows, label_key, label, field):
+    """Prior value for a label; a label absent from a complete table had zero sessions
+    (its engagement metrics are then undefined -> n/a)."""
+    if rows is None:
+        return None
+    for r in rows:
+        if r[label_key] == label:
+            return r[field]
+    return 0.0 if field == "sessions" else None
+
+
 def render(report):
     cur, prev = report["window"], report["prior_window"]
     g, gp = report["ga4"], report["ga4_prior"]
@@ -491,17 +514,32 @@ def render(report):
             f"(previous {fmt(paid_prev)}; {fmt_change(paid, paid_prev)}). "
             "Classified from GA4 source/medium (facebook, instagram, meta, fb, ig, or a "
             "paid medium).")
-        add("\n### Source / medium (top 10)\n| Source / medium | Sessions | Engaged | Paid |\n|---|---:|---:|:-:|")
+        # Breakdown comparisons need a complete, untruncated table in both windows.
+        sm_prior = _prior_rows(g, gp, "source_medium", "source_medium_truncated")
+        lp_prior = _prior_rows(g, gp, "landing", "landing_truncated")
+        add("\n### Source / medium (top 10)\n| Source / medium | Sessions | Previous | Change | "
+            "Engaged | Paid |\n|---|---:|---:|---:|---:|:-:|")
         if g["source_medium"] is None:
-            add("| unavailable | n/a | n/a | |")
+            add("| unavailable | n/a | n/a | n/a | n/a | |")
         for r in (g["source_medium"] or [])[:10]:
-            add(f"| {r['source_medium']} | {fmt(r['sessions'])} | {fmt(r['engaged'])} | "
+            q = _prior_value(sm_prior, "source_medium", r["source_medium"], "sessions")
+            add(f"| {r['source_medium']} | {fmt(r['sessions'])} | {fmt(q)} | "
+                f"{fmt_change(r['sessions'], q)} | {fmt(r['engaged'])} | "
                 f"{'yes' if r['paid'] else ''} |")
         add("\n### Landing-page engagement (top 10 by sessions)\n"
-            "| Landing page | Sessions | Engagement % | Avg duration (s) |\n|---|---:|---:|---:|")
-        for r in g["landing"][:10]:
-            add(f"| {r['page']} | {fmt(r['sessions'])} | {fmt(r['engagement_rate'], 1)} | "
-                f"{fmt(r['avg_duration'])} |")
+            "| Landing page | Sessions | Previous | Change | Engagement % | Previous | Change | "
+            "Avg duration (s) | Previous | Change |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+        if g["landing"] is None:
+            add("| unavailable | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |")
+        for r in (g["landing"] or [])[:10]:
+            q = {k: _prior_value(lp_prior, "page", r["page"], k)
+                 for k in ("sessions", "engagement_rate", "avg_duration")}
+            add(f"| {r['page']} | {fmt(r['sessions'])} | {fmt(q['sessions'])} | "
+                f"{fmt_change(r['sessions'], q['sessions'])} | "
+                f"{fmt(r['engagement_rate'], 1)} | {fmt(q['engagement_rate'], 1)} | "
+                f"{fmt_change(r['engagement_rate'], q['engagement_rate'], 1)} | "
+                f"{fmt(r['avg_duration'])} | {fmt(q['avg_duration'])} | "
+                f"{fmt_change(r['avg_duration'], q['avg_duration'])} |")
 
     add("\n## Funnel (GA4 observed users per event; not a cohort)")
     if g is None or not g.get("events"):
