@@ -85,7 +85,9 @@ def test_woo_window_uses_prague_bounds():
 def _snap(store, date, sessions, pages=2.0):
     store.put_json(facts_key("clarity", date), {"records": [
         {"entity_type": "site", "metric": "clarity_sessions", "value": sessions},
-        {"entity_type": "site", "metric": "clarity_pages_per_session", "value": pages},
+        {"entity_type": "site", "metric": "clarity_pages_per_session", "value": pages,
+         "sample_basis": sessions},
+        {"entity_type": "site", "metric": "clarity_scroll_depth", "value": pages * 10},
         {"entity_type": "site", "metric": "clarity_rage_click_count", "value": 3}]})
 
 
@@ -307,3 +309,23 @@ def test_redacted_source_keeps_paid_medium_classification():
     out = d.summarize_orders(orders)
     assert out["paid_meta"] == 1 and out["paid_other"] == 0
     assert "[redacted source] / cpc" in out["sources_paid"]
+
+
+def test_clarity_scroll_depth_uses_unweighted_mean_without_sample_basis():
+    store = InMemoryStore()
+    _snap(store, "2026-10-07", 1, 1.0)     # scroll 10, no basis
+    _snap(store, "2026-10-08", 100, 5.0)   # scroll 50, no basis
+    out = d.clarity_window(store, D(2026, 10, 6), D(2026, 10, 7))
+    assert out["averages"]["clarity_scroll_depth"] == pytest.approx(30.0)
+    assert out["averages"]["clarity_pages_per_session"] == pytest.approx(
+        (1.0 * 1 + 5.0 * 100) / 101)
+
+
+def test_landing_truncation_withholds_table_and_flags_error():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == ("landingPage",):
+            return [(f"/p{i}", 1, 1, 0.5, 1, 0.5) for i in range(d.LANDING_LIMIT)]
+        return []
+    out = d.ga4_window(object(), "1", D(2026, 10, 6), D(2026, 10, 7), report)
+    assert out["landing"] == [] and out["landing_truncated"]
+    assert any(e.startswith("landing pages: row limit") for e in out["errors"])

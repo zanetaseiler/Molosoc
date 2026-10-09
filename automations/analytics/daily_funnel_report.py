@@ -47,6 +47,7 @@ from google_hydrate import DEFAULT_GA4_PROPERTY_ID
 PRAGUE = ZoneInfo("Europe/Prague")
 MAX_DAYS = 14
 SOURCE_MEDIUM_LIMIT = 250
+LANDING_LIMIT = 1000
 # Allowlists: only these known static values are ever published; anything else is `*`/`other`.
 ROUTE_SEGMENTS = frozenset({
     "foot-covers", "moisture-lock-foot-cover", "cracked-heels", "ingrown-toenails",
@@ -186,7 +187,7 @@ def ga4_window(client, property_id, start, end, report=None):
         report = ga4_report
     s, e = start.isoformat(), end.isoformat()
     out = {"errors": [], "totals": None, "source_medium": None, "landing": [],
-           "source_medium_truncated": False,
+           "source_medium_truncated": False, "landing_truncated": False,
            "events": {}, "events_paid": {}, "events_paid_truncated": False}
 
     def run(name, dims, metrics, limit, events_only=False):
@@ -216,9 +217,15 @@ def ga4_window(client, property_id, start, end, report=None):
             out["errors"].append("source/medium: row limit reached; paid/Meta session "
                                  "total may be incomplete and is not reported")
         out["source_medium"] = merge_source_medium(rows)
-    rows = run("landing pages", ("landingPage",), SESSION_METRICS, 100)
+    rows = run("landing pages", ("landingPage",), SESSION_METRICS, LANDING_LIMIT)
     if rows is not None:
-        out["landing"] = merge_landing(rows)
+        if len(rows) >= LANDING_LIMIT:
+            # Merging canonical paths from a truncated list would under-count pages.
+            out["landing_truncated"] = True
+            out["errors"].append("landing pages: row limit reached; landing-page "
+                                 "table is incomplete and not reported")
+        else:
+            out["landing"] = merge_landing(rows)
     rows = run("funnel events", ("eventName",), ("eventCount", "totalUsers"), 50, True)
     if rows is not None:
         out["events"] = {r[0]: {"count": num(r[1]), "users": num(r[2])} for r in rows}
@@ -358,6 +365,15 @@ def woo_window(client, start, end, fetch=None, sanitize=None):
 
 # ----------------------------------------------------------------------- Clarity
 
+def clarity_mean(rows):
+    """Mean per history.aggregate: weighted by each record's stored sample_basis, else
+    the unweighted mean (every snapshot covers an equal-length window)."""
+    total = sum(b for _, b in rows)
+    if total:
+        return sum(v * b for v, b in rows) / total
+    return sum(v for v, _ in rows) / len(rows) if rows else None
+
+
 def clarity_window(store, start, end):
     """Aggregate stored Clarity daily facts for Prague days start..end.
 
@@ -367,9 +383,8 @@ def clarity_window(store, start, end):
     report. Missing days are listed, never zero-filled."""
     from storage import StorageError, facts_key
     sums = {m: 0.0 for m in CLARITY_SUM}
-    weighted = {m: 0.0 for m in CLARITY_AVG}
+    avg_rows = {m: [] for m in CLARITY_AVG}  # (value, stored sample_basis) per day
     absent = set()  # metrics missing from at least one found day -> n/a, never zero
-    weight = 0.0
     found, missing, failures, failed_days = [], [], [], []
     for day in days_of(start, end):
         snap = (parse_day(day) + dt.timedelta(days=1)).isoformat()
@@ -385,12 +400,12 @@ def clarity_window(store, start, end):
             continue
         site = {r.get("metric"): num(r.get("value")) for r in records
                 if r.get("entity_type") == "site"}
+        basis = {r.get("metric"): num(r.get("sample_basis")) for r in records
+                 if r.get("entity_type") == "site"}
         if "clarity_sessions" not in site:
             missing.append(day)
             continue
         found.append(day)
-        w = site["clarity_sessions"] or 0.0
-        weight += w
         for m in CLARITY_SUM:
             if site.get(m) is None:
                 absent.add(m)
@@ -400,12 +415,12 @@ def clarity_window(store, start, end):
             if site.get(m) is None:
                 absent.add(m)
             else:
-                weighted[m] += site[m] * w
+                avg_rows[m].append((site[m], basis.get(m) or 0.0))
     out = {"days_found": found, "days_missing": missing, "days_failed": failed_days,
            "failures": failures}
     if found:
         out["sums"] = {m: (None if m in absent else v) for m, v in sums.items()}
-        out["averages"] = {m: (weighted[m] / weight if weight and m not in absent else None)
+        out["averages"] = {m: (None if m in absent else clarity_mean(avg_rows[m]))
                            for m in CLARITY_AVG}
     return out
 
