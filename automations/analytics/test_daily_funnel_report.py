@@ -486,3 +486,28 @@ def test_prior_only_labels_and_mixed_paid_buckets_are_shown():
     assert "mixed (10 paid)" in out
     assert "| facebook / cpc | 0 | 40 | -40 (-100%) |" in out
     assert "| /cz/magazin | 0 | 20 | -20 (-100%) |" in out
+
+
+def test_prior_leader_below_current_top_ten_and_engaged_comparison():
+    def row(label, sessions, engaged):
+        return {"source_medium": label, "sessions": sessions, "engaged": engaged,
+                "paid": False, "paid_sessions": 0.0}
+
+    def ga4(rows_sm):
+        return {"errors": [], "totals": {"sessions": 1, "engagedSessions": 1, "engagementRate": 1,
+                                         "averageSessionDuration": 1, "bounceRate": 1},
+                "source_medium": rows_sm, "landing": [], "events": {}, "events_paid": {},
+                "source_medium_truncated": False, "landing_truncated": False}
+    # Current: ten bigger sources, "old / leader" fell to 11th with 5 sessions (2 engaged).
+    cur_rows = [row(f"s{i} / organic", 100.0 - i, 50.0) for i in range(10)]
+    cur_rows.append(row("old / leader", 5.0, 2.0))
+    prior = ga4([row("old / leader", 200.0, 120.0), row("s0 / organic", 90.0, 30.0)])
+    empty = {"days_found": [], "days_missing": []}
+    out = d.render({"window": {"start": "a", "end": "b"}, "prior_window": {"start": "c", "end": "d"},
+                    "woo": None, "woo_prior": None, "clarity": empty, "clarity_prior": empty,
+                    "generated_at": "x", "notes": [], "status": {}, "limits": [],
+                    "ga4": ga4(cur_rows), "ga4_prior": prior})
+    # Real current value (not zero) for the label that dropped out of the top ten.
+    assert "| old / leader | 5 | 200 | -195 (-98%) | 2 | 120 | -118 (-98%) |" in out
+    # Engaged gets its own previous/change columns for a displayed label.
+    assert "| s0 / organic | 100 | 90 | +10 (+11%) | 50 | 30 | +20 (+67%) |" in out
