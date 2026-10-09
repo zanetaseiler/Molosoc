@@ -288,3 +288,22 @@ def test_prior_window_errors_fail_the_run():
     assert report["failed"] is True
     assert "previous window: source/medium" in report["status"]["GA4"]
     assert "(previous n/a;" in d.render(report)
+
+
+def test_clarity_time_metrics_are_summed_not_session_weighted():
+    store = InMemoryStore()
+    for date, sessions, active in (("2026-10-07", 10, 100), ("2026-10-08", 20, 200)):
+        store.put_json(facts_key("clarity", date), {"records": [
+            {"entity_type": "site", "metric": "clarity_sessions", "value": sessions},
+            {"entity_type": "site", "metric": "clarity_active_time", "value": active}]})
+    out = d.clarity_window(store, D(2026, 10, 6), D(2026, 10, 7))
+    assert out["sums"]["clarity_active_time"] == 300
+    assert "clarity_active_time" not in out["averages"]
+
+
+def test_redacted_source_keeps_paid_medium_classification():
+    orders = [{"status": "completed", "total": "10",
+               "attribution": {"utm_source": "[redacted]", "utm_medium": "cpc"}}]
+    out = d.summarize_orders(orders)
+    assert out["paid_meta"] == 1 and out["paid_other"] == 0
+    assert "[redacted source] / cpc" in out["sources_paid"]

@@ -75,9 +75,9 @@ PAID_STATUSES = ("processing", "completed")
 IGNORED_STATUSES = ("checkout-draft", "trash")
 CLARITY_SUM = ("clarity_sessions", "clarity_human_sessions", "clarity_bot_sessions",
                "clarity_rage_click_count", "clarity_dead_click_count",
-               "clarity_quickback_count", "clarity_script_error_count")
-CLARITY_AVG = ("clarity_pages_per_session", "clarity_scroll_depth",
-               "clarity_active_time", "clarity_total_time")
+               "clarity_quickback_count", "clarity_script_error_count",
+               "clarity_active_time", "clarity_total_time")  # SUM metrics in history.py
+CLARITY_AVG = ("clarity_pages_per_session", "clarity_scroll_depth")
 NOT_COLLECTED = (
     "LCP / INP: not collected. No web-vitals event exists in GA4 and Clarity's "
     "Data Export API does not return Core Web Vitals; nothing is estimated here. "
@@ -333,10 +333,11 @@ def summarize_orders(orders):
             attr = o.get("attribution") or {}
             label = " / ".join(str(attr.get(k) or "(none)")
                                for k in ("utm_source", "utm_medium"))
+            paid_meta = is_meta_paid(label)  # classify before the display label is redacted
             if attr.get("utm_source") == "[redacted]":
-                label = "[redacted source]"
+                label = "[redacted source] / " + str(attr.get("utm_medium") or "(none)")
             out["sources_paid"][label] = out["sources_paid"].get(label, 0) + 1
-            if is_meta_paid(label):
+            if paid_meta:
                 out["paid_meta"] += 1
             else:
                 out["paid_other"] += 1
@@ -539,12 +540,13 @@ def render(report):
         labels = {"clarity_sessions": "Sessions (total)", "clarity_human_sessions": "Human sessions",
                   "clarity_bot_sessions": "Bot sessions", "clarity_rage_click_count": "Rage clicks",
                   "clarity_dead_click_count": "Dead clicks", "clarity_quickback_count": "Quick-backs",
-                  "clarity_script_error_count": "Script errors"}
+                  "clarity_script_error_count": "Script errors",
+                  "clarity_active_time": "Active time (sum of daily totals)",
+                  "clarity_total_time": "Total time (sum of daily totals)"}
         for m in CLARITY_SUM:
             add(f"| {labels[m]} | {fmt(s[m])} | {fmt(sp.get(m))} | {chg(s[m], sp.get(m))} |")
         for m, label in (("clarity_pages_per_session", "Pages / session"),
-                         ("clarity_scroll_depth", "Avg scroll depth"),
-                         ("clarity_active_time", "Active time (session-weighted avg)")):
+                         ("clarity_scroll_depth", "Avg scroll depth")):
             add(f"| {label} | {fmt(a.get(m), 2)} | {fmt(ap.get(m), 2)} | "
                 f"{chg(a.get(m), ap.get(m), 2)} |")
         add("\nClarity's export API provides no paid/Meta split and no per-landing-page "
