@@ -161,7 +161,8 @@ def _ga4_report(fail_dims=None, sm_rows=None):
         if dims == fail_dims:
             raise RuntimeError("boom")
         if dims == ("date",):
-            return [["20261006", "100", "60", "0.6", "30", "0.4"]]
+            days = d.days_of(dt.date.fromisoformat(s), dt.date.fromisoformat(e))
+            return [[x.replace("-", ""), "100", "60", "0.6", "30", "0.4"] for x in days]
         if dims == ("sessionSourceMedium",):
             return sm_rows if sm_rows is not None else [["fb / paid", "50", "30", "0.6", "10", "0.4"]]
         if dims == ("landingPage",):
@@ -352,3 +353,20 @@ def test_colliding_redacted_bucket_counts_only_paid_row_sessions():
     assert bucket["sessions"] == 100
     assert bucket["paid_sessions"] == 10
     assert d.paid_sessions({"source_medium": out}) == 14
+
+
+def test_missing_ga4_date_withholds_totals_and_flags_partial():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == ("date",):
+            return [["20261006", "100", "60", "0.6", "30", "0.4"]]
+        return []
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 7), report)
+    assert out["totals"] is None and out["days_missing"] == ["20261007"]
+    assert any("20261007" in e for e in out["errors"])
+
+
+def test_landing_allowlist_keeps_known_public_routes_distinct():
+    assert d.redact_path("/cz/magazin") == "/cz/magazin"
+    assert d.redact_path("/cz/kosik") == "/cz/kosik"
+    assert d.redact_path("/cz/callus-remover") == "/cz/callus-remover"
+    assert d.redact_path("/reset/jana-novakova") == "/*/*"

@@ -54,7 +54,18 @@ ROUTE_SEGMENTS = frozenset({
     "hardened-skin-calluses", "dry-skin-feet", "foot-cream-that-works", "product",
     "molosoc-hydratacni-navleky-na-nohy", "cart", "checkout", "order-received",
     "shop", "blog", "about", "contact", "faq", "my-account", "search", "404",
-    "cs", "en", "sk", "de", "pl", "hu"})
+    "cs", "en", "sk", "de", "pl", "hu",
+    # Remaining public routes, kept in step with SAFE_PATH_SEGMENTS in
+    # automations/woocommerce/order_window.py (fixed site slugs, never visitor text).
+    "cz", "lp", "produkt", "navleky-na-nohy", "hydratacni-navlek-na-nohy",
+    "molosoc-home-cestina", "popraskane-paty", "zarostly-nehet", "kurici-oko",
+    "jak-odstranit", "na-chodidle", "vraceni-a-refundace", "zasady-dopravy",
+    "zasady-ochrany-osobnich-udaju", "obchodni-podminky", "blank-homepage",
+    "callus-remover", "refund-policy", "shipping-policy", "privacy-policies",
+    "terms-of-services", "legal-disclaimer", "contact-kontakt", "treatment",
+    "prevent", "cracked-heels-cream", "cracked-heels-treatment", "fix-permanently",
+    "dry-foot-skin-treatment", "home-remedies", "vs-cracked-heels",
+    "magazin", "kosik", "pokladna"})
 SOURCES = frozenset({
     "google", "bing", "yahoo", "duckduckgo", "seznam.cz", "seznam", "ecosia.org",
     "facebook", "m.facebook.com", "l.facebook.com", "lm.facebook.com", "fb", "instagram",
@@ -200,8 +211,15 @@ def ga4_window(client, property_id, start, end, report=None):
     rows = run("totals", ("date",), SESSION_METRICS, 50)
     if rows is not None:
         out["days_with_data"] = sorted(r[0] for r in rows)
+        expected = [day.replace("-", "") for day in days_of(start, end)]
+        missing = [day for day in expected if day not in out["days_with_data"]]
+        out["days_missing"] = missing
         sessions = sum(num(r[1]) or 0 for r in rows)
-        if rows and sessions:
+        if rows and missing:
+            # A date GA4 has not produced yet would make a partial sum look complete.
+            out["errors"].append("totals: GA4 returned no rows for " + ", ".join(missing)
+                                 + "; session totals are incomplete and not reported")
+        elif rows and sessions:
             def weighted(idx):
                 return sum((num(r[idx]) or 0) * (num(r[1]) or 0) for r in rows) / sessions
             out["totals"] = {"sessions": sessions,
