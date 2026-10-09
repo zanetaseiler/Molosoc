@@ -341,3 +341,14 @@ def test_source_medium_truncation_withholds_table_and_paid_total():
     assert out["source_medium"] is None and out["source_medium_truncated"]
     assert d.paid_sessions(out) is None
     assert any(e.startswith("source/medium: row limit") for e in out["errors"])
+
+
+def test_colliding_redacted_bucket_counts_only_paid_row_sessions():
+    rows = [["facebook.com / referral", "10", "5", "0.5", "10", "0.5"],
+            ["partner.example / referral", "90", "40", "0.4", "10", "0.5"],
+            ["facebook / paid_social", "4", "2", "0.5", "10", "0.5"]]
+    out = d.merge_source_medium(rows)
+    bucket = {r["source_medium"]: r for r in out}["other / referral"]
+    assert bucket["sessions"] == 100
+    assert bucket["paid_sessions"] == 10
+    assert d.paid_sessions({"source_medium": out}) == 14

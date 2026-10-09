@@ -264,10 +264,14 @@ def merge_source_medium(rows):
     for r in rows:
         label = redact_source_medium(r[0])
         slot = merged.setdefault(label, {"source_medium": label, "sessions": 0.0,
-                                         "engaged": 0.0, "paid": False})
-        slot["sessions"] += num(r[1]) or 0.0
+                                         "engaged": 0.0, "paid": False,
+                                         "paid_sessions": 0.0})
+        sessions = num(r[1]) or 0.0
+        slot["sessions"] += sessions
         slot["engaged"] += num(r[2]) or 0.0
-        slot["paid"] = slot["paid"] or is_meta_paid(r[0])
+        if is_meta_paid(r[0]):  # per-row subtotal: colliding unpaid rows must not inflate it
+            slot["paid"] = True
+            slot["paid_sessions"] += sessions
     return sorted(merged.values(), key=lambda x: -x["sessions"])
 
 
@@ -309,7 +313,7 @@ def paid_sessions(ga4):
     """Paid/Meta sessions, or None when the source/medium data is unavailable/truncated."""
     if not ga4 or ga4.get("source_medium") is None or ga4.get("source_medium_truncated"):
         return None
-    return sum(r["sessions"] or 0 for r in ga4["source_medium"] if r["paid"])
+    return sum(r["paid_sessions"] or 0 for r in ga4["source_medium"])
 
 
 def funnel_steps(events):
