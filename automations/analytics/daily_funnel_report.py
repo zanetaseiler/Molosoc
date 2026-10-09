@@ -524,11 +524,17 @@ def render(report):
             add("\n**Paid / Meta funnel** (events: count / users)")
             add("Users are summed across paid source/medium rows, so a user seen under "
                 "two paid sources is counted twice: treat Users as an upper bound.")
-            add("| Stage | Events | Users (upper bound) |\n|---|---:|---:|")
+            add("| Stage | Events | Previous events | Change | Users (upper bound) | "
+                "Previous users | Change |\n|---|---:|---:|---:|---:|---:|---:|")
+            prior_paid = {} if (gp or {}).get("events_paid_truncated") else \
+                ((gp or {}).get("events_paid") or {})
             for stage in FUNNEL:
                 p = g["events_paid"].get(stage)
-                add(f"| {stage} | {fmt(p['count']) if p else 'n/a'} | "
-                    f"{fmt(p['users']) if p else 'n/a'} |")
+                q = prior_paid.get(stage)
+                pc, pu = (p['count'] if p else None), (p['users'] if p else None)
+                qc, qu = (q['count'] if q else None), (q['users'] if q else None)
+                add(f"| {stage} | {fmt(pc)} | {fmt(qc)} | {fmt_change(pc, qc)} | "
+                    f"{fmt(pu)} | {fmt(qu)} | {fmt_change(pu, qu)} |")
 
     add("\n## Orders (WooCommerce, read-only)")
     if w is None:

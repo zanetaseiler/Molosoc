@@ -413,3 +413,22 @@ def test_clarity_missing_snapshots_mark_status_partial_and_failed():
     assert report["status"]["Clarity (stored)"].startswith("PARTIAL")
     assert "no stored snapshot" in report["status"]["Clarity (stored)"]
     assert report["status"]["GA4"] == "ok"
+
+
+def test_paid_funnel_compares_with_prior_window():
+    ev = {"view_item": {"users": 10.0}}
+    report = {"window": {"start": "2026-10-06", "end": "2026-10-06"},
+              "prior_window": {"start": "2026-10-05", "end": "2026-10-05"},
+              "generated_at": "x", "notes": [], "status": {}, "limits": [],
+              "ga4": {"totals": None, "events": ev,
+                      "events_paid": {"add_to_cart": {"count": 30.0, "users": 15.0}}},
+              "ga4_prior": {"events_paid": {"add_to_cart": {"count": 20.0, "users": 10.0}}},
+              "woo": None, "woo_prior": None,
+              "clarity": {"days_found": [], "days_missing": []}, "clarity_prior": {}}
+    text = d.render(report)
+    row = [ln for ln in text.splitlines() if ln.startswith("| add_to_cart |")][-1]
+    assert "| 20 | +10 (+50%) |" in row and "| 10 | +5 (+50%) |" in row
+
+    report["ga4_prior"]["events_paid_truncated"] = True
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| add_to_cart |")][-1]
+    assert "| n/a | n/a |" in row
