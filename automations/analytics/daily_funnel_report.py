@@ -35,8 +35,10 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 from zoneinfo import ZoneInfo
 
 from analytics_common import describe_error
@@ -44,6 +46,8 @@ from google_hydrate import DEFAULT_GA4_PROPERTY_ID
 
 PRAGUE = ZoneInfo("Europe/Prague")
 MAX_DAYS = 14
+SOURCE_MEDIUM_LIMIT = 250
+SLUG = re.compile(r"[A-Za-z0-9_.~-]{1,40}")
 DEFAULT_DAYS = 3
 FUNNEL = ("view_item", "add_to_cart", "begin_checkout", "purchase")
 FUNNEL_EVENTS = ("session_start", "page_view") + FUNNEL
@@ -165,7 +169,8 @@ def ga4_window(client, property_id, start, end, report=None):
         from diagnostic_window import ga4_report
         report = ga4_report
     s, e = start.isoformat(), end.isoformat()
-    out = {"errors": [], "totals": None, "source_medium": [], "landing": [],
+    out = {"errors": [], "totals": None, "source_medium": None, "landing": [],
+           "source_medium_truncated": False,
            "events": {}, "events_paid": {}}
 
     def run(name, dims, metrics, limit, events_only=False):
@@ -187,17 +192,19 @@ def ga4_window(client, property_id, start, end, report=None):
                              "engagementRate": weighted(3) * 100,
                              "averageSessionDuration": weighted(4),
                              "bounceRate": weighted(5) * 100}
-    rows = run("source/medium", ("sessionSourceMedium",), SESSION_METRICS, 100)
+    rows = run("source/medium", ("sessionSourceMedium",), SESSION_METRICS,
+               SOURCE_MEDIUM_LIMIT)
     if rows is not None:
+        if len(rows) >= SOURCE_MEDIUM_LIMIT:
+            out["source_medium_truncated"] = True
+            out["errors"].append("source/medium: row limit reached; paid/Meta session "
+                                 "total may be incomplete and is not reported")
         out["source_medium"] = [{"source_medium": r[0], "sessions": num(r[1]),
                                  "engaged": num(r[2]), "paid": is_meta_paid(r[0])}
                                 for r in rows]
     rows = run("landing pages", ("landingPage",), SESSION_METRICS, 100)
     if rows is not None:
-        # `landingPage` (no query string) keeps tokens/emails in URLs out of the report.
-        out["landing"] = [{"page": r[0], "sessions": num(r[1]), "engaged": num(r[2]),
-                           "engagement_rate": (num(r[3]) or 0) * 100,
-                           "avg_duration": num(r[4])} for r in rows]
+        out["landing"] = merge_landing(rows)
     rows = run("funnel events", ("eventName",), ("eventCount", "totalUsers"), 50, True)
     if rows is not None:
         out["events"] = {r[0]: {"count": num(r[1]), "users": num(r[2])} for r in rows}
@@ -209,7 +216,7 @@ def ga4_window(client, property_id, start, end, report=None):
             if is_meta_paid(sm):
                 slot = paid.setdefault(ev, {"count": 0.0, "users": 0.0})
                 slot["count"] += num(count) or 0
-                # Users are summed across sources: an upper bound if a user hit two.
+                # Users are summed across sources: an upper bound (labelled as such in render).
                 slot["users"] += num(users) or 0
         out["events_paid"] = paid
         if len(rows) >= 1000:
@@ -218,13 +225,55 @@ def ga4_window(client, property_id, start, end, report=None):
     return out
 
 
+def redact_path(path):
+    """Canonical, non-PII landing path: query/fragment dropped, percent-decoded, and any
+    segment that is not a short plain slug (emails, tokens, ids) replaced by `*`."""
+    path = unquote((path or "").split("?")[0].split("#")[0]) or "/"
+    segments = [seg for seg in path.split("/") if seg]
+    kept = []
+    for seg in segments[:4]:
+        plain = bool(SLUG.fullmatch(seg)) and not (len(seg) >= 16 and any(c.isdigit() for c in seg))
+        kept.append(seg.lower() if plain else "*")
+    if len(segments) > 4:
+        kept.append("…")
+    return "/" + "/".join(kept)
+
+
+def merge_landing(rows):
+    """Redact paths, then merge rows that collapse to the same path (session-weighted)."""
+    merged = {}
+    for r in rows:
+        key = redact_path(r[0])
+        sessions = num(r[1]) or 0.0
+        slot = merged.setdefault(key, {"page": key, "sessions": 0.0, "engaged": 0.0,
+                                       "_rate": 0.0, "_dur": 0.0})
+        slot["sessions"] += sessions
+        slot["engaged"] += num(r[2]) or 0.0
+        slot["_rate"] += (num(r[3]) or 0.0) * sessions
+        slot["_dur"] += (num(r[4]) or 0.0) * sessions
+    out = []
+    for slot in merged.values():
+        n = slot["sessions"]
+        out.append({"page": slot["page"], "sessions": n, "engaged": slot["engaged"],
+                    "engagement_rate": slot["_rate"] / n * 100 if n else 0.0,
+                    "avg_duration": slot["_dur"] / n if n else 0.0})
+    return sorted(out, key=lambda x: -x["sessions"])
+
+
+def paid_sessions(ga4):
+    """Paid/Meta sessions, or None when the source/medium data is unavailable/truncated."""
+    if not ga4 or ga4.get("source_medium") is None or ga4.get("source_medium_truncated"):
+        return None
+    return sum(r["sessions"] or 0 for r in ga4["source_medium"] if r["paid"])
+
+
 def funnel_steps(events):
     """[(stage, users, step conversion % vs previous stage)] for the funnel stages."""
     steps, previous = [], None
     for stage in FUNNEL:
         users = (events.get(stage) or {}).get("users")
         steps.append((stage, users, ratio(users, previous) if previous else None))
-        previous = users if users is not None else previous
+        previous = users
     return steps
 
 
@@ -281,6 +330,7 @@ def clarity_window(store, start, end):
     from storage import StorageError, facts_key
     sums = {m: 0.0 for m in CLARITY_SUM}
     weighted = {m: 0.0 for m in CLARITY_AVG}
+    absent = set()  # metrics missing from at least one found day -> n/a, never zero
     weight = 0.0
     found, missing, failures = [], [], []
     for day in days_of(start, end):
@@ -300,16 +350,23 @@ def clarity_window(store, start, end):
             missing.append(day)
             continue
         found.append(day)
-        for m in CLARITY_SUM:
-            sums[m] += site.get(m) or 0.0
         w = site["clarity_sessions"] or 0.0
         weight += w
+        for m in CLARITY_SUM:
+            if site.get(m) is None:
+                absent.add(m)
+            else:
+                sums[m] += site[m]
         for m in CLARITY_AVG:
-            weighted[m] += (site.get(m) or 0.0) * w
+            if site.get(m) is None:
+                absent.add(m)
+            else:
+                weighted[m] += site[m] * w
     out = {"days_found": found, "days_missing": missing, "failures": failures}
     if found:
-        out["sums"] = sums
-        out["averages"] = {m: (weighted[m] / weight if weight else None) for m in CLARITY_AVG}
+        out["sums"] = {m: (None if m in absent else v) for m, v in sums.items()}
+        out["averages"] = {m: (weighted[m] / weight if weight and m not in absent else None)
+                           for m in CLARITY_AVG}
     return out
 
 
@@ -346,15 +403,16 @@ def render(report):
                                    ("Bounce rate %", "bounceRate", 1)):
             add(f"| {label} | {fmt(t.get(key), digits)} | {fmt(tp.get(key), digits)} | "
                 f"{fmt_change(t.get(key), tp.get(key), digits)} |")
-        paid = sum(r["sessions"] or 0 for r in g["source_medium"] if r["paid"])
-        paid_prev = sum(r["sessions"] or 0 for r in (gp or {}).get("source_medium", [])
-                        if r["paid"]) if gp and gp.get("source_medium") is not None else None
+        paid = paid_sessions(g)
+        paid_prev = paid_sessions(gp)
         add(f"\nPaid / Meta sessions: **{fmt(paid)}** "
             f"(previous {fmt(paid_prev)}; {fmt_change(paid, paid_prev)}). "
             "Classified from GA4 source/medium (facebook, instagram, meta, fb, ig, or a "
             "paid medium).")
         add("\n### Source / medium (top 10)\n| Source / medium | Sessions | Engaged | Paid |\n|---|---:|---:|:-:|")
-        for r in g["source_medium"][:10]:
+        if g["source_medium"] is None:
+            add("| unavailable | n/a | n/a | |")
+        for r in (g["source_medium"] or [])[:10]:
             add(f"| {r['source_medium']} | {fmt(r['sessions'])} | {fmt(r['engaged'])} | "
                 f"{'yes' if r['paid'] else ''} |")
         add("\n### Landing-page engagement (top 10 by sessions)\n"
@@ -376,7 +434,9 @@ def render(report):
             "(drop-off = 100 − value). Events that GA4 never recorded show n/a, not 0.")
         if g.get("events_paid"):
             add("\n**Paid / Meta funnel** (events: count / users)")
-            add("| Stage | Events | Users |\n|---|---:|---:|")
+            add("Users are summed across paid source/medium rows, so a user seen under "
+                "two paid sources is counted twice: treat Users as an upper bound.")
+            add("| Stage | Events | Users (upper bound) |\n|---|---:|---:|")
             for stage in FUNNEL:
                 p = g["events_paid"].get(stage)
                 add(f"| {stage} | {fmt(p['count']) if p else 'n/a'} | "
@@ -413,23 +473,35 @@ def render(report):
     else:
         s, a = c["sums"], c["averages"]
         sp, ap = (cp.get("sums"), cp.get("averages")) if cp.get("days_found") else ({}, {})
+        comparable = (not c["days_missing"] and not cp.get("days_missing")
+                      and bool(cp.get("days_found")))
+
+        def chg(cur_v, prev_v, digits=0):
+            return fmt_change(cur_v, prev_v, digits) if comparable else "n/a"
         add(f"Days covered: {len(c['days_found'])}/{len(c['days_found']) + len(c['days_missing'])}"
             + (f" (missing {', '.join(c['days_missing'])})" if c["days_missing"] else "")
             + ". Each snapshot is a trailing 24 h window ending ~03:20–04:20 Prague, so a "
               "Prague day is approximated by the next UTC date's snapshot; session counts "
               "include bots.")
+        if cp.get("days_missing"):
+            add(f"Previous window coverage: {len(cp.get('days_found') or [])}/"
+                f"{len(cp.get('days_found') or []) + len(cp['days_missing'])} days "
+                f"(missing {', '.join(cp['days_missing'])}).")
+        if not comparable:
+            add("Changes are n/a because snapshot coverage is incomplete in one or both "
+                "windows, so the sums are not comparable.")
         add("| Metric | This window | Previous | Change |\n|---|---:|---:|---:|")
         labels = {"clarity_sessions": "Sessions (total)", "clarity_human_sessions": "Human sessions",
                   "clarity_bot_sessions": "Bot sessions", "clarity_rage_click_count": "Rage clicks",
                   "clarity_dead_click_count": "Dead clicks", "clarity_quickback_count": "Quick-backs",
                   "clarity_script_error_count": "Script errors"}
         for m in CLARITY_SUM:
-            add(f"| {labels[m]} | {fmt(s[m])} | {fmt(sp.get(m))} | {fmt_change(s[m], sp.get(m))} |")
+            add(f"| {labels[m]} | {fmt(s[m])} | {fmt(sp.get(m))} | {chg(s[m], sp.get(m))} |")
         for m, label in (("clarity_pages_per_session", "Pages / session"),
                          ("clarity_scroll_depth", "Avg scroll depth"),
                          ("clarity_active_time", "Active time (session-weighted avg)")):
             add(f"| {label} | {fmt(a.get(m), 2)} | {fmt(ap.get(m), 2)} | "
-                f"{fmt_change(a.get(m), ap.get(m), 2)} |")
+                f"{chg(a.get(m), ap.get(m), 2)} |")
         add("\nClarity's export API provides no paid/Meta split and no per-landing-page "
             "engagement here; those come from GA4 above.")
 
@@ -474,8 +546,12 @@ def build_report(start, end, ga4_fn, woo_fn, clarity_fn, now=None):
     for key, label in (("ga4", "GA4"), ("woo", "WooCommerce"), ("clarity", "Clarity (stored)")):
         if key in report["status"]:
             continue
-        data = report[key]
-        problems = list(data.get("errors", [])) + list(data.get("failures", [])) if data else []
+        problems = []
+        for suffix, tag in (("", ""), ("_prior", "previous window: ")):
+            part = report[key + suffix]
+            if part:
+                problems += [tag + p for p in
+                             list(part.get("errors", [])) + list(part.get("failures", []))]
         if problems:
             report["failed"] = True
             report["status"][key] = "PARTIAL — " + "; ".join(problems)

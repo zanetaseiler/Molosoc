@@ -152,3 +152,73 @@ def test_build_report_marks_failures_and_renders_honestly():
 
 def test_main_rejects_half_window(capsys):
     assert d.main(["--start", "2026-10-06"]) == 2
+
+
+def _ga4_report(fail_dims=None, sm_rows=None):
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == fail_dims:
+            raise RuntimeError("boom")
+        if dims == ("date",):
+            return [["20261006", "100", "60", "0.6", "30", "0.4"]]
+        if dims == ("sessionSourceMedium",):
+            return sm_rows if sm_rows is not None else [["fb / paid", "50", "30", "0.6", "10", "0.4"]]
+        if dims == ("landingPage",):
+            return [["/reset/jana@example.com", "5", "3", "0.6", "10", "0.4"],
+                    ["/reset/%6Aana@example.org?x=1", "5", "2", "0.4", "20", "0.6"],
+                    ["/Products/abc", "4", "2", "0.5", "10", "0.5"],
+                    ["/t/abcdef0123456789abcdef", "1", "1", "1", "1", "0"]]
+        return []
+    return report
+
+
+def test_landing_paths_are_redacted_and_merged():
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), _ga4_report())
+    pages = {r["page"]: r for r in out["landing"]}
+    assert set(pages) == {"/reset/*", "/products/abc", "/t/*"}
+    assert pages["/reset/*"]["sessions"] == 10
+    assert "example" not in str(out["landing"])
+
+
+def test_failed_source_medium_is_unavailable_not_zero():
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6),
+                       _ga4_report(fail_dims=("sessionSourceMedium",)))
+    assert out["source_medium"] is None and d.paid_sessions(out) is None
+
+
+def test_source_medium_row_limit_is_partial_not_total():
+    rows = [[f"s{i} / x", "1", "1", "1", "1", "0"] for i in range(d.SOURCE_MEDIUM_LIMIT)]
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), _ga4_report(sm_rows=rows))
+    assert d.paid_sessions(out) is None
+    assert any("row limit" in e for e in out["errors"])
+
+
+def test_funnel_does_not_skip_absent_stage():
+    events = {"view_item": {"users": 100.0}, "add_to_cart": {"users": 20.0},
+              "purchase": {"users": 2.0}}
+    steps = dict((s, c) for s, _, c in d.funnel_steps(events))
+    assert steps["begin_checkout"] is None and steps["purchase"] is None
+
+
+def test_clarity_omitted_metric_is_na_and_gaps_suppress_comparison():
+    store = InMemoryStore()
+    _snap(store, "2026-10-07", 100, 1.0)
+    out = d.clarity_window(store, D(2026, 10, 6), D(2026, 10, 6))
+    assert out["sums"]["clarity_script_error_count"] is None
+    assert out["sums"]["clarity_rage_click_count"] == 3
+
+
+def test_prior_window_errors_fail_the_run():
+    start, end = D(2026, 10, 6), D(2026, 10, 7)
+
+    def ga4(a, b):
+        out = d.ga4_window(None, "1", a, b,
+                           _ga4_report(fail_dims=("sessionSourceMedium",) if a < start else None))
+        return out
+
+    woo = lambda a, b: d.summarize_orders([])  # noqa: E731
+    clarity = lambda a, b: {"days_found": [], "days_missing": d.days_of(a, b)}  # noqa: E731
+    now = dt.datetime(2026, 10, 20, 12, tzinfo=dt.timezone.utc)
+    report = d.build_report(start, end, ga4, woo, clarity, now)
+    assert report["failed"] is True
+    assert "previous window: source/medium" in report["status"]["GA4"]
+    assert "(previous n/a;" in d.render(report)
