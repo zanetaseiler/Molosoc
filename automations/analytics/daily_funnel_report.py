@@ -199,7 +199,7 @@ def ga4_window(client, property_id, start, end, report=None):
     s, e = start.isoformat(), end.isoformat()
     out = {"errors": [], "totals": None, "source_medium": None, "landing": None,
            "source_medium_truncated": False, "landing_truncated": False,
-           "events": {}, "events_paid": {}, "events_paid_truncated": False}
+           "events": {}, "events_paid": None, "events_paid_truncated": False}
 
     def run(name, dims, metrics, limit, events_only=False):
         try:
@@ -261,13 +261,13 @@ def ga4_window(client, property_id, start, end, report=None):
                 slot["users"] += num(users) or 0
         out["events_paid"] = paid
         if len(rows) >= 1000:
-            out["events_paid"] = {}
+            out["events_paid"] = None
             out["events_paid_truncated"] = True
             out["errors"].append("funnel events by source/medium: row limit reached; "
                                  "paid funnel figures are incomplete and not reported")
     if out.get("days_missing"):
         # Event counts for a window with absent GA4 dates are partial: never compare them.
-        out["events"], out["events_paid"] = {}, {}
+        out["events"], out["events_paid"] = {}, None
     return out
 
 
@@ -575,11 +575,13 @@ def render(report):
     if g is None or not g.get("events"):
         add("No GA4 funnel-event data (unavailable or none recorded).")
     else:
-        add("| Stage | Users | Ratio to previous stage % | Previous users | Change |\n|---|---:|---:|---:|---:|")
-        prev_steps = dict((s, u) for s, u, _ in funnel_steps((gp or {}).get("events") or {}))
+        add("| Stage | Users | Previous users | Change | Ratio to previous stage % | "
+            "Previous ratio % | Change |\n|---|---:|---:|---:|---:|---:|---:|")
+        prior_steps = {s_: (u, r_) for s_, u, r_ in funnel_steps((gp or {}).get("events") or {})}
         for stage, users, step in funnel_steps(g["events"]):
-            add(f"| {stage} | {fmt(users)} | {fmt(step, 1)} | {fmt(prev_steps.get(stage))} | "
-                f"{fmt_change(users, prev_steps.get(stage))} |")
+            pu, pr_ = prior_steps.get(stage, (None, None))
+            add(f"| {stage} | {fmt(users)} | {fmt(pu)} | {fmt_change(users, pu)} | "
+                f"{fmt(step, 1)} | {fmt(pr_, 1)} | {fmt_change(step, pr_, 1)} |")
         add("\nRatio = users who fired this event / users who fired the previous stage's "
             "event. These are independent per-event user counts, NOT a cohort funnel: a "
             "returning customer can purchase without a checkout event in the window, so "
@@ -588,19 +590,22 @@ def render(report):
         if g.get("events_paid_truncated"):
             add("\n**Paid / Meta funnel**: unavailable (GA4 row limit reached; figures "
                 "would be incomplete).")
-        elif g.get("events_paid"):
+        elif g.get("events_paid") is not None and (
+                g["events_paid"] or (gp or {}).get("events_paid")):
             add("\n**Paid / Meta funnel** (events: count / users)")
             add("Users are summed across paid source/medium rows, so a user seen under "
                 "two paid sources is counted twice: treat Users as an upper bound.")
             add("| Stage | Events | Previous events | Change | Users (upper bound) | "
                 "Previous users | Change |\n|---|---:|---:|---:|---:|---:|---:|")
-            prior_paid = {} if (gp or {}).get("events_paid_truncated") else \
-                ((gp or {}).get("events_paid") or {})
+            # None = query unavailable/truncated/incomplete; {} = read OK, no paid events.
+            prior_paid = None if (gp or {}).get("events_paid_truncated") else \
+                (gp or {}).get("events_paid")
+            zero = {"count": 0.0, "users": 0.0}
             for stage in FUNNEL:
-                p = g["events_paid"].get(stage)
-                q = prior_paid.get(stage)
-                pc, pu = (p['count'] if p else None), (p['users'] if p else None)
-                qc, qu = (q['count'] if q else None), (q['users'] if q else None)
+                p = g["events_paid"].get(stage, zero)
+                q = prior_paid.get(stage, zero) if prior_paid is not None else None
+                pc, pu = p["count"], p["users"]
+                qc, qu = (q["count"], q["users"]) if q else (None, None)
                 add(f"| {stage} | {fmt(pc)} | {fmt(qc)} | {fmt_change(pc, qc)} | "
                     f"{fmt(pu)} | {fmt(qu)} | {fmt_change(pu, qu)} |")
 

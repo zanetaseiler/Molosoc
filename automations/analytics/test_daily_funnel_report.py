@@ -243,7 +243,7 @@ def test_paid_funnel_withheld_when_truncated():
             return [["fb / paid", "add_to_cart", "1", "1"]] * 1000
         return []
     out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), report)
-    assert out["events_paid"] == {} and out["events_paid_truncated"] is True
+    assert out["events_paid"] is None and out["events_paid_truncated"] is True
     assert any("not reported" in e for e in out["errors"])
 
 
@@ -382,7 +382,7 @@ def test_missing_ga4_date_withholds_funnel_aggregates():
             return [["fb / paid", "purchase", "3", "2"]]
         return []
     out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 7), report)
-    assert out["events"] == {} and out["events_paid"] == {}
+    assert out["events"] == {} and out["events_paid"] is None
     assert all(u is None for _, u, _ in d.funnel_steps(out["events"]))
 
 
@@ -511,3 +511,32 @@ def test_prior_leader_below_current_top_ten_and_engaged_comparison():
     assert "| old / leader | 5 | 200 | -195 (-98%) | 2 | 120 | -118 (-98%) |" in out
     # Engaged gets its own previous/change columns for a displayed label.
     assert "| s0 / organic | 100 | 90 | +10 (+11%) | 50 | 30 | +20 (+67%) |" in out
+
+
+def _funnel_report(ga4, ga4_prior):
+    return {"window": {"start": "2026-10-06", "end": "2026-10-06"},
+            "prior_window": {"start": "2026-10-05", "end": "2026-10-05"},
+            "generated_at": "x", "notes": [], "status": {}, "limits": [],
+            "ga4": ga4, "ga4_prior": ga4_prior, "woo": None, "woo_prior": None,
+            "clarity": {"days_found": [], "days_missing": []}, "clarity_prior": {}}
+
+
+def test_paid_funnel_shown_when_current_paid_empty_but_prior_had_paid():
+    ev = {"view_item": {"users": 10.0}}
+    report = _funnel_report(
+        {"totals": None, "events": ev, "events_paid": {}},
+        {"events_paid": {"add_to_cart": {"count": 20.0, "users": 10.0}}})
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| add_to_cart |")][-1]
+    assert "| 0 | 20 |" in row and "-20" in row
+    # unavailable current query (None) still hides the table
+    report["ga4"]["events_paid"] = None
+    assert "Paid / Meta funnel" not in d.render(report)
+
+
+def test_funnel_ratio_compared_with_prior_window():
+    cur = {"view_item": {"users": 100.0}, "add_to_cart": {"users": 20.0}}
+    prior = {"view_item": {"users": 100.0}, "add_to_cart": {"users": 40.0}}
+    report = _funnel_report({"totals": None, "events": cur, "events_paid": None},
+                            {"events": prior})
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| add_to_cart |")][0]
+    assert "| 20.0 | 40.0 |" in row and "-20" in row
