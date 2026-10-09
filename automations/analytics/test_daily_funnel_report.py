@@ -460,3 +460,29 @@ def test_breakdown_tables_compare_with_prior_window():
                                                        "source_medium_truncated": True}})
     assert "| google / organic | 30 | n/a | n/a |" in out
     assert "| /cz | 30 | n/a | n/a | 60.0 | n/a | n/a |" in out
+
+
+def test_prior_only_labels_and_mixed_paid_buckets_are_shown():
+    def ga4(rows_sm, rows_lp):
+        return {"errors": [], "totals": {"sessions": 1, "engagedSessions": 1, "engagementRate": 1,
+                                         "averageSessionDuration": 1, "bounceRate": 1},
+                "source_medium": rows_sm, "landing": rows_lp, "events": {}, "events_paid": {},
+                "source_medium_truncated": False, "landing_truncated": False}
+    cur = ga4([{"source_medium": "other / referral", "sessions": 100.0, "engaged": 50.0,
+                "paid": True, "paid_sessions": 10.0}],
+              [{"page": "/cz", "sessions": 30.0, "engaged": 20.0, "engagement_rate": 60.0,
+                "avg_duration": 50.0}])
+    prior = ga4([{"source_medium": "facebook / cpc", "sessions": 40.0, "engaged": 10.0,
+                  "paid": True, "paid_sessions": 40.0}],
+                [{"page": "/cz/magazin", "sessions": 20.0, "engaged": 10.0,
+                  "engagement_rate": 40.0, "avg_duration": 40.0}])
+    empty = {"days_found": [], "days_missing": []}
+    out = d.render({"window": {"start": "a", "end": "b"}, "prior_window": {"start": "c", "end": "d"},
+                    "woo": None, "woo_prior": None, "clarity": empty, "clarity_prior": empty,
+                    "generated_at": "x", "notes": [], "status": {}, "limits": [],
+                    "ga4": cur, "ga4_prior": prior})
+    assert "| other / referral | 100 | n/a |" not in out  # prior known -> 0, not n/a
+    assert "| other / referral | 100 | 0 | +100 |" in out
+    assert "mixed (10 paid)" in out
+    assert "| facebook / cpc | 0 | 40 | -40 (-100%) |" in out
+    assert "| /cz/magazin | 0 | 20 | -20 (-100%) |" in out

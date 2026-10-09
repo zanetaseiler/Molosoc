@@ -477,6 +477,19 @@ def _prior_value(rows, label_key, label, field):
     return 0.0 if field == "sessions" else None
 
 
+def _with_prior_only(cur_rows, prior_rows, label_key, limit, zero_fields):
+    """Current top rows plus labels present only in the (complete) prior table, shown with
+    zero current sessions so traffic losses stay visible. Needs a comparable prior table."""
+    rows = list(cur_rows or [])[:limit]
+    if cur_rows is None or prior_rows is None:
+        return rows
+    have = {r[label_key] for r in cur_rows}
+    for r in prior_rows[:limit]:
+        if r[label_key] not in have:
+            rows.append({label_key: r[label_key], **zero_fields})
+    return rows
+
+
 def render(report):
     cur, prev = report["window"], report["prior_window"]
     g, gp = report["ga4"], report["ga4_prior"]
@@ -521,17 +534,28 @@ def render(report):
             "Engaged | Paid |\n|---|---:|---:|---:|---:|:-:|")
         if g["source_medium"] is None:
             add("| unavailable | n/a | n/a | n/a | n/a | |")
-        for r in (g["source_medium"] or [])[:10]:
+        sm_rows = _with_prior_only(g["source_medium"], sm_prior, "source_medium", 10,
+                                   {"sessions": 0.0, "engaged": None, "paid": False,
+                                    "paid_sessions": 0.0})
+        for r in sm_rows:
             q = _prior_value(sm_prior, "source_medium", r["source_medium"], "sessions")
+            if not r["paid"]:
+                paid_cell = ""
+            elif r["paid_sessions"] >= r["sessions"]:
+                paid_cell = "yes"
+            else:  # redacted bucket mixes paid and unpaid raw rows: report the paid subtotal
+                paid_cell = f"mixed ({fmt(r['paid_sessions'])} paid)"
             add(f"| {r['source_medium']} | {fmt(r['sessions'])} | {fmt(q)} | "
-                f"{fmt_change(r['sessions'], q)} | {fmt(r['engaged'])} | "
-                f"{'yes' if r['paid'] else ''} |")
+                f"{fmt_change(r['sessions'], q)} | {fmt(r['engaged'])} | {paid_cell} |")
         add("\n### Landing-page engagement (top 10 by sessions)\n"
             "| Landing page | Sessions | Previous | Change | Engagement % | Previous | Change | "
             "Avg duration (s) | Previous | Change |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
         if g["landing"] is None:
             add("| unavailable | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |")
-        for r in (g["landing"] or [])[:10]:
+        lp_rows = _with_prior_only(g["landing"], lp_prior, "page", 10,
+                                   {"sessions": 0.0, "engagement_rate": None,
+                                    "avg_duration": None})
+        for r in lp_rows:
             q = {k: _prior_value(lp_prior, "page", r["page"], k)
                  for k in ("sessions", "engagement_rate", "avg_duration")}
             add(f"| {r['page']} | {fmt(r['sessions'])} | {fmt(q['sessions'])} | "
