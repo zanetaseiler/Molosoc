@@ -99,9 +99,11 @@ def ga4_report(client, property_id, start, end, dimensions, metrics, limit,
 
     kwargs = {}
     if events_only:
+        # True -> the module's FUNNEL_EVENTS; a tuple/list -> that explicit event set.
+        names = FUNNEL_EVENTS if events_only is True else tuple(events_only)
         kwargs["dimension_filter"] = FilterExpression(filter=Filter(
             field_name="eventName",
-            in_list_filter=Filter.InListFilter(values=list(FUNNEL_EVENTS))))
+            in_list_filter=Filter.InListFilter(values=list(names))))
     order = (OrderBy(dimension=OrderBy.DimensionOrderBy(dimension_name="date"))
              if dimensions[0] == "date"
              else OrderBy(metric=OrderBy.MetricOrderBy(metric_name=metrics[0]), desc=True))

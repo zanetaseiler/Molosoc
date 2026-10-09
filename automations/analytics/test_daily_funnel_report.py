@@ -370,3 +370,28 @@ def test_landing_allowlist_keeps_known_public_routes_distinct():
     assert d.redact_path("/cz/kosik") == "/cz/kosik"
     assert d.redact_path("/cz/callus-remover") == "/cz/callus-remover"
     assert d.redact_path("/reset/jana-novakova") == "/*/*"
+
+
+def test_missing_ga4_date_withholds_funnel_aggregates():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims == ("date",):
+            return [["20261006", "100", "60", "0.6", "30", "0.4"]]
+        if dims == ("eventName",):
+            return [["purchase", "3", "2"]]
+        if dims == ("sessionSourceMedium", "eventName"):
+            return [["fb / paid", "purchase", "3", "2"]]
+        return []
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 7), report)
+    assert out["events"] == {} and out["events_paid"] == {}
+    assert all(u is None for _, u, _ in d.funnel_steps(out["events"]))
+
+
+def test_funnel_queries_use_the_report_event_list():
+    seen = {}
+
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        if dims[-1] == "eventName":
+            seen[dims] = events_only
+        return []
+    d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), report)
+    assert seen and all(v == d.FUNNEL_EVENTS for v in seen.values())

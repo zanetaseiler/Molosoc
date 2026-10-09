@@ -246,11 +246,11 @@ def ga4_window(client, property_id, start, end, report=None):
                                  "table is incomplete and not reported")
         else:
             out["landing"] = merge_landing(rows)
-    rows = run("funnel events", ("eventName",), ("eventCount", "totalUsers"), 50, True)
+    rows = run("funnel events", ("eventName",), ("eventCount", "totalUsers"), 50, FUNNEL_EVENTS)
     if rows is not None:
         out["events"] = {r[0]: {"count": num(r[1]), "users": num(r[2])} for r in rows}
     rows = run("funnel events by source/medium", ("sessionSourceMedium", "eventName"),
-               ("eventCount", "totalUsers"), 1000, True)
+               ("eventCount", "totalUsers"), 1000, FUNNEL_EVENTS)
     if rows is not None:
         paid = {}
         for sm, ev, count, users in rows:
@@ -265,6 +265,9 @@ def ga4_window(client, property_id, start, end, report=None):
             out["events_paid_truncated"] = True
             out["errors"].append("funnel events by source/medium: row limit reached; "
                                  "paid funnel figures are incomplete and not reported")
+    if out.get("days_missing"):
+        # Event counts for a window with absent GA4 dates are partial: never compare them.
+        out["events"], out["events_paid"] = {}, {}
     return out
 
 
