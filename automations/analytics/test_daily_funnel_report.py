@@ -395,3 +395,21 @@ def test_funnel_queries_use_the_report_event_list():
         return []
     d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 6), report)
     assert seen and all(v == d.FUNNEL_EVENTS for v in seen.values())
+
+
+def test_clarity_missing_snapshots_mark_status_partial_and_failed():
+    start, end = D(2026, 10, 6), D(2026, 10, 8)
+    now = dt.datetime(2026, 10, 12, 12, tzinfo=dt.timezone.utc)
+    ga4 = lambda a, b: {"errors": [], "failures": []}  # noqa: E731
+    woo = lambda a, b: d.summarize_orders([])  # noqa: E731
+
+    def clarity(a, b):
+        missing = [d.days_of(a, b)[0]] if a == start else []
+        return {"days_found": [x for x in d.days_of(a, b) if x not in missing],
+                "days_missing": missing, "days_failed": [], "errors": [], "failures": []}
+
+    report = d.build_report(start, end, ga4, woo, clarity, now)
+    assert report["failed"] is True
+    assert report["status"]["Clarity (stored)"].startswith("PARTIAL")
+    assert "no stored snapshot" in report["status"]["Clarity (stored)"]
+    assert report["status"]["GA4"] == "ok"

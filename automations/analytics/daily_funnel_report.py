@@ -641,6 +641,8 @@ def build_report(start, end, ga4_fn, woo_fn, clarity_fn, now=None):
             if part:
                 problems += [tag + p for p in
                              list(part.get("errors", [])) + list(part.get("failures", []))]
+                if key == "clarity" and part.get("days_missing"):
+                    problems.append(tag + "no stored snapshot for " + ", ".join(part["days_missing"]))
         if problems:
             report["failed"] = True
             report["status"][key] = "PARTIAL — " + "; ".join(problems)
