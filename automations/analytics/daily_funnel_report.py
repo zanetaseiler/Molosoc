@@ -222,8 +222,9 @@ def ga4_window(client, property_id, start, end, report=None):
         missing = [day for day in expected if day not in out["days_with_data"]]
         out["days_missing"] = missing
         sessions = sum(num(r[1]) or 0 for r in rows)
-        if rows and missing:
-            # A date GA4 has not produced yet would make a partial sum look complete.
+        if missing:
+            # A date GA4 has not produced yet (including every date, when the query
+            # returns no rows) would make a partial or empty sum look complete.
             out["errors"].append("totals: GA4 returned no rows for " + ", ".join(missing)
                                  + "; session totals are incomplete and not reported")
         elif rows and sessions:

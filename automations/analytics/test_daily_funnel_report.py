@@ -365,6 +365,15 @@ def test_missing_ga4_date_withholds_totals_and_flags_partial():
     assert any("20261007" in e for e in out["errors"])
 
 
+def test_all_empty_ga4_totals_flags_every_date_missing():
+    def report(client, prop, s, e, dims, metrics, limit, events_only):
+        return []
+    out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 7), report)
+    assert out["totals"] is None
+    assert out["days_missing"] == ["20261006", "20261007"]
+    assert any(e.startswith("totals:") and "20261006" in e for e in out["errors"])
+
+
 def test_landing_allowlist_keeps_known_public_routes_distinct():
     assert d.redact_path("/cz/magazin") == "/cz/magazin"
     assert d.redact_path("/cz/kosik") == "/cz/kosik"
