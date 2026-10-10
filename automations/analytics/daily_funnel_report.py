@@ -708,18 +708,24 @@ def build_report(start, end, ga4_fn, woo_fn, clarity_fn, now=None):
               "window": {"start": start.isoformat(), "end": end.isoformat()},
               "prior_window": {"start": p_start.isoformat(), "end": p_end.isoformat()},
               "status": {}, "notes": [], "limits": list(LIMITS), "failed": False}
+    prior_errors = {}  # source -> error raised only by the previous-window collector
     for key, fn in (("ga4", ga4_fn), ("woo", woo_fn), ("clarity", clarity_fn)):
         for suffix, (a, b) in (("", (start, end)), ("_prior", (p_start, p_end))):
             try:
                 report[key + suffix] = fn(a, b)
             except (Exception, SystemExit) as exc:  # noqa: BLE001 — load helpers sys.exit
                 report[key + suffix] = None if key != "clarity" else {"days_found": [], "days_missing": days_of(a, b)}
-                report["status"].setdefault(key, f"UNAVAILABLE — {describe_error(exc)}")
                 report["failed"] = True
+                if suffix:
+                    prior_errors.setdefault(key, describe_error(exc))
+                else:
+                    report["status"].setdefault(key, f"UNAVAILABLE — {describe_error(exc)}")
     for key, label in (("ga4", "GA4"), ("woo", "WooCommerce"), ("clarity", "Clarity (stored)")):
         if key in report["status"]:
             continue
         problems = []
+        if key in prior_errors:
+            problems.append("previous window: UNAVAILABLE — " + prior_errors[key])
         for suffix, tag in (("", ""), ("_prior", "previous window: ")):
             part = report[key + suffix]
             if part:

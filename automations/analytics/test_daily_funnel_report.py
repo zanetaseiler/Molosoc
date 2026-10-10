@@ -557,3 +557,21 @@ def test_revenue_currency_falls_back_to_prior_window_when_current_has_no_orders(
     eur = d.summarize_orders([{"status": "completed", "total": "5", "currency": "EUR", "attribution": {}}])
     out = d.render(_woo_report(eur, prior))
     assert "this: EUR, previous: CZK" in out and "currencies differ" in out
+
+
+def test_prior_only_collector_exception_is_partial_not_unavailable():
+    start, end = D(2026, 10, 6), D(2026, 10, 7)
+
+    def ga4(a, b):
+        if a < start:
+            raise RuntimeError("prior boom")
+        return d.ga4_window(None, "1", a, b, _ga4_report())
+
+    woo = lambda a, b: d.summarize_orders([])  # noqa: E731
+    clarity = lambda a, b: {"days_found": [], "days_missing": d.days_of(a, b)}  # noqa: E731
+    now = dt.datetime(2026, 10, 20, 12, tzinfo=dt.timezone.utc)
+    report = d.build_report(start, end, ga4, woo, clarity, now)
+    assert report["failed"] is True
+    assert report["status"]["GA4"].startswith("PARTIAL")
+    assert "previous window: UNAVAILABLE" in report["status"]["GA4"]
+    assert report["ga4"] is not None and report["ga4_prior"] is None
