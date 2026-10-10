@@ -81,7 +81,8 @@ FUNNEL = ("view_item", "add_to_cart", "begin_checkout", "purchase")
 FUNNEL_EVENTS = ("session_start", "page_view") + FUNNEL
 SESSION_METRICS = ("sessions", "engagedSessions", "engagementRate",
                    "averageSessionDuration", "bounceRate")
-META_TOKENS = ("facebook", "fb", "instagram", "ig", "meta")
+META_TOKENS = ("facebook", "fb", "instagram", "ig", "meta")  # exact source values
+META_DOMAINS = ("facebook.com", "fb.com", "instagram.com", "meta.com")  # and subdomains
 PAID_MEDIUMS = ("cpc", "ppc", "paid", "paid_social", "paidsocial", "paid-social")
 PAID_STATUSES = ("processing", "completed")
 IGNORED_STATUSES = ("checkout-draft", "trash")
@@ -183,8 +184,11 @@ def ratio(numerator, denominator):
 def is_meta_paid(source_medium):
     """Paid/Meta session classification from GA4 'source / medium'."""
     source, _, medium = (source_medium or "").lower().partition(" / ")
-    tokens = source.replace(".", " ").replace("_", " ").replace("-", " ").split()
-    meta = any(t in META_TOKENS for t in tokens)
+    source = source.strip()
+    # Exact recognised values/domains only: utm_source is visitor-controlled, so
+    # `not-facebook` or `example.meta` must not count as Meta.
+    meta = source in META_TOKENS or any(
+        source == d or source.endswith("." + d) for d in META_DOMAINS)
     return meta or medium.strip() in PAID_MEDIUMS
 
 
@@ -332,8 +336,9 @@ def merge_landing(rows):
 
 def paid_sessions(ga4):
     """Paid/Meta sessions, or None when the source/medium data is unavailable/truncated."""
-    if not ga4 or ga4.get("source_medium") is None or ga4.get("source_medium_truncated"):
-        return None
+    if (not ga4 or ga4.get("source_medium") is None or ga4.get("source_medium_truncated")
+            or ga4.get("days_missing")):
+        return None  # missing GA4 dates make a sum look complete when it is not
     return sum(r["paid_sessions"] or 0 for r in ga4["source_medium"])
 
 
@@ -587,6 +592,7 @@ def render(report):
             "returning customer can purchase without a checkout event in the window, so "
             "the ratio can exceed 100% and is not a true conversion or drop-off rate. "
             "Events that GA4 never recorded show n/a, not 0.")
+    if g is not None:
         if g.get("events_paid_truncated"):
             add("\n**Paid / Meta funnel**: unavailable (GA4 row limit reached; figures "
                 "would be incomplete).")

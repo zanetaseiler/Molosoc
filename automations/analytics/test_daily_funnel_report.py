@@ -575,3 +575,27 @@ def test_prior_only_collector_exception_is_partial_not_unavailable():
     assert report["status"]["GA4"].startswith("PARTIAL")
     assert "previous window: UNAVAILABLE" in report["status"]["GA4"]
     assert report["ga4"] is not None and report["ga4_prior"] is None
+
+
+def test_meta_matching_uses_recognised_sources_only():
+    for sm in ("not-facebook / referral", "my_instagram / referral",
+               "example.meta / referral", "figma / referral", "notfb.com / referral"):
+        assert not d.is_meta_paid(sm)
+    for sm in ("facebook / referral", "m.facebook.com / referral", "instagram.com / referral"):
+        assert d.is_meta_paid(sm)
+
+
+def test_paid_sessions_withheld_when_ga4_dates_missing():
+    ga4 = {"source_medium": [{"paid_sessions": 5.0}], "source_medium_truncated": False,
+           "days_missing": []}
+    assert d.paid_sessions(ga4) == 5.0
+    ga4["days_missing"] = ["20261005"]
+    assert d.paid_sessions(ga4) is None
+
+
+def test_paid_funnel_renders_when_overall_funnel_query_failed():
+    report = _funnel_report(
+        {"totals": None, "events": {}, "events_paid": {"add_to_cart": {"count": 3.0, "users": 2.0}}},
+        {})
+    out = d.render(report)
+    assert "No GA4 funnel-event data" in out and "Paid / Meta funnel" in out
