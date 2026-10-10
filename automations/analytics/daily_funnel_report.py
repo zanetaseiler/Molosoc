@@ -204,10 +204,13 @@ def ga4_window(client, property_id, start, end, report=None):
     out = {"errors": [], "totals": None, "source_medium": None, "landing": None,
            "source_medium_truncated": False, "landing_truncated": False,
            "events": None, "events_paid": None, "events_paid_truncated": False}
+    attempts = {"ok": 0}
 
     def run(name, dims, metrics, limit, events_only=False):
         try:
-            return report(client, property_id, s, e, dims, metrics, limit, events_only)
+            rows = report(client, property_id, s, e, dims, metrics, limit, events_only)
+            attempts["ok"] += 1
+            return rows
         except Exception as exc:  # noqa: BLE001 — recorded, redacted, others continue
             out["errors"].append(f"{name}: {describe_error(exc)}")
             return None
@@ -273,6 +276,10 @@ def ga4_window(client, property_id, start, end, report=None):
         # Breakdowns and event counts for a window with absent GA4 dates are partial.
         out["source_medium"], out["landing"] = None, None
         out["events"], out["events_paid"] = None, None
+    if not attempts["ok"]:
+        # Every query failed (e.g. invalid credentials): the source is wholly unavailable,
+        # not partial.
+        raise RuntimeError("all GA4 queries failed: " + "; ".join(out["errors"]))
     return out
 
 

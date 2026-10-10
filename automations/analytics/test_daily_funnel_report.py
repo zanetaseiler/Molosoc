@@ -644,3 +644,10 @@ def test_empty_prior_funnel_query_is_zero_not_na():
     report["ga4_prior"]["events"] = None
     row = [ln for ln in d.render(report).splitlines() if ln.startswith("| view_item |")][0]
     assert "| 10 | n/a |" in row
+
+
+def test_ga4_total_query_failure_raises_so_source_is_unavailable():
+    def report(*a, **k):
+        raise PermissionError("invalid credentials")
+    with pytest.raises(RuntimeError, match="all GA4 queries failed"):
+        d.ga4_window(object(), "1", D(2026, 10, 6), D(2026, 10, 7), report)
