@@ -540,3 +540,20 @@ def test_funnel_ratio_compared_with_prior_window():
                             {"events": prior})
     row = [ln for ln in d.render(report).splitlines() if ln.startswith("| add_to_cart |")][0]
     assert "| 20.0 | 40.0 |" in row and "-20" in row
+
+
+def _woo_report(w, wp):
+    base = _funnel_report({"totals": None, "events": {}, "events_paid": None}, {})
+    return {**base, "woo": w, "woo_prior": wp}
+
+
+def test_revenue_currency_falls_back_to_prior_window_when_current_has_no_orders():
+    empty, prior = d.summarize_orders([]), d.summarize_orders(
+        [{"status": "completed", "total": "250", "currency": "CZK", "attribution": {}}])
+    assert empty["currency"] is None and prior["currency"] == "CZK"
+    out = d.render(_woo_report(empty, prior))
+    assert "Paid revenue (CZK)" in out and "n/a)" not in out.split("Paid revenue")[1].split("\n")[0]
+    # differing currencies are labelled and not compared
+    eur = d.summarize_orders([{"status": "completed", "total": "5", "currency": "EUR", "attribution": {}}])
+    out = d.render(_woo_report(eur, prior))
+    assert "this: EUR, previous: CZK" in out and "currencies differ" in out

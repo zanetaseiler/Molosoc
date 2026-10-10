@@ -620,8 +620,13 @@ def render(report):
             pv = wp.get(key) if wp else None
             add(f"| {label} | {fmt(w[key])} | {fmt(pv)} | {fmt_change(w[key], pv)} |")
         pr = wp.get("paid_revenue") if wp else None
-        add(f"| Paid revenue ({w['currency'] or 'n/a'}) | {fmt(w['paid_revenue'], 2)} | "
-            f"{fmt(pr, 2)} | {fmt_change(w['paid_revenue'], pr, 2)} |")
+        cur, prev_cur = w["currency"], (wp.get("currency") if wp else None)
+        if cur and prev_cur and cur != prev_cur:
+            add(f"| Paid revenue (this: {cur}, previous: {prev_cur}) | {fmt(w['paid_revenue'], 2)} | "
+                f"{fmt(pr, 2)} | n/a (currencies differ) |")
+        else:
+            add(f"| Paid revenue ({cur or prev_cur or 'n/a'}) | {fmt(w['paid_revenue'], 2)} | "
+                f"{fmt(pr, 2)} | {fmt_change(w['paid_revenue'], pr, 2)} |")
         if w["orders"] == 0:
             add("\n**Zero orders in this window** (WooCommerce was read successfully).")
         if w["by_status"]:
