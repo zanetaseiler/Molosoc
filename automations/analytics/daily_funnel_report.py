@@ -655,9 +655,20 @@ def render(report):
             add("\n**Zero orders in this window** (WooCommerce was read successfully).")
         if w["by_status"]:
             add("\nStatuses: " + ", ".join(f"{k} {v}" for k, v in sorted(w["by_status"].items())))
-        if w["sources_paid"]:
-            add("Paid-order attribution (utm_source / utm_medium; unrecognised values redacted): "
-                + ", ".join(f"{k} ×{v}" for k, v in sorted(w["sources_paid"].items())))
+        cur_src = w["sources_paid"]
+        prior_src = wp.get("sources_paid") if wp else None  # None = prior window unavailable
+        if cur_src or prior_src:
+            labels = sorted(set(cur_src) | set(prior_src or {}))
+            parts = []
+            for k in labels:
+                v = cur_src.get(k, 0)
+                if prior_src is None:
+                    parts.append(f"{k} ×{v} (previous n/a)")
+                else:
+                    pv = prior_src.get(k, 0)
+                    parts.append(f"{k} ×{v} (previous {pv}, {fmt_change(v, pv)})")
+            add("Paid-order attribution, this window vs previous (utm_source / utm_medium; "
+                "unrecognised values redacted): " + ", ".join(parts))
         if g and (g.get("events") or {}).get("purchase") and w["paid"] != g["events"]["purchase"]["count"]:
             add(f"\nNote: GA4 `purchase` events ({fmt(g['events']['purchase']['count'])}) differ "
                 f"from paid Woo orders ({w['paid']}); Woo is the source of truth for sales.")

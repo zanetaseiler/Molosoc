@@ -560,6 +560,22 @@ def test_revenue_currency_falls_back_to_prior_window_when_current_has_no_orders(
     assert "this: EUR, previous: CZK" in out and "currencies differ" in out
 
 
+def test_paid_order_attribution_compared_with_prior_window():
+    def order(src):
+        return {"status": "completed", "total": "1", "currency": "CZK",
+                "attribution": {"utm_source": src, "utm_medium": "cpc"}}
+    cur = d.summarize_orders([order("facebook")])
+    prior = d.summarize_orders([order("facebook"), order("facebook"), order("google")])
+    line = [ln for ln in d.render(_woo_report(cur, prior)).splitlines()
+            if ln.startswith("Paid-order attribution")][0]
+    assert "facebook / cpc ×1 (previous 2" in line
+    assert "google / cpc ×0 (previous 1" in line and "-100" in line
+    # prior window unavailable -> n/a, not zero
+    line = [ln for ln in d.render(_woo_report(cur, None)).splitlines()
+            if ln.startswith("Paid-order attribution")][0]
+    assert "previous n/a" in line
+
+
 def test_prior_only_collector_exception_is_partial_not_unavailable():
     start, end = D(2026, 10, 6), D(2026, 10, 7)
 
