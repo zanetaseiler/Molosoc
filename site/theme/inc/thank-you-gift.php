@@ -22,6 +22,19 @@
  * combined: processing/on-hold (never completed = dispatched), placed
  * within MOLOSOC_GIFT_WINDOW_HOURS, and not itself a gift add-on.
  *
+ * Post-purchase pricing (#110): the offer depends on how many pairs the
+ * ORIGINAL order held (product 364, all variations summed). One pair: up to
+ * two more, the first for MOLOSOC_GIFT_PRICE_PAIR_2 and the second for
+ * MOLOSOC_GIFT_PRICE_PAIR_3. Two pairs: exactly one more, at the pair-3
+ * price. Three or more: no offer at all. These prices exist only inside
+ * the linked cart: each gift pair is its own cart row carrying its overall
+ * pair number, and the price comes from that number via the server-side
+ * schedule — never from anything the browser submits — and only while
+ * molosoc_gift_cart_link() re-validates the original order, its key, its
+ * window/status and the exact rows. The product's own price is never
+ * changed, so every other cart/product URL stays at the normal price, and
+ * a link that stops being valid simply falls back to it.
+ *
  * Presentation goes through WooCommerce's own hooks only (no
  * checkout/thankyou.php override), so the order overview/details, the
  * Comgate return flow and any analytics plugin's own thank-you hooks keep
@@ -34,9 +47,21 @@
 
 defined( 'ABSPATH' ) || exit;
 
-// The most pairs one gift checkout can start with.
+// The most additional pairs any gift checkout can ever hold (an original
+// order of one pair may add two). The real limit per order is
+// molosoc_gift_offer()['max'].
 if ( ! defined( 'MOLOSOC_GIFT_MAX_PAIRS' ) ) {
-	define( 'MOLOSOC_GIFT_MAX_PAIRS', 3 );
+	define( 'MOLOSOC_GIFT_MAX_PAIRS', 2 );
+}
+
+// Unit price (CZK) of the 2nd and the 3rd pair overall, valid only inside the
+// authenticated gift flow (#110). The pair number is the position counting
+// the original order's pairs.
+if ( ! defined( 'MOLOSOC_GIFT_PRICE_PAIR_2' ) ) {
+	define( 'MOLOSOC_GIFT_PRICE_PAIR_2', 209 );
+}
+if ( ! defined( 'MOLOSOC_GIFT_PRICE_PAIR_3' ) ) {
+	define( 'MOLOSOC_GIFT_PRICE_PAIR_3', 199 );
 }
 
 // How long after the original order was placed the gift add-on (and its
@@ -150,6 +175,65 @@ function molosoc_gift_has_confirmed_addon( $order ) {
 }
 
 /**
+ * Pairs of the MOLOSOC product (all variations) held by an order.
+ */
+function molosoc_gift_original_qty( $order ) {
+	$qty = 0;
+	if ( ! $order instanceof WC_Order ) {
+		return $qty;
+	}
+	foreach ( $order->get_items() as $item ) {
+		if ( MOLOSOC_PRODUCT_ID === (int) $item->get_product_id() ) {
+			$qty += (int) $item->get_quantity();
+		}
+	}
+	return $qty;
+}
+
+/**
+ * Unit price of the pair at overall position $slot (2 or 3), or null.
+ */
+function molosoc_gift_slot_price( $slot ) {
+	$schedule = array(
+		2 => (float) MOLOSOC_GIFT_PRICE_PAIR_2,
+		3 => (float) MOLOSOC_GIFT_PRICE_PAIR_3,
+	);
+	return isset( $schedule[ $slot ] ) ? $schedule[ $slot ] : null;
+}
+
+/**
+ * The gift offer $order is entitled to right now, or null for none: the order
+ * must still be able to ship together (status, window, no add-on yet) and
+ * hold one or two pairs. 'slots' are the overall pair numbers on offer
+ * (original + 1 .. 3), 'prices' maps each to its server-side unit price and
+ * 'max' is how many pairs may be added. Everything that grants a price asks
+ * this, never the browser.
+ */
+function molosoc_gift_offer( $order ) {
+	if ( ! molosoc_gift_can_ship_with( $order ) ) {
+		return null;
+	}
+	// The schedule is in CZK; never apply it to another currency.
+	if ( function_exists( 'get_woocommerce_currency' ) && 'CZK' !== get_woocommerce_currency() ) {
+		return null;
+	}
+	$original = molosoc_gift_original_qty( $order );
+	if ( $original < 1 || $original > 2 ) {
+		return null;
+	}
+	$prices = array();
+	for ( $slot = $original + 1; $slot <= 3; $slot++ ) {
+		$prices[ $slot ] = molosoc_gift_slot_price( $slot );
+	}
+	return array(
+		'original' => $original,
+		'slots'    => array_keys( $prices ),
+		'prices'   => $prices,
+		'max'      => count( $prices ),
+	);
+}
+
+/**
  * Hero heading. index.php already prints the page's <h1> from the_title(),
  * which WooCommerce swaps for its endpoint title ("Order received") on
  * this endpoint — replacing that title keeps one H1 and adds no markup.
@@ -227,7 +311,7 @@ function molosoc_gift_sizes() {
 }
 
 /**
- * A price as plain text ("229,00 Kč"), formatted by WooCommerce itself.
+ * A price as plain text ("1 234,00 Kč"), formatted by WooCommerce itself.
  */
 function molosoc_gift_price_text( $amount ) {
 	return trim( html_entity_decode( wp_strip_all_tags( wc_price( $amount ) ), ENT_QUOTES, 'UTF-8' ) );
@@ -256,7 +340,13 @@ function molosoc_gift_checkout_url( $lang ) {
  */
 function molosoc_thankyou_gift_section( $order_id ) {
 	$order = molosoc_thankyou_order();
-	if ( ! $order || (int) $order_id !== (int) $order->get_id() || ! molosoc_gift_can_ship_with( $order ) ) {
+	if ( ! $order || (int) $order_id !== (int) $order->get_id() ) {
+		return;
+	}
+	// No offer (nothing rendered) for an original order of three or more
+	// pairs, or one that can no longer ship together.
+	$offer = molosoc_gift_offer( $order );
+	if ( ! $offer ) {
 		return;
 	}
 	$sizes = molosoc_gift_sizes();
@@ -265,25 +355,45 @@ function molosoc_thankyou_gift_section( $order_id ) {
 	}
 
 	$is_cz = 'cz' === molosoc_thankyou_lang( $order );
-	$max   = MOLOSOC_GIFT_MAX_PAIRS;
+	$max   = $offer['max'];
 
-	// One shared per-pair price when every offered size costs the same —
-	// only then can a card state its own total before sizes are chosen.
-	$prices     = array_unique( wp_list_pluck( $sizes, 'price' ) );
-	$same_price = 1 === count( $prices );
+	// Cumulative price of the first N additional pairs; the same for every
+	// M/L mix, because the offer price does not depend on the size.
+	$cumulative = array( 0 => 0.0 );
+	foreach ( array_values( $offer['prices'] ) as $index => $price ) {
+		$cumulative[ $index + 1 ] = $cumulative[ $index ] + $price;
+	}
+	$first_price  = reset( $offer['prices'] );
+	$second_price = ( $max > 1 ) ? next( $offer['prices'] ) : null;
 
-	// Total for every possible M/L mix, formatted server-side by
-	// WooCommerce; the script only looks the chosen mix up.
-	$price_m = isset( $sizes['M'] ) ? $sizes['M']['price'] : 0;
-	$price_l = isset( $sizes['L'] ) ? $sizes['L']['price'] : 0;
-	$totals  = array();
+	// Total for every possible M/L mix, formatted by WooCommerce; the script
+	// only looks the chosen mix up.
+	$totals = array();
 	for ( $m = 0; $m <= ( isset( $sizes['M'] ) ? $max : 0 ); $m++ ) {
 		for ( $l = 0; $l <= ( isset( $sizes['L'] ) ? $max : 0 ); $l++ ) {
 			if ( $m + $l < 1 || $m + $l > $max ) {
 				continue;
 			}
-			$totals[ $m . '-' . $l ] = molosoc_gift_price_text( $m * $price_m + $l * $price_l );
+			$totals[ $m . '-' . $l ] = molosoc_gift_price_text( $cumulative[ $m + $l ] );
 		}
+	}
+
+	$money = function ( $amount ) use ( $is_cz ) {
+		$text = ( floor( $amount ) === (float) $amount ) ? (string) (int) $amount : number_format( $amount, 2, ',', '' );
+		return $text . "\xC2\xA0" . ( $is_cz ? 'Kč' : 'CZK' );
+	};
+	if ( 1 === $max ) {
+		$offer_line = $is_cz
+			? sprintf( 'Přidejte třetí pár za %s.', $money( $first_price ) )
+			: sprintf( 'Add a third pair for %s.', $money( $first_price ) );
+		$offer_note = '';
+	} else {
+		$offer_line = $is_cz
+			? sprintf( 'Přidejte další za %1$s — nebo dva za %2$s celkem.', $money( $first_price ), $money( $cumulative[2] ) )
+			: sprintf( 'Add another for %1$s — or two for %2$s total.', $money( $first_price ), $money( $cumulative[2] ) );
+		$offer_note = $is_cz
+			? sprintf( 'Druhý přidaný pár stojí %s.', $money( $second_price ) )
+			: sprintf( 'The second additional pair is %s.', $money( $second_price ) );
 	}
 
 	$pairs_label = function ( $count ) use ( $is_cz ) {
@@ -311,26 +421,33 @@ function molosoc_thankyou_gift_section( $order_id ) {
 				);
 				?>
 			</p>
+			<p class="molosoc-gift__offer" translate="no"><strong><?php echo esc_html( $offer_line ); ?></strong>
+				<?php if ( '' !== $offer_note ) : ?>
+					<span class="molosoc-gift__offer-note"><?php echo esc_html( $offer_note ); ?></span>
+				<?php endif; ?>
+			</p>
 
 			<form class="molosoc-gift__form" method="post" action="<?php echo esc_url( home_url( $is_cz ? '/cz/' : '/' ) ); ?>">
 				<input type="hidden" name="molosoc_gift_lang" value="<?php echo $is_cz ? 'cz' : 'en'; ?>">
 				<input type="hidden" name="molosoc_gift_order" value="<?php echo (int) $order->get_id(); ?>">
 				<input type="hidden" name="molosoc_gift_key" value="<?php echo esc_attr( $order->get_order_key() ); ?>">
 
-				<fieldset class="molosoc-gift__choices">
-					<legend class="molosoc-visually-hidden"><?php echo esc_html( $is_cz ? 'Kolik párů přidat' : 'How many pairs to add' ); ?></legend>
-					<?php for ( $count = 1; $count <= $max; $count++ ) : ?>
-						<label class="molosoc-gift-card<?php echo $count > 1 ? ' molosoc-gift-card--multi' : ''; ?>">
-							<input type="radio" name="molosoc_gift_pairs" value="<?php echo (int) $count; ?>"<?php checked( 1, $count ); ?>>
-							<span class="molosoc-gift-card__face">
-								<span class="molosoc-gift-card__count"><?php echo esc_html( $pairs_label( $count ) ); ?></span>
-								<?php if ( $same_price ) : ?>
-									<span class="molosoc-gift-card__price" translate="no"><?php echo esc_html( molosoc_gift_price_text( $count * reset( $prices ) ) ); ?></span>
-								<?php endif; ?>
-							</span>
-						</label>
-					<?php endfor; ?>
-				</fieldset>
+				<?php if ( $max > 1 ) : ?>
+					<fieldset class="molosoc-gift__choices molosoc-gift__choices--<?php echo (int) $max; ?>">
+						<legend class="molosoc-visually-hidden"><?php echo esc_html( $is_cz ? 'Kolik párů přidat' : 'How many pairs to add' ); ?></legend>
+						<?php for ( $count = 1; $count <= $max; $count++ ) : ?>
+							<label class="molosoc-gift-card<?php echo $count > 1 ? ' molosoc-gift-card--multi' : ''; ?>">
+								<input type="radio" name="molosoc_gift_pairs" value="<?php echo (int) $count; ?>"<?php checked( 1, $count ); ?>>
+								<span class="molosoc-gift-card__face">
+									<span class="molosoc-gift-card__count"><?php echo esc_html( $pairs_label( $count ) ); ?></span>
+									<span class="molosoc-gift-card__price" translate="no"><?php echo esc_html( molosoc_gift_price_text( $cumulative[ $count ] ) ); ?></span>
+								</span>
+							</label>
+						<?php endfor; ?>
+					</fieldset>
+				<?php else : ?>
+					<input type="hidden" name="molosoc_gift_pairs" value="1">
+				<?php endif; ?>
 
 				<div class="molosoc-gift__sizes">
 					<?php for ( $index = 0; $index < $max; $index++ ) : ?>
@@ -347,12 +464,7 @@ function molosoc_thankyou_gift_section( $order_id ) {
 							<?php foreach ( $sizes as $key => $size ) : ?>
 								<label class="molosoc-gift-pill">
 									<input type="radio" name="molosoc_gift_size[<?php echo (int) $index; ?>]" value="<?php echo esc_attr( $key ); ?>" required<?php checked( 1, count( $sizes ) ); ?>>
-									<span class="molosoc-gift-pill__face" translate="no">
-										<?php echo esc_html( $size['label'] ); ?>
-										<?php if ( ! $same_price ) : ?>
-											<span class="molosoc-gift-pill__price"><?php echo esc_html( molosoc_gift_price_text( $size['price'] ) ); ?></span>
-										<?php endif; ?>
-									</span>
+									<span class="molosoc-gift-pill__face" translate="no"><?php echo esc_html( $size['label'] ); ?></span>
 								</label>
 							<?php endforeach; ?>
 						</fieldset>
@@ -407,7 +519,7 @@ function molosoc_gift_add_to_cart_action() {
 	}
 
 	$lang      = ( isset( $_POST['molosoc_gift_lang'] ) && 'cz' === $_POST['molosoc_gift_lang'] ) ? 'cz' : 'en';
-	$pairs     = min( MOLOSOC_GIFT_MAX_PAIRS, max( 1, absint( wp_unslash( $_POST['molosoc_gift_pairs'] ) ) ) );
+	$pairs     = is_string( $_POST['molosoc_gift_pairs'] ) ? absint( wp_unslash( $_POST['molosoc_gift_pairs'] ) ) : 0;
 	$posted    = ( isset( $_POST['molosoc_gift_size'] ) && is_array( $_POST['molosoc_gift_size'] ) ) ? wp_unslash( $_POST['molosoc_gift_size'] ) : array();
 	$parent_id = isset( $_POST['molosoc_gift_order'] ) ? absint( wp_unslash( $_POST['molosoc_gift_order'] ) ) : 0;
 	$order_key = isset( $_POST['molosoc_gift_key'] ) && is_string( $_POST['molosoc_gift_key'] ) ? wc_clean( wp_unslash( $_POST['molosoc_gift_key'] ) ) : '';
@@ -416,92 +528,79 @@ function molosoc_gift_add_to_cart_action() {
 	wc_nocache_headers();
 
 	// The original order must be the one this form was printed for (order
-	// key, exactly like the Thank You page itself) and must still be able
-	// to ship together with the gift pairs — otherwise the "no additional
-	// shipping" promise on that page can't be kept, and nothing is added.
+	// key, exactly like the Thank You page itself) and must still be entitled
+	// to an offer — otherwise the "no additional shipping" promise and the
+	// prices on that page can't be kept, and nothing is added.
 	$parent = $parent_id ? wc_get_order( $parent_id ) : false;
-	if ( ! $parent instanceof WC_Order
-		|| '' === $order_key
-		|| ! hash_equals( $parent->get_order_key(), $order_key )
-		|| ! molosoc_gift_can_ship_with( $parent )
-	) {
+	$offer  = ( $parent instanceof WC_Order && '' !== $order_key && hash_equals( $parent->get_order_key(), $order_key ) )
+		? molosoc_gift_offer( $parent )
+		: null;
+	// More pairs than the original order allows is rejected outright, never
+	// trimmed: a tampered form must not end up with a discounted extra pair.
+	if ( ! $offer || $pairs < 1 || $pairs > $offer['max'] ) {
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
 	}
 
-	$sizes  = molosoc_gift_sizes();
-	$counts = array();
+	$sizes = molosoc_gift_sizes();
+	$picks = array();
 	for ( $index = 0; $index < $pairs; $index++ ) {
 		$key = ( isset( $posted[ $index ] ) && is_string( $posted[ $index ] ) ) ? strtoupper( sanitize_text_field( $posted[ $index ] ) ) : '';
 		if ( ! isset( $sizes[ $key ] ) ) {
 			wp_safe_redirect( molosoc_product_url( $lang ) );
 			exit;
 		}
-		$counts[ $key ] = isset( $counts[ $key ] ) ? $counts[ $key ] + 1 : 1;
+		$picks[ $offer['slots'][ $index ] ] = $key;
 	}
 
-	// All or nothing: if any size can't be added (e.g. not enough stock for
+	// All or nothing: if any pair can't be added (e.g. not enough stock for
 	// two of the same size), put the cart back exactly as it was before
 	// this request and send the customer to the product page, where
 	// WooCommerce's own notice explains why — never on to checkout with
-	// only part of what they chose.
+	// only part of what they chose. Every pair is its own quantity-1 row
+	// carrying its overall pair number, which is what its price is read from.
 	$cart    = WC()->cart;
 	$restore = array();
 	$wanted  = array();
+	$slots   = array();
 	$failed  = false;
-	foreach ( $counts as $key => $quantity ) {
+	foreach ( $picks as $slot => $key ) {
 		$variation  = $sizes[ $key ]['variation'];
 		$attributes = $variation->get_variation_attributes();
-		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes ) );
-		$line       = $existing ? $cart->get_cart_item( $existing ) : array();
-		$before     = isset( $line['quantity'] ) ? (int) $line['quantity'] : 0;
-		if ( $before > 0 ) {
-			// Never merge into, or shrink, a row the shopper already had.
+		$data       = array( 'molosoc_gift_slot' => $slot );
+		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes, $data ) );
+		if ( $existing ) {
+			// Never merge into a row the shopper already had.
 			$failed = true;
 			break;
 		}
 
-		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, $quantity, $variation->get_id(), $attributes );
+		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $variation->get_id(), $attributes, $data );
 		if ( ! $item_key ) {
 			$failed = true;
 			break;
 		}
-		$restore[ $item_key ] = $before;
-		$wanted[ $item_key ]  = $quantity;
+		$restore[ $item_key ] = 0;
+		$wanted[ $item_key ]  = 1;
+		$slots[ $item_key ]   = $slot;
 	}
 
-	if ( $failed ) {
-		foreach ( $restore as $item_key => $before ) {
-			if ( $before > 0 ) {
-				$cart->set_quantity( $item_key, $before );
-			} else {
-				$cart->remove_cart_item( $item_key );
+	// The link must cover exactly the rows chosen on this form. A cart that
+	// also holds anything else (another product added in another tab, an
+	// ordinary pair) is never emptied behind the shopper's back: the add is
+	// rolled back like a failed one and they choose on the product page
+	// instead.
+	if ( ! $failed ) {
+		foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
+			if ( ! isset( $wanted[ $item_key ] ) ) {
+				$failed = true;
+				break;
 			}
-		}
-		wp_safe_redirect( molosoc_product_url( $lang ) );
-		exit;
-	}
-
-	// The free rate must cover exactly the rows chosen on this form. A cart
-	// that also holds anything else (another product added in another tab,
-	// another size of the gift) is never emptied behind the shopper's back:
-	// the add is rolled back like a failed one and they choose on the product
-	// page instead. Rows of the chosen sizes are pinned to the submitted
-	// quantities, so a pre-loaded row or a repeated submit can never
-	// accumulate more than MOLOSOC_GIFT_MAX_PAIRS pairs at shipping 0.
-	foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
-		if ( ! isset( $wanted[ $item_key ] ) ) {
-			$failed = true;
-			break;
 		}
 	}
 	if ( $failed ) {
 		foreach ( $restore as $item_key => $before ) {
-			if ( $before > 0 ) {
-				$cart->set_quantity( $item_key, $before );
-			} else {
-				$cart->remove_cart_item( $item_key );
-			}
+			$cart->remove_cart_item( $item_key );
 		}
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
@@ -510,7 +609,7 @@ function molosoc_gift_add_to_cart_action() {
 		$cart->set_quantity( $item_key, $quantity );
 	}
 
-	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted );
+	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted, $slots );
 
 	wp_safe_redirect( molosoc_gift_checkout_url( $lang ) );
 	exit;
@@ -525,9 +624,10 @@ add_action( 'wp_loaded', 'molosoc_gift_add_to_cart_action', 20 );
  * session blindly. Copying the address is the same data the customer just
  * saw on their own Thank You page; setters that reject a value (e.g. an
  * invalid email) are simply skipped. 'lines' (cart item key => quantity) is
- * the exact set of rows the form added; see molosoc_gift_cart_link().
+ * the exact set of rows the form added and 'slots' (cart item key => overall
+ * pair number) the position each was added for; see molosoc_gift_cart_link().
  */
-function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
+function molosoc_gift_link_cart_to_order( $parent, $lang, $lines, $slots ) {
 	if ( ! WC()->session ) {
 		return;
 	}
@@ -538,6 +638,7 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 			'key'      => $parent->get_order_key(),
 			'lang'     => $lang,
 			'lines'    => $lines,
+			'slots'    => $slots,
 			'time'     => time(),
 		)
 	);
@@ -570,10 +671,12 @@ function molosoc_gift_link_cart_to_order( $parent, $lang, $lines ) {
 /**
  * The original order the current cart is linked to, re-validated: the
  * session link must name an order whose key still matches and that can
- * still ship together, and the cart must hold exactly the rows and quantities
- * the gift form added (so the free rate never covers anything else, e.g. a
- * pre-loaded or later-increased quantity). Null otherwise.
- * Returns array( 'order' => WC_Order, 'lang' => 'cz'|'en' ).
+ * still be offered the add-on (molosoc_gift_offer()), and the cart must hold
+ * exactly the rows the gift form added, one per pair with its pair number
+ * (so neither the free rate nor the offer prices ever cover anything else,
+ * e.g. a pre-loaded, later-increased or fourth pair). Null otherwise.
+ * Returns array( 'order' => WC_Order, 'lang' => 'cz'|'en', 'prices' => cart
+ * item key => unit price, 'offer' => molosoc_gift_offer() ).
  */
 function molosoc_gift_cart_link() {
 	if ( ! function_exists( 'WC' ) || ! WC()->session || ! WC()->cart ) {
@@ -584,30 +687,72 @@ function molosoc_gift_cart_link() {
 		return null;
 	}
 	$parent = wc_get_order( absint( $link['order_id'] ) );
-	if ( ! $parent instanceof WC_Order
-		|| ! hash_equals( $parent->get_order_key(), (string) $link['key'] )
-		|| ! molosoc_gift_can_ship_with( $parent )
-	) {
+	if ( ! $parent instanceof WC_Order || ! hash_equals( $parent->get_order_key(), (string) $link['key'] ) ) {
+		return null;
+	}
+	// Still entitled to an offer (status, window, no add-on yet, one or two
+	// original pairs) and within what that offer allows.
+	$offer = molosoc_gift_offer( $parent );
+	if ( ! $offer ) {
 		return null;
 	}
 	$lines = ( isset( $link['lines'] ) && is_array( $link['lines'] ) ) ? $link['lines'] : array();
+	$slots = ( isset( $link['slots'] ) && is_array( $link['slots'] ) ) ? $link['slots'] : array();
 	$items = WC()->cart->get_cart();
-	if ( empty( $items ) || empty( $lines ) || count( $items ) !== count( $lines ) || array_sum( $lines ) > MOLOSOC_GIFT_MAX_PAIRS ) {
+	if ( empty( $items ) || empty( $lines ) || count( $items ) !== count( $lines ) || count( $slots ) !== count( $lines )
+		|| array_sum( $lines ) > $offer['max']
+	) {
 		return null;
 	}
+	// The pairs must be exactly the next ones in line (original + 1, +2, ...),
+	// each once, so a fourth pair — or a repeated slot — can never be priced.
+	$taken = array_map( 'intval', array_values( $slots ) );
+	sort( $taken );
+	if ( $taken !== array_slice( $offer['slots'], 0, count( $taken ) ) ) {
+		return null;
+	}
+	$prices = array();
 	foreach ( $items as $key => $item ) {
-		if ( ! isset( $lines[ $key ], $item['product_id'], $item['quantity'] )
+		if ( ! isset( $lines[ $key ], $slots[ $key ], $item['product_id'], $item['quantity'], $item['molosoc_gift_slot'] )
 			|| MOLOSOC_PRODUCT_ID !== (int) $item['product_id']
-			|| (int) $lines[ $key ] !== (int) $item['quantity']
+			|| 1 !== (int) $lines[ $key ]
+			|| 1 !== (int) $item['quantity']
+			|| (int) $slots[ $key ] !== (int) $item['molosoc_gift_slot']
 		) {
 			return null;
 		}
+		$prices[ $key ] = $offer['prices'][ (int) $slots[ $key ] ];
 	}
 	return array(
-		'order' => $parent,
-		'lang'  => ( isset( $link['lang'] ) && 'cz' === $link['lang'] ) ? 'cz' : 'en',
+		'order'  => $parent,
+		'lang'   => ( isset( $link['lang'] ) && 'cz' === $link['lang'] ) ? 'cz' : 'en',
+		'prices' => $prices, // cart item key => unit price, from the server-side schedule
+		'offer'  => $offer,
 	);
 }
+
+/**
+ * The offer prices. While molosoc_gift_cart_link() holds, each gift row is
+ * priced from its overall pair number; the product itself is never touched,
+ * so without a valid link (or on any other cart) every row stays at the
+ * normal price. Runs at the end of the totals pass so nothing else can
+ * overwrite it, for the classic and the Store API cart alike.
+ */
+function molosoc_gift_apply_prices( $cart ) {
+	if ( ! is_object( $cart ) ) {
+		return;
+	}
+	$link = molosoc_gift_cart_link();
+	if ( ! $link ) {
+		return;
+	}
+	foreach ( $cart->get_cart() as $key => $item ) {
+		if ( isset( $link['prices'][ $key ], $item['data'] ) ) {
+			$item['data']->set_price( $link['prices'][ $key ] );
+		}
+	}
+}
+add_action( 'woocommerce_before_calculate_totals', 'molosoc_gift_apply_prices', 100, 1 );
 
 /**
  * While the cart is linked to an original order, the only shipping option
@@ -670,15 +815,41 @@ function molosoc_gift_stamp_new_order( $order ) {
 		// A draft order (block checkout) is updated repeatedly: a stamp from an
 		// earlier, valid state must not outlive the link, or a normal paid-shipping
 		// order would later be treated as a gift add-on.
-		if ( $order->get_meta( MOLOSOC_GIFT_PARENT_META ) ) {
-			$order->delete_meta_data( MOLOSOC_GIFT_PARENT_META );
+		foreach ( array( '', '_original_qty', '_pricing' ) as $suffix ) {
+			if ( '' !== (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . $suffix ) ) {
+				$order->delete_meta_data( MOLOSOC_GIFT_PARENT_META . $suffix );
+			}
 		}
 		return;
 	}
 	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META, $link['order']->get_id() );
+	// Audit trail for the offer prices: how many pairs the original order held
+	// and the unit price granted to each overall pair number.
+	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_original_qty', $link['offer']['original'] );
+	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_pricing', wp_json_encode( $link['offer']['prices'] ) );
 }
 add_action( 'woocommerce_checkout_create_order', 'molosoc_gift_stamp_new_order', 10, 1 );
 add_action( 'woocommerce_store_api_checkout_update_order_meta', 'molosoc_gift_stamp_new_order', 10, 1 );
+
+/**
+ * Record on each gift order line which overall pair it is, the unit price it
+ * was sold at and the normal price it would otherwise have had, so the
+ * offer price stays auditable from the order alone. Only for rows the valid
+ * link priced; classic checkout and the Store API both create their lines
+ * through this action.
+ */
+function molosoc_gift_stamp_order_line( $item, $cart_item_key, $values, $order = null ) {
+	$link = molosoc_gift_cart_link();
+	if ( ! $link || ! isset( $link['prices'][ $cart_item_key ] ) || ! is_object( $item ) ) {
+		return;
+	}
+	$item->add_meta_data( '_molosoc_gift_pair_number', (int) $values['molosoc_gift_slot'], true );
+	$item->add_meta_data( '_molosoc_gift_unit_price', (string) $link['prices'][ $cart_item_key ], true );
+	if ( isset( $values['data'] ) && is_object( $values['data'] ) ) {
+		$item->add_meta_data( '_molosoc_gift_list_price', (string) $values['data']->get_regular_price(), true );
+	}
+}
+add_action( 'woocommerce_checkout_create_order_line_item', 'molosoc_gift_stamp_order_line', 10, 4 );
 
 /**
  * Once the new order's payment is confirmed: a private order note on BOTH
@@ -709,7 +880,7 @@ function molosoc_gift_note_orders( $order ) {
 	if ( ! molosoc_gift_can_ship_with( $parent ) ) {
 		$order->add_order_note(
 			sprintf(
-				'POZOR: původní objednávka č. %1$s už nejde odeslat společně (odeslána, mimo časové okno nebo už má jiný doplněk) — vyřiďte ručně, poštovné 0 bylo účtováno. / ATTENTION: original order #%1$s can no longer ship together (dispatched, outside the window or already has another add-on) — handle manually, shipping 0 was charged.',
+				'POZOR: původní objednávka č. %1$s už nejde odeslat společně (odeslána, mimo časové okno nebo už má jiný doplněk) — vyřiďte ručně, poštovné 0 a zvýhodněné ceny byly účtovány. / ATTENTION: original order #%1$s can no longer ship together (dispatched, outside the window or already has another add-on) — handle manually, shipping 0 and the offer prices were charged.',
 				$parent->get_order_number()
 			)
 		);
@@ -725,7 +896,7 @@ function molosoc_gift_note_orders( $order ) {
 		sprintf(
 			'Dárkový doplněk k objednávce č. %1$s — odeslat společně s ní, poštovné 0 (zákazník ho zaplatil v objednávce č. %1$s). / Gift add-on to order #%1$s — ship together with it, shipping 0 (paid on #%1$s).',
 			$parent->get_order_number()
-		)
+		) . molosoc_gift_pricing_note( $order )
 	);
 	$parent->add_order_note(
 		sprintf(
@@ -736,6 +907,26 @@ function molosoc_gift_note_orders( $order ) {
 	);
 	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_noted', 'yes' );
 	$order->save();
+}
+
+/**
+ * " Offer prices: ..." suffix for the add-on order's private note, from the
+ * meta stamped at checkout; empty when the order carries none.
+ */
+function molosoc_gift_pricing_note( $order ) {
+	$pricing = json_decode( (string) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_pricing' ), true );
+	if ( ! is_array( $pricing ) || ! $pricing ) {
+		return '';
+	}
+	$parts = array();
+	foreach ( $pricing as $slot => $price ) {
+		$parts[] = sprintf( '#%d = %s', (int) $slot, $price );
+	}
+	return sprintf(
+		' Cena párů podle původní objednávky (%1$d ks): pár %2$s. / Pair prices by original order (%1$d pairs): pair %2$s.',
+		(int) $order->get_meta( MOLOSOC_GIFT_PARENT_META . '_original_qty' ),
+		implode( ', ', $parts )
+	);
 }
 
 function molosoc_gift_note_orders_by_id( $order_id ) {
