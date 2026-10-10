@@ -633,3 +633,14 @@ def test_vanished_source_shows_zero_engaged_sessions():
                              "events_paid": None}, {"source_medium": prior})
     row = [ln for ln in d.render(report).splitlines() if ln.startswith("| facebook / paid |")][0]
     assert row.count("n/a") == 0 and "| 0 | 20 | -20 (-100%) |" in row
+
+
+def test_empty_prior_funnel_query_is_zero_not_na():
+    report = _funnel_report({"totals": None, "events": {"view_item": {"users": 10.0}},
+                             "events_paid": None}, {"events": {}})
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| view_item |")][0]
+    assert "| 10 | 0 |" in row and "+10" in row
+    # an unavailable prior query (None) still renders n/a
+    report["ga4_prior"]["events"] = None
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| view_item |")][0]
+    assert "| 10 | n/a |" in row

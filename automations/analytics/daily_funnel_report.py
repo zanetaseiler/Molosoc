@@ -591,6 +591,8 @@ def render(report):
             events = {s_: {"users": 0.0} for s_ in FUNNEL}
         add("| Stage | Users | Previous users | Change | Ratio to previous stage % | "
             "Previous ratio % | Change |\n|---|---:|---:|---:|---:|---:|---:|")
+        if prior_events == {}:  # prior query read OK with no funnel events: users are 0
+            prior_events = {s_: {"users": 0.0} for s_ in FUNNEL}
         prior_steps = {s_: (u, r_) for s_, u, r_ in funnel_steps(prior_events or {})}
         for stage, users, step in funnel_steps(events):
             pu, pr_ = prior_steps.get(stage, (None, None))
