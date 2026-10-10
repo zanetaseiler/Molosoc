@@ -382,8 +382,9 @@ def test_missing_ga4_date_withholds_funnel_aggregates():
             return [["fb / paid", "purchase", "3", "2"]]
         return []
     out = d.ga4_window(None, "1", D(2026, 10, 6), D(2026, 10, 7), report)
-    assert out["events"] == {} and out["events_paid"] is None
-    assert all(u is None for _, u, _ in d.funnel_steps(out["events"]))
+    assert out["events"] is None and out["events_paid"] is None
+    assert all(u is None for _, u, _ in d.funnel_steps(out["events"] or {}))
+    assert out["source_medium"] is None and out["landing"] is None
 
 
 def test_funnel_queries_use_the_report_event_list():
@@ -599,3 +600,36 @@ def test_paid_funnel_renders_when_overall_funnel_query_failed():
         {})
     out = d.render(report)
     assert "No GA4 funnel-event data" in out and "Paid / Meta funnel" in out
+
+
+def test_traffic_breakdowns_render_when_only_totals_query_failed():
+    sm = [{"source_medium": "facebook / paid", "sessions": 40.0, "engaged": 20.0,
+           "paid": True, "paid_sessions": 40.0}]
+    lp = [{"page": "/", "sessions": 40.0, "engagement_rate": 50.0, "avg_duration": 30.0}]
+    report = _funnel_report({"totals": None, "source_medium": sm, "landing": lp,
+                             "events": None, "events_paid": None}, {})
+    text = d.render(report)
+    assert "No GA4 session totals" in text
+    assert "| facebook / paid |" in text and "| / |" in text
+    assert "Paid / Meta sessions: **40**" in text
+
+
+def test_overall_funnel_shown_when_current_empty_but_prior_had_events():
+    report = _funnel_report({"totals": None, "events": {}, "events_paid": None},
+                            {"events": {"view_item": {"users": 10.0}}})
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| view_item |")][0]
+    assert "| 0 | 10 |" in row and "-10" in row
+    # an unavailable current query (None) still hides the table
+    report["ga4"]["events"] = None
+    assert "No GA4 funnel-event data" in d.render(report)
+
+
+def test_vanished_source_shows_zero_engaged_sessions():
+    cur = [{"source_medium": "google / organic", "sessions": 5.0, "engaged": 3.0,
+            "paid": False, "paid_sessions": 0.0}]
+    prior = [{"source_medium": "facebook / paid", "sessions": 40.0, "engaged": 20.0,
+              "paid": True, "paid_sessions": 40.0}]
+    report = _funnel_report({"totals": None, "source_medium": cur, "events": None,
+                             "events_paid": None}, {"source_medium": prior})
+    row = [ln for ln in d.render(report).splitlines() if ln.startswith("| facebook / paid |")][0]
+    assert row.count("n/a") == 0 and "| 0 | 20 | -20 (-100%) |" in row

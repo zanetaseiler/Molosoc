@@ -203,7 +203,7 @@ def ga4_window(client, property_id, start, end, report=None):
     s, e = start.isoformat(), end.isoformat()
     out = {"errors": [], "totals": None, "source_medium": None, "landing": None,
            "source_medium_truncated": False, "landing_truncated": False,
-           "events": {}, "events_paid": None, "events_paid_truncated": False}
+           "events": None, "events_paid": None, "events_paid_truncated": False}
 
     def run(name, dims, metrics, limit, events_only=False):
         try:
@@ -270,8 +270,9 @@ def ga4_window(client, property_id, start, end, report=None):
             out["errors"].append("funnel events by source/medium: row limit reached; "
                                  "paid funnel figures are incomplete and not reported")
     if out.get("days_missing"):
-        # Event counts for a window with absent GA4 dates are partial: never compare them.
-        out["events"], out["events_paid"] = {}, None
+        # Breakdowns and event counts for a window with absent GA4 dates are partial.
+        out["source_medium"], out["landing"] = None, None
+        out["events"], out["events_paid"] = None, None
     return out
 
 
@@ -517,19 +518,23 @@ def render(report):
         add(f"- **{name}**: {status}")
 
     add("\n## Traffic (GA4)")
-    if g is None or g.get("totals") is None:
+    if g is None:
         add("No GA4 session data for this window "
             "(unavailable, or genuinely zero sessions — see source status).")
     else:
-        t, tp = g["totals"], (gp or {}).get("totals") or {}
-        add("| Metric | This window | Previous | Change |\n|---|---:|---:|---:|")
-        for label, key, digits in (("Sessions", "sessions", 0),
-                                   ("Engaged sessions", "engagedSessions", 0),
-                                   ("Engagement rate %", "engagementRate", 1),
-                                   ("Avg session duration (s)", "averageSessionDuration", 0),
-                                   ("Bounce rate %", "bounceRate", 1)):
-            add(f"| {label} | {fmt(t.get(key), digits)} | {fmt(tp.get(key), digits)} | "
-                f"{fmt_change(t.get(key), tp.get(key), digits)} |")
+        if g.get("totals") is None:
+            add("No GA4 session totals for this window "
+                "(unavailable, incomplete, or genuinely zero sessions — see source status).")
+        else:
+            t, tp = g["totals"], (gp or {}).get("totals") or {}
+            add("| Metric | This window | Previous | Change |\n|---|---:|---:|---:|")
+            for label, key, digits in (("Sessions", "sessions", 0),
+                                       ("Engaged sessions", "engagedSessions", 0),
+                                       ("Engagement rate %", "engagementRate", 1),
+                                       ("Avg session duration (s)", "averageSessionDuration", 0),
+                                       ("Bounce rate %", "bounceRate", 1)):
+                add(f"| {label} | {fmt(t.get(key), digits)} | {fmt(tp.get(key), digits)} | "
+                    f"{fmt_change(t.get(key), tp.get(key), digits)} |")
         paid = paid_sessions(g)
         paid_prev = paid_sessions(gp)
         add(f"\nPaid / Meta sessions: **{fmt(paid)}** "
@@ -541,10 +546,10 @@ def render(report):
         lp_prior = _prior_rows(g, gp, "landing", "landing_truncated")
         add("\n### Source / medium (top 10)\n| Source / medium | Sessions | Previous | Change | "
             "Engaged | Previous | Change | Paid |\n|---|---:|---:|---:|---:|---:|---:|:-:|")
-        if g["source_medium"] is None:
+        if g.get("source_medium") is None:
             add("| unavailable | n/a | n/a | n/a | n/a | n/a | n/a | |")
-        sm_rows = _with_prior_only(g["source_medium"], sm_prior, "source_medium", 10,
-                                   {"sessions": 0.0, "engaged": None, "paid": False,
+        sm_rows = _with_prior_only(g.get("source_medium"), sm_prior, "source_medium", 10,
+                                   {"sessions": 0.0, "engaged": 0.0, "paid": False,
                                     "paid_sessions": 0.0})
         for r in sm_rows:
             q = _prior_value(sm_prior, "source_medium", r["source_medium"], "sessions")
@@ -561,9 +566,9 @@ def render(report):
         add("\n### Landing-page engagement (top 10 by sessions)\n"
             "| Landing page | Sessions | Previous | Change | Engagement % | Previous | Change | "
             "Avg duration (s) | Previous | Change |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
-        if g["landing"] is None:
+        if g.get("landing") is None:
             add("| unavailable | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |")
-        lp_rows = _with_prior_only(g["landing"], lp_prior, "page", 10,
+        lp_rows = _with_prior_only(g.get("landing"), lp_prior, "page", 10,
                                    {"sessions": 0.0, "engagement_rate": None,
                                     "avg_duration": None})
         for r in lp_rows:
@@ -577,13 +582,17 @@ def render(report):
                 f"{fmt_change(r['avg_duration'], q['avg_duration'])} |")
 
     add("\n## Funnel (GA4 observed users per event; not a cohort)")
-    if g is None or not g.get("events"):
+    events = (g or {}).get("events")
+    prior_events = (gp or {}).get("events")
+    if events is None or not (events or prior_events):
         add("No GA4 funnel-event data (unavailable or none recorded).")
     else:
+        if not events:  # query read OK but no funnel events: users are 0, not unknown
+            events = {s_: {"users": 0.0} for s_ in FUNNEL}
         add("| Stage | Users | Previous users | Change | Ratio to previous stage % | "
             "Previous ratio % | Change |\n|---|---:|---:|---:|---:|---:|---:|")
-        prior_steps = {s_: (u, r_) for s_, u, r_ in funnel_steps((gp or {}).get("events") or {})}
-        for stage, users, step in funnel_steps(g["events"]):
+        prior_steps = {s_: (u, r_) for s_, u, r_ in funnel_steps(prior_events or {})}
+        for stage, users, step in funnel_steps(events):
             pu, pr_ = prior_steps.get(stage, (None, None))
             add(f"| {stage} | {fmt(users)} | {fmt(pu)} | {fmt_change(users, pu)} | "
                 f"{fmt(step, 1)} | {fmt(pr_, 1)} | {fmt_change(step, pr_, 1)} |")
@@ -640,7 +649,7 @@ def render(report):
         if w["sources_paid"]:
             add("Paid-order attribution (utm_source / utm_medium; unrecognised values redacted): "
                 + ", ".join(f"{k} ×{v}" for k, v in sorted(w["sources_paid"].items())))
-        if g and g.get("events", {}).get("purchase") and w["paid"] != g["events"]["purchase"]["count"]:
+        if g and (g.get("events") or {}).get("purchase") and w["paid"] != g["events"]["purchase"]["count"]:
             add(f"\nNote: GA4 `purchase` events ({fmt(g['events']['purchase']['count'])}) differ "
                 f"from paid Woo orders ({w['paid']}); Woo is the source of truth for sales.")
 
