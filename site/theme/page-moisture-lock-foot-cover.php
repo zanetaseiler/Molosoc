@@ -134,13 +134,17 @@ get_header();
 
 	<!-- H2: Real results, no filters (Persona 2 — Ingrown-Nail/Hardened-
 	     Skin Sufferer). molosoc-product-proof-block wraps the heading +
-	     card grid together so a 3D render image can sit as a background
-	     behind the whole block, with a white transparent scrim over it for
-	     legibility — same absolute-media + __scrim layering convention as
-	     category.css's .molosoc-category-hero. -->
+	     card grid together so a photo can sit as a background behind the
+	     whole block, with a white transparent scrim over it for legibility
+	     — same absolute-media + __scrim layering convention as
+	     category.css's .molosoc-category-hero. The backdrop was the
+	     3d_turntable_04_topdown.png render until 2026-10-13 (Issue #132):
+	     now it is the same warm hero-bg-v2 photo the homepage hero, the
+	     Thank You page and Landing Page B use, per request, to warm the
+	     block up. -->
 	<div class="molosoc-product-proof-block">
 		<div class="molosoc-product-proof-block__media" aria-hidden="true">
-			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_turntable_04_topdown.png"
+			<img src="https://molosoc.com/wp-content/uploads/2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp"
 				alt="" loading="lazy" decoding="async">
 		</div>
 		<div class="molosoc-product-proof-block__scrim"></div>
