@@ -4,7 +4,8 @@
   total is computed and formatted server-side from WooCommerce's own prices
   (data-totals, keyed "<M count>-<L count>") — this file only looks one up.
   Without it the section still works as a plain form for one pair
-  (thank-you.css hides the 2- and 3-pair cards until .is-enhanced is set).
+  (thank-you.css hides the 2-pair card until .is-enhanced is set). An offer
+  of exactly one pair has no card row, only a hidden molosoc_gift_pairs input.
 */
 (function () {
   var root = document.querySelector('[data-molosoc-gift]');
