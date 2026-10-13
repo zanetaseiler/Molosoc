@@ -3,10 +3,13 @@
  * Template Name: Landing Page B — Hydratační návleky (rebuild of WP page 580)
  *
  * Auto-selected by WordPress for the Page with the slug
- * "hydratacni-navleky-landing-b" (page-{slug}.php convention, same as
+ * "hydratacni-navleky-molosoc" (page-{slug}.php convention — the page was
+ * created as "hydratacni-navleky-landing-b" and renamed in WordPress on
+ * 2026-10-13; this file and every is_page() gate in functions.php follow
+ * the slug, so a future rename needs the same repo change; same as
  * page-moisture-lock-foot-cover.php / page-cracked-heels.php). The Page
  * itself is created as a DRAFT via .github/workflows/create-wp-page.yml
- * (slug hydratacni-navleky-landing-b) — this file never publishes
+ * (slug hydratacni-navleky-landing-b at the time) — this file never publishes
  * anything and never touches the live CZ landing Page A (886,
  * /cz/navleky-na-nohy/hydratacni-navlek-na-nohy/) or the source page 580.
  *
@@ -37,7 +40,7 @@
  *
  * CSS/JS (assets/css/landing-b.css, assets/js/landing-b.js, Google Fonts
  * DM Serif Display / Nunito Sans / Open Sans as on page 580) are enqueued
- * conditionally in functions.php on is_page('hydratacni-navleky-landing-b').
+ * conditionally in functions.php on is_page('hydratacni-navleky-molosoc').
  * The same slug is noindexed and sitemap-excluded there (B is an
  * unpublished variant of A and must not compete with it if it is ever
  * published by mistake) and excluded from the global sticky "Koupit nyní"

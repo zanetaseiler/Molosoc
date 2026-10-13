@@ -1,5 +1,5 @@
 /*
-  Landing Page B (page-hydratacni-navleky-landing-b.php) — enqueued by
+  Landing Page B (page-hydratacni-navleky-molosoc.php) — enqueued by
   functions.php only on that page. Two small progressive enhancements:
 
   1. Story tabs ("Jak MOLOSOC vznikl"): page 580 used Thrive's tabs module.

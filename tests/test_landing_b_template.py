@@ -11,11 +11,11 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "site/theme"
-TEMPLATE = ROOT / "page-hydratacni-navleky-landing-b.php"
+TEMPLATE = ROOT / "page-hydratacni-navleky-molosoc.php"
 FUNCTIONS = ROOT / "functions.php"
 CSS = ROOT / "assets/css/landing-b.css"
 JS = ROOT / "assets/js/landing-b.js"
-SLUG = "hydratacni-navleky-landing-b"
+SLUG = "hydratacni-navleky-molosoc"
 
 # Section headings of page 580, in its own order (16 Thrive page sections;
 # the first two are the sticky header, which the theme header + sticky bar

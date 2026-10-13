@@ -113,8 +113,8 @@ function molosoc_sitemap_excluded_page_ids() {
 		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
 		// Landing Page B (Issue #122): an unpublished variant of the live CZ
 		// landing page, rebuilt from page 580 — never listed, see
-		// page-hydratacni-navleky-landing-b.php.
-		'hydratacni-navleky-landing-b',
+		// page-hydratacni-navleky-molosoc.php.
+		'hydratacni-navleky-molosoc',
 	);
 	foreach ( $slugs as $slug ) {
 		$page = get_page_by_path( $slug );
@@ -141,7 +141,7 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
 // (Issue #122 — a variant of the live CZ landing page that must never
 // compete with it in search, even if it is published for review).
 add_filter( 'wp_robots', function ( $robots ) {
-	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( array( 'thank-you', 'hydratacni-navleky-landing-b' ) ) ) {
+	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( array( 'thank-you', 'hydratacni-navleky-molosoc' ) ) ) {
 		$robots['noindex'] = true;
 	}
 	return $robots;
@@ -202,8 +202,8 @@ function molosoc_sticky_cta_hidden() {
 		|| ( function_exists( 'is_product' ) && is_product() )
 		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) )
 		// Landing Page B (Issue #122) ships its own sticky CTA bar, like the
-		// page-580 original it rebuilds — see page-hydratacni-navleky-landing-b.php.
-		|| is_page( 'hydratacni-navleky-landing-b' );
+		// page-580 original it rebuilds — see page-hydratacni-navleky-molosoc.php.
+		|| is_page( 'hydratacni-navleky-molosoc' );
 }
 
 function molosoc_enqueue_assets() {
@@ -395,10 +395,10 @@ function molosoc_enqueue_assets() {
 		// a gift" scroll-in text entrances were removed along with the
 		// hero's model spin, the proof photos' breathing zoom and every
 		// hover zoom (see product.css).
-	} elseif ( is_page( 'hydratacni-navleky-landing-b' ) ) {
+	} elseif ( is_page( 'hydratacni-navleky-molosoc' ) ) {
 		// Landing Page B (Issue #122): faithful rebuild of Thrive page 580 as
 		// an unpublished variant of the CZ landing page — template
-		// page-hydratacni-navleky-landing-b.php. Loads page 580's own body/
+		// page-hydratacni-navleky-molosoc.php. Loads page 580's own body/
 		// label faces (Nunito Sans / Open Sans; Nunito and the heading face
 		// Tenor Sans already come with the global molosoc-fonts handle —
 		// B's headings use the theme display font, not 580's DM Serif
