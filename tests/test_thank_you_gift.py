@@ -24,6 +24,7 @@ define( 'HOUR_IN_SECONDS', 3600 );
 $GLOBALS['hooks'] = array();
 $GLOBALS['added'] = array();
 $GLOBALS['notes'] = array();
+$GLOBALS['log'] = array();
 $GLOBALS['session'] = $GLOBALS['t']['session'];
 function add_action( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
 function add_filter( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
@@ -40,12 +41,16 @@ function wp_list_pluck( $list, $field ) { return array_map( function ( $i ) use 
 function checked( $a, $b ) { if ( (string) $a === (string) $b ) { echo " checked='checked'"; } }
 function home_url( $path = '' ) { return 'https://example.test' . $path; }
 function wc_nocache_headers() {}
-function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
+function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCOOKIE:" . json_encode( ! empty( $GLOBALS['cookie'] ) ) . "\nLOG:" . json_encode( $GLOBALS['log'] ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
 function is_wc_endpoint_url( $e ) { return 'order-received' === $e && ! empty( $GLOBALS['t']['endpoint'] ); }
 function pll_current_language() { return $GLOBALS['t']['request_lang']; }
-function pll_get_post( $id, $lang ) { return 'cz' === $lang ? 900 : $id; }
+function pll_get_post( $id, $lang ) { return 'cz' === $lang ? 900 : 360; }
 function get_post_status( $id ) { return 'publish'; }
-function get_permalink( $id ) { return 'https://example.test/cz/pokladna/'; }
+function get_permalink( $id ) { return 900 === $id ? 'https://example.test/cz/pokladna/' : 'https://example.test/checkout/'; }
+function wc_get_endpoint_url( $endpoint, $value, $base ) { return $base . $endpoint . '/' . $value . '/'; }
+function add_query_arg( $k, $v, $url ) { return $url . '?' . $k . '=' . $v; }
+function wc_get_logger() { return new class { function warning( $m, $c = array() ) { $GLOBALS['log'][] = $m; } }; }
+function molosoc_size_value_rank( $v ) { return in_array( strtolower( $v ), array( 'm' ), true ) ? 0 : ( in_array( strtolower( $v ), array( 'l' ), true ) ? 1 : 2 ); }
 function wc_get_page_id( $page ) { return 360; }
 function wc_get_checkout_url() { return 'https://example.test/checkout/'; }
 function molosoc_product_url( $lang = null ) { return 'https://example.test/product-' . $lang . '/'; }
@@ -164,6 +169,7 @@ class Molosoc_Test_Cart {
 	}
 }
 class Molosoc_Test_Session {
+	function set_customer_session_cookie( $set ) { $GLOBALS['cookie'] = $set; }
 	function get( $k ) { return isset( $GLOBALS['session'][ $k ] ) ? $GLOBALS['session'][ $k ] : null; }
 	function set( $k, $v ) { if ( null === $v ) { unset( $GLOBALS['session'][ $k ] ); } else { $GLOBALS['session'][ $k ] = $v; } }
 }
@@ -372,8 +378,16 @@ class Rendering(unittest.TestCase):
         # An order without a MOLOSOC pair has nothing to extend.
         self.assertEqual(run_php({"items": {"77": [[555, 1]]}}, RENDER, get=KEY), "")
 
-    def test_english_order_gets_english_section_even_on_a_czech_request(self):
-        out = run_php({"order_lang": "en"}, RENDER, get=KEY)
+    def test_section_follows_the_request_language_so_the_switcher_switches_the_page(self):
+        # An English order viewed through the Czech URL (after the language
+        # switch) renders Czech, and the form posts to the Czech checkout flow.
+        out = run_php({"order_lang": "en", "request_lang": "cz"}, RENDER, get=KEY)
+        self.assertIn('lang="cs"', out)
+        self.assertIn('name="molosoc_gift_lang" value="cz"', out)
+        self.assertIn('action="https://example.test/cz/"', out)
+
+    def test_english_request_gets_english_section(self):
+        out = run_php({"order_lang": "en", "request_lang": "en"}, RENDER, get=KEY)
         self.assertIn('lang="en"', out)
         self.assertIn("One more for someone you love?", out)
         self.assertIn("Add gift pairs", out)
@@ -383,25 +397,25 @@ class Rendering(unittest.TestCase):
         self.assertIn("+ 2 pairs<", out)
         self.assertIn("Add another for 209\xa0CZK — or two for 408\xa0CZK total.", out)
         self.assertIn("The second additional pair is 199\xa0CZK.", out)
-        out = run_php({"order_lang": "en", "items": {"77": [[364, 2]]}}, RENDER, get=KEY)
+        out = run_php({"order_lang": "en", "request_lang": "en", "items": {"77": [[364, 2]]}}, RENDER, get=KEY)
         self.assertIn("Add a third pair for 199\xa0CZK.", out)
 
     def test_no_offer_when_the_shop_currency_is_not_czk(self):
         self.assertEqual(run_php({"currency": "EUR"}, RENDER, get=KEY), "")
 
-    def test_hero_and_confirmation_text_follow_the_order_language(self):
+    def test_hero_and_confirmation_text_follow_the_request_then_the_order_language(self):
         body = """
         echo call_user_func( $GLOBALS['hooks']['woocommerce_endpoint_order-received_title'], 'Order received' ), '|';
         echo molosoc_thankyou_received_text( 'Thank you. Your order has been received.', wc_get_order( 77 ) );
         """
         self.assertEqual(run_php({}, body, get=KEY), "Děkujeme za vaši objednávku.|Vaši objednávku jsme přijali.")
         self.assertEqual(
-            run_php({"order_lang": "en"}, body, get=KEY),
+            run_php({"order_lang": "en", "request_lang": "en"}, body, get=KEY),
             "Thank you for your order.|Your order has been received.",
         )
-        # No saved order language: fall back to the request's language.
+        # A request with no language of its own falls back to the order's.
         self.assertTrue(
-            run_php({"order_lang": "", "request_lang": "en"}, body, get=KEY).startswith("Thank you for your order.")
+            run_php({"order_lang": "en", "request_lang": ""}, body, get=KEY).startswith("Thank you for your order.")
         )
 
     def test_gift_order_thank_you_names_the_order_it_ships_with(self):
@@ -409,7 +423,7 @@ class Rendering(unittest.TestCase):
         linked = {"meta": {"77": {"_molosoc_gift_parent_order": 88, "_molosoc_gift_parent_order_noted": "yes"}}}
         self.assertEqual(run_php(linked, body, get=KEY), "Vaši objednávku jsme přijali. Pošleme ji společně s objednávkou č. 88.")
         self.assertEqual(
-            run_php(dict(linked, order_lang="en"), body, get=KEY),
+            run_php(dict(linked, order_lang="en", request_lang="en"), body, get=KEY),
             "Your order has been received. It ships together with order #88.",
         )
 
@@ -517,15 +531,34 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
             self.assertIn("molosoc_gift_parent", section(out, "SESSION"))
 
-    def test_an_unrecognised_same_product_pair_falls_back_untouched(self):
-        # An ordinary pair (just bought, or added in another tab: a cart row cannot
-        # tell) is never discarded behind the shopper's back, even at or below the
-        # purchased count.
+    def test_the_pair_just_bought_does_not_send_a_valid_submission_to_the_product_page(self):
+        # Issue #125, production: the cart still held the pair(s) just paid for
+        # (or a leftover row) and the form fell back to the product page. A valid
+        # submission now sets those rows aside and reaches checkout with exactly
+        # the chosen gift pairs, linked, with the session cookie requested.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425": 3}, {"line425": 1}, {"line424": 1}, {"line425": 1, "line424s3": 1}):
+        for cart in ({"line425": 3}, {"line425": 1}, {"line424": 1}, {"line425": 1, "line424s3": 1}, {"line999": 2}, {"line999": 2, "line425": 3}):
             redirect, added, out = self.submit(post, {"cart": cart})
-            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
-            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, {}))
+            self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
+            link = section(out, "SESSION")["molosoc_gift_parent"]
+            self.assertEqual(link["lines"], {"line425s2": 1, "line424s3": 1}, cart)
+            self.assertEqual(section(out, "COOKIE"), True)
+
+    def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
+        # The fallback still never changes the cart: validation happens before
+        # any row is set aside.
+        cart = {"line425": 2}
+        for post in (dict(FORM, molosoc_gift_key="wc_order_wrong"), dict(FORM, molosoc_gift_size=["XL"]), dict(FORM, molosoc_gift_pairs="3")):
+            redirect, added, out = self.submit(post, {"cart": cart})
+            self.assertEqual(redirect, "https://example.test/product-cz/", post)
+            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, {}), post)
+
+    def test_every_fallback_is_logged_without_the_order_key(self):
+        _, _, out = self.submit(dict(FORM, molosoc_gift_size=["XL"]))
+        log = section(out, "LOG")
+        self.assertTrue(log and "size not available" in log[0])
+        self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
 
     def test_a_failed_replacement_add_restores_the_rows_it_would_have_dropped(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
@@ -556,23 +589,6 @@ class AddToCartHandler(unittest.TestCase):
         _, _, out = self.submit(post, {"cart": {"line425s2": 1}, "session": self.owned({"line425s2": 1}), "stock": {"424": 0}})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {"line425s2": 1})
-
-    def test_gift_rows_not_owned_by_the_submitted_order_fall_back_untouched(self):
-        # Marked rows with no session link, or a link for another order (a second
-        # tab), or a link that does not list the row, are never discarded.
-        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        cart = {"line425s2": 1}
-        for session in ({}, self.owned(cart, order_id=88), self.owned(cart, key="other"), self.owned({"line424s3": 1})):
-            redirect, added, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", session)
-            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, session))
-
-    def test_another_product_in_the_cart_falls_back_untouched(self):
-        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}):
-            redirect, added, out = self.submit(post, {"cart": cart})
-            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
-            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, {}))
 
     def test_english_form_goes_to_the_english_checkout(self):
         redirect, added, _ = self.submit(
@@ -655,6 +671,80 @@ class AddToCartHandler(unittest.TestCase):
         self.assertNotIn("billing_email", customer)
         self.assertEqual(customer["billing_first_name"], "Jana")
         self.assertEqual(customer["shipping_city"], "Praha")
+
+
+@unittest.skipUnless(shutil.which("php"), "php not installed")
+class LanguageSwitchAndFlow(unittest.TestCase):
+    """Issue #125 retest: the Thank You language switch must not open an empty
+    checkout, and the whole flow (form -> cart -> checkout -> priced cart)
+    is driven through the real handler and pricing hooks."""
+
+    SWITCH = "echo molosoc_thankyou_language_switcher_link( 'https://example.test/pokladna/', '%s' );"
+
+    def test_switch_keeps_the_order_received_context_in_both_directions(self):
+        self.assertEqual(
+            run_php({"request_lang": "en"}, self.SWITCH % "cz", get=KEY),
+            "https://example.test/cz/pokladna/order-received/77/?key=wc_order_key77",
+        )
+        self.assertEqual(
+            run_php({"request_lang": "cz"}, self.SWITCH % "en", get=KEY),
+            "https://example.test/checkout/order-received/77/?key=wc_order_key77",
+        )
+
+    def test_switch_is_untouched_off_the_thank_you_page_or_without_the_key(self):
+        self.assertEqual(run_php({"endpoint": False}, self.SWITCH % "cz", get=KEY), "https://example.test/pokladna/")
+        self.assertEqual(run_php({}, self.SWITCH % "cz", get={"key": "wc_order_wrong"}), "https://example.test/pokladna/")
+        self.assertEqual(run_php({}, self.SWITCH % "cz", get={}), "https://example.test/pokladna/")
+
+    def test_switch_never_leaks_the_key_into_another_orders_url(self):
+        out = run_php({"request_lang": "en"}, self.SWITCH % "cz", get=KEY)
+        self.assertNotIn("wc_order_key88", out)
+
+    def test_form_to_checkout_to_priced_cart_end_to_end(self):
+        # Post-purchase cart still holds the pair just bought. Submit +2 (M, L),
+        # then run the checkout-side hooks on the resulting cart/session.
+        body = """
+        $GLOBALS['t']['cart_after'] = null;
+        molosoc_gift_add_to_cart_action();
+        """
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"], molosoc_gift_lang="en")
+        out = run_php({"request_lang": "en", "cart": {"line425": 1}}, body, post=post)
+        self.assertIn("REDIRECT:https://example.test/checkout/\n", out)
+        self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
+        # Same session, next request: the cart is linked, priced 209 / 199 and
+        # ships free; the page never went through the product URL.
+        session = section(out, "SESSION")
+        check = """
+        $cart = WC()->cart;
+        molosoc_gift_apply_prices( $cart );
+        $prices = array();
+        foreach ( $cart->get_cart() as $key => $item ) { $prices[ $key ] = $item['data']->price; }
+        echo json_encode( $prices ), '|';
+        $rates = molosoc_gift_shipping_rates( array( 'flat' => 1, 'pickup' => 2 ), array() );
+        echo json_encode( array_keys( $rates ) ), '|', $rates['molosoc_gift_combined']->args[2];
+        """
+        out = run_php({"request_lang": "en", "cart": {"line425s2": 1, "line424s3": 1}, "session": session}, check)
+        prices, rates, cost = out.split("|")
+        self.assertEqual(json.loads(prices), {"line425s2": 209, "line424s3": 199})
+        self.assertEqual(json.loads(rates), ["molosoc_gift_combined"])
+        self.assertEqual(float(cost), 0)
+
+    def test_price_bypass_attempts_get_no_offer_price(self):
+        # A forged session link for another key, or a cart with a different row
+        # set, prices nothing at the offer price and keeps normal shipping.
+        check = """
+        $cart = WC()->cart;
+        molosoc_gift_apply_prices( $cart );
+        $prices = array();
+        foreach ( $cart->get_cart() as $key => $item ) { $prices[ $key ] = $item['data']->price; }
+        echo json_encode( $prices );
+        """
+        forged = {"molosoc_gift_parent": dict(LINK, key="wc_order_forged")}
+        out = run_php({"cart": LINKED_CART, "session": forged}, check)
+        self.assertEqual(json.loads(out), {"line425s2": 229, "line424s3": 229})
+        extra = {"line425s2": 1, "line424s3": 1, "line425s3": 1}
+        out = run_php({"cart": extra, "session": {"molosoc_gift_parent": LINK}}, check)
+        self.assertEqual(set(json.loads(out).values()), {229})
 
 
 @unittest.skipUnless(shutil.which("php"), "php not installed")
