@@ -83,15 +83,12 @@ if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
 }
 
 /**
- * The order the current order-received request is for, or null. Mirrors
- * WooCommerce's own thank-you check (order ID from the endpoint query var,
- * order key from ?key=) so nothing here ever renders for an order the
- * visitor doesn't hold the key to. Also null for an order that isn't a
- * successful purchase yet: failed/cancelled, or still pending payment (a
- * gateway return that hasn't been confirmed) — WooCommerce's own default
- * page is left completely untouched for those.
+ * The order the current order-received request is for, authenticated by the
+ * order key from ?key= (same check WooCommerce's own thank-you shortcode
+ * does), in ANY status, or null. Used where only the order's identity matters
+ * (language switcher links), including a pending gateway return.
  */
-function molosoc_thankyou_order() {
+function molosoc_thankyou_keyed_order() {
 	if ( ! function_exists( 'is_wc_endpoint_url' ) || ! is_wc_endpoint_url( 'order-received' ) ) {
 		return null;
 	}
@@ -106,7 +103,19 @@ function molosoc_thankyou_order() {
 	if ( ! $order instanceof WC_Order || ! hash_equals( $order->get_order_key(), $order_key ) ) {
 		return null;
 	}
-	if ( ! $order->has_status( array( 'processing', 'completed', 'on-hold' ) ) ) {
+	return $order;
+}
+
+/**
+ * The keyed order (see molosoc_thankyou_keyed_order()) only when it is a
+ * successful purchase: null for failed/cancelled, or still pending payment (a
+ * gateway return that hasn't been confirmed) — WooCommerce's own default
+ * page is left completely untouched for those. Gates everything that renders
+ * or acts on the gift offer.
+ */
+function molosoc_thankyou_order() {
+	$order = molosoc_thankyou_keyed_order();
+	if ( ! $order || ! $order->has_status( array( 'processing', 'completed', 'on-hold' ) ) ) {
 		return null;
 	}
 	return $order;
@@ -367,7 +376,7 @@ function molosoc_gift_order_received_url( $order, $lang ) {
  * cart-less checkout.
  */
 function molosoc_thankyou_language_switcher_link( $url, $slug ) {
-	$order = molosoc_thankyou_order();
+	$order = molosoc_thankyou_keyed_order();
 	if ( ! $order || ( 'cz' !== $slug && 'en' !== $slug ) ) {
 		return $url;
 	}

@@ -713,6 +713,17 @@ class LanguageSwitchAndFlow(unittest.TestCase):
             "https://example.test/checkout/order-received/77/?key=wc_order_key77",
         )
 
+    def test_switch_keeps_order_context_while_the_gateway_return_is_still_pending(self):
+        # Status gate applies to the gift offer, not to the switcher link.
+        self.assertEqual(
+            run_php({"request_lang": "en", "status": {"77": "pending"}}, self.SWITCH % "cz", get=KEY),
+            "https://example.test/cz/pokladna/order-received/77/?key=wc_order_key77",
+        )
+        self.assertEqual(
+            run_php({"request_lang": "en", "status": {"77": "pending"}}, "var_dump( molosoc_thankyou_order() );", get=KEY).strip(),
+            "NULL",
+        )
+
     def test_switch_is_untouched_off_the_thank_you_page_or_without_the_key(self):
         self.assertEqual(run_php({"endpoint": False}, self.SWITCH % "cz", get=KEY), "https://example.test/pokladna/")
         self.assertEqual(run_php({}, self.SWITCH % "cz", get={"key": "wc_order_wrong"}), "https://example.test/pokladna/")
