@@ -790,6 +790,27 @@ class AddToCartHandler(unittest.TestCase):
         props = json.loads(run_php({"cart": {}, "session": session}, restore))
         self.assertEqual((props["billing_first_name"], props["shipping_city"]), ("Eva", "Brno"))
 
+    def test_the_checkout_address_is_kept_even_when_the_cart_was_empty(self):
+        # Codex P2 on #148: no rows to park must not skip the address snapshot.
+        body = "WC()->customer->props = array( 'billing_first_name' => 'Eva', 'shipping_city' => 'Brno' ); " + self.BODY + " molosoc_gift_unpark_rows(); echo '|', json_encode( WC()->customer->props );"
+        out = run_php({"cart": {}}, body, post=dict(FORM))
+        park = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(park["rows"], [])
+        self.assertEqual(park["address"]["billing_first_name"], "Eva")
+        restore = "WC()->customer->props = array( 'billing_first_name' => 'Jana' ); molosoc_gift_unpark_rows(); echo json_encode( WC()->customer->props );"
+        session = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": [], "proof": [], "address": {"billing_first_name": "Eva"}}}
+        props = json.loads(run_php({"cart": {}, "session": session}, restore))
+        self.assertEqual(props["billing_first_name"], "Eva")
+
+    def test_a_retained_netted_row_merged_with_a_new_park_nets_the_new_units_by_the_new_proof(self):
+        # Codex P2 on #148: the netted flag must not exempt the new order's paid unit.
+        retained = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": [], "netted": True}}}}
+        session = dict(retained, **paid_record({"line425": 1}))
+        body = "$p = wc_get_order( 77 ); molosoc_gift_park_rows( $p, array( 'line425' => array( 'product_id' => 364, 'variation_id' => 425, 'quantity' => 1 ) ), array( 'line425' => array( 'variation' => 425, 'quantity' => 1 ) ) ); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        park = json.loads(run_php({"cart": {}, "session": session}, body))
+        self.assertEqual(park["rows"]["line425"]["quantity"], 1)
+        self.assertTrue(park["rows"]["line425"]["netted"])
+
     def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
         # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
         parked = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}

@@ -732,9 +732,12 @@ function molosoc_gift_paid_record_state( $order ) {
  * order's park is unparked first, in the submit handler).
  */
 function molosoc_gift_park_rows( $parent, $rows, $proof_now = null ) {
-	if ( ! $rows || ! function_exists( 'WC' ) || ! WC()->session ) {
+	if ( ! function_exists( 'WC' ) || ! WC()->session ) {
 		return;
 	}
+	// Even with no rows to set aside the park is written: it carries the checkout
+	// address the add-on replaces, which must come back afterwards.
+	$rows = (array) $rows;
 	$park = WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY );
 	$kept = ( is_array( $park ) && isset( $park['rows'] ) && is_array( $park['rows'] ) ) ? $park['rows'] : array();
 	// The park carries its own scope: the paid-row proof of ITS order (the session
@@ -758,6 +761,13 @@ function molosoc_gift_park_rows( $parent, $rows, $proof_now = null ) {
 			}
 		}
 		if ( isset( $kept[ $item_key ] ) ) {
+			// A retained remainder is already net of ITS proof: net the incoming units
+			// by this park's proof first, so the sum stays net and keeps its flag.
+			if ( ! empty( $kept[ $item_key ]['netted'] ) && isset( $proof[ $item_key ]['variation'], $proof[ $item_key ]['quantity'] )
+				&& (int) $proof[ $item_key ]['variation'] === ( isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0 )
+			) {
+				$quantity = max( 0, $quantity - (int) $proof[ $item_key ]['quantity'] );
+			}
 			$kept[ $item_key ]['quantity'] = (int) $kept[ $item_key ]['quantity'] + $quantity;
 			continue;
 		}
@@ -854,6 +864,9 @@ function molosoc_gift_unpark_rows() {
 	// Forget first: nothing below may run twice for the same rows.
 	WC()->session->set( MOLOSOC_GIFT_PARKED_SESSION_KEY, null );
 	if ( ! is_array( $park ) || empty( $park['rows'] ) || ! is_array( $park['rows'] ) ) {
+		if ( is_array( $park ) && isset( $park['address'] ) ) {
+			molosoc_gift_restore_customer_address( $park['address'] );
+		}
 		return 0;
 	}
 	// The proof stored with the park wins: the session record may since belong to another order.
