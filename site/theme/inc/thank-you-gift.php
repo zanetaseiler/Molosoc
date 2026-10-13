@@ -620,8 +620,12 @@ function molosoc_gift_remember_paid_rows( $order ) {
 	}
 	$rows = array();
 	$gift = false;
+	// Gift-marked rows are the add-on's own only while the cart is a valid linked
+	// gift checkout; a stale marker on a row bought in a normal (mixed) checkout is
+	// a paid pair like any other and must be recorded as such.
+	$linked = null !== molosoc_gift_cart_link();
 	foreach ( WC()->cart->get_cart() as $item_key => $item ) {
-		if ( isset( $item['molosoc_gift_slot'] ) ) {
+		if ( $linked && isset( $item['molosoc_gift_slot'] ) ) {
 			$gift = true;
 			continue;
 		}
@@ -633,7 +637,7 @@ function molosoc_gift_remember_paid_rows( $order ) {
 			'quantity'  => isset( $item['quantity'] ) ? (int) $item['quantity'] : 0,
 		);
 	}
-	if ( $gift && ! $rows ) {
+	if ( $linked && $gift && ! $rows ) {
 		// The gift add-on checkout consumed no paid pair: it must not overwrite the
 		// record of the original order that the parked rows are judged by.
 		return;

@@ -669,11 +669,11 @@ class AddToCartHandler(unittest.TestCase):
     def test_the_addon_checkout_does_not_overwrite_the_paid_row_record(self):
         # Codex P1 on #148: the add-on order runs the same hook with a gift-only cart.
         body = """
-        WC()->cart->items = array( 'line425s2' => 1 );
+        WC()->cart->items = array( 'line425s2' => 1, 'line424s3' => 1 );
         molosoc_gift_remember_paid_rows( 88 );
         echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) );
         """
-        self.assertEqual(json.loads(run_php({"session": paid_record({"line425": 1})}, body)), paid_record({"line425": 1})["molosoc_gift_paid_rows"])
+        self.assertEqual(json.loads(run_php({"session": dict(paid_record({"line425": 1}), molosoc_gift_parent=LINK)}, body)), paid_record({"line425": 1})["molosoc_gift_paid_rows"])
         # So the original paid pair is still not restored on the add-on Thank You page.
         parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}}}}
         addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
@@ -830,7 +830,7 @@ class AddToCartHandler(unittest.TestCase):
 
     def test_order_creation_records_the_rows_and_a_later_add_voids_the_record(self):
         body = """
-        WC()->cart->items = array( 'line425' => 1, 'line999' => 2, 'line425s2' => 1 );
+        WC()->cart->items = array( 'line425' => 1, 'line999' => 2 );
         molosoc_gift_remember_paid_rows( 77 );
         echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) ), '|';
         molosoc_gift_void_paid_rows_on_add( 'k', 364, 1, 424, array(), array( 'molosoc_gift_slot' => 2 ) );
@@ -846,6 +846,16 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(after_add, "true")
         body = "WC()->cart->items = array( 'line425' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line425', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
         self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "true")
+
+    def test_a_gift_marked_row_bought_in_a_normal_checkout_is_recorded_as_paid(self):
+        # Codex P2 on #148: with no valid gift link the marker is stale, the row is a paid pair.
+        body = """
+        WC()->cart->items = array( 'line425' => 1, 'line425s2' => 1 );
+        molosoc_gift_remember_paid_rows( 77 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) );
+        """
+        rows = json.loads(run_php({}, body))["rows"]
+        self.assertEqual(rows, {"line425": {"variation": 425, "quantity": 1}, "line425s2": {"variation": 425, "quantity": 1}})
 
     def test_a_failed_submit_with_a_paid_row_and_an_own_stale_row_restores_both(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
