@@ -460,7 +460,9 @@
      zone grayish. */
   /* Issue #139: eased a touch (was sepia .22 / saturate 1.15) — still
      warm, no longer beige. */
-  filter: sepia(0.17) saturate(1.12) brightness(1.02);
+  /* Issue #141: "very red" — sepia/saturation cut further (was .17 /
+     1.12) so the photo reads natural and only slightly warm. */
+  filter: sepia(0.07) saturate(1.04) brightness(1.02);
 }
 
 /* Continuous "breathing" zoom (100% <-> 106%), not a one-time reveal — a
@@ -524,12 +526,15 @@
   background:
     linear-gradient(
       180deg,
-      rgba(70, 45, 25, 0.03) 0%,
-      rgba(70, 45, 25, 0.08) 40%,
-      rgba(70, 45, 25, 0.34) 65%,
-      rgba(70, 45, 25, 0.52) 100%
+      rgba(54, 42, 33, 0.03) 0%,
+      rgba(54, 42, 33, 0.08) 40%,
+      rgba(54, 42, 33, 0.34) 65%,
+      rgba(54, 42, 33, 0.52) 100%
     ),
-    rgba(227, 196, 168, 0.14);
+    /* Issue #141: scrim base and veil moved from red-brown / peach to a
+       neutral-warm brown / light linen (same alphas at the bottom, veil
+       .14 -> .08) to take out the red cast. */
+    rgba(226, 208, 190, 0.08);
 }
 
 .molosoc-hero__content {
