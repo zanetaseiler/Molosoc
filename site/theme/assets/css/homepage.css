@@ -565,6 +565,15 @@
   font-size: var(--text-body-l);
 }
 
+/* Readability (Issue #143): a very soft, diffuse shadow on the hero
+   headline and lede so they hold up over the photo. Scoped to this block
+   only; shared by the CZ and EN markup. Typography, colour and layout are
+   untouched. */
+.molosoc-hero__content h1,
+.molosoc-hero__content p {
+  text-shadow: 0 1px 12px rgba(12, 17, 21, 0.22), 0 0 2px rgba(12, 17, 21, 0.12);
+}
+
 .molosoc-hero__scroll-cue {
   position: absolute;
   bottom: var(--space-m);
