@@ -136,7 +136,9 @@ class Molosoc_Test_Cart {
 	function find_product_in_cart( $id ) { return isset( $this->items[ $id ] ) ? $id : ''; }
 	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ] ) : array(); }
 	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
-	function remove_cart_item( $key ) { unset( $this->items[ $key ] ); }
+	public $removed = array();
+	function remove_cart_item( $key ) { if ( isset( $this->items[ $key ] ) ) { $this->removed[ $key ] = $this->items[ $key ]; } unset( $this->items[ $key ] ); }
+	function restore_cart_item( $key ) { if ( isset( $this->removed[ $key ] ) ) { $this->items[ $key ] = $this->removed[ $key ]; unset( $this->removed[ $key ] ); } }
 	function get_cart() {
 		$out = array();
 		foreach ( $this->items as $key => $qty ) {
@@ -148,6 +150,10 @@ class Molosoc_Test_Cart {
 	}
 	function add_to_cart( $product_id, $qty, $variation_id, $attrs, $data = array() ) {
 		if ( $variation_id === $GLOBALS['t']['fail_variation'] ) { return false; }
+		// Like WooCommerce, the stock check counts what the cart already holds.
+		$key = $this->generate_cart_id( $product_id, $variation_id, $attrs, $data );
+		$stock = $GLOBALS['t']['stock'];
+		if ( isset( $stock[ $variation_id ] ) && ( isset( $this->items[ $key ] ) ? $this->items[ $key ] : 0 ) + $qty > $stock[ $variation_id ] ) { return false; }
 		$GLOBALS['added'][] = array( $product_id, $qty, $variation_id, $attrs, $data );
 		$key = $this->generate_cart_id( $product_id, $variation_id, $attrs, $data );
 		$this->products[ $key ] = new Molosoc_Test_Product();
@@ -189,6 +195,7 @@ DEFAULT = {
     "currency": "CZK",
     "items": {"77": [[364, 1]], "88": [[364, 2], [364, 1]]},
     "fail_variation": 0,
+    "stock": {},
     "session": {},
     "email": "jana@example.test",
 }
@@ -520,6 +527,18 @@ class AddToCartHandler(unittest.TestCase):
             self.assertIn("REDIRECT:https://example.test/product-cz/", out, cart)
             self.assertEqual(section(out, "CART"), cart, cart)
             self.assertEqual(section(out, "SESSION"), {}, cart)
+
+    def test_replacing_a_stale_row_is_not_refused_by_the_stock_check(self):
+        # Only one unit left of M: the earlier submit's row is replaced, not
+        # counted against the new add. Two of the same size need two in stock.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        redirect, _, out = self.submit(post, {"cart": {"line425s2": 1}, "stock": {"425": 1}})
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
+        # A failed stock-checked add still leaves the cart as it was.
+        _, _, out = self.submit(post, {"cart": {"line425s2": 1}, "stock": {"424": 0}})
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertEqual(section(out, "CART"), {"line425s2": 1})
 
     def test_another_product_in_the_cart_falls_back_untouched(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])

@@ -571,41 +571,36 @@ function molosoc_gift_add_to_cart_action() {
 	// another product or an ordinary pair (a cart row cannot show whether it
 	// was just bought or added in another tab), is never touched: the add is
 	// refused and the shopper chooses on the product page.
-	// Nothing is removed until every chosen pair has been added, so a failed
-	// add leaves the cart exactly as it was.
+	// Those rows are taken out of the cart before anything is added, because
+	// WooCommerce's stock check counts what the cart already holds (replacing a
+	// row when only one unit is left would otherwise be refused). They are kept
+	// in the removed-items list, so a failed add puts them back exactly as they
+	// were.
 	$stale = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
 		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] || ! isset( $item['molosoc_gift_slot'] ) ) {
 			wp_safe_redirect( molosoc_product_url( $lang ) );
 			exit;
 		}
-		$stale[ $item_key ] = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		$stale[] = $item_key;
+	}
+	foreach ( $stale as $item_key ) {
+		$cart->remove_cart_item( $item_key );
 	}
 
-	$restore = array();
-	$wanted  = array();
-	$slots   = array();
-	$failed  = false;
+	$wanted = array();
+	$slots  = array();
+	$failed = false;
 	foreach ( $picks as $slot => $key ) {
 		$variation  = $sizes[ $key ]['variation'];
 		$attributes = $variation->get_variation_attributes();
-		$data       = array( 'molosoc_gift_slot' => $slot );
-		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes, $data ) );
-		// Our own earlier row for this very pair may be added over (its
-		// quantity is set back to 1 below); anything else is never merged into.
-		if ( $existing && ! isset( $stale[ $existing ] ) ) {
-			$failed = true;
-			break;
-		}
-
-		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $variation->get_id(), $attributes, $data );
+		$item_key   = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $variation->get_id(), $attributes, array( 'molosoc_gift_slot' => $slot ) );
 		if ( ! $item_key ) {
 			$failed = true;
 			break;
 		}
-		$restore[ $item_key ] = isset( $stale[ $item_key ] ) ? $stale[ $item_key ] : 0;
-		$wanted[ $item_key ]  = 1;
-		$slots[ $item_key ]   = $slot;
+		$wanted[ $item_key ] = 1;
+		$slots[ $item_key ]  = $slot;
 	}
 
 	// The link must cover exactly the rows chosen on this form. A cart that
@@ -615,30 +610,21 @@ function molosoc_gift_add_to_cart_action() {
 	// instead.
 	if ( ! $failed ) {
 		foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
-			if ( ! isset( $wanted[ $item_key ] ) && ! isset( $stale[ $item_key ] ) ) {
+			if ( ! isset( $wanted[ $item_key ] ) ) {
 				$failed = true;
 				break;
 			}
 		}
 	}
 	if ( $failed ) {
-		foreach ( $restore as $item_key => $before ) {
-			if ( $before > 0 ) {
-				$cart->set_quantity( $item_key, $before );
-			} else {
-				$cart->remove_cart_item( $item_key );
-			}
+		foreach ( array_keys( $wanted ) as $item_key ) {
+			$cart->remove_cart_item( $item_key );
+		}
+		foreach ( $stale as $item_key ) {
+			$cart->restore_cart_item( $item_key );
 		}
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
-	}
-	foreach ( $stale as $item_key => $before ) {
-		if ( ! isset( $wanted[ $item_key ] ) ) {
-			$cart->remove_cart_item( $item_key );
-		}
-	}
-	foreach ( $wanted as $item_key => $quantity ) {
-		$cart->set_quantity( $item_key, $quantity );
 	}
 
 	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted, $slots );
