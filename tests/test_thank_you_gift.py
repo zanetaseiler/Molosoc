@@ -502,12 +502,17 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(redirect, url)
             self.assertNotIn("product", redirect)
 
+    @staticmethod
+    def owned(cart, **over):
+        link = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "lines": {k: 1 for k in cart}, "slots": {k: 2 for k in cart}, "time": 1}
+        return {"molosoc_gift_parent": dict(link, **over)}
+
     def test_rows_left_from_an_earlier_submit_do_not_block_checkout(self):
         # Our own gift rows from an earlier submit are dropped; the new cart is
         # exactly the chosen pairs.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         for cart in ({"line425s2": 1}, {"line424s3": 1}, {"line425s2": 1, "line424s3": 1}):
-            redirect, _, out = self.submit(post, {"cart": cart})
+            redirect, _, out = self.submit(post, {"cart": cart, "session": self.owned(cart)})
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
             self.assertIn("molosoc_gift_parent", section(out, "SESSION"))
@@ -525,32 +530,42 @@ class AddToCartHandler(unittest.TestCase):
     def test_a_failed_replacement_add_restores_the_rows_it_would_have_dropped(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         for cart in ({"line425s2": 1}, {"line425s2": 1, "line424s3": 1}):
-            _, _, out = self.submit(post, {"cart": cart, "fail_variation": 424})
+            session = self.owned(cart)
+            _, _, out = self.submit(post, {"cart": cart, "session": session, "fail_variation": 424})
             self.assertIn("REDIRECT:https://example.test/product-cz/", out, cart)
             self.assertEqual(section(out, "CART"), cart, cart)
-            self.assertEqual(section(out, "SESSION"), {}, cart)
+            self.assertEqual(section(out, "SESSION"), session, cart)
 
     def test_a_failed_add_restores_a_stale_row_that_shares_a_key_with_its_replacement(self):
         # The stale slot-2 row has quantity 2; the replacement has the same key
         # (same size and pair number). A later pair fails: the original row, with
         # its original quantity, must come back, not the replacement.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        _, _, out = self.submit(post, {"cart": {"line425s2": 2}, "fail_variation": 424})
+        _, _, out = self.submit(post, {"cart": {"line425s2": 2}, "session": self.owned({"line425s2": 2}), "fail_variation": 424})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {"line425s2": 2})
-        self.assertEqual(section(out, "SESSION"), {})
 
     def test_replacing_a_stale_row_is_not_refused_by_the_stock_check(self):
         # Only one unit left of M: the earlier submit's row is replaced, not
         # counted against the new add. Two of the same size need two in stock.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        redirect, _, out = self.submit(post, {"cart": {"line425s2": 1}, "stock": {"425": 1}})
+        redirect, _, out = self.submit(post, {"cart": {"line425s2": 1}, "session": self.owned({"line425s2": 1}), "stock": {"425": 1}})
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
         self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
         # A failed stock-checked add still leaves the cart as it was.
-        _, _, out = self.submit(post, {"cart": {"line425s2": 1}, "stock": {"424": 0}})
+        _, _, out = self.submit(post, {"cart": {"line425s2": 1}, "session": self.owned({"line425s2": 1}), "stock": {"424": 0}})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {"line425s2": 1})
+
+    def test_gift_rows_not_owned_by_the_submitted_order_fall_back_untouched(self):
+        # Marked rows with no session link, or a link for another order (a second
+        # tab), or a link that does not list the row, are never discarded.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        cart = {"line425s2": 1}
+        for session in ({}, self.owned(cart, order_id=88), self.owned(cart, key="other"), self.owned({"line424s3": 1})):
+            redirect, added, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(redirect, "https://example.test/product-cz/", session)
+            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, session))
 
     def test_another_product_in_the_cart_falls_back_untouched(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])

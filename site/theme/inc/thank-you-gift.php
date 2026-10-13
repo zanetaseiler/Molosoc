@@ -567,7 +567,8 @@ function molosoc_gift_add_to_cart_action() {
 	// checkout, so after a gateway return (or a second try from the same
 	// page) it can still hold the pairs just bought or the rows an earlier
 	// submit of this form added. Only rows provably ours are dropped: a gift
-	// row from an earlier submit (it carries the slot marker). Any other row,
+	// row from an earlier submit of this same order (slot marker, listed in
+	// that order's session link). Any other row,
 	// another product or an ordinary pair (a cart row cannot show whether it
 	// was just bought or added in another tab), is never touched: the add is
 	// refused and the shopper chooses on the product page.
@@ -576,9 +577,18 @@ function molosoc_gift_add_to_cart_action() {
 	// row when only one unit is left would otherwise be refused). They are kept
 	// in the removed-items list, so a failed add puts them back exactly as they
 	// were.
+	// A marked row only counts as ours when the session link says this same
+	// original order added it: rows of a gift cart built for another order
+	// (a second tab) are never discarded behind the shopper's back either.
+	$prior = WC()->session ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
+	$owned = array();
+	if ( is_array( $prior ) && isset( $prior['order_id'], $prior['key'], $prior['lines'] ) && is_array( $prior['lines'] )
+		&& (int) $prior['order_id'] === $parent->get_id() && hash_equals( $parent->get_order_key(), (string) $prior['key'] ) ) {
+		$owned = $prior['lines'];
+	}
 	$stale = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
-		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] || ! isset( $item['molosoc_gift_slot'] ) ) {
+		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] || ! isset( $item['molosoc_gift_slot'] ) || ! isset( $owned[ $item_key ] ) ) {
 			wp_safe_redirect( molosoc_product_url( $lang ) );
 			exit;
 		}
