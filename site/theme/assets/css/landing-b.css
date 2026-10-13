@@ -10,7 +10,10 @@
   the brief is a faithful rebuild of the OLD design:
     - page surface      #faf7f2 (Thrive linear-gradient(#faf7f2,#faf7f2))
     - dark bands        #000
-    - headings          "DM Serif Display" 400 (hero 80px, sections 45px)
+    - headings          theme display face (tokens.css --font-display, Tenor
+                        Sans) 400, NOT page 580's DM Serif Display — Žaneta
+                        asked (2026-10-13) that B's headings match the rest of
+                        the site; sizes keep 580's scale (hero 80px, sections 45px)
     - eyebrows/labels   "Nunito Sans" 300, uppercase, wide tracking, #86878b
     - body              Nunito 300 rgba(64,53,42,.84) / "Open Sans" 300
     - buttons           #000 fill, #fff text, 2px tracking, uppercase, square
@@ -26,7 +29,7 @@
   --lpb-muted: #86878b;
   --lpb-line: rgba(12, 17, 21, 0.12);
   --lpb-white: #fff;
-  --lpb-serif: "DM Serif Display", Georgia, "Times New Roman", serif;
+  --lpb-display: var(--font-display, "Tenor Sans", "Helvetica Neue", Arial, sans-serif);
   --lpb-sans: "Nunito Sans", "Nunito", "Mulish", -apple-system, sans-serif;
   --lpb-body-font: "Nunito", "Open Sans", "Mulish", -apple-system, sans-serif;
   --lpb-max: 1080px;
@@ -41,7 +44,7 @@
 .lpb h1,
 .lpb h2,
 .lpb h3 {
-  font-family: var(--lpb-serif);
+  font-family: var(--lpb-display);
   font-weight: 400;
   color: var(--lpb-ink);
   line-height: 1.1;
@@ -168,7 +171,7 @@
 }
 
 .lpb-price__amount {
-  font-family: var(--lpb-serif);
+  font-family: var(--lpb-display);
   font-size: 2.6rem;
   color: var(--lpb-ink);
 }
@@ -233,8 +236,11 @@
   padding-top: clamp(1rem, 4vw, 3.5rem);
 }
 
+/* Tenor Sans runs ~15% wider than 580's DM Serif Display: at the old 5rem
+   cap "Namazané nohy." no longer fits the ~510px hero text column and the
+   two-line headline broke into four. 3.9rem keeps each line whole. */
 .lpb-hero__title {
-  font-size: clamp(2.6rem, 4.6vw + 0.5rem, 5rem);
+  font-size: clamp(2.6rem, 4.6vw + 0.5rem, 3.9rem);
   line-height: 1.05;
   margin: 0.5rem 0 1.25rem;
 }
@@ -694,7 +700,7 @@
 }
 
 .lpb-sticky__price {
-  font-family: "DM Serif Display", Georgia, serif;
+  font-family: var(--font-display, "Tenor Sans", "Helvetica Neue", Arial, sans-serif);
   font-size: 1.4rem;
   color: #000;
 }

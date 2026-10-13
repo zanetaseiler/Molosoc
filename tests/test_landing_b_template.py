@@ -130,7 +130,10 @@ class LandingBTemplate(unittest.TestCase):
         self.assertEqual(fn.count("} elseif ( is_page( '" + SLUG + "' ) ) {"), 1)
         self.assertIn("/assets/css/landing-b.css", fn)
         self.assertIn("/assets/js/landing-b.js", fn)
-        self.assertIn("family=DM+Serif+Display", fn)
+        # Headings use the theme display face (Tenor Sans, global
+        # molosoc-fonts handle); only B's own body/label faces are fetched.
+        self.assertIn("family=Nunito+Sans", fn)
+        self.assertNotIn("DM+Serif+Display", fn)
         # Sticky "Koupit nyní" pill hidden on B (own sticky bar).
         hidden = fn[fn.index("function molosoc_sticky_cta_hidden()"):]
         hidden = hidden[: hidden.index("}")]
