@@ -78,6 +78,9 @@ if ( ! defined( 'MOLOSOC_GIFT_WINDOW_HOURS' ) ) {
 if ( ! defined( 'MOLOSOC_GIFT_PARENT_META' ) ) {
 	define( 'MOLOSOC_GIFT_PARENT_META', '_molosoc_gift_parent_order' );
 }
+if ( ! defined( 'MOLOSOC_GIFT_SEEN_KEY' ) ) {
+	define( 'MOLOSOC_GIFT_SEEN_KEY', 'molosoc_gift_seen' );
+}
 if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
 	define( 'MOLOSOC_GIFT_SESSION_KEY', 'molosoc_gift_parent' );
 }
@@ -434,6 +437,43 @@ function molosoc_gift_log( $reason, $context = array() ) {
  * section's whole promise is "no additional shipping", so it is not shown
  * at all once that can't be kept.
  */
+/**
+ * Record which ordinary MOLOSOC rows the cart held when this order's Thank You
+ * page was shown. That moment is the only evidence a row came with the order
+ * (WooCommerce normally empties the cart here; a row still present was left
+ * over from the purchase), so the form later sets aside only those exact rows
+ * at their recorded quantity — a same-variation row added afterwards, in
+ * another tab, is not in this record and is kept.
+ */
+function molosoc_gift_record_seen_cart( $order ) {
+	if ( ! WC()->session || ! WC()->cart ) {
+		return;
+	}
+	$bought = array();
+	foreach ( $order->get_items() as $order_item ) {
+		if ( is_object( $order_item ) && method_exists( $order_item, 'get_variation_id' ) ) {
+			$bought[ (int) $order_item->get_variation_id() ] = true;
+		}
+	}
+	$rows = array();
+	foreach ( WC()->cart->get_cart() as $item_key => $item ) {
+		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'], $item['variation_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+			continue;
+		}
+		if ( isset( $bought[ (int) $item['variation_id'] ] ) ) {
+			$rows[ $item_key ] = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		}
+	}
+	WC()->session->set(
+		MOLOSOC_GIFT_SEEN_KEY,
+		array(
+			'order_id' => $order->get_id(),
+			'key'      => $order->get_order_key(),
+			'rows'     => $rows,
+		)
+	);
+}
+
 function molosoc_thankyou_gift_section( $order_id ) {
 	$order = molosoc_thankyou_order();
 	if ( ! $order || (int) $order_id !== (int) $order->get_id() ) {
@@ -449,6 +489,7 @@ function molosoc_thankyou_gift_section( $order_id ) {
 	if ( ! $sizes ) {
 		return;
 	}
+	molosoc_gift_record_seen_cart( $order );
 
 	$is_cz = 'cz' === molosoc_thankyou_lang( $order );
 	$max   = $offer['max'];
@@ -679,18 +720,17 @@ function molosoc_gift_add_to_cart_action() {
 	//  - a gift row: the session link names THIS order (id and key) and lists
 	//    the row's key with the same pair number — a gift row another order's
 	//    Thank You tab created, or a bare marker, proves nothing;
-	//  - an ordinary row: a MOLOSOC pair of a variation this order contains,
-	//    holding no more units than the order bought of it (so a larger or
-	//    unrelated cart is never taken for the order's own).
-	$bought = array();
-	foreach ( $parent->get_items() as $order_item ) {
-		if ( is_object( $order_item ) && method_exists( $order_item, 'get_variation_id' ) ) {
-			$variation_id            = (int) $order_item->get_variation_id();
-			$quantity                = method_exists( $order_item, 'get_quantity' ) ? (int) $order_item->get_quantity() : 1;
-			$bought[ $variation_id ] = ( isset( $bought[ $variation_id ] ) ? $bought[ $variation_id ] : 0 ) + $quantity;
-		}
-	}
-	$link     = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
+	//  - an ordinary row: it was already in the cart when THIS order's Thank
+	//    You page was shown (see molosoc_gift_record_seen_cart()) and still
+	//    holds the quantity recorded then — a row added since, even of the
+	//    same variation and quantity, proves nothing.
+	$seen    = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SEEN_KEY ) : null;
+	$seen_ok = is_array( $seen )
+		&& isset( $seen['order_id'], $seen['key'], $seen['rows'] )
+		&& (int) $seen['order_id'] === $parent->get_id()
+		&& hash_equals( $parent->get_order_key(), (string) $seen['key'] )
+		&& is_array( $seen['rows'] );
+	$link    = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
 	$link_ok  = is_array( $link )
 		&& isset( $link['order_id'], $link['key'] )
 		&& (int) $link['order_id'] === $parent->get_id()
@@ -714,11 +754,9 @@ function molosoc_gift_add_to_cart_action() {
 			}
 			continue;
 		}
-		$variation_id = (int) $item['variation_id'];
-		$quantity     = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
-		if ( isset( $bought[ $variation_id ] ) && $quantity >= 1 && $quantity <= $bought[ $variation_id ] ) {
-			$bought[ $variation_id ] -= $quantity;
-			$stale[ $item_key ]       = $item;
+		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		if ( $seen_ok && isset( $seen['rows'][ $item_key ] ) && $quantity >= 1 && (int) $seen['rows'][ $item_key ] === $quantity ) {
+			$stale[ $item_key ] = $item;
 		}
 	}
 	foreach ( array_keys( $stale ) as $item_key ) {

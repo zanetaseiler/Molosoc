@@ -354,6 +354,12 @@ class Rendering(unittest.TestCase):
         self.assertNotIn("229", out)
         self.assertNotIn("+ 3", out)
 
+    def test_page_view_records_only_the_bought_variations_rows_in_the_cart(self):
+        # The proof the form later relies on: what the cart held when shown.
+        out = run_php({"cart": {"line425": 1, "line424": 1, "line999": 2}}, RENDER + "\necho '|SEEN:' . json_encode( $GLOBALS['session'] );", get=KEY)
+        seen = json.loads(out.split("|SEEN:")[1])["molosoc_gift_seen"]
+        self.assertEqual(seen, {"order_id": 77, "key": "wc_order_key77", "rows": {"line425": 1}})
+
     def test_original_two_pairs_offers_exactly_one_more_at_199(self):
         out = run_php({"items": {"77": [[364, 1], [364, 1]]}}, RENDER, get=KEY)
         self.assertIn("Přidejte třetí pár za 199\xa0Kč.", out)
@@ -522,6 +528,11 @@ class AddToCartHandler(unittest.TestCase):
         link = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "lines": {k: 1 for k in cart}, "slots": {k: int(k[-1]) if "s" in k[4:] else 2 for k in cart}, "time": 1}
         return {"molosoc_gift_parent": dict(link, **over)}
 
+    @staticmethod
+    def seen(rows, **over):
+        # What the Thank You page recorded when it was shown for order #77.
+        return {"molosoc_gift_seen": dict({"order_id": 77, "key": "wc_order_key77", "rows": rows}, **over)}
+
     def test_rows_left_from_an_earlier_submit_do_not_block_checkout(self):
         # Our own gift rows from an earlier submit are dropped; the new cart is
         # exactly the chosen pairs.
@@ -539,7 +550,7 @@ class AddToCartHandler(unittest.TestCase):
         # the chosen gift pairs, linked, with the session cookie requested.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         for cart in ({"line425": 1}, {"line425s2": 1}, {"line425s2": 1, "line424s3": 1}):
-            redirect, added, out = self.submit(post, {"cart": cart, "session": self.owned(cart) if any("s" in k[4:] for k in cart) else {}})
+            redirect, added, out = self.submit(post, {"cart": cart, "session": self.owned(cart) if any("s" in k[4:] for k in cart) else self.seen({k: v for k, v in cart.items() if "s" not in k[4:]})})
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
             link = section(out, "SESSION")["molosoc_gift_parent"]
@@ -556,6 +567,16 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(redirect, "https://example.test/product-cz/", cart)
             self.assertEqual(section(out, "CART"), cart, cart)
             self.assertEqual(section(out, "SESSION"), {}, cart)
+
+    def test_same_variation_row_added_after_the_thank_you_page_was_shown_is_kept(self):
+        # Codex P1: an identical pair added later (another tab) was not in the
+        # cart when the page was shown, so it is the shopper's own — kept.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        cart = {"line425": 1}
+        for session in ({}, self.seen({}), self.seen({"line425": 2}), self.seen(cart, order_id=88), self.seen(cart, key="wc_order_other")):
+            redirect, _, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(redirect, "https://example.test/product-cz/", session)
+            self.assertEqual(section(out, "CART"), cart, session)
 
     def test_gift_rows_without_proof_of_ownership_are_kept(self):
         # Codex P1: a gift row from another order's tab (session link names
@@ -759,7 +780,7 @@ class LanguageSwitchAndFlow(unittest.TestCase):
         molosoc_gift_add_to_cart_action();
         """
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"], molosoc_gift_lang="en")
-        out = run_php({"request_lang": "en", "cart": {"line425": 1}}, body, post=post)
+        out = run_php({"request_lang": "en", "cart": {"line425": 1}, "session": {"molosoc_gift_seen": {"order_id": 77, "key": "wc_order_key77", "rows": {"line425": 1}}}}, body, post=post)
         self.assertIn("REDIRECT:https://example.test/checkout/\n", out)
         self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
         # Same session, next request: the cart is linked, priced 209 / 199 and
