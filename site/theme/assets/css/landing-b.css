@@ -34,7 +34,7 @@
   color: var(--lpb-body);
   font-family: var(--lpb-body-font);
   font-weight: 300;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.6;
 }
 
@@ -79,7 +79,13 @@
   background: var(--lpb-cream);
 }
 
-.lpb-section > :not(.lpb-section__head):not(.lpb-split__media):not(.lpb-split__copy) {
+/* Default content width for a section's direct children. Wrapped in :where()
+   so this keeps the specificity of a single class and the narrower per-block
+   widths below (.lpb-video 315px, .lpb-gallery/.lpb-faq/.lpb-order 880px,
+   .lpb-founders__photo 400px) win — the first live version of this rule used
+   a :not() chain that out-ranked them and stretched the YouTube embed to the
+   full 1080px column. */
+.lpb-section > :where(:not(.lpb-section__head):not(.lpb-split__media):not(.lpb-split__copy)) {
   max-width: var(--lpb-max);
   margin-left: auto;
   margin-right: auto;
@@ -172,7 +178,7 @@
 }
 
 .lpb-price__meta {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--lpb-muted);
   margin: 0.5rem 0 1.25rem;
 }
@@ -188,10 +194,10 @@
 }
 
 .lpb-hero__inner {
-  max-width: var(--lpb-max);
+  max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
   gap: clamp(1.5rem, 4vw, 4rem);
   align-items: start;
   padding-bottom: 3rem;
@@ -205,15 +211,14 @@
 
 .lpb-hero__main {
   display: block;
-  max-width: 520px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .lpb-hero__thumbs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+  gap: 1rem;
+  margin-top: 1.25rem;
   background: rgba(255, 255, 255, 0.4);
   padding: 0.75rem;
 }
@@ -305,7 +310,7 @@
 }
 
 .lpb-card p {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--lpb-muted);
   margin: 0;
 }
@@ -496,7 +501,7 @@
 }
 
 .lpb-gallery figcaption {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--lpb-muted);
   padding: 0.5rem 0 0;
 }
@@ -564,7 +569,7 @@
   padding: 1rem 0;
   font-family: var(--lpb-sans);
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--lpb-ink);
 }
 
@@ -616,7 +621,7 @@
 }
 
 .lpb-order__spec {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--lpb-muted);
 }
 
@@ -749,7 +754,7 @@ body:has(.lpb-sticky) footer {
 
 @media (max-width: 560px) {
   .lpb {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .lpb-hero__thumbs {
