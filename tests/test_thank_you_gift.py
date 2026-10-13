@@ -354,12 +354,6 @@ class Rendering(unittest.TestCase):
         self.assertNotIn("229", out)
         self.assertNotIn("+ 3", out)
 
-    def test_page_view_records_only_the_bought_variations_rows_in_the_cart(self):
-        # The proof the form later relies on: what the cart held when shown.
-        out = run_php({"cart": {"line425": 1, "line424": 1, "line999": 2}}, RENDER + "\necho '|SEEN:' . json_encode( $GLOBALS['session'] );", get=KEY)
-        seen = json.loads(out.split("|SEEN:")[1])["molosoc_gift_seen"]
-        self.assertEqual(seen, {"order_id": 77, "key": "wc_order_key77", "rows": {"line425": 1}})
-
     def test_original_two_pairs_offers_exactly_one_more_at_199(self):
         out = run_php({"items": {"77": [[364, 1], [364, 1]]}}, RENDER, get=KEY)
         self.assertIn("Přidejte třetí pár za 199\xa0Kč.", out)
@@ -528,11 +522,6 @@ class AddToCartHandler(unittest.TestCase):
         link = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "lines": {k: 1 for k in cart}, "slots": {k: int(k[-1]) if "s" in k[4:] else 2 for k in cart}, "time": 1}
         return {"molosoc_gift_parent": dict(link, **over)}
 
-    @staticmethod
-    def seen(rows, **over):
-        # What the Thank You page recorded when it was shown for order #77.
-        return {"molosoc_gift_seen": dict({"order_id": 77, "key": "wc_order_key77", "rows": rows}, **over)}
-
     def test_rows_left_from_an_earlier_submit_do_not_block_checkout(self):
         # Our own gift rows from an earlier submit are dropped; the new cart is
         # exactly the chosen pairs.
@@ -545,66 +534,70 @@ class AddToCartHandler(unittest.TestCase):
 
     def test_the_pair_just_bought_does_not_send_a_valid_submission_to_the_product_page(self):
         # Issue #125, production: the cart still held the pair(s) just paid for
-        # (or a leftover row) and the form fell back to the product page. A valid
-        # submission now sets those rows aside and reaches checkout with exactly
-        # the chosen gift pairs, linked, with the session cookie requested.
+        # and the form fell back to the product page. A valid submission now
+        # reaches checkout; the rows the shopper holds are never removed.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425": 1}, {"line425s2": 1}, {"line425s2": 1, "line424s3": 1}):
-            redirect, added, out = self.submit(post, {"cart": cart, "session": self.owned(cart) if any("s" in k[4:] for k in cart) else self.seen({k: v for k, v in cart.items() if "s" not in k[4:]})})
+        for cart in ({"line425": 1}, {"line425": 2}, {"line425": 1, "line424": 1}):
+            redirect, _, out = self.submit(post, {"cart": cart})
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
-            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
-            link = section(out, "SESSION")["molosoc_gift_parent"]
-            self.assertEqual(link["lines"], {"line425s2": 1, "line424s3": 1}, cart)
+            self.assertEqual(section(out, "CART"), dict(cart, line425s2=1, line424s3=1), cart)
             self.assertEqual(section(out, "COOKIE"), True)
 
-    def test_unrelated_cart_rows_are_never_discarded(self):
-        # Codex P1: another product, or a pair of a variation the order did not
-        # contain, is not this order's row. It is kept, and the submission
-        # falls back to the product page with the cart exactly as it was.
+    def test_unrelated_and_independent_rows_are_kept_and_never_block_checkout(self):
+        # Santiago review: another product, an independently added pair (even of
+        # the order's variation and quantity), or a gift row without proof of
+        # ownership is the shopper's own. It stays; the valid submission reaches
+        # checkout; the gift rows are added beside it.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line999": 2}, {"line999": 2, "line425": 1}, {"line424": 1}, {"line424": 1, "line425": 1}, {"line425": 3}):
-            redirect, added, out = self.submit(post, {"cart": cart})
-            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
-            self.assertEqual(section(out, "CART"), cart, cart)
-            self.assertEqual(section(out, "SESSION"), {}, cart)
-
-    def test_same_variation_row_added_after_the_thank_you_page_was_shown_is_kept(self):
-        # Codex P1: an identical pair added later (another tab) was not in the
-        # cart when the page was shown, so it is the shopper's own — kept.
-        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        cart = {"line425": 1}
-        for session in ({}, self.seen({}), self.seen({"line425": 2}), self.seen(cart, order_id=88), self.seen(cart, key="wc_order_other")):
+        for cart, session in (
+            ({"line999": 2}, {}),
+            ({"line999": 2, "line425": 1}, {}),
+            ({"line424": 1}, {}),
+            ({"line425": 3}, {}),
+            ({"line424s2": 1}, {}),                                               # gift-shaped row, no link
+            ({"line424s2": 1}, self.owned({"line424s2": 1}, order_id=88)),        # another order's link
+            ({"line424s2": 1}, self.owned({"line424s2": 1}, key="wc_order_other")),
+            ({"line424s2": 1}, self.owned({"line424s2": 1}, slots={"line424s2": 3})),
+        ):
             redirect, _, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", session)
-            self.assertEqual(section(out, "CART"), cart, session)
+            self.assertEqual(redirect, "https://example.test/cz/pokladna/", (cart, session))
+            self.assertEqual(section(out, "CART"), dict(cart, line425s2=1, line424s3=1), (cart, session))
 
-    def test_gift_rows_without_proof_of_ownership_are_kept(self):
-        # Codex P1: a gift row from another order's tab (session link names
-        # another order, or none) is not this order's to discard.
+    def test_mixed_cart_gets_no_gift_price_and_no_free_shipping(self):
+        # Rows kept beside the gift rows never ride on the offer: the link only
+        # holds for exactly the chosen rows, so prices and shipping are normal.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        redirect, _, out = self.submit(post, {"cart": {"line999": 2, "line425": 1}})
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        cart = section(out, "CART")
+        link = section(out, "SESSION")["molosoc_gift_parent"]
+        self.assertEqual(link["lines"], {"line425s2": 1, "line424s3": 1})
+        self.assertNotEqual(set(cart), set(link["lines"]))
+        normal = {"flat_rate:1": "normal", "zasilkovna": "pickup"}
+        out = run_php({"session": {"molosoc_gift_parent": link}, "cart": cart}, LinkedCheckout.RATES)
+        self.assertEqual(json.loads(out), normal)
+
+    def test_a_chosen_row_that_would_merge_with_a_kept_row_falls_back_and_is_logged(self):
+        # A gift-shaped row without proof of ownership under a chosen row's key
+        # would merge into quantity 2: that cart can't be honoured. Fallback,
+        # logged (without the order key), cart exactly as it was.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425s2": 1}
-        for session in ({}, self.owned(cart, order_id=88), self.owned(cart, key="wc_order_other"), self.owned(cart, lines={}), self.owned(cart, slots={"line425s2": 3})):
+        for session in ({}, self.owned(cart, order_id=88), self.owned(cart, lines={}), self.owned(cart, slots={"line425s2": 3})):
             redirect, _, out = self.submit(post, {"cart": cart, "session": session})
             self.assertEqual(redirect, "https://example.test/product-cz/", session)
             self.assertEqual(section(out, "CART"), cart, session)
+            self.assertTrue(section(out, "LOG"), session)
+            self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
 
     def test_a_linked_gift_row_whose_quantity_changed_is_kept(self):
-        # Codex P2: the shopper raised a linked gift row from 1 to 2; it no
-        # longer matches what the form recorded, so it is not replaced.
+        # The shopper raised a linked gift row from 1 to 2; it no longer matches
+        # what the form recorded, so it is not replaced (and would merge).
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425s2": 2}
         redirect, _, out = self.submit(post, {"cart": cart, "session": self.owned(cart, lines={"line425s2": 1})})
         self.assertEqual(redirect, "https://example.test/product-cz/")
         self.assertEqual(section(out, "CART"), cart)
-
-    def test_cart_shape_fallbacks_are_logged(self):
-        # Codex P2: a retained unrelated row sends the shopper to the product
-        # page and that fallback is logged, without the order key.
-        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        _, _, out = self.submit(post, {"cart": {"line999": 2}})
-        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
-        self.assertTrue(section(out, "LOG"))
-        self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
 
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before
@@ -780,7 +773,7 @@ class LanguageSwitchAndFlow(unittest.TestCase):
         molosoc_gift_add_to_cart_action();
         """
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"], molosoc_gift_lang="en")
-        out = run_php({"request_lang": "en", "cart": {"line425": 1}, "session": {"molosoc_gift_seen": {"order_id": 77, "key": "wc_order_key77", "rows": {"line425": 1}}}}, body, post=post)
+        out = run_php({"request_lang": "en", "cart": {}}, body, post=post)
         self.assertIn("REDIRECT:https://example.test/checkout/\n", out)
         self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
         # Same session, next request: the cart is linked, priced 209 / 199 and

@@ -78,9 +78,6 @@ if ( ! defined( 'MOLOSOC_GIFT_WINDOW_HOURS' ) ) {
 if ( ! defined( 'MOLOSOC_GIFT_PARENT_META' ) ) {
 	define( 'MOLOSOC_GIFT_PARENT_META', '_molosoc_gift_parent_order' );
 }
-if ( ! defined( 'MOLOSOC_GIFT_SEEN_KEY' ) ) {
-	define( 'MOLOSOC_GIFT_SEEN_KEY', 'molosoc_gift_seen' );
-}
 if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
 	define( 'MOLOSOC_GIFT_SESSION_KEY', 'molosoc_gift_parent' );
 }
@@ -437,43 +434,6 @@ function molosoc_gift_log( $reason, $context = array() ) {
  * section's whole promise is "no additional shipping", so it is not shown
  * at all once that can't be kept.
  */
-/**
- * Record which ordinary MOLOSOC rows the cart held when this order's Thank You
- * page was shown. That moment is the only evidence a row came with the order
- * (WooCommerce normally empties the cart here; a row still present was left
- * over from the purchase), so the form later sets aside only those exact rows
- * at their recorded quantity — a same-variation row added afterwards, in
- * another tab, is not in this record and is kept.
- */
-function molosoc_gift_record_seen_cart( $order ) {
-	if ( ! WC()->session || ! WC()->cart ) {
-		return;
-	}
-	$bought = array();
-	foreach ( $order->get_items() as $order_item ) {
-		if ( is_object( $order_item ) && method_exists( $order_item, 'get_variation_id' ) ) {
-			$bought[ (int) $order_item->get_variation_id() ] = true;
-		}
-	}
-	$rows = array();
-	foreach ( WC()->cart->get_cart() as $item_key => $item ) {
-		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'], $item['variation_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
-			continue;
-		}
-		if ( isset( $bought[ (int) $item['variation_id'] ] ) ) {
-			$rows[ $item_key ] = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
-		}
-	}
-	WC()->session->set(
-		MOLOSOC_GIFT_SEEN_KEY,
-		array(
-			'order_id' => $order->get_id(),
-			'key'      => $order->get_order_key(),
-			'rows'     => $rows,
-		)
-	);
-}
-
 function molosoc_thankyou_gift_section( $order_id ) {
 	$order = molosoc_thankyou_order();
 	if ( ! $order || (int) $order_id !== (int) $order->get_id() ) {
@@ -489,7 +449,6 @@ function molosoc_thankyou_gift_section( $order_id ) {
 	if ( ! $sizes ) {
 		return;
 	}
-	molosoc_gift_record_seen_cart( $order );
 
 	$is_cz = 'cz' === molosoc_thankyou_lang( $order );
 	$max   = $offer['max'];
@@ -701,35 +660,24 @@ function molosoc_gift_add_to_cart_action() {
 	// carrying its overall pair number, which is what its price is read from.
 	$cart = WC()->cart;
 
-	// The cart this form builds is a fresh one. This form only exists for a
-	// shopper who has just paid for an order, and WooCommerce does not reliably
-	// empty the cart by then (a gateway return, a cached Thank You page, a
-	// second try from the same page, a second tab), so it can still hold the
-	// pair(s) just bought or rows an earlier submit of this form added. Those
-	// must never send a valid submission to the product page (Issue #125): the
-	// order, its key, the offer and the sizes are already validated above, so
-	// whatever the cart holds is set aside before anything is added — and is
-	// put back exactly as it was if the add fails, so an invalid submission
-	// never changes the cart. The rows are taken out first because
-	// WooCommerce's stock check counts what the cart already holds (replacing
-	// a row when only one unit is left would otherwise be refused); they are
-	// kept in the removed-items list for that restore.
-	// Only rows proven to be this order's own are set aside; anything else
-	// stays in the cart, and the check below then sends the shopper to the
-	// product page without touching anything. Proof is:
-	//  - a gift row: the session link names THIS order (id and key) and lists
-	//    the row's key with the same pair number — a gift row another order's
-	//    Thank You tab created, or a bare marker, proves nothing;
-	//  - an ordinary row: it was already in the cart when THIS order's Thank
-	//    You page was shown (see molosoc_gift_record_seen_cart()) and still
-	//    holds the quantity recorded then — a row added since, even of the
-	//    same variation and quantity, proves nothing.
-	$seen    = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SEEN_KEY ) : null;
-	$seen_ok = is_array( $seen )
-		&& isset( $seen['order_id'], $seen['key'], $seen['rows'] )
-		&& (int) $seen['order_id'] === $parent->get_id()
-		&& hash_equals( $parent->get_order_key(), (string) $seen['key'] )
-		&& is_array( $seen['rows'] );
+	// A shopper who has just paid for an order can still hold rows in the cart
+	// (a gateway return, a cached Thank You page, a second try from the same
+	// page, a second tab): the pair(s) just bought, rows an earlier submit of
+	// this form added, or anything else. None of that may send a valid
+	// submission to the product page (Issue #125): the order, its key, the
+	// offer and the sizes are already validated above. Rows this form itself
+	// added earlier are replaced (taken out first because WooCommerce's stock
+	// check counts what the cart already holds, and kept in the removed-items
+	// list so a failed add puts them back exactly as they were); an invalid
+	// submission never changes the cart.
+	// Only gift rows this order's own earlier submit added are set aside: the
+	// session link names THIS order (id and key) and lists the row's key with
+	// the same pair number and the quantity recorded then — a gift row another
+	// order's Thank You tab created, a bare marker, or a row the shopper has
+	// since changed proves nothing. Every other row (the pair just bought,
+	// another product, a pair added in another tab) is the shopper's own: it
+	// is never removed, and no cart row is judged "theirs" from what the page
+	// happened to show. It simply stays beside the gift rows.
 	$link    = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
 	$link_ok  = is_array( $link )
 		&& isset( $link['order_id'], $link['key'] )
@@ -740,22 +688,13 @@ function molosoc_gift_add_to_cart_action() {
 		&& is_array( $link['slots'] );
 	$stale = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
-		if ( ! isset( $item['product_id'], $item['variation_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+		if ( ! isset( $item['product_id'], $item['variation_id'], $item['molosoc_gift_slot'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
 			continue;
 		}
-		if ( isset( $item['molosoc_gift_slot'] ) ) {
-			// The recorded quantity must still match: a row the shopper has
-			// since changed (1 -> 2) is no longer the row the form added.
-			if ( $link_ok && isset( $link['lines'][ $item_key ], $link['slots'][ $item_key ] )
-				&& (int) $link['slots'][ $item_key ] === (int) $item['molosoc_gift_slot']
-				&& (int) $link['lines'][ $item_key ] === ( isset( $item['quantity'] ) ? (int) $item['quantity'] : 0 )
-			) {
-				$stale[ $item_key ] = $item;
-			}
-			continue;
-		}
-		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
-		if ( $seen_ok && isset( $seen['rows'][ $item_key ] ) && $quantity >= 1 && (int) $seen['rows'][ $item_key ] === $quantity ) {
+		if ( $link_ok && isset( $link['lines'][ $item_key ], $link['slots'][ $item_key ] )
+			&& (int) $link['slots'][ $item_key ] === (int) $item['molosoc_gift_slot']
+			&& (int) $link['lines'][ $item_key ] === ( isset( $item['quantity'] ) ? (int) $item['quantity'] : 0 )
+		) {
 			$stale[ $item_key ] = $item;
 		}
 	}
@@ -785,17 +724,18 @@ function molosoc_gift_add_to_cart_action() {
 		$slots[ $item_key ]  = $slot;
 	}
 
-	// The link must cover exactly the rows chosen on this form. A cart that
-	// also holds anything else (another product added in another tab, an
-	// ordinary pair) is never emptied behind the shopper's back: the add is
-	// rolled back like a failed one and they choose on the product page
-	// instead.
+	// Rows the shopper already holds stay in the cart beside the gift rows.
+	// They are never priced as gifts and never ship free: the link only holds
+	// for a cart of exactly the chosen gift rows (molosoc_gift_cart_link()), so
+	// with anything else in the cart the checkout charges normal prices and
+	// normal shipping, and the offer applies again as soon as the other rows
+	// are removed. The one cart shape that cannot be honoured is a kept row
+	// sharing a chosen row's key: it would merge into it (quantity 2).
 	if ( ! $failed ) {
-		foreach ( $cart->get_cart() as $item_key => $item ) {
-			// A kept row sharing a chosen row's key would merge into it
-			// (quantity 2): that is not the cart the form promised either.
-			if ( ! isset( $wanted[ $item_key ] ) || 1 !== (int) $item['quantity'] ) {
-				molosoc_gift_log( 'cart holds other rows', array( 'order' => $parent_id, 'row' => $item_key, 'merged' => isset( $wanted[ $item_key ] ) ) );
+		foreach ( $wanted as $item_key => $unused ) {
+			$row = $cart->get_cart_item( $item_key );
+			if ( ! $row || 1 !== (int) $row['quantity'] ) {
+				molosoc_gift_log( 'chosen row merged with a cart row', array( 'order' => $parent_id, 'row' => $item_key ) );
 				$failed = true;
 				break;
 			}
