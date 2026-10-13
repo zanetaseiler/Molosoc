@@ -508,7 +508,8 @@ add_action( 'woocommerce_thankyou', 'molosoc_thankyou_gift_section', 20 );
  * Runs on wp_loaded at priority 20, the same point WooCommerce's own
  * add-to-cart form handler uses (session and cart are ready). A missing or
  * unavailable size is never guessed at, and a form whose original order can
- * no longer ship together is not honoured: in both cases the customer is
+ * no longer ship together is not honoured: in both cases (and when the cart
+ * holds a different product) the customer is
  * sent to the product page (where nothing about combined shipping is
  * promised) to choose there instead.
  */
@@ -559,7 +560,27 @@ function molosoc_gift_add_to_cart_action() {
 	// WooCommerce's own notice explains why — never on to checkout with
 	// only part of what they chose. Every pair is its own quantity-1 row
 	// carrying its overall pair number, which is what its price is read from.
-	$cart    = WC()->cart;
+	$cart = WC()->cart;
+
+	// The cart this form builds is a fresh one. WooCommerce only empties the
+	// cart when the order-received page is viewed in the same session as the
+	// checkout, so after a gateway return (or a second try from the same
+	// page) it can still hold the pairs just bought or the rows an earlier
+	// submit of this form added. Those rows are already paid for or ours, so
+	// they are dropped here instead of sending the shopper to the product
+	// page. Anything else in the cart is never touched: the add is refused.
+	$stale = array();
+	foreach ( $cart->get_cart() as $item_key => $item ) {
+		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+			wp_safe_redirect( molosoc_product_url( $lang ) );
+			exit;
+		}
+		$stale[] = $item_key;
+	}
+	foreach ( $stale as $item_key ) {
+		$cart->remove_cart_item( $item_key );
+	}
+
 	$restore = array();
 	$wanted  = array();
 	$slots   = array();

@@ -60,20 +60,26 @@ body.woocommerce-order-received .molosoc-main h1 {
 /* Pair-count cards: full-width rows on a phone, side by side from 30rem. */
 
 .molosoc-gift .molosoc-gift__offer {
-  margin: var(--space-s) 0 0;
+  margin: var(--space-m) 0 0;
   font-size: var(--text-body);
-  line-height: var(--leading-snug);
+  line-height: var(--leading-relaxed);
 }
 
 .molosoc-gift__offer-note {
   display: block;
+  margin-top: var(--space-2xs);
   font-size: var(--text-small);
+  line-height: var(--leading-snug);
   color: var(--color-text-muted);
+}
+
+.molosoc-gift__form {
+  margin-top: var(--space-m);
 }
 
 .molosoc-gift__choices {
   display: grid;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
 }
 
 .molosoc-gift:not(.is-enhanced) .molosoc-gift-card--multi {
@@ -103,7 +109,7 @@ body.woocommerce-order-received .molosoc-main h1 {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-xs);
-  padding: var(--space-s);
+  padding: var(--space-s) var(--space-m);
   background: var(--color-white);
   border-radius: var(--radius-m);
   transition: background-color var(--motion-duration-s) var(--motion-ease),
@@ -140,7 +146,7 @@ body.woocommerce-order-received .molosoc-main h1 {
 .molosoc-gift__sizes {
   display: grid;
   gap: var(--space-s);
-  margin-top: var(--space-m);
+  margin-top: var(--space-l);
 }
 
 .molosoc-gift-size {
@@ -218,7 +224,7 @@ body.woocommerce-order-received .molosoc-main h1 {
 @media (min-width: 30rem) {
   .molosoc-gift__choices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-xs);
+    gap: var(--space-s);
   }
 
   .molosoc-gift-card__face {
@@ -227,7 +233,7 @@ body.woocommerce-order-received .molosoc-main h1 {
     justify-content: space-between;
     min-height: 7rem;
     height: 100%;
-    padding: var(--space-s) var(--space-xs);
+    padding: var(--space-s);
     box-sizing: border-box;
   }
 

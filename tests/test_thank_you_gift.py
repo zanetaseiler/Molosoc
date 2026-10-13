@@ -140,7 +140,7 @@ class Molosoc_Test_Cart {
 	function get_cart() {
 		$out = array();
 		foreach ( $this->items as $key => $qty ) {
-			$row = array( 'product_id' => 'lineX' === $key ? 999 : 364, 'quantity' => $qty, 'data' => $this->products[ $key ] );
+			$row = array( 'product_id' => in_array( $key, array( 'lineX', 'line999' ), true ) ? 999 : 364, 'quantity' => $qty, 'data' => $this->products[ $key ] );
 			if ( preg_match( '/s(\\d)$/', $key, $m ) ) { $row['molosoc_gift_slot'] = (int) $m[1]; }
 			$out[ $key ] = $row;
 		}
@@ -302,6 +302,14 @@ class StaticContract(unittest.TestCase):
         self.assertEqual(functions.count("thank-you-gift.js"), 1)
         self.assertTrue((THEME / "assets/css/thank-you.css").is_file())
         self.assertTrue((THEME / "assets/js/thank-you-gift.js").is_file())
+
+
+class SpacingContract(unittest.TestCase):
+    def test_offer_and_quantity_cards_have_breathing_room(self):
+        css = (THEME / "assets/css/thank-you.css").read_text(encoding="utf-8")
+        self.assertRegex(css, r"\.molosoc-gift__form \{\s*margin-top: var\(--space-m\)")
+        self.assertRegex(css, r"\.molosoc-gift__choices \{\s*display: grid;\s*gap: var\(--space-xs\)")
+        self.assertRegex(css, r"\.molosoc-gift__offer-note \{\s*display: block;\s*margin-top")
 
 
 @unittest.skipUnless(shutil.which("php"), "php not installed")
@@ -478,15 +486,29 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(customer["billing_phone"], "")  # blank parent fields clear stale session values
         self.assertEqual(customer["saved"], 1)  # session-backed customer saved so checkout sees the address
 
-    def test_preloaded_rows_are_rejected_and_untouched(self):
-        # A row the shopper already had (the same pair, or any ordinary pair) is
-        # never merged into or shrunk: the add is rolled back and nothing is linked.
+    def test_valid_submission_goes_to_checkout_never_the_product_page(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425s2": 1}, {"line425": 3}, {"line424": 1}, {"line999": 2}, {"line999": 2, "line425": 3}):
+        for lang, url in (("cz", "https://example.test/cz/pokladna/"), ("en", "https://example.test/checkout/")):
+            redirect, _, _ = self.submit(dict(post, molosoc_gift_lang=lang), {"request_lang": lang})
+            self.assertEqual(redirect, url)
+            self.assertNotIn("product", redirect)
+
+    def test_rows_left_from_the_purchase_or_an_earlier_submit_do_not_block_checkout(self):
+        # The just-bought pair (cart not emptied after a gateway return) and rows
+        # from an earlier submit are dropped; the new cart is exactly the chosen pairs.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        for cart in ({"line425s2": 1}, {"line425": 3}, {"line424": 1}, {"line425": 1, "line424s3": 1}):
             redirect, _, out = self.submit(post, {"cart": cart})
+            self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
+            self.assertIn("molosoc_gift_parent", section(out, "SESSION"))
+
+    def test_another_product_in_the_cart_falls_back_untouched(self):
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}):
+            redirect, added, out = self.submit(post, {"cart": cart})
             self.assertEqual(redirect, "https://example.test/product-cz/", cart)
-            self.assertEqual(section(out, "CART"), cart)
-            self.assertEqual(section(out, "SESSION"), {})
+            self.assertEqual((added, section(out, "CART"), section(out, "SESSION")), ({}, cart, {}))
 
     def test_english_form_goes_to_the_english_checkout(self):
         redirect, added, _ = self.submit(
@@ -546,12 +568,9 @@ class AddToCartHandler(unittest.TestCase):
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {})
         self.assertEqual(section(out, "SESSION"), {})
-        # Rows that were in the cart before keep their quantity.
-        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}})
-        self.assertEqual(section(out, "CART"), {"line425": 1})
-        # The first size failing leaves the cart untouched too.
-        _, _, out = self.submit(post, {"fail_variation": 425, "cart": {"line424": 2}})
-        self.assertEqual(section(out, "CART"), {"line424": 2})
+        # Another product's row is never touched.
+        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
+        self.assertEqual(section(out, "CART"), {"line999": 1})
 
     def test_missing_invalid_or_unavailable_size_adds_nothing(self):
         for post, scenario in (
