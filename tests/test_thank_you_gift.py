@@ -245,6 +245,10 @@ def run_php(scenario, body, get=None, post=None):
 
 
 KEY = {"key": "wc_order_key77"}
+# Session record written when order 77 was placed (see molosoc_gift_remember_paid_rows).
+def paid_record(rows, **over):
+    record = {"order_id": 77, "rows": {k: {"variation": int(k[4:]), "quantity": q} for k, q in rows.items()}, "tainted": False}
+    return {"molosoc_gift_paid_rows": dict(record, **over)}
 RENDER = "molosoc_thankyou_gift_section( 77 );"
 FORM = {"molosoc_gift_pairs": "1", "molosoc_gift_lang": "cz", "molosoc_gift_size": ["M"],
         "molosoc_gift_order": "77", "molosoc_gift_key": "wc_order_key77"}
@@ -540,7 +544,7 @@ class AddToCartHandler(unittest.TestCase):
         # M). A cart row that is exactly that paid line is set aside on evidence;
         # the add-on cart holds the gift rows only.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        redirect, _, out = self.submit(post, {"cart": {"line425": 1}})
+        redirect, _, out = self.submit(post, {"cart": {"line425": 1}, "session": paid_record({"line425": 1})})
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
         self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
         self.assertEqual(section(out, "COOKIE"), True)
@@ -549,11 +553,11 @@ class AddToCartHandler(unittest.TestCase):
         # Two paid pairs (one line of quantity 2, or two lines): same.
         two = {"items": {"77": [[364, 2, 425]]}}
         for cart in ({"line425": 2}, {"line425": 1}):
-            redirect, _, out = self.submit(dict(FORM, molosoc_gift_size=["L"]), dict(two, cart=cart))
+            redirect, _, out = self.submit(dict(FORM, molosoc_gift_size=["L"]), dict(two, cart=cart, session=paid_record(cart)))
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
             self.assertEqual(section(out, "CART"), {"line424s3": 1}, cart)
         two = {"items": {"77": [[364, 1, 425], [364, 1, 424]]}}
-        redirect, _, out = self.submit(dict(FORM, molosoc_gift_size=["L"]), dict(two, cart={"line425": 1, "line424": 1}))
+        redirect, _, out = self.submit(dict(FORM, molosoc_gift_size=["L"]), dict(two, cart={"line425": 1, "line424": 1}, session=paid_record({"line425": 1, "line424": 1})))
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
         self.assertEqual(section(out, "CART"), {"line424s3": 1})
 
@@ -582,10 +586,48 @@ class AddToCartHandler(unittest.TestCase):
             self.assertIn("cannot be isolated", section(out, "LOG")[0])
             self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
 
+    def test_a_pair_that_only_matches_the_order_is_not_proven_paid_and_is_never_deleted(self):
+        # Codex P1 on #146: variation and quantity fitting the order prove nothing.
+        # A pair added after ordering (same key and shape as the paid one) must
+        # fail safe, not vanish from the cart.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        cart = {"line425": 1}
+        for session in (
+            {},                                                         # no record: other session / older order
+            paid_record({"line425": 1}, tainted=True),                  # a product was added/raised after ordering
+            paid_record({"line425": 1}, order_id=88),                   # record belongs to another order
+            paid_record({"line424": 1}),                                # record names a different row
+        ):
+            redirect, added, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(redirect, "https://example.test/product-cz/", session)
+            self.assertEqual(added, {}, session)
+            self.assertEqual(section(out, "CART"), cart, session)
+            self.assertEqual(section(out, "SESSION"), session, session)
+            self.assertTrue(section(out, "NOTICES"), session)
+
+    def test_order_creation_records_the_rows_and_a_later_add_voids_the_record(self):
+        body = """
+        WC()->cart->items = array( 'line425' => 1, 'line999' => 2, 'line425s2' => 1 );
+        molosoc_gift_remember_paid_rows( 77 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) ), '|';
+        molosoc_gift_void_paid_rows_on_add( 'k', 364, 1, 424, array(), array( 'molosoc_gift_slot' => 2 ) );
+        molosoc_gift_void_paid_rows_on_add( 'k', 999, 1, 0, array(), array() );
+        molosoc_gift_void_paid_rows_on_quantity( 'line425', 1, 1 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] ), '|';
+        molosoc_gift_void_paid_rows_on_add( 'k', 364, 1, 425, array(), array() );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );
+        """
+        recorded, after_noise, after_add = run_php({}, body).split("|")
+        self.assertEqual(json.loads(recorded), {"order_id": 77, "rows": {"line425": {"variation": 425, "quantity": 1}}, "tainted": False})
+        self.assertEqual(after_noise, "false")  # gift row, other product, unchanged quantity
+        self.assertEqual(after_add, "true")
+        body = "WC()->cart->items = array( 'line425' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line425', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
+        self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "true")
+
     def test_a_failed_submit_with_a_paid_row_and_an_own_stale_row_restores_both(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425": 1, "line425s2": 1}
-        session = self.owned({"line425s2": 1})
+        session = dict(self.owned({"line425s2": 1}), **paid_record({"line425": 1}))
         _, _, out = self.submit(post, {"cart": cart, "session": session, "fail_variation": 424})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), cart)
@@ -593,7 +635,7 @@ class AddToCartHandler(unittest.TestCase):
 
     def test_repeated_submission_ends_with_exactly_one_set_of_gift_rows(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        redirect, _, out = self.submit(post, {"cart": {"line425": 1}})
+        redirect, _, out = self.submit(post, {"cart": {"line425": 1}, "session": paid_record({"line425": 1})})
         cart, session = section(out, "CART"), section(out, "SESSION")
         self.assertEqual(cart, {"line425s2": 1, "line424s3": 1})
         # Second submit (same session), also with the paid pair back in the cart.
@@ -719,7 +761,7 @@ class AddToCartHandler(unittest.TestCase):
         _, added, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
         self.assertEqual((added, section(out, "CART")), ({}, {"line999": 1}))
         # The paid pair is put back when a later pair fails.
-        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}})
+        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}, "session": paid_record({"line425": 1})})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
         self.assertEqual(section(out, "CART"), {"line425": 1})
 
@@ -918,7 +960,8 @@ class LinkedCheckout(unittest.TestCase):
         for tag in ("woocommerce_payment_complete", "woocommerce_order_status_processing"):
             self.assertIn(tag, hooks)
         # on-hold means awaiting payment: it must never trigger the notes.
-        for tag in ("woocommerce_order_status_on-hold", "woocommerce_checkout_order_created", "woocommerce_store_api_checkout_order_processed"):
+        # (the order-processed hooks only record the paid cart rows in the session)
+        for tag in ("woocommerce_order_status_on-hold", "woocommerce_checkout_order_created"):
             self.assertNotIn(tag, hooks)
 
     def test_payment_after_the_original_order_became_ineligible_goes_to_manual_handling(self):

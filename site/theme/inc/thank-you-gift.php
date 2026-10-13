@@ -78,6 +78,9 @@ if ( ! defined( 'MOLOSOC_GIFT_WINDOW_HOURS' ) ) {
 if ( ! defined( 'MOLOSOC_GIFT_PARENT_META' ) ) {
 	define( 'MOLOSOC_GIFT_PARENT_META', '_molosoc_gift_parent_order' );
 }
+if ( ! defined( 'MOLOSOC_GIFT_PAID_SESSION_KEY' ) ) {
+	define( 'MOLOSOC_GIFT_PAID_SESSION_KEY', 'molosoc_gift_paid_rows' );
+}
 if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
 	define( 'MOLOSOC_GIFT_SESSION_KEY', 'molosoc_gift_parent' );
 }
@@ -597,6 +600,77 @@ function molosoc_thankyou_gift_section( $order_id ) {
 add_action( 'woocommerce_thankyou', 'molosoc_thankyou_gift_section', 20 );
 
 /**
+ * Issue #145 provenance: remember, in the shopper's own WooCommerce session,
+ * which cart rows the checkout that created this order consumed (cart item
+ * key => variation and quantity). Product, variation and quantity alone never
+ * prove a later cart row is that already-paid pair, so molosoc_gift_add_to_cart_action()
+ * sets a row aside only when this record names it. Classic checkout passes the
+ * order id, the Store API the order object; the cart still holds its rows at
+ * this point. A session that did not place the order has no record, and then
+ * nothing is set aside.
+ */
+function molosoc_gift_remember_paid_rows( $order ) {
+	$order_id = ( $order instanceof WC_Order ) ? $order->get_id() : absint( $order );
+	if ( $order_id < 1 || ! function_exists( 'WC' ) || ! WC()->session || ! WC()->cart ) {
+		return;
+	}
+	$rows = array();
+	foreach ( WC()->cart->get_cart() as $item_key => $item ) {
+		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+			continue;
+		}
+		$rows[ $item_key ] = array(
+			'variation' => isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0,
+			'quantity'  => isset( $item['quantity'] ) ? (int) $item['quantity'] : 0,
+		);
+	}
+	WC()->session->set(
+		MOLOSOC_GIFT_PAID_SESSION_KEY,
+		array(
+			'order_id' => $order_id,
+			'rows'     => $rows,
+			'tainted'  => false,
+		)
+	);
+}
+add_action( 'woocommerce_checkout_order_processed', 'molosoc_gift_remember_paid_rows', 10, 1 );
+add_action( 'woocommerce_store_api_checkout_order_processed', 'molosoc_gift_remember_paid_rows', 10, 1 );
+
+/**
+ * After the order, any product row the shopper adds or raises is theirs: the
+ * record can no longer vouch that an identical-looking row is the paid pair
+ * (a re-added pair has the very same cart item key), so it is voided. Gift
+ * rows (the ones this flow adds) do not count.
+ */
+function molosoc_gift_void_paid_rows() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session ) {
+		return;
+	}
+	$record = WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY );
+	if ( is_array( $record ) && empty( $record['tainted'] ) ) {
+		$record['tainted'] = true;
+		WC()->session->set( MOLOSOC_GIFT_PAID_SESSION_KEY, $record );
+	}
+}
+
+function molosoc_gift_void_paid_rows_on_add( $cart_id = '', $product_id = 0, $quantity = 1, $variation_id = 0, $variation = array(), $cart_item_data = array() ) {
+	if ( is_array( $cart_item_data ) && isset( $cart_item_data['molosoc_gift_slot'] ) ) {
+		return;
+	}
+	if ( MOLOSOC_PRODUCT_ID === (int) $product_id ) {
+		molosoc_gift_void_paid_rows();
+	}
+}
+add_action( 'woocommerce_add_to_cart', 'molosoc_gift_void_paid_rows_on_add', 10, 6 );
+
+function molosoc_gift_void_paid_rows_on_quantity( $item_key = '', $quantity = 0, $old_quantity = 0 ) {
+	if ( (int) $quantity > (int) $old_quantity ) {
+		molosoc_gift_void_paid_rows();
+	}
+}
+add_action( 'woocommerce_after_cart_item_quantity_update', 'molosoc_gift_void_paid_rows_on_quantity', 10, 3 );
+
+/**
  * Put rows this request set aside back into the cart exactly as they were
  * (key => cart item as WooCommerce held it). A replacement can share a set-aside
  * row's key; removing it overwrote WooCommerce's removed-items snapshot of that
@@ -736,12 +810,23 @@ function molosoc_gift_add_to_cart_action() {
 			$budget[ $vid ] = ( isset( $budget[ $vid ] ) ? $budget[ $vid ] : 0 ) + (int) $line->get_quantity();
 		}
 	}
+	// Matching the order is not enough: the session must also have recorded this
+	// row at the checkout that created THIS order, with no product added or raised
+	// since (molosoc_gift_remember_paid_rows()). A pair the shopper added after
+	// ordering carries the same key and shape, so it is never set aside.
+	$record = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY ) : null;
+	$proven = ( is_array( $record ) && empty( $record['tainted'] ) && isset( $record['order_id'], $record['rows'] )
+		&& (int) $record['order_id'] === $parent->get_id() && is_array( $record['rows'] ) )
+		? $record['rows']
+		: array();
 	$paid = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
 		$vid = isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0;
 		$qty = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
 		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id']
 			|| $qty < 1 || ! isset( $budget[ $vid ] ) || $qty > $budget[ $vid ]
+			|| ! isset( $proven[ $item_key ]['variation'], $proven[ $item_key ]['quantity'] )
+			|| (int) $proven[ $item_key ]['variation'] !== $vid || $qty > (int) $proven[ $item_key ]['quantity']
 		) {
 			$paid = null;
 			break;
@@ -751,6 +836,7 @@ function molosoc_gift_add_to_cart_action() {
 	}
 	// Gift-shaped rows without proof of ownership (see above) are the shopper's
 	// own, never "paid" rows: they have a slot, so they land in the failure above.
+	// So does any row the session cannot vouch for.
 	if ( null === $paid ) {
 		molosoc_gift_restore_rows( $cart, $stale );
 		molosoc_gift_log( 'cart holds rows that cannot be isolated from the gift add-on', array( 'order' => $parent_id ) );
