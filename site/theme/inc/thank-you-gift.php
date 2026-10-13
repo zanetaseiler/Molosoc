@@ -682,7 +682,12 @@ function molosoc_gift_void_paid_rows_on_add( $cart_id = '', $product_id = 0, $qu
 add_action( 'woocommerce_add_to_cart', 'molosoc_gift_void_paid_rows_on_add', 10, 6 );
 
 function molosoc_gift_void_paid_rows_on_quantity( $item_key = '', $quantity = 0, $old_quantity = 0 ) {
-	if ( (int) $quantity > (int) $old_quantity ) {
+	if ( (int) $quantity <= (int) $old_quantity || ! function_exists( 'WC' ) || ! WC()->cart ) {
+		return;
+	}
+	// Only a raised product row can make an identical-looking row unprovable.
+	$item = WC()->cart->get_cart_item( $item_key );
+	if ( is_array( $item ) && isset( $item['product_id'] ) && MOLOSOC_PRODUCT_ID === (int) $item['product_id'] ) {
 		molosoc_gift_void_paid_rows();
 	}
 }

@@ -143,7 +143,7 @@ class Molosoc_Test_Cart {
 	}
 	function generate_cart_id( $product_id, $variation_id, $attrs, $data = array() ) { return 'line' . $variation_id . ( $data ? 's' . $data['molosoc_gift_slot'] : '' ); }
 	function find_product_in_cart( $id ) { return isset( $this->items[ $id ] ) ? $id : ''; }
-	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ] ) : array(); }
+	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ], 'product_id' => in_array( $key, array( 'lineX', 'line999' ), true ) ? 999 : 364 ) : array(); }
 	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
 	public $removed = array();
 	function remove_cart_item( $key ) { if ( isset( $this->items[ $key ] ) ) { $this->removed[ $key ] = $this->items[ $key ]; } unset( $this->items[ $key ] ); }
@@ -846,6 +846,11 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(after_add, "true")
         body = "WC()->cart->items = array( 'line425' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line425', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
         self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "true")
+
+    def test_raising_an_unrelated_products_quantity_keeps_the_paid_proof(self):
+        # Codex P2 on #148: only a raised product-364 row may taint the record.
+        body = "WC()->cart->items = array( 'line425' => 1, 'line999' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line999', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
+        self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "false")
 
     def test_a_gift_marked_row_bought_in_a_normal_checkout_is_recorded_as_paid(self):
         # Codex P2 on #148: with no valid gift link the marker is stale, the row is a paid pair.
