@@ -567,6 +567,24 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(redirect, "https://example.test/product-cz/", session)
             self.assertEqual(section(out, "CART"), cart, session)
 
+    def test_a_linked_gift_row_whose_quantity_changed_is_kept(self):
+        # Codex P2: the shopper raised a linked gift row from 1 to 2; it no
+        # longer matches what the form recorded, so it is not replaced.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        cart = {"line425s2": 2}
+        redirect, _, out = self.submit(post, {"cart": cart, "session": self.owned(cart, lines={"line425s2": 1})})
+        self.assertEqual(redirect, "https://example.test/product-cz/")
+        self.assertEqual(section(out, "CART"), cart)
+
+    def test_cart_shape_fallbacks_are_logged(self):
+        # Codex P2: a retained unrelated row sends the shopper to the product
+        # page and that fallback is logged, without the order key.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        _, _, out = self.submit(post, {"cart": {"line999": 2}})
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertTrue(section(out, "LOG"))
+        self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
+
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before
         # any row is set aside.

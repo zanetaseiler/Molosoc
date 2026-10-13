@@ -704,8 +704,11 @@ function molosoc_gift_add_to_cart_action() {
 			continue;
 		}
 		if ( isset( $item['molosoc_gift_slot'] ) ) {
+			// The recorded quantity must still match: a row the shopper has
+			// since changed (1 -> 2) is no longer the row the form added.
 			if ( $link_ok && isset( $link['lines'][ $item_key ], $link['slots'][ $item_key ] )
 				&& (int) $link['slots'][ $item_key ] === (int) $item['molosoc_gift_slot']
+				&& (int) $link['lines'][ $item_key ] === ( isset( $item['quantity'] ) ? (int) $item['quantity'] : 0 )
 			) {
 				$stale[ $item_key ] = $item;
 			}
@@ -754,6 +757,7 @@ function molosoc_gift_add_to_cart_action() {
 			// A kept row sharing a chosen row's key would merge into it
 			// (quantity 2): that is not the cart the form promised either.
 			if ( ! isset( $wanted[ $item_key ] ) || 1 !== (int) $item['quantity'] ) {
+				molosoc_gift_log( 'cart holds other rows', array( 'order' => $parent_id, 'row' => $item_key, 'merged' => isset( $wanted[ $item_key ] ) ) );
 				$failed = true;
 				break;
 			}
