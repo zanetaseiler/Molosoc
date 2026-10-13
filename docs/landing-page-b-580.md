@@ -2,7 +2,7 @@
 
 **Status:** repo files only. Nothing on WordPress was written. Page 580 and the live
 CZ landing Page A (886, `/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/`) are
-untouched. B does not exist in WordPress yet (see "Draft creation + review path").
+untouched. B exists in WordPress as page 1037, slug `hydratacni-navleky-molosoc` (see "Draft creation + review path").
 
 ## Source
 
@@ -13,7 +13,7 @@ untouched. B does not exist in WordPress yet (see "Draft creation + review path"
 | REST record | `GET /wp-json/wp/v2/pages/580` (public, `context=view`) |
 | Built with | Thrive Architect landing page: meta `tve_landing_page = tcb2-clickjournalist-sales-page`, `_tve_header = 0`, `_tve_footer = 103` (Thrive footer symbol "Disclaimer / Privacy policy / Terms of service / Contact / © 2026 MOLOSOC" + WPConsent cookie banner), `tcb_editor_enabled = 1` |
 | Why the block editor cannot render it | `post_content` is Thrive markup (`#tve_editor` > 16 `.thrv-page-section` blocks with `data-css` ids). All layout/colour/typography lives in the page's `tve_custom_style` block (~88 KB) + Thrive's base stylesheet, which only Thrive prints. The REST `content.rendered` (15 KB) is just the flattened text/images with no structure. Revisions were not readable without authentication (not needed — the live render was the source). |
-| Template of record | `site/theme/page-hydratacni-navleky-landing-b.php` + `assets/css/landing-b.css` + `assets/js/landing-b.js` |
+| Template of record | `site/theme/page-hydratacni-navleky-molosoc.php` + `assets/css/landing-b.css` + `assets/js/landing-b.js` |
 
 ## Section map (page 580 → B)
 
@@ -89,7 +89,9 @@ Note: page 580's content also references `Molosoc-Photos-Product-New-Sofa.jpg` o
 
 1. Theme deploy (production.yml on merge) puts the template, CSS and JS on the server.
    The Version header was bumped to 0.2.79 so Cloudflare does not serve stale assets.
-2. Actions → **Create WP Page (draft)** → slug `hydratacni-navleky-landing-b`, title
+2. Actions → **Create WP Page (draft)** → slug `hydratacni-navleky-molosoc` (created as
+   `hydratacni-navleky-landing-b`; Žaneta renamed page 1037 in WordPress on 2026-10-13 and the
+   template + is_page() gates followed), title
    e.g. `Hydratační návleky – Landing Page B (varianta, koncept)`. The workflow is
    idempotent and only ever creates a **draft** (`create_wp_page.py`); run it only with
    Žaneta's go-ahead.
