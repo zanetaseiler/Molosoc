@@ -111,6 +111,10 @@ function molosoc_sitemap_excluded_page_ids() {
 		'kosik', 'pokladna',
 		'home-2', 'blog-2', 'blog-legacy-2018',
 		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
+		// Landing Page B (Issue #122): an unpublished variant of the live CZ
+		// landing page, rebuilt from page 580 — never listed, see
+		// page-hydratacni-navleky-landing-b.php.
+		'hydratacni-navleky-landing-b',
 	);
 	foreach ( $slugs as $slug ) {
 		$page = get_page_by_path( $slug );
@@ -133,9 +137,11 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
 
 // noindex for thin/utility URLs that stay reachable: the post-purchase
 // thank-you page, the empty author archives, the empty Uncategorized
-// archive, and Thrive's symbol-taxonomy archive pages.
+// archive, Thrive's symbol-taxonomy archive pages, and Landing Page B
+// (Issue #122 — a variant of the live CZ landing page that must never
+// compete with it in search, even if it is published for review).
 add_filter( 'wp_robots', function ( $robots ) {
-	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( 'thank-you' ) ) {
+	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( array( 'thank-you', 'hydratacni-navleky-landing-b' ) ) ) {
 		$robots['noindex'] = true;
 	}
 	return $robots;
@@ -194,7 +200,10 @@ function molosoc_sticky_cta_hidden() {
 	return ( function_exists( 'is_cart' ) && is_cart() )
 		|| ( function_exists( 'is_checkout' ) && is_checkout() )
 		|| ( function_exists( 'is_product' ) && is_product() )
-		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
+		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) )
+		// Landing Page B (Issue #122) ships its own sticky CTA bar, like the
+		// page-580 original it rebuilds — see page-hydratacni-navleky-landing-b.php.
+		|| is_page( 'hydratacni-navleky-landing-b' );
 }
 
 function molosoc_enqueue_assets() {
@@ -386,6 +395,22 @@ function molosoc_enqueue_assets() {
 		// a gift" scroll-in text entrances were removed along with the
 		// hero's model spin, the proof photos' breathing zoom and every
 		// hover zoom (see product.css).
+	} elseif ( is_page( 'hydratacni-navleky-landing-b' ) ) {
+		// Landing Page B (Issue #122): faithful rebuild of Thrive page 580 as
+		// an unpublished variant of the CZ landing page — template
+		// page-hydratacni-navleky-landing-b.php. Loads page 580's own type
+		// faces (DM Serif Display / Nunito Sans / Open Sans; Nunito already
+		// comes with the global molosoc-fonts handle) plus its scoped CSS
+		// and the tabs/sticky-bar enhancement script. Nothing here touches
+		// the live 'hydratacni-navlek-na-nohy' branch below.
+		wp_enqueue_style(
+			'molosoc-landing-b-fonts',
+			'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@300;400;600&family=Open+Sans:wght@300;400&display=swap',
+			array(),
+			null
+		);
+		wp_enqueue_style( 'molosoc-landing-b', $theme_uri . '/assets/css/landing-b.css', array( 'molosoc-components', 'molosoc-landing-b-fonts' ), $theme_version );
+		wp_enqueue_script( 'molosoc-landing-b', $theme_uri . '/assets/js/landing-b.js', array(), $theme_version, true );
 	} elseif ( is_page( array( 'blog', 'magazin' ) ) ) {
 		// Journal index — static photo-tile grid, no motion.js/GSAP needed
 		// (see page-blog.php's own header comment for why). 'magazin' is
