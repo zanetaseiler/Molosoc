@@ -801,7 +801,8 @@ function molosoc_gift_unpark_rows() {
 	$todo = array();
 	foreach ( $park['rows'] as $item_key => $row ) {
 		$quantity = isset( $row['quantity'] ) ? (int) $row['quantity'] : 0;
-		if ( isset( $proven[ $item_key ]['variation'], $proven[ $item_key ]['quantity'] )
+		// A retained remainder is already net of the proven paid quantity: never subtract it twice.
+		if ( empty( $row['netted'] ) && isset( $proven[ $item_key ]['variation'], $proven[ $item_key ]['quantity'] )
 			&& (int) $proven[ $item_key ]['variation'] === ( isset( $row['variation_id'] ) ? (int) $row['variation_id'] : 0 )
 		) {
 			$quantity -= (int) $proven[ $item_key ]['quantity'];
@@ -826,6 +827,7 @@ function molosoc_gift_unpark_rows() {
 		} else {
 			// Keep only the unpaid remainder, so a retry never depends on proof that may change.
 			$row['quantity']     = $quantity;
+			$row['netted']       = true;
 			$failed[ $item_key ] = $row;
 			molosoc_gift_log( 'parked cart row could not be put back', array( 'row' => $item_key ) );
 		}

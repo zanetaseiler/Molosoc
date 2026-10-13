@@ -679,7 +679,9 @@ class AddToCartHandler(unittest.TestCase):
         body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items ), '|', json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
         items, kept = run_php({"cart": {}, "session": parked, "fail_variation": 999}, body).split("|")
         self.assertEqual(json.loads(items), [])
-        self.assertEqual(json.loads(kept), parked["molosoc_gift_parked_rows"])
+        expected = json.loads(json.dumps(parked["molosoc_gift_parked_rows"]))
+        expected["rows"]["line999"]["netted"] = True
+        self.assertEqual(json.loads(kept), expected)
         items, kept = run_php({"cart": {}, "session": parked}, body).split("|")
         self.assertEqual(json.loads(items), {"line999": 2})
         self.assertEqual(kept, "null")
@@ -692,6 +694,18 @@ class AddToCartHandler(unittest.TestCase):
         body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
         kept = json.loads(run_php({"cart": {}, "session": session, "fail_variation": 425}, body))
         self.assertEqual(kept["rows"]["line425"]["quantity"], 1)
+
+    def test_a_retained_remainder_is_not_netted_against_the_paid_proof_twice(self):
+        # Codex P2 on #148: qty 2 with 1 proven paid; first restore refused (keeps 1),
+        # the retry must restore that 1, not subtract the paid unit again and drop it.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 2, "extra": []}
+        session = dict({"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": row}}}, **paid_record({"line425": 1}))
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        kept = json.loads(run_php({"cart": {}, "session": session, "fail_variation": 425}, body))
+        self.assertEqual(kept["rows"]["line425"]["quantity"], 1)
+        retry = dict(kept_session := {"molosoc_gift_parked_rows": kept}, **paid_record({"line425": 1}))
+        out = run_php({"cart": {}, "session": retry}, "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), {"line425": 1})
 
     def test_a_same_key_row_parked_again_adds_its_quantity(self):
         # Codex P2 on #148: a second copy of an already parked row must not be max()-ed away.
