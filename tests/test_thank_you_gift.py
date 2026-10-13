@@ -60,9 +60,10 @@ function wc_get_price_to_display( $p ) { return $p->price; }
 function get_woocommerce_currency() { return $GLOBALS['t']['currency']; }
 class Molosoc_Test_Date { public $ts; function __construct( $ts ) { $this->ts = $ts; } function getTimestamp() { return $this->ts; } }
 class WC_Order_Item {
-	public $pid; public $qty; public $meta = array();
-	function __construct( $pid, $q ) { $this->pid = $pid; $this->qty = $q; }
+	public $pid; public $qty; public $vid; public $meta = array();
+	function __construct( $pid, $q, $vid = 0 ) { $this->pid = $pid; $this->qty = $q; $this->vid = $vid; }
 	function get_product_id() { return $this->pid; }
+	function get_variation_id() { return $this->vid; }
 	function get_quantity() { return $this->qty; }
 	function add_meta_data( $k, $v, $unique = false ) { $this->meta[ $k ] = $v; }
 }
@@ -81,7 +82,7 @@ class WC_Order {
 	function get_address( $type ) { return 'billing' === $type ? array( 'first_name' => 'Jana', 'email' => $GLOBALS['t']['email'], 'phone' => '' ) : array( 'first_name' => 'Jana', 'city' => 'Praha' ); }
 	function get_items() {
 		$out = array();
-		foreach ( $GLOBALS['t']['items'][ $this->id ] as $row ) { $out[] = new WC_Order_Item( $row[0], $row[1] ); }
+		foreach ( $GLOBALS['t']['items'][ $this->id ] as $row ) { $out[] = new WC_Order_Item( $row[0], $row[1], isset( $row[2] ) ? $row[2] : 0 ); }
 		return $out;
 	}
 	function add_order_note( $n ) { $GLOBALS['notes'][] = array( $this->id, $n ); }
@@ -149,7 +150,7 @@ class Molosoc_Test_Cart {
 	function get_cart() {
 		$out = array();
 		foreach ( $this->items as $key => $qty ) {
-			$row = array( 'product_id' => in_array( $key, array( 'lineX', 'line999' ), true ) ? 999 : 364, 'quantity' => $qty, 'data' => $this->products[ $key ] );
+			$row = array( 'product_id' => in_array( $key, array( 'lineX', 'line999' ), true ) ? 999 : 364, 'variation_id' => (int) substr( $key, 4 ), 'quantity' => $qty, 'data' => $this->products[ $key ] );
 			if ( preg_match( '/s(\\d)$/', $key, $m ) ) { $row['molosoc_gift_slot'] = (int) $m[1]; }
 			$out[ $key ] = $row;
 		}
@@ -201,7 +202,7 @@ DEFAULT = {
     "variations": {"425": [229, True], "424": [229, True]},
     "cart": {},
     "currency": "CZK",
-    "items": {"77": [[364, 1]], "88": [[364, 2], [364, 1]]},
+    "items": {"77": [[364, 1, 425]], "88": [[364, 2], [364, 1]]},
     "fail_variation": 0,
     "stock": {},
     "session": {},
@@ -537,13 +538,24 @@ class AddToCartHandler(unittest.TestCase):
         # submission now sets those rows aside and reaches checkout with exactly
         # the chosen gift pairs, linked, with the session cookie requested.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425": 3}, {"line425": 1}, {"line424": 1}, {"line425": 1, "line424s3": 1}, {"line999": 2}, {"line999": 2, "line425": 3}):
+        for cart in ({"line425": 3}, {"line425": 1}, {"line425": 1, "line424s3": 1}):
             redirect, added, out = self.submit(post, {"cart": cart})
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
             link = section(out, "SESSION")["molosoc_gift_parent"]
             self.assertEqual(link["lines"], {"line425s2": 1, "line424s3": 1}, cart)
             self.assertEqual(section(out, "COOKIE"), True)
+
+    def test_unrelated_cart_rows_are_never_discarded(self):
+        # Codex P1: another product, or a pair of a variation the order did not
+        # contain, is not this order's row. It is kept, and the submission
+        # falls back to the product page with the cart exactly as it was.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}, {"line424": 1}, {"line424": 1, "line425": 1}):
+            redirect, added, out = self.submit(post, {"cart": cart})
+            self.assertEqual(redirect, "https://example.test/product-cz/", cart)
+            self.assertEqual(section(out, "CART"), cart, cart)
+            self.assertEqual(section(out, "SESSION"), {}, cart)
 
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before

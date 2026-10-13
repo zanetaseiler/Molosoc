@@ -664,9 +664,24 @@ function molosoc_gift_add_to_cart_action() {
 	// WooCommerce's stock check counts what the cart already holds (replacing
 	// a row when only one unit is left would otherwise be refused); they are
 	// kept in the removed-items list for that restore.
+	// Only rows proven to be this order's own pair(s) or an earlier submit of
+	// this form are set aside; an unrelated product (or a pair of a variation
+	// the order did not contain) stays in the cart, and the check below then
+	// sends the shopper to the product page without touching anything.
+	$bought = array();
+	foreach ( $parent->get_items() as $order_item ) {
+		if ( is_object( $order_item ) && method_exists( $order_item, 'get_variation_id' ) ) {
+			$bought[ (int) $order_item->get_variation_id() ] = true;
+		}
+	}
 	$stale = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
-		$stale[ $item_key ] = $item;
+		$own_pair = isset( $item['product_id'], $item['variation_id'] )
+			&& MOLOSOC_PRODUCT_ID === (int) $item['product_id']
+			&& isset( $bought[ (int) $item['variation_id'] ] );
+		if ( isset( $item['molosoc_gift_slot'] ) || $own_pair ) {
+			$stale[ $item_key ] = $item;
+		}
 	}
 	foreach ( array_keys( $stale ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
