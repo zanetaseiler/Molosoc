@@ -744,7 +744,8 @@ function molosoc_gift_park_rows( $parent, $rows, $proof_now = null ) {
 	// keeps a single, replaceable record) and the checkout address the add-on
 	// replaces. A second park for the same order keeps what the first one saved.
 	$same    = is_array( $park ) && isset( $park['order_id'] ) && absint( $park['order_id'] ) === $parent->get_id();
-	$proof   = ( $same && isset( $park['proof'] ) && is_array( $park['proof'] ) ) ? $park['proof'] : ( is_array( $proof_now ) ? $proof_now : molosoc_gift_proven_rows( $parent->get_id() ) );
+	$current = is_array( $proof_now ) ? $proof_now : molosoc_gift_proven_rows( $parent->get_id() );
+	$proof   = ( $same && isset( $park['proof'] ) && is_array( $park['proof'] ) ) ? $park['proof'] : $current;
 	$address = ( $same && isset( $park['address'] ) && is_array( $park['address'] ) ) ? $park['address'] : molosoc_gift_customer_address( $parent );
 	foreach ( $rows as $item_key => $item ) {
 		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
@@ -760,16 +761,31 @@ function molosoc_gift_park_rows( $parent, $rows, $proof_now = null ) {
 				$extra[ $field ] = $value;
 			}
 		}
+		// The older proof of a same-order park covers only the rows already in it:
+		// incoming units are judged by the proof as it is now (an identical product
+		// added meanwhile has tainted it), never by the stale entry for their key.
+		$incoming_variation = isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0;
+		$paid_now           = ( isset( $current[ $item_key ]['variation'], $current[ $item_key ]['quantity'] ) && (int) $current[ $item_key ]['variation'] === $incoming_variation ) ? (int) $current[ $item_key ]['quantity'] : 0;
 		if ( isset( $kept[ $item_key ] ) ) {
-			// A retained remainder is already net of ITS proof: net the incoming units
-			// by this park's proof first, so the sum stays net and keeps its flag.
-			if ( ! empty( $kept[ $item_key ]['netted'] ) && isset( $proof[ $item_key ]['variation'], $proof[ $item_key ]['quantity'] )
-				&& (int) $proof[ $item_key ]['variation'] === ( isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0 )
-			) {
-				$quantity = max( 0, $quantity - (int) $proof[ $item_key ]['quantity'] );
+			if ( empty( $kept[ $item_key ]['netted'] ) && $same ) {
+				// Gross kept units were judged by the older proof; net them by it now so
+				// the sum can be netted and the stale entry dropped.
+				$paid_kept = ( isset( $proof[ $item_key ]['variation'], $proof[ $item_key ]['quantity'] ) && (int) $proof[ $item_key ]['variation'] === (int) $kept[ $item_key ]['variation_id'] ) ? (int) $proof[ $item_key ]['quantity'] : 0;
+				$kept[ $item_key ]['quantity'] = max( 0, (int) $kept[ $item_key ]['quantity'] - $paid_kept );
+				$kept[ $item_key ]['netted']   = true;
+				unset( $proof[ $item_key ] );
+			}
+			if ( ! empty( $kept[ $item_key ]['netted'] ) ) {
+				$quantity = max( 0, $quantity - $paid_now );
 			}
 			$kept[ $item_key ]['quantity'] = (int) $kept[ $item_key ]['quantity'] + $quantity;
 			continue;
+		}
+		if ( $same ) {
+			unset( $proof[ $item_key ] );
+			if ( isset( $current[ $item_key ] ) ) {
+				$proof[ $item_key ] = $current[ $item_key ];
+			}
 		}
 		$kept[ $item_key ] = array(
 			'product_id'   => (int) $item['product_id'],

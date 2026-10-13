@@ -811,6 +811,14 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(park["rows"]["line425"]["quantity"], 1)
         self.assertTrue(park["rows"]["line425"]["netted"])
 
+    def test_newly_parked_units_are_judged_by_the_current_proof_not_the_older_park_proof(self):
+        # Codex P2 on #148: an identical product added meanwhile taints the record; the stale
+        # proof stored in the same order's park must not swallow the newly added unit.
+        old = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {}, "proof": {"line425": {"variation": 425, "quantity": 1}}}}
+        body = "$p = wc_get_order( 77 ); molosoc_gift_park_rows( $p, array( 'line425' => array( 'product_id' => 364, 'variation_id' => 425, 'quantity' => 1 ) ), array() ); molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );"
+        out = run_php({"cart": {}, "session": old}, body)
+        self.assertEqual(json.loads(out), {"line425": 1})
+
     def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
         # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
         parked = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
