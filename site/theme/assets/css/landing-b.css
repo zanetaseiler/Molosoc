@@ -1,0 +1,778 @@
+/*
+  Landing Page B — rebuild of WP page 580 ("Hydratacni Navleky Landing Page
+  Old", Thrive Architect). Enqueued by functions.php only on
+  is_page('hydratacni-navleky-landing-b'); see
+  site/theme/page-hydratacni-navleky-landing-b.php and
+  docs/landing-page-b-580.md.
+
+  Visual values are taken from page 580's own rendered CSS (tve_custom_style)
+  and getComputedStyle on the live page, not from the theme tokens, because
+  the brief is a faithful rebuild of the OLD design:
+    - page surface      #faf7f2 (Thrive linear-gradient(#faf7f2,#faf7f2))
+    - dark bands        #000
+    - headings          "DM Serif Display" 400 (hero 80px, sections 45px)
+    - eyebrows/labels   "Nunito Sans" 300, uppercase, wide tracking, #86878b
+    - body              Nunito 300 rgba(64,53,42,.84) / "Open Sans" 300
+    - buttons           #000 fill, #fff text, 2px tracking, uppercase, square
+  Everything is scoped under .lpb so none of it leaks into the theme's other
+  templates, and the theme's oversized global h2 (base.css) is overridden
+  inside .lpb only.
+*/
+
+.lpb {
+  --lpb-cream: #faf7f2;
+  --lpb-ink: #000;
+  --lpb-body: rgba(64, 53, 42, 0.84);
+  --lpb-muted: #86878b;
+  --lpb-line: rgba(12, 17, 21, 0.12);
+  --lpb-white: #fff;
+  --lpb-serif: "DM Serif Display", Georgia, "Times New Roman", serif;
+  --lpb-sans: "Nunito Sans", "Nunito", "Mulish", -apple-system, sans-serif;
+  --lpb-body-font: "Nunito", "Open Sans", "Mulish", -apple-system, sans-serif;
+  --lpb-max: 1080px;
+  background: var(--lpb-cream);
+  color: var(--lpb-body);
+  font-family: var(--lpb-body-font);
+  font-weight: 300;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.lpb h1,
+.lpb h2,
+.lpb h3 {
+  font-family: var(--lpb-serif);
+  font-weight: 400;
+  color: var(--lpb-ink);
+  line-height: 1.1;
+}
+
+.lpb h2 {
+  font-size: clamp(1.9rem, 2.4vw + 1rem, 2.8rem);
+  line-height: 1.15;
+}
+
+.lpb p {
+  max-width: none;
+}
+
+.lpb a:not(.lpb-btn) {
+  color: inherit;
+}
+
+.lpb-eyebrow {
+  font-family: var(--lpb-sans);
+  font-weight: 300;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
+  margin: 0 0 0.75rem;
+}
+
+.lpb-section {
+  padding: clamp(3rem, 6vw, 5.5rem) clamp(1rem, 5vw, 3rem);
+  max-width: 100%;
+}
+
+.lpb-section--cream {
+  background: var(--lpb-cream);
+}
+
+.lpb-section > :not(.lpb-section__head):not(.lpb-split__media):not(.lpb-split__copy) {
+  max-width: var(--lpb-max);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.lpb-section__head {
+  text-align: center;
+  max-width: 48rem;
+  margin: 0 auto 2.5rem;
+}
+
+/* Thin centred rule under every section H2, as on page 580. */
+.lpb-section__head h2::after {
+  content: "";
+  display: block;
+  width: 80px;
+  height: 1px;
+  background: var(--lpb-ink);
+  opacity: 0.5;
+  margin: 1.1rem auto 0;
+}
+
+.lpb-lede {
+  margin-top: 1rem;
+  color: var(--lpb-muted);
+}
+
+.lpb-strong {
+  font-weight: 600;
+  color: var(--lpb-ink);
+  margin: 1.25rem 0 1rem;
+}
+
+.lpb-caps {
+  font-family: var(--lpb-sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
+  margin-top: 1.25rem;
+}
+
+/* ---------- Buttons (page 580 .tcb-button-link) ---------- */
+
+.lpb .lpb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lpb-ink);
+  color: var(--lpb-white);
+  font-family: var(--lpb-sans);
+  font-weight: 400;
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1.2;
+  padding: 1.05em 2.2em;
+  border: 1px solid var(--lpb-ink);
+  border-radius: 0;
+  transition: opacity 180ms ease;
+}
+
+.lpb .lpb-btn:hover,
+.lpb .lpb-btn:focus-visible {
+  opacity: 0.86;
+}
+
+.lpb .lpb-btn--ghost {
+  background: transparent;
+  color: var(--lpb-white);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Price ---------- */
+
+.lpb-price {
+  margin: 1.5rem 0 0;
+  line-height: 1;
+}
+
+.lpb-price__amount {
+  font-family: var(--lpb-serif);
+  font-size: 2.6rem;
+  color: var(--lpb-ink);
+}
+
+.lpb-price--dark .lpb-price__amount {
+  color: var(--lpb-white);
+}
+
+.lpb-price__meta {
+  font-size: 0.95rem;
+  color: var(--lpb-muted);
+  margin: 0.5rem 0 1.25rem;
+}
+
+/* ---------- 2. Hero ---------- */
+
+.lpb-hero {
+  position: relative;
+  padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 5vw, 3rem) 0;
+  background:
+    linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),
+    url("https://molosoc.com/wp-content/uploads/2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp") center / cover no-repeat;
+}
+
+.lpb-hero__inner {
+  max-width: var(--lpb-max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: start;
+  padding-bottom: 3rem;
+}
+
+.lpb-hero__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lpb-hero__main {
+  display: block;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.lpb-hero__thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 0.75rem;
+}
+
+.lpb-hero__thumbs > a,
+.lpb-hero__thumbs > img {
+  display: block;
+  background: var(--lpb-white);
+}
+
+.lpb-hero__copy {
+  padding-top: clamp(1rem, 4vw, 3.5rem);
+}
+
+.lpb-hero__title {
+  font-size: clamp(2.6rem, 4.6vw + 0.5rem, 5rem);
+  line-height: 1.05;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.lpb-hero__sub {
+  font-weight: 600;
+  color: var(--lpb-ink);
+  font-size: 1.35rem;
+  margin: 0 0 0.35rem;
+}
+
+.lpb-hero__lede {
+  color: var(--lpb-body);
+}
+
+/* ---------- 3. Scarcity strip + feature strip ---------- */
+
+.lpb-strip {
+  text-align: center;
+  font-family: var(--lpb-sans);
+}
+
+.lpb-strip__scarcity {
+  background: var(--lpb-ink);
+  color: var(--lpb-white);
+  font-weight: 300;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  padding: 1.35rem 1rem;
+  margin: 0;
+}
+
+.lpb-strip__features {
+  margin: 0;
+  padding: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem 2.75rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
+  border-bottom: 1px solid var(--lpb-line);
+}
+
+/* ---------- Cards (4. Pro koho, 6. Velikosti, 12. Proč) ---------- */
+
+.lpb-cards {
+  display: grid;
+  gap: 1px;
+  background: var(--lpb-line);
+  border: 1px solid var(--lpb-line);
+}
+
+.lpb-cards--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lpb-card {
+  background: var(--lpb-white);
+  padding: 2.25rem 1.5rem;
+  text-align: center;
+}
+
+.lpb-card h3 {
+  font-family: var(--lpb-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin: 1rem 0 0.5rem;
+}
+
+.lpb-card p {
+  font-size: 0.95rem;
+  color: var(--lpb-muted);
+  margin: 0;
+}
+
+.lpb-card img {
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+  margin: 0 auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.lpb-icon {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  color: var(--lpb-ink);
+  display: inline-block;
+}
+
+.lpb-cards--dark {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.lpb-cards--dark .lpb-card {
+  background: #050505;
+}
+
+.lpb-cards--dark .lpb-card h3,
+.lpb-cards--dark .lpb-icon {
+  color: var(--lpb-cream);
+}
+
+/* ---------- Split layouts (5. Co to je, 7. Jak to funguje, 11. Kompatibilita) ---------- */
+
+.lpb-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+}
+
+.lpb-section.lpb-split {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.lpb-split--inner {
+  max-width: var(--lpb-max);
+  margin: 0 auto;
+}
+
+.lpb-split__media {
+  display: block;
+}
+
+.lpb-split__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lpb-split__copy {
+  padding: 0 clamp(1rem, 5vw, 3rem);
+}
+
+.lpb-split--reverse .lpb-split__copy {
+  order: 0;
+}
+
+.lpb-split--reverse .lpb-split__media {
+  order: 1;
+}
+
+.lpb-list {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--lpb-ink);
+}
+
+.lpb-list li + li {
+  margin-top: 0.25rem;
+}
+
+.lpb-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--lpb-ink);
+}
+
+.lpb-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--lpb-line);
+  font-family: var(--lpb-sans);
+  font-weight: 400;
+}
+
+.lpb-steps__num {
+  font-size: 0.85rem;
+  color: rgba(12, 17, 21, 0.69);
+  min-width: 2ch;
+}
+
+.lpb-chips {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+}
+
+.lpb-chips li {
+  font-family: var(--lpb-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
+  border: 1px solid var(--lpb-line);
+  padding: 0.5rem 0.9rem;
+}
+
+/* ---------- 8. Tabs (page 580 Thrive tabs) ---------- */
+
+.lpb-tabs__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--lpb-line);
+  border: 1px solid var(--lpb-line);
+}
+
+.lpb-tabs__tab {
+  appearance: none;
+  background: var(--lpb-white);
+  border: 0;
+  cursor: pointer;
+  padding: 1.1rem 0.75rem;
+  font-family: var(--lpb-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
+}
+
+.lpb-tabs__tab.is-active {
+  background: var(--lpb-ink);
+  color: var(--lpb-white);
+}
+
+.lpb-tabs__panel {
+  background: var(--lpb-white);
+  border: 1px solid var(--lpb-line);
+  border-top: 0;
+  padding: 1.5rem;
+  color: var(--lpb-body);
+}
+
+/* Progressive enhancement: with no JS every panel stays visible, stacked. */
+.lpb-tabs:not(.is-enhanced) .lpb-tabs__panel[hidden] {
+  display: block;
+}
+
+/* ---------- 9. Gallery ---------- */
+
+.lpb-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  max-width: 880px;
+}
+
+.lpb-gallery figure {
+  margin: 0;
+}
+
+.lpb-gallery img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.lpb-gallery figcaption {
+  font-size: 0.95rem;
+  color: var(--lpb-muted);
+  padding: 0.5rem 0 0;
+}
+
+/* ---------- 10. Video (vertical Shorts embed, as on page 580) ---------- */
+
+.lpb-video {
+  max-width: 315px;
+}
+
+.lpb-video iframe {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  height: auto;
+  border: 0;
+  display: block;
+  background: #000;
+}
+
+/* ---------- 12. Dark band ---------- */
+
+.lpb-section--dark {
+  background: var(--lpb-ink);
+  color: rgba(248, 248, 248, 0.9);
+  text-align: center;
+}
+
+.lpb-section--dark h2 {
+  color: var(--lpb-cream);
+}
+
+.lpb-section--dark .lpb-section__head h2::after {
+  background: var(--lpb-cream);
+}
+
+.lpb-section--dark .lpb-eyebrow {
+  color: rgba(249, 224, 199, 0.84);
+}
+
+.lpb-section--dark .lpb-price__meta {
+  color: rgba(248, 248, 248, 0.7);
+}
+
+/* ---------- 13. FAQ (native <details>) ---------- */
+
+.lpb-faq {
+  max-width: 880px;
+}
+
+.lpb-faq details {
+  border-bottom: 1px solid var(--lpb-line);
+}
+
+.lpb-faq details:first-child {
+  border-top: 1px solid var(--lpb-line);
+}
+
+.lpb-faq summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  font-family: var(--lpb-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--lpb-ink);
+}
+
+.lpb-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.lpb-faq summary::after {
+  content: "+";
+  font-weight: 300;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--lpb-muted);
+}
+
+.lpb-faq details[open] summary::after {
+  content: "–";
+}
+
+.lpb-faq details p {
+  padding: 0 0 1.25rem;
+  margin: 0;
+  color: var(--lpb-body);
+}
+
+/* ---------- 14. Order card ---------- */
+
+.lpb-order {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+  max-width: 880px;
+  background: var(--lpb-white);
+  border: 1px solid var(--lpb-line);
+  padding: 1.5rem;
+}
+
+.lpb-order__media img {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--lpb-cream);
+}
+
+.lpb-order__title {
+  font-size: 1.9rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.lpb-order__spec {
+  font-size: 0.95rem;
+  color: var(--lpb-muted);
+}
+
+.lpb-badges {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--lpb-line);
+  border: 1px solid var(--lpb-line);
+}
+
+.lpb-badges li {
+  background: var(--lpb-white);
+  text-align: center;
+  padding: 0.9rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--lpb-sans);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lpb-ink);
+}
+
+/* ---------- 15. Founders ---------- */
+
+.lpb-quote {
+  margin-top: 1.25rem;
+  color: var(--lpb-ink);
+  font-size: 1.15rem;
+}
+
+.lpb-founders__photo {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  margin: 1.5rem auto 0;
+}
+
+/* ---------- Sticky CTA bar ---------- */
+
+.lpb-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: rgba(250, 247, 242, 0.96);
+  border-top: 1px solid var(--lpb-line);
+  backdrop-filter: blur(6px);
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.lpb-sticky.is-hidden {
+  transform: translateY(110%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lpb-sticky__price {
+  font-family: "DM Serif Display", Georgia, serif;
+  font-size: 1.4rem;
+  color: #000;
+}
+
+.lpb-sticky .lpb-btn,
+.lpb-sticky__btn {
+  display: inline-flex;
+  align-items: center;
+  background: #000;
+  color: #fff;
+  font-family: "Nunito Sans", "Nunito", sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 0.85em 1.8em;
+  border-radius: 0;
+}
+
+/* Keep the fixed bar from covering the footer's last lines. */
+body:has(.lpb-sticky) .site-footer,
+body:has(.lpb-sticky) footer {
+  padding-bottom: 4.5rem;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .lpb-hero__inner,
+  .lpb-split,
+  .lpb-order {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lpb-split--reverse .lpb-split__media {
+    order: 0;
+  }
+
+  .lpb-split--reverse .lpb-split__copy {
+    order: 1;
+  }
+
+  .lpb-hero__copy {
+    padding-top: 0;
+    text-align: center;
+  }
+
+  .lpb-cards--3,
+  .lpb-tabs__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lpb-gallery {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .lpb {
+    font-size: 16px;
+  }
+
+  .lpb-hero__thumbs {
+    gap: 0.4rem;
+    padding: 0.4rem;
+  }
+
+  .lpb-badges {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lpb .lpb-btn {
+    width: 100%;
+  }
+
+  .lpb-sticky .lpb-btn {
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lpb-sticky,
+  .lpb .lpb-btn {
+    transition: none;
+  }
+}
