@@ -458,7 +458,9 @@
      darken it. Compared live against laying the hero-bg photo over it as
      a multiply overlay, which warmed the highlights but left the text
      zone grayish. */
-  filter: sepia(0.22) saturate(1.15) brightness(1.02);
+  /* Issue #139: eased a touch (was sepia .22 / saturate 1.15) — still
+     warm, no longer beige. */
+  filter: sepia(0.17) saturate(1.12) brightness(1.02);
 }
 
 /* Continuous "breathing" zoom (100% <-> 106%), not a one-time reveal — a
@@ -527,7 +529,7 @@
       rgba(70, 45, 25, 0.34) 65%,
       rgba(70, 45, 25, 0.52) 100%
     ),
-    rgba(227, 196, 168, 0.18);
+    rgba(227, 196, 168, 0.14);
 }
 
 .molosoc-hero__content {
@@ -1173,6 +1175,19 @@
 
 .molosoc-merge__text {
   opacity: 1;
+}
+
+/* Warm grade (Issue #139): the cool ink scrim (rgba(12,17,21,.6)) read this
+   block's photo as gray. Same light sepia as the hero (a touch softer) on
+   both tiles — identical filter on each keeps the merged seam invisible —
+   and a warm brown scrim at the same .6 alpha so text contrast is
+   unchanged. */
+.molosoc-merge__tile {
+  filter: sepia(0.15) saturate(1.1);
+}
+
+.molosoc-merge-section.molosoc-section--photo-bg .molosoc-section__scrim {
+  background: rgba(46, 30, 18, 0.6);
 }
 
 /* Over the photo: moderated editorial scale. Spreads across the whole
