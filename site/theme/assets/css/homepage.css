@@ -615,7 +615,19 @@
   min-height: 0;
   display: block;
   overflow: visible; /* the card's shadow must not be clipped */
-  background: var(--color-bg);
+  /* Warm photo backdrop behind the card (2026-10-13, per request, both
+     languages): the same veiled cover image Landing Page B uses on its
+     hero (landing-b.css .lpb-hero), so the cream frame around the hero
+     card picks up the soft peach/linen tones instead of flat cream.
+     --color-bg stays underneath as the fallback while the image loads
+     or if it is blocked. */
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),
+    url("https://molosoc.com/wp-content/uploads/2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   /* Header above is the boxed .molosoc-site-header (position: relative),
      so the card starts a little below it, not under it. */
   padding: var(--space-m) clamp(1rem, 2.5vw, 2.5rem) var(--space-l);
