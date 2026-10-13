@@ -121,6 +121,10 @@ class Molosoc_Test_Product {
 	public $price = 229;
 	function set_price( $p ) { $this->price = $p; }
 	function get_regular_price() { return '229'; }
+	public $pmeta = array();
+	function get_price( $c = 'view' ) { return $this->price; }
+	function get_meta( $k, $single = true, $c = 'view' ) { return isset( $this->pmeta[ $k ] ) ? $this->pmeta[ $k ] : ''; }
+	function update_meta_data( $k, $v ) { $this->pmeta[ $k ] = $v; }
 }
 class Molosoc_Test_Cart {
 	public $items; public $products = array();
@@ -731,6 +735,10 @@ class LinkedCheckout(unittest.TestCase):
 
 
 @unittest.skipUnless(shutil.which("php"), "php not installed")
+def self_link(slots):
+    return dict(LINK, lines={k: 1 for k in slots}, slots=slots)
+
+
 class OfferPricing(unittest.TestCase):
     """The 209 / 199 prices (#110) exist only on a valid, linked gift cart."""
 
@@ -825,6 +833,30 @@ class OfferPricing(unittest.TestCase):
         src = GIFT.read_text(encoding="utf-8")
         self.assertIn("'woocommerce_before_calculate_totals'", src)
         self.assertNotIn("add_filter( 'woocommerce_product", src)
+
+    def test_prices_are_restored_when_the_link_stops_holding_between_passes(self):
+        body = """
+        molosoc_gift_apply_prices( WC()->cart );
+        $first = array();
+        foreach ( WC()->cart->get_cart() as $k => $i ) { $first[ $k ] = $i['data']->price; }
+        $GLOBALS['t']['status']['77'] = 'completed';
+        molosoc_gift_apply_prices( WC()->cart );
+        $second = array();
+        foreach ( WC()->cart->get_cart() as $k => $i ) { $second[ $k ] = $i['data']->price; }
+        echo json_encode( array( $first, $second ) );
+        """
+        first, second = json.loads(run_php({"session": {"molosoc_gift_parent": LINK}, "cart": LINKED_CART}, body))
+        self.assertEqual(first, {"line425s2": 209, "line424s3": 199})
+        self.assertEqual(second, {"line425s2": 229, "line424s3": 229})
+
+    def test_audit_pricing_lists_only_pairs_actually_purchased(self):
+        body = """
+        $new = wc_get_order( 88 );
+        molosoc_gift_stamp_new_order( $new );
+        echo json_encode( $new->meta );
+        """
+        meta = json.loads(run_php({"session": {"molosoc_gift_parent": self_link({"line425s2": 2})}, "cart": {"line425s2": 1}}, body))
+        self.assertEqual(json.loads(meta["_molosoc_gift_parent_order_pricing"]), {"2": 209})
 
     def test_order_keeps_the_pricing_audit_trail(self):
         body = """

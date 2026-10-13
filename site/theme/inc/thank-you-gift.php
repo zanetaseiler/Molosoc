@@ -711,7 +711,8 @@ function molosoc_gift_cart_link() {
 	if ( $taken !== array_slice( $offer['slots'], 0, count( $taken ) ) ) {
 		return null;
 	}
-	$prices = array();
+	$prices    = array();
+	$purchased = array();
 	foreach ( $items as $key => $item ) {
 		if ( ! isset( $lines[ $key ], $slots[ $key ], $item['product_id'], $item['quantity'], $item['molosoc_gift_slot'] )
 			|| MOLOSOC_PRODUCT_ID !== (int) $item['product_id']
@@ -721,12 +722,15 @@ function molosoc_gift_cart_link() {
 		) {
 			return null;
 		}
-		$prices[ $key ] = $offer['prices'][ (int) $slots[ $key ] ];
+		$prices[ $key ]                    = $offer['prices'][ (int) $slots[ $key ] ];
+		$purchased[ (int) $slots[ $key ] ] = $prices[ $key ];
 	}
+	ksort( $purchased );
 	return array(
 		'order'  => $parent,
 		'lang'   => ( isset( $link['lang'] ) && 'cz' === $link['lang'] ) ? 'cz' : 'en',
 		'prices' => $prices, // cart item key => unit price, from the server-side schedule
+		'pairs'  => $purchased, // overall pair number => unit price, only pairs actually in the cart
 		'offer'  => $offer,
 	);
 }
@@ -743,13 +747,19 @@ function molosoc_gift_apply_prices( $cart ) {
 		return;
 	}
 	$link = molosoc_gift_cart_link();
-	if ( ! $link ) {
-		return;
-	}
 	foreach ( $cart->get_cart() as $key => $item ) {
-		if ( isset( $link['prices'][ $key ], $item['data'] ) ) {
-			$item['data']->set_price( $link['prices'][ $key ] );
+		if ( ! isset( $item['molosoc_gift_slot'], $item['data'] ) || ! is_object( $item['data'] ) ) {
+			continue;
 		}
+		// The cart's product objects outlive a totals pass: remember the price
+		// they had before the first offer price and put it back on every pass
+		// whose link no longer holds.
+		$base = $item['data']->get_meta( '_molosoc_gift_base_price', true, 'edit' );
+		if ( '' === (string) $base ) {
+			$base = $item['data']->get_price( 'edit' );
+			$item['data']->update_meta_data( '_molosoc_gift_base_price', $base );
+		}
+		$item['data']->set_price( ( $link && isset( $link['prices'][ $key ] ) ) ? $link['prices'][ $key ] : $base );
 	}
 }
 add_action( 'woocommerce_before_calculate_totals', 'molosoc_gift_apply_prices', 100, 1 );
@@ -826,7 +836,7 @@ function molosoc_gift_stamp_new_order( $order ) {
 	// Audit trail for the offer prices: how many pairs the original order held
 	// and the unit price granted to each overall pair number.
 	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_original_qty', $link['offer']['original'] );
-	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_pricing', wp_json_encode( $link['offer']['prices'] ) );
+	$order->update_meta_data( MOLOSOC_GIFT_PARENT_META . '_pricing', wp_json_encode( $link['pairs'] ) );
 }
 add_action( 'woocommerce_checkout_create_order', 'molosoc_gift_stamp_new_order', 10, 1 );
 add_action( 'woocommerce_store_api_checkout_update_order_meta', 'molosoc_gift_stamp_new_order', 10, 1 );
