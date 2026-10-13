@@ -664,27 +664,59 @@ function molosoc_gift_add_to_cart_action() {
 	// WooCommerce's stock check counts what the cart already holds (replacing
 	// a row when only one unit is left would otherwise be refused); they are
 	// kept in the removed-items list for that restore.
-	// Only rows proven to be this order's own pair(s) or an earlier submit of
-	// this form are set aside; an unrelated product (or a pair of a variation
-	// the order did not contain) stays in the cart, and the check below then
-	// sends the shopper to the product page without touching anything.
+	// Only rows proven to be this order's own are set aside; anything else
+	// stays in the cart, and the check below then sends the shopper to the
+	// product page without touching anything. Proof is:
+	//  - a gift row: the session link names THIS order (id and key) and lists
+	//    the row's key with the same pair number — a gift row another order's
+	//    Thank You tab created, or a bare marker, proves nothing;
+	//  - an ordinary row: a MOLOSOC pair of a variation this order contains,
+	//    holding no more units than the order bought of it (so a larger or
+	//    unrelated cart is never taken for the order's own).
 	$bought = array();
 	foreach ( $parent->get_items() as $order_item ) {
 		if ( is_object( $order_item ) && method_exists( $order_item, 'get_variation_id' ) ) {
-			$bought[ (int) $order_item->get_variation_id() ] = true;
+			$variation_id            = (int) $order_item->get_variation_id();
+			$quantity                = method_exists( $order_item, 'get_quantity' ) ? (int) $order_item->get_quantity() : 1;
+			$bought[ $variation_id ] = ( isset( $bought[ $variation_id ] ) ? $bought[ $variation_id ] : 0 ) + $quantity;
 		}
 	}
+	$link     = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
+	$link_ok  = is_array( $link )
+		&& isset( $link['order_id'], $link['key'] )
+		&& (int) $link['order_id'] === $parent->get_id()
+		&& hash_equals( $parent->get_order_key(), (string) $link['key'] )
+		&& isset( $link['lines'], $link['slots'] )
+		&& is_array( $link['lines'] )
+		&& is_array( $link['slots'] );
 	$stale = array();
 	foreach ( $cart->get_cart() as $item_key => $item ) {
-		$own_pair = isset( $item['product_id'], $item['variation_id'] )
-			&& MOLOSOC_PRODUCT_ID === (int) $item['product_id']
-			&& isset( $bought[ (int) $item['variation_id'] ] );
-		if ( isset( $item['molosoc_gift_slot'] ) || $own_pair ) {
-			$stale[ $item_key ] = $item;
+		if ( ! isset( $item['product_id'], $item['variation_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+			continue;
+		}
+		if ( isset( $item['molosoc_gift_slot'] ) ) {
+			if ( $link_ok && isset( $link['lines'][ $item_key ], $link['slots'][ $item_key ] )
+				&& (int) $link['slots'][ $item_key ] === (int) $item['molosoc_gift_slot']
+			) {
+				$stale[ $item_key ] = $item;
+			}
+			continue;
+		}
+		$variation_id = (int) $item['variation_id'];
+		$quantity     = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		if ( isset( $bought[ $variation_id ] ) && $quantity >= 1 && $quantity <= $bought[ $variation_id ] ) {
+			$bought[ $variation_id ] -= $quantity;
+			$stale[ $item_key ]       = $item;
 		}
 	}
 	foreach ( array_keys( $stale ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
+	}
+
+	// Rows that stay in the cart, so a failed add can put them back as they were.
+	$kept = array();
+	foreach ( $cart->get_cart() as $item_key => $item ) {
+		$kept[ $item_key ] = (int) $item['quantity'];
 	}
 
 	$wanted = array();
@@ -709,8 +741,10 @@ function molosoc_gift_add_to_cart_action() {
 	// rolled back like a failed one and they choose on the product page
 	// instead.
 	if ( ! $failed ) {
-		foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
-			if ( ! isset( $wanted[ $item_key ] ) ) {
+		foreach ( $cart->get_cart() as $item_key => $item ) {
+			// A kept row sharing a chosen row's key would merge into it
+			// (quantity 2): that is not the cart the form promised either.
+			if ( ! isset( $wanted[ $item_key ] ) || 1 !== (int) $item['quantity'] ) {
 				$failed = true;
 				break;
 			}
@@ -718,7 +752,11 @@ function molosoc_gift_add_to_cart_action() {
 	}
 	if ( $failed ) {
 		foreach ( array_keys( $wanted ) as $item_key ) {
-			$cart->remove_cart_item( $item_key );
+			if ( isset( $kept[ $item_key ] ) ) {
+				$cart->set_quantity( $item_key, $kept[ $item_key ] );
+			} else {
+				$cart->remove_cart_item( $item_key );
+			}
 		}
 		// A replacement can share a stale row's key (same size, same pair
 		// number); removing it just overwrote WooCommerce's removed-items

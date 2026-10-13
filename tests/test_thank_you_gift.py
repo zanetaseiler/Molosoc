@@ -519,7 +519,7 @@ class AddToCartHandler(unittest.TestCase):
 
     @staticmethod
     def owned(cart, **over):
-        link = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "lines": {k: 1 for k in cart}, "slots": {k: 2 for k in cart}, "time": 1}
+        link = {"order_id": 77, "key": "wc_order_key77", "lang": "cz", "lines": {k: 1 for k in cart}, "slots": {k: int(k[-1]) if "s" in k[4:] else 2 for k in cart}, "time": 1}
         return {"molosoc_gift_parent": dict(link, **over)}
 
     def test_rows_left_from_an_earlier_submit_do_not_block_checkout(self):
@@ -538,8 +538,8 @@ class AddToCartHandler(unittest.TestCase):
         # submission now sets those rows aside and reaches checkout with exactly
         # the chosen gift pairs, linked, with the session cookie requested.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line425": 3}, {"line425": 1}, {"line425": 1, "line424s3": 1}):
-            redirect, added, out = self.submit(post, {"cart": cart})
+        for cart in ({"line425": 1}, {"line425s2": 1}, {"line425s2": 1, "line424s3": 1}):
+            redirect, added, out = self.submit(post, {"cart": cart, "session": self.owned(cart) if any("s" in k[4:] for k in cart) else {}})
             self.assertEqual(redirect, "https://example.test/cz/pokladna/", cart)
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, cart)
             link = section(out, "SESSION")["molosoc_gift_parent"]
@@ -551,11 +551,21 @@ class AddToCartHandler(unittest.TestCase):
         # contain, is not this order's row. It is kept, and the submission
         # falls back to the product page with the cart exactly as it was.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
-        for cart in ({"line999": 2}, {"line999": 2, "line425": 3}, {"line424": 1}, {"line424": 1, "line425": 1}):
+        for cart in ({"line999": 2}, {"line999": 2, "line425": 1}, {"line424": 1}, {"line424": 1, "line425": 1}, {"line425": 3}):
             redirect, added, out = self.submit(post, {"cart": cart})
             self.assertEqual(redirect, "https://example.test/product-cz/", cart)
             self.assertEqual(section(out, "CART"), cart, cart)
             self.assertEqual(section(out, "SESSION"), {}, cart)
+
+    def test_gift_rows_without_proof_of_ownership_are_kept(self):
+        # Codex P1: a gift row from another order's tab (session link names
+        # another order, or none) is not this order's to discard.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        cart = {"line425s2": 1}
+        for session in ({}, self.owned(cart, order_id=88), self.owned(cart, key="wc_order_other"), self.owned(cart, lines={}), self.owned(cart, slots={"line425s2": 3})):
+            redirect, _, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(redirect, "https://example.test/product-cz/", session)
+            self.assertEqual(section(out, "CART"), cart, session)
 
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before
