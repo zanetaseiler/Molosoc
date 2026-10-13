@@ -138,6 +138,8 @@ class Molosoc_Test_Cart {
 	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
 	public $removed = array();
 	function remove_cart_item( $key ) { if ( isset( $this->items[ $key ] ) ) { $this->removed[ $key ] = $this->items[ $key ]; } unset( $this->items[ $key ] ); }
+	function get_removed_cart_contents() { return $this->removed; }
+	function set_removed_cart_contents( $removed ) { foreach ( $removed as $key => $row ) { $this->removed[ $key ] = is_array( $row ) ? $row['quantity'] : $row; } }
 	function restore_cart_item( $key ) { if ( isset( $this->removed[ $key ] ) ) { $this->items[ $key ] = $this->removed[ $key ]; unset( $this->removed[ $key ] ); } }
 	function get_cart() {
 		$out = array();
@@ -527,6 +529,16 @@ class AddToCartHandler(unittest.TestCase):
             self.assertIn("REDIRECT:https://example.test/product-cz/", out, cart)
             self.assertEqual(section(out, "CART"), cart, cart)
             self.assertEqual(section(out, "SESSION"), {}, cart)
+
+    def test_a_failed_add_restores_a_stale_row_that_shares_a_key_with_its_replacement(self):
+        # The stale slot-2 row has quantity 2; the replacement has the same key
+        # (same size and pair number). A later pair fails: the original row, with
+        # its original quantity, must come back, not the replacement.
+        post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
+        _, _, out = self.submit(post, {"cart": {"line425s2": 2}, "fail_variation": 424})
+        self.assertIn("REDIRECT:https://example.test/product-cz/", out)
+        self.assertEqual(section(out, "CART"), {"line425s2": 2})
+        self.assertEqual(section(out, "SESSION"), {})
 
     def test_replacing_a_stale_row_is_not_refused_by_the_stock_check(self):
         # Only one unit left of M: the earlier submit's row is replaced, not

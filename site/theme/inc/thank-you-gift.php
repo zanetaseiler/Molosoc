@@ -582,9 +582,9 @@ function molosoc_gift_add_to_cart_action() {
 			wp_safe_redirect( molosoc_product_url( $lang ) );
 			exit;
 		}
-		$stale[] = $item_key;
+		$stale[ $item_key ] = $item;
 	}
-	foreach ( $stale as $item_key ) {
+	foreach ( array_keys( $stale ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
 	}
 
@@ -620,7 +620,16 @@ function molosoc_gift_add_to_cart_action() {
 		foreach ( array_keys( $wanted ) as $item_key ) {
 			$cart->remove_cart_item( $item_key );
 		}
-		foreach ( $stale as $item_key ) {
+		// A replacement can share a stale row's key (same size, same pair
+		// number); removing it just overwrote WooCommerce's removed-items
+		// snapshot of the stale row with itself. Put the original rows'
+		// own data back in that list before restoring.
+		$removed = $cart->get_removed_cart_contents();
+		foreach ( $stale as $item_key => $item ) {
+			$removed[ $item_key ] = $item;
+		}
+		$cart->set_removed_cart_contents( $removed );
+		foreach ( array_keys( $stale ) as $item_key ) {
 			$cart->restore_cart_item( $item_key );
 		}
 		wp_safe_redirect( molosoc_product_url( $lang ) );
