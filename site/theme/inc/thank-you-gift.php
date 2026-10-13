@@ -728,7 +728,8 @@ function molosoc_gift_paid_record_state( $order ) {
  * variation, attributes, quantity and any other plain cart item data, minus
  * WooCommerce's computed fields and the gift marker (a parked gift-shaped row
  * returns as an ordinary row at the normal price). Rows parked by an earlier
- * submit that is still pending are kept and merged.
+ * submit for the same order that is still pending are kept and merged (another
+ * order's park is unparked first, in the submit handler).
  */
 function molosoc_gift_park_rows( $parent, $rows ) {
 	if ( ! $rows || ! function_exists( 'WC' ) || ! WC()->session ) {
@@ -1017,6 +1018,14 @@ function molosoc_gift_add_to_cart_action() {
 	// proof about those rows (#146 sent it to the product page whenever the session
 	// had none, e.g. for an order placed before the record existed), nothing is
 	// charged twice and nothing the shopper put in the cart is deleted.
+	// Rows still parked for an EARLIER pending add-on (another order) are judged
+	// against that order's own paid-row proof now, before they could be merged into
+	// this flow's park and lose that scope: what that proof covers stays out, the
+	// rest returns to the cart and is parked again below under this order.
+	$earlier = WC()->session ? WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY ) : null;
+	if ( is_array( $earlier ) && isset( $earlier['order_id'] ) && absint( $earlier['order_id'] ) !== $parent_id ) {
+		molosoc_gift_unpark_rows();
+	}
 	$parked = $cart->get_cart();
 	foreach ( array_keys( $parked ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );

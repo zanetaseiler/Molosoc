@@ -684,6 +684,19 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(json.loads(items), {"line999": 2})
         self.assertEqual(kept, "null")
 
+    def test_a_new_flow_judges_an_earlier_orders_park_by_its_own_proof_instead_of_merging(self):
+        # Codex P2 on #148: order 99's park (paid pair line425 + another row) must not
+        # be relabelled as order 77's: 99's proof drops line425, the rest is re-parked.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []},
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        session = dict(earlier, **paid_record({"line425": 1}, order_id=99))
+        redirect, _, out = self.submit(dict(FORM), {"cart": {}, "session": session})
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, {"line999": 2})
+
     def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
         # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
         parked = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
