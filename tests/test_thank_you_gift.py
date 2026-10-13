@@ -25,6 +25,7 @@ $GLOBALS['hooks'] = array();
 $GLOBALS['added'] = array();
 $GLOBALS['notes'] = array();
 $GLOBALS['log'] = array();
+$GLOBALS['trace'] = array();
 $GLOBALS['session'] = $GLOBALS['t']['session'];
 function add_action( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
 function add_filter( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
@@ -43,7 +44,7 @@ function home_url( $path = '' ) { return 'https://example.test' . $path; }
 function wc_nocache_headers() {}
 $GLOBALS['notices'] = array();
 function wc_add_notice( $m, $t = 'success' ) { $GLOBALS['notices'][] = $m; }
-function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCOOKIE:" . json_encode( ! empty( $GLOBALS['cookie'] ) ) . "\nLOG:" . json_encode( $GLOBALS['log'] ) . "\nNOTICES:" . json_encode( $GLOBALS['notices'], JSON_UNESCAPED_UNICODE ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
+function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCOOKIE:" . json_encode( ! empty( $GLOBALS['cookie'] ) ) . "\nLOG:" . json_encode( $GLOBALS['log'] ) . "\nTRACE:" . json_encode( $GLOBALS['trace'] ) . "\nNOTICES:" . json_encode( $GLOBALS['notices'], JSON_UNESCAPED_UNICODE ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
 function is_wc_endpoint_url( $e ) { return 'order-received' === $e && ! empty( $GLOBALS['t']['endpoint'] ); }
 function pll_current_language() { return $GLOBALS['t']['request_lang']; }
 function pll_get_post( $id, $lang ) { return 'cz' === $lang ? 900 : 360; }
@@ -51,7 +52,7 @@ function get_post_status( $id ) { return 'publish'; }
 function get_permalink( $id ) { return 900 === $id ? 'https://example.test/cz/pokladna/' : 'https://example.test/checkout/'; }
 function wc_get_endpoint_url( $endpoint, $value, $base ) { return $base . $endpoint . '/' . $value . '/'; }
 function add_query_arg( $k, $v, $url ) { return $url . '?' . $k . '=' . $v; }
-function wc_get_logger() { return new class { function warning( $m, $c = array() ) { $GLOBALS['log'][] = $m; } }; }
+function wc_get_logger() { return new class { function warning( $m, $c = array() ) { $GLOBALS['log'][] = $m; } function info( $m, $c = array() ) { $GLOBALS['trace'][] = $m; } }; }
 function molosoc_size_value_rank( $v ) { return in_array( strtolower( $v ), array( 'm' ), true ) ? 0 : ( in_array( strtolower( $v ), array( 'l' ), true ) ? 1 : 2 ); }
 function wc_get_page_id( $page ) { return 360; }
 function wc_get_checkout_url() { return 'https://example.test/checkout/'; }
@@ -147,7 +148,7 @@ class Molosoc_Test_Cart {
 	public $removed = array();
 	function remove_cart_item( $key ) { if ( isset( $this->items[ $key ] ) ) { $this->removed[ $key ] = $this->items[ $key ]; } unset( $this->items[ $key ] ); }
 	function get_removed_cart_contents() { return $this->removed; }
-	function set_removed_cart_contents( $removed ) { foreach ( $removed as $key => $row ) { $this->removed[ $key ] = is_array( $row ) ? $row['quantity'] : $row; } }
+	function set_removed_cart_contents( $removed ) { $this->removed = array(); foreach ( $removed as $key => $row ) { $this->removed[ $key ] = is_array( $row ) ? $row['quantity'] : $row; } }
 	function restore_cart_item( $key ) { if ( isset( $this->removed[ $key ] ) ) { $this->items[ $key ] = $this->removed[ $key ]; unset( $this->removed[ $key ] ); } }
 	function get_cart() {
 		$out = array();
@@ -561,10 +562,11 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
         self.assertEqual(section(out, "CART"), {"line424s3": 1})
 
-    def test_rows_that_are_not_the_paid_pair_fail_safely_and_are_never_deleted(self):
-        # Independent rows cannot be isolated in the add-on cart and are not
-        # proven to be the paid pair: nothing is added, nothing deleted, the
-        # customer is told, and the fallback is logged without the order key.
+    def test_any_other_cart_row_is_parked_never_a_product_page_fallback_and_never_deleted(self):
+        # Issue #147, production: after #146 any row the session could not vouch for
+        # sent a VALID +1/+2 submission to the product page. Whatever else the cart
+        # holds is parked in the session (never deleted, never charged); the add-on
+        # cart is exactly the gift rows and the shopper still reaches checkout.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         for cart, session in (
             ({"line999": 2}, {}),                       # another product
@@ -572,38 +574,90 @@ class AddToCartHandler(unittest.TestCase):
             ({"line424": 1}, {}),                       # other variation than the paid one
             ({"line425": 3}, {}),                       # more than the paid quantity
             ({"line425": 1, "line424": 1}, {}),         # extra variation beside the paid pair
+            ({"line425": 1}, {}),                       # the paid pair, order placed before the record existed
             ({"line424s2": 1}, {}),                     # gift-shaped row, no link
             ({"line424s2": 1}, self.owned({"line424s2": 1}, order_id=88)),
             ({"line424s2": 1}, self.owned({"line424s2": 1}, key="wc_order_other")),
             ({"line424s2": 1}, self.owned({"line424s2": 1}, slots={"line424s2": 3})),
         ):
             redirect, added, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", (cart, session))
-            self.assertEqual(added, {}, (cart, session))
-            self.assertEqual(section(out, "CART"), cart, (cart, session))
-            self.assertEqual(section(out, "SESSION"), session, (cart, session))
-            self.assertTrue(section(out, "NOTICES"), (cart, session))
-            self.assertIn("cannot be isolated", section(out, "LOG")[0])
-            self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
+            self.assertEqual(redirect, "https://example.test/cz/pokladna/", (cart, session))
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, (cart, session))
+            parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+            self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, cart, (cart, session))
+            self.assertFalse(section(out, "NOTICES"), (cart, session))
+            self.assertFalse(section(out, "LOG"), (cart, session))  # no fallback reason logged
+            self.assertNotIn("wc_order_key77", out.split("TRACE:")[1])
 
-    def test_a_pair_that_only_matches_the_order_is_not_proven_paid_and_is_never_deleted(self):
-        # Codex P1 on #146: variation and quantity fitting the order prove nothing.
-        # A pair added after ordering (same key and shape as the paid one) must
-        # fail safe, not vanish from the cart.
+    def test_a_pair_that_only_matches_the_order_is_parked_and_comes_back_unless_proven_paid(self):
+        # Codex P1 on #146: a pair added after ordering looks exactly like the paid
+        # one and must never vanish. It is parked, and returns after the add-on
+        # unless the untainted record of THIS order names that very row.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425": 1}
-        for session in (
-            {},                                                         # no record: other session / older order
-            paid_record({"line425": 1}, tainted=True),                  # a product was added/raised after ordering
-            paid_record({"line425": 1}, order_id=88),                   # record belongs to another order
-            paid_record({"line424": 1}),                                # record names a different row
+        back = "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );"
+        for session, comes_back in (
+            ({}, True),                                                  # no record: other session / older order
+            (paid_record({"line425": 1}, tainted=True), True),           # a product was added/raised after ordering
+            (paid_record({"line425": 1}, order_id=88), True),            # record belongs to another order
+            (paid_record({"line424": 1}), True),                         # record names a different row
+            (paid_record({"line425": 1}), False),                        # proven: the pair that was paid for
         ):
-            redirect, added, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", session)
-            self.assertEqual(added, {}, session)
-            self.assertEqual(section(out, "CART"), cart, session)
-            self.assertEqual(section(out, "SESSION"), session, session)
-            self.assertTrue(section(out, "NOTICES"), session)
+            _, _, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, session)
+            after = run_php({"cart": {}, "session": section(out, "SESSION")}, back)
+            self.assertEqual(json.loads(after) if after != "[]" else {}, {"line425": 1} if comes_back else {}, session)
+
+    def test_the_paid_pair_is_never_in_the_addon_checkout_and_only_gift_pairs_are_charged(self):
+        # Issue #147 jointly: successful checkout redirect (EN and CZ), +1 charges
+        # 209, +2 charges 408 (209 + 199), shipping 0, the original order is not
+        # charged again, and the shopper's own rows are kept. Run for the pair just
+        # bought with and without the session record (order placed before #146).
+        check = """
+        $cart = WC()->cart;
+        molosoc_gift_apply_prices( $cart );
+        $total = 0; $keys = array();
+        foreach ( $cart->get_cart() as $key => $item ) { $total += $item['data']->price * $item['quantity']; $keys[] = $key; }
+        $rates = molosoc_gift_shipping_rates( array( 'flat' => 1 ), array() );
+        echo json_encode( array( $total, $keys, array_keys( $rates ), $rates['molosoc_gift_combined']->args[2], molosoc_gift_cart_link() ? 'linked' : 'unlinked' ) );
+        """
+        for lang, url in (("cz", "https://example.test/cz/pokladna/"), ("en", "https://example.test/checkout/")):
+            for sizes, expected in ((["M"], 209), (["M", "L"], 408)):
+                for held in ({"line425": 1}, {"line425": 1, "line999": 2}):
+                    for session in ({}, paid_record({"line425": 1})):
+                        post = dict(FORM, molosoc_gift_lang=lang, molosoc_gift_pairs=str(len(sizes)), molosoc_gift_size=sizes)
+                        redirect, _, out = self.submit(post, {"cart": held, "session": session, "request_lang": lang})
+                        label = (lang, sizes, held, session)
+                        self.assertEqual(redirect, url, label)
+                        cart = section(out, "CART")
+                        self.assertEqual(len(cart), len(sizes), label)
+                        self.assertTrue(all("s" in k[4:] for k in cart), label)
+                        total, keys, rates, cost, linked = json.loads(run_php({"request_lang": lang, "cart": cart, "session": section(out, "SESSION")}, check))
+                        self.assertEqual((total, cost, rates, linked), (expected, 0, ["molosoc_gift_combined"], "linked"), label)
+                        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+                        self.assertEqual({k: r["quantity"] for k, r in parked.items()}, held, label)
+
+    def test_parked_rows_return_once_the_addon_checkout_is_no_longer_the_cart(self):
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        # Still the valid gift cart: nothing moves.
+        body = "molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->cart->items );"
+        cart = dict(LINKED_CART)
+        page = {"endpoint": False}  # the default scenario is an order-received request
+        out = run_php(dict(page, cart=cart, session=dict(parked, molosoc_gift_parent=LINK)), body)
+        self.assertEqual(json.loads(out), cart)
+        # The shopper added something (link voided): parked rows come back, once.
+        out = run_php(dict(page, cart=dict(cart, line424=1), session=dict(parked, molosoc_gift_parent=LINK)), body + "molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );")
+        items, gone = out[:out.index("}") + 1], out[out.index("}") + 1:]
+        self.assertEqual(json.loads(items), dict(cart, line424=1, line999=2))
+        self.assertEqual(gone, "null")
+        # On an order-received page WooCommerce empties the cart: not here.
+        body = "$GLOBALS['t']['endpoint'] = true; molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->cart->items );"
+        self.assertEqual(json.loads(run_php({"cart": {}, "session": parked}, body)), [])
+        # The add-on order's own Thank You page restores them; an ordinary order does not.
+        body = "molosoc_gift_unpark_after_addon( %d ); echo json_encode( WC()->cart->items );"
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        self.assertEqual(json.loads(run_php(dict(addon, cart={}, session=parked), body % 88)), {"line999": 2})
+        self.assertEqual(json.loads(run_php({"cart": {}, "session": parked}, body % 77)), [])
 
     def test_order_creation_records_the_rows_and_a_later_add_voids_the_record(self):
         body = """
@@ -644,15 +698,17 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(redirect, "https://example.test/cz/pokladna/")
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
 
-    def test_a_gift_row_that_would_merge_with_a_chosen_row_falls_back_and_is_logged(self):
-        # Without proof of ownership (no / foreign link) a gift-shaped row can't
-        # be set aside (covered above); a linked row whose quantity changed is
-        # not replaced either, and nothing about the cart changes.
+    def test_a_gift_shaped_row_the_session_cannot_vouch_for_is_parked_not_merged(self):
+        # A row with a gift marker whose quantity no longer matches the link is the
+        # shopper's own: it is parked (returns as an ordinary row), so it can never
+        # merge into a chosen gift row and inflate the add-on.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425s2": 2}
         redirect, _, out = self.submit(post, {"cart": cart, "session": self.owned(cart, lines={"line425s2": 1})})
-        self.assertEqual(redirect, "https://example.test/product-cz/")
-        self.assertEqual(section(out, "CART"), cart)
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+        self.assertEqual({k: r["quantity"] for k, r in parked.items()}, cart)
 
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before
@@ -758,8 +814,9 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(section(out, "CART"), {})
         self.assertEqual(section(out, "SESSION"), {})
         # Another product's row is never touched (and nothing is added at all).
-        _, added, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
-        self.assertEqual((added, section(out, "CART")), ({}, {"line999": 1}))
+        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
+        self.assertEqual(section(out, "CART"), {"line999": 1})
+        self.assertEqual(section(out, "SESSION"), {})  # nothing parked on a failed submit
         # The paid pair is put back when a later pair fails.
         _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}, "session": paid_record({"line425": 1})})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)

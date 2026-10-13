@@ -81,6 +81,9 @@ if ( ! defined( 'MOLOSOC_GIFT_PARENT_META' ) ) {
 if ( ! defined( 'MOLOSOC_GIFT_PAID_SESSION_KEY' ) ) {
 	define( 'MOLOSOC_GIFT_PAID_SESSION_KEY', 'molosoc_gift_paid_rows' );
 }
+if ( ! defined( 'MOLOSOC_GIFT_PARKED_SESSION_KEY' ) ) {
+	define( 'MOLOSOC_GIFT_PARKED_SESSION_KEY', 'molosoc_gift_parked_rows' );
+}
 if ( ! defined( 'MOLOSOC_GIFT_SESSION_KEY' ) ) {
 	define( 'MOLOSOC_GIFT_SESSION_KEY', 'molosoc_gift_parent' );
 }
@@ -603,11 +606,12 @@ add_action( 'woocommerce_thankyou', 'molosoc_thankyou_gift_section', 20 );
  * Issue #145 provenance: remember, in the shopper's own WooCommerce session,
  * which cart rows the checkout that created this order consumed (cart item
  * key => variation and quantity). Product, variation and quantity alone never
- * prove a later cart row is that already-paid pair, so molosoc_gift_add_to_cart_action()
- * sets a row aside only when this record names it. Classic checkout passes the
- * order id, the Store API the order object; the cart still holds its rows at
- * this point. A session that did not place the order has no record, and then
- * nothing is set aside.
+ * prove a later cart row is that already-paid pair, so molosoc_gift_unpark_rows()
+ * leaves a parked row out of the cart afterwards only when this record names it
+ * (Issue #147: the record no longer gates the gift checkout itself; an order
+ * placed before it existed, or in another browser, has none). Classic checkout
+ * passes the order id, the Store API the order object; the cart still holds its
+ * rows at this point.
  */
 function molosoc_gift_remember_paid_rows( $order ) {
 	$order_id = ( $order instanceof WC_Order ) ? $order->get_id() : absint( $order );
@@ -671,6 +675,184 @@ function molosoc_gift_void_paid_rows_on_quantity( $item_key = '', $quantity = 0,
 add_action( 'woocommerce_after_cart_item_quantity_update', 'molosoc_gift_void_paid_rows_on_quantity', 10, 3 );
 
 /**
+ * Diagnostic line (info level, source molosoc-gift) for a gift submission that
+ * was accepted, so a production report can be traced through the whole flow, not
+ * only through its fallbacks. Never logs the order key.
+ */
+function molosoc_gift_trace( $message, $context = array() ) {
+	if ( function_exists( 'wc_get_logger' ) ) {
+		wc_get_logger()->info( 'gift form: ' . $message . ' ' . wp_json_encode( $context ), array( 'source' => 'molosoc-gift' ) );
+	}
+}
+
+/**
+ * Cart rows as "key => variation x quantity" for the diagnostic log.
+ */
+function molosoc_gift_row_summary( $rows ) {
+	$out = array();
+	foreach ( (array) $rows as $item_key => $item ) {
+		$out[ $item_key ] = ( isset( $item['product_id'] ) ? (int) $item['product_id'] : 0 ) . '/' . ( isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0 ) . 'x' . ( isset( $item['quantity'] ) ? (int) $item['quantity'] : 0 ) . ( isset( $item['molosoc_gift_slot'] ) ? ' gift' : '' );
+	}
+	return $out;
+}
+
+/**
+ * Whether the session can vouch for the rows of $order's checkout: 'none' (no
+ * record: an order placed before it existed, or in another browser), 'tainted',
+ * 'other-order' or 'valid'. Diagnostics only.
+ */
+function molosoc_gift_paid_record_state( $order ) {
+	$record = ( function_exists( 'WC' ) && WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY ) : null;
+	if ( ! is_array( $record ) ) {
+		return 'none';
+	}
+	if ( ! $order instanceof WC_Order || ! isset( $record['order_id'] ) || (int) $record['order_id'] !== $order->get_id() ) {
+		return 'other-order';
+	}
+	return empty( $record['tainted'] ) ? 'valid' : 'tainted';
+}
+
+/**
+ * Keep the cart rows set aside for the add-on checkout in the shopper's own
+ * session (Issue #147), in a form that survives serialisation: product,
+ * variation, attributes, quantity and any other plain cart item data, minus
+ * WooCommerce's computed fields and the gift marker (a parked gift-shaped row
+ * returns as an ordinary row at the normal price). Rows parked by an earlier
+ * submit that is still pending are kept and merged.
+ */
+function molosoc_gift_park_rows( $parent, $rows ) {
+	if ( ! $rows || ! function_exists( 'WC' ) || ! WC()->session ) {
+		return;
+	}
+	$park = WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY );
+	$kept = ( is_array( $park ) && isset( $park['rows'] ) && is_array( $park['rows'] ) ) ? $park['rows'] : array();
+	foreach ( $rows as $item_key => $item ) {
+		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		if ( $quantity < 1 || ! isset( $item['product_id'] ) ) {
+			continue;
+		}
+		$extra = array();
+		foreach ( $item as $field => $value ) {
+			if ( in_array( $field, array( 'key', 'product_id', 'variation_id', 'variation', 'quantity', 'data', 'data_hash', 'molosoc_gift_slot', 'line_tax_data', 'line_subtotal', 'line_subtotal_tax', 'line_total', 'line_tax' ), true ) ) {
+				continue;
+			}
+			if ( is_scalar( $value ) || is_array( $value ) ) {
+				$extra[ $field ] = $value;
+			}
+		}
+		if ( isset( $kept[ $item_key ] ) ) {
+			$kept[ $item_key ]['quantity'] = max( (int) $kept[ $item_key ]['quantity'], $quantity );
+			continue;
+		}
+		$kept[ $item_key ] = array(
+			'product_id'   => (int) $item['product_id'],
+			'variation_id' => isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0,
+			'variation'    => ( isset( $item['variation'] ) && is_array( $item['variation'] ) ) ? $item['variation'] : array(),
+			'quantity'     => $quantity,
+			'extra'        => $extra,
+		);
+	}
+	WC()->session->set(
+		MOLOSOC_GIFT_PARKED_SESSION_KEY,
+		array(
+			'order_id' => $parent->get_id(),
+			'rows'     => $kept,
+		)
+	);
+}
+
+/**
+ * Put the parked rows back into the cart and forget them. A row (or the part of
+ * its quantity) that the session PROVES is the pair the original order already
+ * paid for (molosoc_gift_remember_paid_rows(), untainted, same order) is not put
+ * back: it is bought, WooCommerce itself would have emptied it from the cart, and
+ * restoring it would invite a second payment. Everything else returns, so a row
+ * the session cannot vouch for is never lost. Returns how many rows came back.
+ */
+function molosoc_gift_unpark_rows() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session || ! WC()->cart ) {
+		return 0;
+	}
+	$park = WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY );
+	if ( null === $park ) {
+		return 0;
+	}
+	// Forget first: nothing below may run twice for the same rows.
+	WC()->session->set( MOLOSOC_GIFT_PARKED_SESSION_KEY, null );
+	if ( ! is_array( $park ) || empty( $park['rows'] ) || ! is_array( $park['rows'] ) ) {
+		return 0;
+	}
+	$record = WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY );
+	$proven = ( is_array( $record ) && empty( $record['tainted'] ) && isset( $record['order_id'], $record['rows'], $park['order_id'] )
+		&& (int) $record['order_id'] === (int) $park['order_id'] && is_array( $record['rows'] ) )
+		? $record['rows']
+		: array();
+	$todo = array();
+	foreach ( $park['rows'] as $item_key => $row ) {
+		$quantity = isset( $row['quantity'] ) ? (int) $row['quantity'] : 0;
+		if ( isset( $proven[ $item_key ]['variation'], $proven[ $item_key ]['quantity'] )
+			&& (int) $proven[ $item_key ]['variation'] === ( isset( $row['variation_id'] ) ? (int) $row['variation_id'] : 0 )
+		) {
+			$quantity -= (int) $proven[ $item_key ]['quantity'];
+		}
+		if ( $quantity > 0 && isset( $row['product_id'] ) ) {
+			$todo[ $item_key ] = array( $row, $quantity );
+		}
+	}
+	$restored = 0;
+	foreach ( $todo as $item_key => $pair ) {
+		list( $row, $quantity ) = $pair;
+		$added = WC()->cart->add_to_cart(
+			(int) $row['product_id'],
+			$quantity,
+			isset( $row['variation_id'] ) ? (int) $row['variation_id'] : 0,
+			( isset( $row['variation'] ) && is_array( $row['variation'] ) ) ? $row['variation'] : array(),
+			( isset( $row['extra'] ) && is_array( $row['extra'] ) ) ? $row['extra'] : array()
+		);
+		if ( $added ) {
+			$restored++;
+		} else {
+			molosoc_gift_log( 'parked cart row could not be put back', array( 'row' => $item_key ) );
+		}
+	}
+	molosoc_gift_trace( 'parked rows restored', array( 'parked' => count( $park['rows'] ), 'restored' => $restored ) );
+	return $restored;
+}
+
+/**
+ * Rows parked for an add-on checkout come back as soon as that checkout is no
+ * longer the shopper's cart: on any page view where the cart is no longer
+ * exactly the valid gift cart (the shopper added something, emptied it, the offer
+ * lapsed). Not on an order-received page: WooCommerce empties the cart there, and
+ * the add-on order's own Thank You page restores them afterwards.
+ */
+function molosoc_gift_maybe_unpark_rows() {
+	if ( ! function_exists( 'WC' ) || ! WC()->session || null === WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY ) ) {
+		return;
+	}
+	if ( function_exists( 'is_wc_endpoint_url' ) && is_wc_endpoint_url( 'order-received' ) ) {
+		return;
+	}
+	if ( molosoc_gift_cart_link() ) {
+		return;
+	}
+	molosoc_gift_unpark_rows();
+}
+add_action( 'template_redirect', 'molosoc_gift_maybe_unpark_rows', 20 );
+
+/**
+ * The add-on order's own Thank You page (after WooCommerce emptied the cart and
+ * the session link was dropped at priority 5): give the shopper back what was
+ * parked for the checkout.
+ */
+function molosoc_gift_unpark_after_addon( $order_id ) {
+	if ( molosoc_gift_parent_order( wc_get_order( $order_id ) ) ) {
+		molosoc_gift_unpark_rows();
+	}
+}
+add_action( 'woocommerce_thankyou', 'molosoc_gift_unpark_after_addon', 6, 1 );
+
+/**
  * Put rows this request set aside back into the cart exactly as they were
  * (key => cart item as WooCommerce held it). A replacement can share a set-aside
  * row's key; removing it overwrote WooCommerce's removed-items snapshot of that
@@ -701,7 +883,8 @@ function molosoc_gift_restore_rows( $cart, $rows ) {
  * no longer ship together is not honoured: in both cases the customer is
  * sent to the product page (where nothing about combined shipping is
  * promised) to choose there instead. A VALID submission never is, whatever
- * the cart held before (Issue #125); every fallback is logged (molosoc-gift).
+ * the cart held before (Issues #125, #147: other rows are parked, not judged);
+ * every fallback is logged (molosoc-gift).
  */
 function molosoc_gift_add_to_cart_action() {
 	// phpcs:disable WordPress.Security.NonceVerification.Missing -- adds catalogue items to the visitor's own cart, exactly what WooCommerce's nonce-less ?add-to-cart= already allows; the original order is only read, and only with its order key.
@@ -796,62 +979,20 @@ function molosoc_gift_add_to_cart_action() {
 		$cart->remove_cart_item( $item_key );
 	}
 
-	// Issue #145: the add-on checkout charges ONLY the gift pairs, so no other row
-	// may ride along. A row is set aside only on evidence it is the pair(s) the
-	// original order already paid for: the same product and variation as one of
-	// its lines, within that line's paid quantity. Surplus quantity, another
-	// variation or another product is the shopper's own and cannot be isolated
-	// in this cart: the flow fails safely (cart untouched, product page) rather
-	// than show a total that charges it or silently delete it.
-	$budget = array();
-	foreach ( $parent->get_items() as $line ) {
-		if ( MOLOSOC_PRODUCT_ID === (int) $line->get_product_id() ) {
-			$vid            = (int) $line->get_variation_id();
-			$budget[ $vid ] = ( isset( $budget[ $vid ] ) ? $budget[ $vid ] : 0 ) + (int) $line->get_quantity();
-		}
-	}
-	// Matching the order is not enough: the session must also have recorded this
-	// row at the checkout that created THIS order, with no product added or raised
-	// since (molosoc_gift_remember_paid_rows()). A pair the shopper added after
-	// ordering carries the same key and shape, so it is never set aside.
-	$record = ( WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY ) : null;
-	$proven = ( is_array( $record ) && empty( $record['tainted'] ) && isset( $record['order_id'], $record['rows'] )
-		&& (int) $record['order_id'] === $parent->get_id() && is_array( $record['rows'] ) )
-		? $record['rows']
-		: array();
-	$paid = array();
-	foreach ( $cart->get_cart() as $item_key => $item ) {
-		$vid = isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0;
-		$qty = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
-		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id']
-			|| $qty < 1 || ! isset( $budget[ $vid ] ) || $qty > $budget[ $vid ]
-			|| ! isset( $proven[ $item_key ]['variation'], $proven[ $item_key ]['quantity'] )
-			|| (int) $proven[ $item_key ]['variation'] !== $vid || $qty > (int) $proven[ $item_key ]['quantity']
-		) {
-			$paid = null;
-			break;
-		}
-		$budget[ $vid ] -= $qty;
-		$paid[ $item_key ] = $item;
-	}
-	// Gift-shaped rows without proof of ownership (see above) are the shopper's
-	// own, never "paid" rows: they have a slot, so they land in the failure above.
-	// So does any row the session cannot vouch for.
-	if ( null === $paid ) {
-		molosoc_gift_restore_rows( $cart, $stale );
-		molosoc_gift_log( 'cart holds rows that cannot be isolated from the gift add-on', array( 'order' => $parent_id ) );
-		wc_add_notice(
-			( 'cz' === $lang )
-				? 'Ve vašem košíku jsou i jiné položky. Dárek nelze přidat samostatně — dokončete nebo vyprázdněte košík a zkuste to znovu.'
-				: 'Your cart holds other items, so the gift cannot be checked out on its own. Please finish or empty your cart and try again.',
-			'notice'
-		);
-		wp_safe_redirect( molosoc_product_url( $lang ) );
-		exit;
-	}
-	foreach ( array_keys( $paid ) as $item_key ) {
+	// Issues #145/#147: the add-on checkout charges ONLY the gift pairs, so no
+	// other row may ride along. Whatever else the cart holds (the pair just bought
+	// that WooCommerce has not cleared, another product, a gift row no session link
+	// vouches for) is PARKED, not judged: taken out of the cart for the duration of
+	// the add-on checkout, kept in the session and put back afterwards
+	// (molosoc_gift_unpark_rows()). A valid submission therefore never depends on
+	// proof about those rows (#146 sent it to the product page whenever the session
+	// had none, e.g. for an order placed before the record existed), nothing is
+	// charged twice and nothing the shopper put in the cart is deleted.
+	$parked = $cart->get_cart();
+	foreach ( array_keys( $parked ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
 	}
+	molosoc_gift_trace( 'submit accepted', array( 'order' => $parent_id, 'pairs' => $pairs, 'stale' => array_keys( $stale ), 'parked' => molosoc_gift_row_summary( $parked ), 'paid_record' => molosoc_gift_paid_record_state( $parent ) ) );
 
 	$wanted = array();
 	$slots  = array();
@@ -885,11 +1026,21 @@ function molosoc_gift_add_to_cart_action() {
 		foreach ( array_keys( $wanted ) as $item_key ) {
 			$cart->remove_cart_item( $item_key );
 		}
-		molosoc_gift_restore_rows( $cart, $stale + $paid );
+		molosoc_gift_restore_rows( $cart, $stale + $parked );
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
 	}
 
+	// The add-on cart is now exactly the gift rows: keep the parked rows, and drop
+	// them from WooCommerce's undo list so they cannot come back twice.
+	molosoc_gift_park_rows( $parent, $parked );
+	if ( $parked ) {
+		$removed = $cart->get_removed_cart_contents();
+		foreach ( array_keys( $parked ) as $item_key ) {
+			unset( $removed[ $item_key ] );
+		}
+		$cart->set_removed_cart_contents( $removed );
+	}
 	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted, $slots );
 
 	// The cart and the link live in the WooCommerce session: make sure the
