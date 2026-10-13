@@ -25,6 +25,7 @@ $GLOBALS['hooks'] = array();
 $GLOBALS['added'] = array();
 $GLOBALS['notes'] = array();
 $GLOBALS['log'] = array();
+$GLOBALS['trace'] = array();
 $GLOBALS['session'] = $GLOBALS['t']['session'];
 function add_action( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
 function add_filter( $tag, $cb, $prio = 10, $args = 1 ) { $GLOBALS['hooks'][ $tag ] = $cb; }
@@ -43,7 +44,7 @@ function home_url( $path = '' ) { return 'https://example.test' . $path; }
 function wc_nocache_headers() {}
 $GLOBALS['notices'] = array();
 function wc_add_notice( $m, $t = 'success' ) { $GLOBALS['notices'][] = $m; }
-function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCOOKIE:" . json_encode( ! empty( $GLOBALS['cookie'] ) ) . "\nLOG:" . json_encode( $GLOBALS['log'] ) . "\nNOTICES:" . json_encode( $GLOBALS['notices'], JSON_UNESCAPED_UNICODE ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
+function wp_safe_redirect( $url ) { echo "\nREDIRECT:" . $url . "\nADDED:" . json_encode( $GLOBALS['added'] ) . "\nCART:" . json_encode( WC()->cart->items ) . "\nSESSION:" . json_encode( $GLOBALS['session'] ) . "\nCOOKIE:" . json_encode( ! empty( $GLOBALS['cookie'] ) ) . "\nLOG:" . json_encode( $GLOBALS['log'] ) . "\nTRACE:" . json_encode( $GLOBALS['trace'] ) . "\nNOTICES:" . json_encode( $GLOBALS['notices'], JSON_UNESCAPED_UNICODE ) . "\nCUSTOMER:" . json_encode( WC()->customer->props ); }
 function is_wc_endpoint_url( $e ) { return 'order-received' === $e && ! empty( $GLOBALS['t']['endpoint'] ); }
 function pll_current_language() { return $GLOBALS['t']['request_lang']; }
 function pll_get_post( $id, $lang ) { return 'cz' === $lang ? 900 : 360; }
@@ -51,7 +52,7 @@ function get_post_status( $id ) { return 'publish'; }
 function get_permalink( $id ) { return 900 === $id ? 'https://example.test/cz/pokladna/' : 'https://example.test/checkout/'; }
 function wc_get_endpoint_url( $endpoint, $value, $base ) { return $base . $endpoint . '/' . $value . '/'; }
 function add_query_arg( $k, $v, $url ) { return $url . '?' . $k . '=' . $v; }
-function wc_get_logger() { return new class { function warning( $m, $c = array() ) { $GLOBALS['log'][] = $m; } }; }
+function wc_get_logger() { return new class { function warning( $m, $c = array() ) { $GLOBALS['log'][] = $m; } function info( $m, $c = array() ) { $GLOBALS['trace'][] = $m; } }; }
 function molosoc_size_value_rank( $v ) { return in_array( strtolower( $v ), array( 'm' ), true ) ? 0 : ( in_array( strtolower( $v ), array( 'l' ), true ) ? 1 : 2 ); }
 function wc_get_page_id( $page ) { return 360; }
 function wc_get_checkout_url() { return 'https://example.test/checkout/'; }
@@ -142,12 +143,12 @@ class Molosoc_Test_Cart {
 	}
 	function generate_cart_id( $product_id, $variation_id, $attrs, $data = array() ) { return 'line' . $variation_id . ( $data ? 's' . $data['molosoc_gift_slot'] : '' ); }
 	function find_product_in_cart( $id ) { return isset( $this->items[ $id ] ) ? $id : ''; }
-	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ] ) : array(); }
+	function get_cart_item( $key ) { return isset( $this->items[ $key ] ) ? array( 'quantity' => $this->items[ $key ], 'product_id' => in_array( $key, array( 'lineX', 'line999' ), true ) ? 999 : 364 ) : array(); }
 	function set_quantity( $key, $qty ) { $this->items[ $key ] = $qty; }
 	public $removed = array();
 	function remove_cart_item( $key ) { if ( isset( $this->items[ $key ] ) ) { $this->removed[ $key ] = $this->items[ $key ]; } unset( $this->items[ $key ] ); }
 	function get_removed_cart_contents() { return $this->removed; }
-	function set_removed_cart_contents( $removed ) { foreach ( $removed as $key => $row ) { $this->removed[ $key ] = is_array( $row ) ? $row['quantity'] : $row; } }
+	function set_removed_cart_contents( $removed ) { $this->removed = array(); foreach ( $removed as $key => $row ) { $this->removed[ $key ] = is_array( $row ) ? $row['quantity'] : $row; } }
 	function restore_cart_item( $key ) { if ( isset( $this->removed[ $key ] ) ) { $this->items[ $key ] = $this->removed[ $key ]; unset( $this->removed[ $key ] ); } }
 	function get_cart() {
 		$out = array();
@@ -168,6 +169,8 @@ class Molosoc_Test_Cart {
 		$key = $this->generate_cart_id( $product_id, $variation_id, $attrs, $data );
 		$this->products[ $key ] = new Molosoc_Test_Product();
 		$this->items[ $key ] = ( isset( $this->items[ $key ] ) ? $this->items[ $key ] : 0 ) + $qty;
+		// Like WooCommerce, announce the add (the paid-row record is voided from it).
+		if ( isset( $GLOBALS['hooks']['woocommerce_add_to_cart'] ) ) { call_user_func( $GLOBALS['hooks']['woocommerce_add_to_cart'], $key, $product_id, $qty, $variation_id, $attrs, $data ); }
 		return $key;
 	}
 }
@@ -180,6 +183,11 @@ class Molosoc_Test_Customer {
 	// Real WC_Customer has one concrete setter per address field; the file
 	// checks method_exists() before calling, so these must be real methods.
 	public $props = array(); public $saved = 0;
+	function get_billing_first_name() { return isset( $this->props['billing_first_name'] ) ? $this->props['billing_first_name'] : ''; }
+	function get_billing_email() { return isset( $this->props['billing_email'] ) ? $this->props['billing_email'] : ''; }
+	function get_billing_phone() { return isset( $this->props['billing_phone'] ) ? $this->props['billing_phone'] : ''; }
+	function get_shipping_first_name() { return isset( $this->props['shipping_first_name'] ) ? $this->props['shipping_first_name'] : ''; }
+	function get_shipping_city() { return isset( $this->props['shipping_city'] ) ? $this->props['shipping_city'] : ''; }
 	function set_billing_first_name( $v ) { $this->props['billing_first_name'] = $v; }
 	function set_billing_email( $v ) { if ( 'bad' === $v ) { throw new Exception( 'invalid' ); } $this->props['billing_email'] = $v; }
 	function set_billing_phone( $v ) { $this->props['billing_phone'] = $v; }
@@ -561,10 +569,11 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(redirect, "https://example.test/cz/pokladna/")
         self.assertEqual(section(out, "CART"), {"line424s3": 1})
 
-    def test_rows_that_are_not_the_paid_pair_fail_safely_and_are_never_deleted(self):
-        # Independent rows cannot be isolated in the add-on cart and are not
-        # proven to be the paid pair: nothing is added, nothing deleted, the
-        # customer is told, and the fallback is logged without the order key.
+    def test_any_other_cart_row_is_parked_never_a_product_page_fallback_and_never_deleted(self):
+        # Issue #147, production: after #146 any row the session could not vouch for
+        # sent a VALID +1/+2 submission to the product page. Whatever else the cart
+        # holds is parked in the session (never deleted, never charged); the add-on
+        # cart is exactly the gift rows and the shopper still reaches checkout.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         for cart, session in (
             ({"line999": 2}, {}),                       # another product
@@ -572,42 +581,256 @@ class AddToCartHandler(unittest.TestCase):
             ({"line424": 1}, {}),                       # other variation than the paid one
             ({"line425": 3}, {}),                       # more than the paid quantity
             ({"line425": 1, "line424": 1}, {}),         # extra variation beside the paid pair
+            ({"line425": 1}, {}),                       # the paid pair, order placed before the record existed
             ({"line424s2": 1}, {}),                     # gift-shaped row, no link
             ({"line424s2": 1}, self.owned({"line424s2": 1}, order_id=88)),
             ({"line424s2": 1}, self.owned({"line424s2": 1}, key="wc_order_other")),
             ({"line424s2": 1}, self.owned({"line424s2": 1}, slots={"line424s2": 3})),
         ):
             redirect, added, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", (cart, session))
-            self.assertEqual(added, {}, (cart, session))
-            self.assertEqual(section(out, "CART"), cart, (cart, session))
-            self.assertEqual(section(out, "SESSION"), session, (cart, session))
-            self.assertTrue(section(out, "NOTICES"), (cart, session))
-            self.assertIn("cannot be isolated", section(out, "LOG")[0])
-            self.assertNotIn("wc_order_key77", out.split("LOG:")[1])
+            self.assertEqual(redirect, "https://example.test/cz/pokladna/", (cart, session))
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, (cart, session))
+            parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+            self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, cart, (cart, session))
+            self.assertFalse(section(out, "NOTICES"), (cart, session))
+            self.assertFalse(section(out, "LOG"), (cart, session))  # no fallback reason logged
+            self.assertNotIn("wc_order_key77", out.split("TRACE:")[1])
 
-    def test_a_pair_that_only_matches_the_order_is_not_proven_paid_and_is_never_deleted(self):
-        # Codex P1 on #146: variation and quantity fitting the order prove nothing.
-        # A pair added after ordering (same key and shape as the paid one) must
-        # fail safe, not vanish from the cart.
+    def test_a_pair_that_only_matches_the_order_is_parked_and_comes_back_unless_proven_paid(self):
+        # Codex P1 on #146: a pair added after ordering looks exactly like the paid
+        # one and must never vanish. It is parked, and returns after the add-on
+        # unless the untainted record of THIS order names that very row.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425": 1}
-        for session in (
-            {},                                                         # no record: other session / older order
-            paid_record({"line425": 1}, tainted=True),                  # a product was added/raised after ordering
-            paid_record({"line425": 1}, order_id=88),                   # record belongs to another order
-            paid_record({"line424": 1}),                                # record names a different row
+        back = "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );"
+        for session, comes_back in (
+            ({}, True),                                                  # no record: other session / older order
+            (paid_record({"line425": 1}, tainted=True), True),           # a product was added/raised after ordering
+            (paid_record({"line425": 1}, order_id=88), True),            # record belongs to another order
+            (paid_record({"line424": 1}), True),                         # record names a different row
+            (paid_record({"line425": 1}), False),                        # proven: the pair that was paid for
         ):
-            redirect, added, out = self.submit(post, {"cart": cart, "session": session})
-            self.assertEqual(redirect, "https://example.test/product-cz/", session)
-            self.assertEqual(added, {}, session)
-            self.assertEqual(section(out, "CART"), cart, session)
-            self.assertEqual(section(out, "SESSION"), session, session)
-            self.assertTrue(section(out, "NOTICES"), session)
+            _, _, out = self.submit(post, {"cart": cart, "session": session})
+            self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1}, session)
+            after = run_php({"cart": {}, "session": section(out, "SESSION")}, back)
+            self.assertEqual(json.loads(after) if after != "[]" else {}, {"line425": 1} if comes_back else {}, session)
+
+    def test_the_paid_pair_is_never_in_the_addon_checkout_and_only_gift_pairs_are_charged(self):
+        # Issue #147 jointly: successful checkout redirect (EN and CZ), +1 charges
+        # 209, +2 charges 408 (209 + 199), shipping 0, the original order is not
+        # charged again, and the shopper's own rows are kept. Run for the pair just
+        # bought with and without the session record (order placed before #146).
+        check = """
+        $cart = WC()->cart;
+        molosoc_gift_apply_prices( $cart );
+        $total = 0; $keys = array();
+        foreach ( $cart->get_cart() as $key => $item ) { $total += $item['data']->price * $item['quantity']; $keys[] = $key; }
+        $rates = molosoc_gift_shipping_rates( array( 'flat' => 1 ), array() );
+        echo json_encode( array( $total, $keys, array_keys( $rates ), $rates['molosoc_gift_combined']->args[2], molosoc_gift_cart_link() ? 'linked' : 'unlinked' ) );
+        """
+        for lang, url in (("cz", "https://example.test/cz/pokladna/"), ("en", "https://example.test/checkout/")):
+            for sizes, expected in ((["M"], 209), (["M", "L"], 408)):
+                for held in ({"line425": 1}, {"line425": 1, "line999": 2}):
+                    for session in ({}, paid_record({"line425": 1})):
+                        post = dict(FORM, molosoc_gift_lang=lang, molosoc_gift_pairs=str(len(sizes)), molosoc_gift_size=sizes)
+                        redirect, _, out = self.submit(post, {"cart": held, "session": session, "request_lang": lang})
+                        label = (lang, sizes, held, session)
+                        self.assertEqual(redirect, url, label)
+                        cart = section(out, "CART")
+                        self.assertEqual(len(cart), len(sizes), label)
+                        self.assertTrue(all("s" in k[4:] for k in cart), label)
+                        total, keys, rates, cost, linked = json.loads(run_php({"request_lang": lang, "cart": cart, "session": section(out, "SESSION")}, check))
+                        self.assertEqual((total, cost, rates, linked), (expected, 0, ["molosoc_gift_combined"], "linked"), label)
+                        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+                        self.assertEqual({k: r["quantity"] for k, r in parked.items()}, held, label)
+
+    def test_parked_rows_return_once_the_addon_checkout_is_no_longer_the_cart(self):
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        # Still the valid gift cart: nothing moves.
+        body = "molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->cart->items );"
+        cart = dict(LINKED_CART)
+        page = {"endpoint": False}  # the default scenario is an order-received request
+        out = run_php(dict(page, cart=cart, session=dict(parked, molosoc_gift_parent=LINK)), body)
+        self.assertEqual(json.loads(out), cart)
+        # The shopper added something (link voided): parked rows come back, once.
+        out = run_php(dict(page, cart=dict(cart, line424=1), session=dict(parked, molosoc_gift_parent=LINK)), body + "molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );")
+        items, gone = out[:out.index("}") + 1], out[out.index("}") + 1:]
+        self.assertEqual(json.loads(items), dict(cart, line424=1, line999=2))
+        self.assertEqual(gone, "null")
+        # On an order-received page WooCommerce empties the cart: not here.
+        body = "$GLOBALS['t']['endpoint'] = true; molosoc_gift_maybe_unpark_rows(); echo json_encode( WC()->cart->items );"
+        self.assertEqual(json.loads(run_php({"cart": {}, "session": parked}, body)), [])
+        # The add-on order's own Thank You page restores them; an ordinary order does not.
+        body = "molosoc_gift_unpark_after_addon( %d ); echo json_encode( WC()->cart->items );"
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        self.assertEqual(json.loads(run_php(dict(addon, cart={}, session=parked), body % 88)), {"line999": 2})
+        self.assertEqual(json.loads(run_php({"cart": {}, "session": parked}, body % 77)), [])
+
+    def test_the_addon_checkout_does_not_overwrite_the_paid_row_record(self):
+        # Codex P1 on #148: the add-on order runs the same hook with a gift-only cart.
+        body = """
+        WC()->cart->items = array( 'line425s2' => 1, 'line424s3' => 1 );
+        molosoc_gift_remember_paid_rows( 88 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) );
+        """
+        self.assertEqual(json.loads(run_php({"session": dict(paid_record({"line425": 1}), molosoc_gift_parent=LINK)}, body)), paid_record({"line425": 1})["molosoc_gift_paid_rows"])
+        # So the original paid pair is still not restored on the add-on Thank You page.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}}}}
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        out = run_php(dict(addon, cart={}, session=dict(parked, **paid_record({"line425": 1}))), "molosoc_gift_unpark_after_addon( 88 ); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), [])
+
+    def test_a_parked_row_woocommerce_refuses_is_kept_for_a_later_retry(self):
+        # Codex P2 on #148: out of stock / validation filter must not lose the row.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items ), '|', json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        items, kept = run_php({"cart": {}, "session": parked, "fail_variation": 999}, body).split("|")
+        self.assertEqual(json.loads(items), [])
+        expected = json.loads(json.dumps(parked["molosoc_gift_parked_rows"]))
+        expected["rows"]["line999"]["netted"] = True
+        expected["proof"] = []
+        self.assertEqual(json.loads(kept), expected)
+        items, kept = run_php({"cart": {}, "session": parked}, body).split("|")
+        self.assertEqual(json.loads(items), {"line999": 2})
+        self.assertEqual(kept, "null")
+
+    def test_a_refused_row_is_kept_as_the_unpaid_remainder_only(self):
+        # Codex P2 on #148: parked qty 2 with 1 proven paid; a refused restore keeps qty 1,
+        # so a retry never re-adds the paid unit even if the proof later changes.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 2, "extra": []}
+        session = dict({"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": row}}}, **paid_record({"line425": 1}))
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        kept = json.loads(run_php({"cart": {}, "session": session, "fail_variation": 425}, body))
+        self.assertEqual(kept["rows"]["line425"]["quantity"], 1)
+
+    def test_a_retained_remainder_is_not_netted_against_the_paid_proof_twice(self):
+        # Codex P2 on #148: qty 2 with 1 proven paid; first restore refused (keeps 1),
+        # the retry must restore that 1, not subtract the paid unit again and drop it.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 2, "extra": []}
+        session = dict({"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": row}}}, **paid_record({"line425": 1}))
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        kept = json.loads(run_php({"cart": {}, "session": session, "fail_variation": 425}, body))
+        self.assertEqual(kept["rows"]["line425"]["quantity"], 1)
+        retry = dict(kept_session := {"molosoc_gift_parked_rows": kept}, **paid_record({"line425": 1}))
+        out = run_php({"cart": {}, "session": retry}, "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), {"line425": 1})
+
+    def test_a_same_key_row_parked_again_adds_its_quantity(self):
+        # Codex P2 on #148: a second copy of an already parked row must not be max()-ed away.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 1, "extra": []}}}}
+        _, _, out = self.submit(dict(FORM), {"cart": {"line999": 1}, "session": parked})
+        rows = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+        self.assertEqual(rows["line999"]["quantity"], 2)
+
+    def test_a_new_flow_judges_an_earlier_orders_park_by_its_own_proof_instead_of_merging(self):
+        # Codex P2 on #148: order 99's park (paid pair line425 + another row) must not
+        # be relabelled as order 77's: 99's proof drops line425, the rest is re-parked.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []},
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        session = dict(earlier, **paid_record({"line425": 1}, order_id=99))
+        redirect, _, out = self.submit(dict(FORM), {"cart": {}, "session": session})
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, {"line999": 2})
+
+    def test_an_earlier_parks_row_adds_to_a_same_key_row_of_the_new_park(self):
+        # Codex P2 on #148: same cart key in the earlier park and the current cart: units add up.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        _, _, out = self.submit(dict(FORM), {"cart": {"line999": 1}, "session": earlier})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual(parked["rows"]["line999"]["quantity"], 3)
+
+    def test_the_new_flows_proof_is_snapshotted_before_an_earlier_park_is_restored(self):
+        # Codex P2 on #148: restoring order 99's product row taints the record; order 77's proof must survive.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}}}}
+        session = dict(earlier, **paid_record({"line425": 1}, order_id=77))
+        _, _, out = self.submit(dict(FORM), {"cart": {"line425": 1}, "session": session})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual(parked["proof"], {"line425": {"variation": 425, "quantity": 1}})
+
+    def test_a_refused_new_row_leaves_an_earlier_orders_park_untouched(self):
+        # Codex P2 on #148: order 99's park must survive order 77's submit when a chosen row is refused.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        redirect, _, out = self.submit(dict(FORM), {"cart": {}, "session": earlier, "fail_variation": 425})
+        self.assertNotEqual(redirect, "https://example.test/cz/pokladna/")
+        self.assertEqual(section(out, "SESSION")["molosoc_gift_parked_rows"], earlier["molosoc_gift_parked_rows"])
+
+    def test_a_park_keeps_its_own_proof_when_another_order_replaces_the_session_record(self):
+        # Codex P2 on #148: park A stores A's proof; order B's record must not decide A's rows.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}
+        park = {"order_id": 99, "rows": {"line425": row}, "proof": {"line425": {"variation": 425, "quantity": 1}}}
+        session = dict({"molosoc_gift_parked_rows": park}, **paid_record({"line425": 1}, order_id=123))
+        out = run_php({"cart": {}, "session": session}, "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), [])
+        # And it is snapshotted when the rows are parked.
+        _, _, out = self.submit(dict(FORM), {"cart": {"line425": 1}, "session": paid_record({"line425": 1})})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["proof"], {"line425": {"variation": 425, "quantity": 1}})
+
+    def test_parked_rows_come_back_with_the_pre_gift_checkout_address(self):
+        # Codex P2 on #148: the add-on copies the original order's address into the session customer.
+        scenario = {"cart": {"line999": 1}}
+        body = "WC()->customer->props = array( 'billing_first_name' => 'Eva', 'shipping_city' => 'Brno' ); " + self.BODY + " molosoc_gift_unpark_rows(); echo '|', json_encode( WC()->customer->props );"
+        out = run_php(scenario, body, post=dict(FORM))
+        saved = section(out, "SESSION")["molosoc_gift_parked_rows"]["address"]
+        self.assertEqual((saved["billing_first_name"], saved["shipping_city"]), ("Eva", "Brno"))
+        self.assertEqual(section(out, "CUSTOMER")["billing_first_name"], "Jana")  # the add-on checkout's address
+        restore = (
+            "WC()->customer->props = array( 'billing_first_name' => 'Jana' ); "
+            "molosoc_gift_unpark_rows(); echo json_encode( WC()->customer->props );"
+        )
+        session = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 1, "extra": []}}, "proof": [], "address": {"billing_first_name": "Eva", "shipping_city": "Brno"}}}
+        props = json.loads(run_php({"cart": {}, "session": session}, restore))
+        self.assertEqual((props["billing_first_name"], props["shipping_city"]), ("Eva", "Brno"))
+
+    def test_the_checkout_address_is_kept_even_when_the_cart_was_empty(self):
+        # Codex P2 on #148: no rows to park must not skip the address snapshot.
+        body = "WC()->customer->props = array( 'billing_first_name' => 'Eva', 'shipping_city' => 'Brno' ); " + self.BODY + " molosoc_gift_unpark_rows(); echo '|', json_encode( WC()->customer->props );"
+        out = run_php({"cart": {}}, body, post=dict(FORM))
+        park = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(park["rows"], [])
+        self.assertEqual(park["address"]["billing_first_name"], "Eva")
+        restore = "WC()->customer->props = array( 'billing_first_name' => 'Jana' ); molosoc_gift_unpark_rows(); echo json_encode( WC()->customer->props );"
+        session = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": [], "proof": [], "address": {"billing_first_name": "Eva"}}}
+        props = json.loads(run_php({"cart": {}, "session": session}, restore))
+        self.assertEqual(props["billing_first_name"], "Eva")
+
+    def test_a_retained_netted_row_merged_with_a_new_park_nets_the_new_units_by_the_new_proof(self):
+        # Codex P2 on #148: the netted flag must not exempt the new order's paid unit.
+        retained = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": [], "netted": True}}}}
+        session = dict(retained, **paid_record({"line425": 1}))
+        body = "$p = wc_get_order( 77 ); molosoc_gift_park_rows( $p, array( 'line425' => array( 'product_id' => 364, 'variation_id' => 425, 'quantity' => 1 ) ), array( 'line425' => array( 'variation' => 425, 'quantity' => 1 ) ) ); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        park = json.loads(run_php({"cart": {}, "session": session}, body))
+        self.assertEqual(park["rows"]["line425"]["quantity"], 1)
+        self.assertTrue(park["rows"]["line425"]["netted"])
+
+    def test_newly_parked_units_are_judged_by_the_current_proof_not_the_older_park_proof(self):
+        # Codex P2 on #148: an identical product added meanwhile taints the record; the stale
+        # proof stored in the same order's park must not swallow the newly added unit.
+        old = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {}, "proof": {"line425": {"variation": 425, "quantity": 1}}}}
+        body = "$p = wc_get_order( 77 ); molosoc_gift_park_rows( $p, array( 'line425' => array( 'product_id' => 364, 'variation_id' => 425, 'quantity' => 1 ) ), array() ); molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );"
+        out = run_php({"cart": {}, "session": old}, body)
+        self.assertEqual(json.loads(out), {"line425": 1})
+
+    def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
+        # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        body = "molosoc_gift_unpark_after_addon( 88 ); echo json_encode( WC()->cart->items ), '|', json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        items, kept = run_php(dict(addon, cart={}, session=parked), body).split("|")
+        self.assertEqual(json.loads(items), [])
+        self.assertEqual(json.loads(kept), parked["molosoc_gift_parked_rows"])
 
     def test_order_creation_records_the_rows_and_a_later_add_voids_the_record(self):
         body = """
-        WC()->cart->items = array( 'line425' => 1, 'line999' => 2, 'line425s2' => 1 );
+        WC()->cart->items = array( 'line425' => 1, 'line999' => 2 );
         molosoc_gift_remember_paid_rows( 77 );
         echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) ), '|';
         molosoc_gift_void_paid_rows_on_add( 'k', 364, 1, 424, array(), array( 'molosoc_gift_slot' => 2 ) );
@@ -623,6 +846,21 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(after_add, "true")
         body = "WC()->cart->items = array( 'line425' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line425', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
         self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "true")
+
+    def test_raising_an_unrelated_products_quantity_keeps_the_paid_proof(self):
+        # Codex P2 on #148: only a raised product-364 row may taint the record.
+        body = "WC()->cart->items = array( 'line425' => 1, 'line999' => 1 ); molosoc_gift_void_paid_rows_on_quantity( 'line999', 2, 1 ); echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' )['tainted'] );"
+        self.assertEqual(run_php({"session": paid_record({"line425": 1})}, body), "false")
+
+    def test_a_gift_marked_row_bought_in_a_normal_checkout_is_recorded_as_paid(self):
+        # Codex P2 on #148: with no valid gift link the marker is stale, the row is a paid pair.
+        body = """
+        WC()->cart->items = array( 'line425' => 1, 'line425s2' => 1 );
+        molosoc_gift_remember_paid_rows( 77 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) );
+        """
+        rows = json.loads(run_php({}, body))["rows"]
+        self.assertEqual(rows, {"line425": {"variation": 425, "quantity": 1}, "line425s2": {"variation": 425, "quantity": 1}})
 
     def test_a_failed_submit_with_a_paid_row_and_an_own_stale_row_restores_both(self):
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
@@ -644,15 +882,17 @@ class AddToCartHandler(unittest.TestCase):
             self.assertEqual(redirect, "https://example.test/cz/pokladna/")
             self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
 
-    def test_a_gift_row_that_would_merge_with_a_chosen_row_falls_back_and_is_logged(self):
-        # Without proof of ownership (no / foreign link) a gift-shaped row can't
-        # be set aside (covered above); a linked row whose quantity changed is
-        # not replaced either, and nothing about the cart changes.
+    def test_a_gift_shaped_row_the_session_cannot_vouch_for_is_parked_not_merged(self):
+        # A row with a gift marker whose quantity no longer matches the link is the
+        # shopper's own: it is parked (returns as an ordinary row), so it can never
+        # merge into a chosen gift row and inflate the add-on.
         post = dict(FORM, molosoc_gift_pairs="2", molosoc_gift_size=["M", "L"])
         cart = {"line425s2": 2}
         redirect, _, out = self.submit(post, {"cart": cart, "session": self.owned(cart, lines={"line425s2": 1})})
-        self.assertEqual(redirect, "https://example.test/product-cz/")
-        self.assertEqual(section(out, "CART"), cart)
+        self.assertEqual(redirect, "https://example.test/cz/pokladna/")
+        self.assertEqual(section(out, "CART"), {"line425s2": 1, "line424s3": 1})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+        self.assertEqual({k: r["quantity"] for k, r in parked.items()}, cart)
 
     def test_an_invalid_submission_leaves_a_non_empty_cart_untouched(self):
         # The fallback still never changes the cart: validation happens before
@@ -758,8 +998,9 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(section(out, "CART"), {})
         self.assertEqual(section(out, "SESSION"), {})
         # Another product's row is never touched (and nothing is added at all).
-        _, added, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
-        self.assertEqual((added, section(out, "CART")), ({}, {"line999": 1}))
+        _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line999": 1}})
+        self.assertEqual(section(out, "CART"), {"line999": 1})
+        self.assertEqual(section(out, "SESSION"), {})  # nothing parked on a failed submit
         # The paid pair is put back when a later pair fails.
         _, _, out = self.submit(post, {"fail_variation": 424, "cart": {"line425": 1}, "session": paid_record({"line425": 1})})
         self.assertIn("REDIRECT:https://example.test/product-cz/", out)
