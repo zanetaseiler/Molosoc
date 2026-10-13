@@ -752,7 +752,7 @@ function molosoc_gift_park_rows( $parent, $rows ) {
 			}
 		}
 		if ( isset( $kept[ $item_key ] ) ) {
-			$kept[ $item_key ]['quantity'] = max( (int) $kept[ $item_key ]['quantity'], $quantity );
+			$kept[ $item_key ]['quantity'] = (int) $kept[ $item_key ]['quantity'] + $quantity;
 			continue;
 		}
 		$kept[ $item_key ] = array(
@@ -824,6 +824,8 @@ function molosoc_gift_unpark_rows() {
 		if ( $added ) {
 			$restored++;
 		} else {
+			// Keep only the unpaid remainder, so a retry never depends on proof that may change.
+			$row['quantity']     = $quantity;
 			$failed[ $item_key ] = $row;
 			molosoc_gift_log( 'parked cart row could not be put back', array( 'row' => $item_key ) );
 		}

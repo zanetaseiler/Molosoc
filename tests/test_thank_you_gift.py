@@ -684,6 +684,22 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(json.loads(items), {"line999": 2})
         self.assertEqual(kept, "null")
 
+    def test_a_refused_row_is_kept_as_the_unpaid_remainder_only(self):
+        # Codex P2 on #148: parked qty 2 with 1 proven paid; a refused restore keeps qty 1,
+        # so a retry never re-adds the paid unit even if the proof later changes.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 2, "extra": []}
+        session = dict({"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": row}}}, **paid_record({"line425": 1}))
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        kept = json.loads(run_php({"cart": {}, "session": session, "fail_variation": 425}, body))
+        self.assertEqual(kept["rows"]["line425"]["quantity"], 1)
+
+    def test_a_same_key_row_parked_again_adds_its_quantity(self):
+        # Codex P2 on #148: a second copy of an already parked row must not be max()-ed away.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 1, "extra": []}}}}
+        _, _, out = self.submit(dict(FORM), {"cart": {"line999": 1}, "session": parked})
+        rows = section(out, "SESSION")["molosoc_gift_parked_rows"]["rows"]
+        self.assertEqual(rows["line999"]["quantity"], 2)
+
     def test_a_new_flow_judges_an_earlier_orders_park_by_its_own_proof_instead_of_merging(self):
         # Codex P2 on #148: order 99's park (paid pair line425 + another row) must not
         # be relabelled as order 77's: 99's proof drops line425, the rest is re-parked.
