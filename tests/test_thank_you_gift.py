@@ -169,6 +169,8 @@ class Molosoc_Test_Cart {
 		$key = $this->generate_cart_id( $product_id, $variation_id, $attrs, $data );
 		$this->products[ $key ] = new Molosoc_Test_Product();
 		$this->items[ $key ] = ( isset( $this->items[ $key ] ) ? $this->items[ $key ] : 0 ) + $qty;
+		// Like WooCommerce, announce the add (the paid-row record is voided from it).
+		if ( isset( $GLOBALS['hooks']['woocommerce_add_to_cart'] ) ) { call_user_func( $GLOBALS['hooks']['woocommerce_add_to_cart'], $key, $product_id, $qty, $variation_id, $attrs, $data ); }
 		return $key;
 	}
 }
@@ -732,6 +734,25 @@ class AddToCartHandler(unittest.TestCase):
         parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
         self.assertEqual(parked["order_id"], 77)
         self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, {"line999": 2})
+
+    def test_an_earlier_parks_row_adds_to_a_same_key_row_of_the_new_park(self):
+        # Codex P2 on #148: same cart key in the earlier park and the current cart: units add up.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        _, _, out = self.submit(dict(FORM), {"cart": {"line999": 1}, "session": earlier})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual(parked["rows"]["line999"]["quantity"], 3)
+
+    def test_the_new_flows_proof_is_snapshotted_before_an_earlier_park_is_restored(self):
+        # Codex P2 on #148: restoring order 99's product row taints the record; order 77's proof must survive.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}}}}
+        session = dict(earlier, **paid_record({"line425": 1}, order_id=77))
+        _, _, out = self.submit(dict(FORM), {"cart": {"line425": 1}, "session": session})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["order_id"], 77)
+        self.assertEqual(parked["proof"], {"line425": {"variation": 425, "quantity": 1}})
 
     def test_a_refused_new_row_leaves_an_earlier_orders_park_untouched(self):
         # Codex P2 on #148: order 99's park must survive order 77's submit when a chosen row is refused.

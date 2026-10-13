@@ -731,7 +731,7 @@ function molosoc_gift_paid_record_state( $order ) {
  * submit for the same order that is still pending are kept and merged (another
  * order's park is unparked first, in the submit handler).
  */
-function molosoc_gift_park_rows( $parent, $rows ) {
+function molosoc_gift_park_rows( $parent, $rows, $proof_now = null ) {
 	if ( ! $rows || ! function_exists( 'WC' ) || ! WC()->session ) {
 		return;
 	}
@@ -741,7 +741,7 @@ function molosoc_gift_park_rows( $parent, $rows ) {
 	// keeps a single, replaceable record) and the checkout address the add-on
 	// replaces. A second park for the same order keeps what the first one saved.
 	$same    = is_array( $park ) && isset( $park['order_id'] ) && absint( $park['order_id'] ) === $parent->get_id();
-	$proof   = ( $same && isset( $park['proof'] ) && is_array( $park['proof'] ) ) ? $park['proof'] : molosoc_gift_proven_rows( $parent->get_id() );
+	$proof   = ( $same && isset( $park['proof'] ) && is_array( $park['proof'] ) ) ? $park['proof'] : ( is_array( $proof_now ) ? $proof_now : molosoc_gift_proven_rows( $parent->get_id() ) );
 	$address = ( $same && isset( $park['address'] ) && is_array( $park['address'] ) ) ? $park['address'] : molosoc_gift_customer_address( $parent );
 	foreach ( $rows as $item_key => $item ) {
 		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
@@ -1090,7 +1090,10 @@ function molosoc_gift_add_to_cart_action() {
 	// proof about those rows (#146 sent it to the product page whenever the session
 	// had none, e.g. for an order placed before the record existed), nothing is
 	// charged twice and nothing the shopper put in the cart is deleted.
-	$parked = $cart->get_cart();
+	// This order's paid-row proof is snapshotted now: re-adding an earlier flow's
+	// parked rows below goes through add_to_cart() and would taint the record.
+	$proof_now = molosoc_gift_proven_rows( $parent_id );
+	$parked    = $cart->get_cart();
 	foreach ( array_keys( $parked ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
 	}
@@ -1143,7 +1146,12 @@ function molosoc_gift_add_to_cart_action() {
 		molosoc_gift_unpark_rows();
 		foreach ( $cart->get_cart() as $item_key => $item ) {
 			if ( ! isset( $wanted[ $item_key ] ) ) {
-				$parked[ $item_key ] = $item;
+				if ( isset( $parked[ $item_key ] ) ) {
+					// Same key as a row already set aside: the units add up.
+					$parked[ $item_key ]['quantity'] = (int) $parked[ $item_key ]['quantity'] + (int) $item['quantity'];
+				} else {
+					$parked[ $item_key ] = $item;
+				}
 				$cart->remove_cart_item( $item_key );
 			}
 		}
@@ -1151,7 +1159,7 @@ function molosoc_gift_add_to_cart_action() {
 
 	// The add-on cart is now exactly the gift rows: keep the parked rows, and drop
 	// them from WooCommerce's undo list so they cannot come back twice.
-	molosoc_gift_park_rows( $parent, $parked );
+	molosoc_gift_park_rows( $parent, $parked, $proof_now );
 	if ( $parked ) {
 		$removed = $cart->get_removed_cart_contents();
 		foreach ( array_keys( $parked ) as $item_key ) {
