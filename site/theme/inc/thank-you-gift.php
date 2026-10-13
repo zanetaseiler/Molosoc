@@ -737,6 +737,12 @@ function molosoc_gift_park_rows( $parent, $rows ) {
 	}
 	$park = WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY );
 	$kept = ( is_array( $park ) && isset( $park['rows'] ) && is_array( $park['rows'] ) ) ? $park['rows'] : array();
+	// The park carries its own scope: the paid-row proof of ITS order (the session
+	// keeps a single, replaceable record) and the checkout address the add-on
+	// replaces. A second park for the same order keeps what the first one saved.
+	$same    = is_array( $park ) && isset( $park['order_id'] ) && absint( $park['order_id'] ) === $parent->get_id();
+	$proof   = ( $same && isset( $park['proof'] ) && is_array( $park['proof'] ) ) ? $park['proof'] : molosoc_gift_proven_rows( $parent->get_id() );
+	$address = ( $same && isset( $park['address'] ) && is_array( $park['address'] ) ) ? $park['address'] : molosoc_gift_customer_address( $parent );
 	foreach ( $rows as $item_key => $item ) {
 		$quantity = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
 		if ( $quantity < 1 || ! isset( $item['product_id'] ) ) {
@@ -768,8 +774,65 @@ function molosoc_gift_park_rows( $parent, $rows ) {
 		array(
 			'order_id' => $parent->get_id(),
 			'rows'     => $kept,
+			'proof'    => $proof,
+			'address'  => $address,
 		)
 	);
+}
+
+/**
+ * The rows the session proves were paid by order $order_id (untainted record of
+ * that very order), or none.
+ */
+function molosoc_gift_proven_rows( $order_id ) {
+	$record = ( function_exists( 'WC' ) && WC()->session ) ? WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY ) : null;
+	if ( is_array( $record ) && empty( $record['tainted'] ) && isset( $record['order_id'], $record['rows'] )
+		&& (int) $record['order_id'] === (int) $order_id && is_array( $record['rows'] )
+	) {
+		return $record['rows'];
+	}
+	return array();
+}
+
+/**
+ * The session customer's billing and shipping address as it is now (field names
+ * taken from the original order's address, read through the customer's getters),
+ * so the add-on checkout's copy of the original order's address can be undone.
+ */
+function molosoc_gift_customer_address( $parent ) {
+	$customer = ( function_exists( 'WC' ) && WC()->customer ) ? WC()->customer : null;
+	$saved    = array();
+	if ( ! $customer ) {
+		return $saved;
+	}
+	foreach ( array( 'billing', 'shipping' ) as $type ) {
+		foreach ( array_keys( (array) $parent->get_address( $type ) ) as $field ) {
+			$getter = 'get_' . $type . '_' . $field;
+			if ( method_exists( $customer, $getter ) ) {
+				$saved[ $type . '_' . $field ] = (string) $customer->$getter();
+			}
+		}
+	}
+	return $saved;
+}
+
+function molosoc_gift_restore_customer_address( $saved ) {
+	$customer = ( function_exists( 'WC' ) && WC()->customer ) ? WC()->customer : null;
+	if ( ! $customer || ! $saved || ! is_array( $saved ) ) {
+		return;
+	}
+	foreach ( $saved as $name => $value ) {
+		$setter = 'set_' . $name;
+		if ( ! method_exists( $customer, $setter ) ) {
+			continue;
+		}
+		try {
+			$customer->$setter( $value );
+		} catch ( Exception $e ) {
+			continue;
+		}
+	}
+	$customer->save();
 }
 
 /**
@@ -793,11 +856,15 @@ function molosoc_gift_unpark_rows() {
 	if ( ! is_array( $park ) || empty( $park['rows'] ) || ! is_array( $park['rows'] ) ) {
 		return 0;
 	}
-	$record = WC()->session->get( MOLOSOC_GIFT_PAID_SESSION_KEY );
-	$proven = ( is_array( $record ) && empty( $record['tainted'] ) && isset( $record['order_id'], $record['rows'], $park['order_id'] )
-		&& (int) $record['order_id'] === (int) $park['order_id'] && is_array( $record['rows'] ) )
-		? $record['rows']
-		: array();
+	// The proof stored with the park wins: the session record may since belong to another order.
+	if ( isset( $park['proof'] ) && is_array( $park['proof'] ) ) {
+		$proven = $park['proof'];
+	} else {
+		$proven = isset( $park['order_id'] ) ? molosoc_gift_proven_rows( $park['order_id'] ) : array();
+	}
+	if ( isset( $park['address'] ) ) {
+		molosoc_gift_restore_customer_address( $park['address'] );
+	}
 	$todo = array();
 	foreach ( $park['rows'] as $item_key => $row ) {
 		$quantity = isset( $row['quantity'] ) ? (int) $row['quantity'] : 0;
@@ -839,6 +906,7 @@ function molosoc_gift_unpark_rows() {
 			array(
 				'order_id' => isset( $park['order_id'] ) ? $park['order_id'] : 0,
 				'rows'     => $failed,
+				'proof'    => $proven,
 			)
 		);
 	}

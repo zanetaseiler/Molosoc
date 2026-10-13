@@ -181,6 +181,11 @@ class Molosoc_Test_Customer {
 	// Real WC_Customer has one concrete setter per address field; the file
 	// checks method_exists() before calling, so these must be real methods.
 	public $props = array(); public $saved = 0;
+	function get_billing_first_name() { return isset( $this->props['billing_first_name'] ) ? $this->props['billing_first_name'] : ''; }
+	function get_billing_email() { return isset( $this->props['billing_email'] ) ? $this->props['billing_email'] : ''; }
+	function get_billing_phone() { return isset( $this->props['billing_phone'] ) ? $this->props['billing_phone'] : ''; }
+	function get_shipping_first_name() { return isset( $this->props['shipping_first_name'] ) ? $this->props['shipping_first_name'] : ''; }
+	function get_shipping_city() { return isset( $this->props['shipping_city'] ) ? $this->props['shipping_city'] : ''; }
 	function set_billing_first_name( $v ) { $this->props['billing_first_name'] = $v; }
 	function set_billing_email( $v ) { if ( 'bad' === $v ) { throw new Exception( 'invalid' ); } $this->props['billing_email'] = $v; }
 	function set_billing_phone( $v ) { $this->props['billing_phone'] = $v; }
@@ -681,6 +686,7 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(json.loads(items), [])
         expected = json.loads(json.dumps(parked["molosoc_gift_parked_rows"]))
         expected["rows"]["line999"]["netted"] = True
+        expected["proof"] = []
         self.assertEqual(json.loads(kept), expected)
         items, kept = run_php({"cart": {}, "session": parked}, body).split("|")
         self.assertEqual(json.loads(items), {"line999": 2})
@@ -726,6 +732,34 @@ class AddToCartHandler(unittest.TestCase):
         parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
         self.assertEqual(parked["order_id"], 77)
         self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, {"line999": 2})
+
+    def test_a_park_keeps_its_own_proof_when_another_order_replaces_the_session_record(self):
+        # Codex P2 on #148: park A stores A's proof; order B's record must not decide A's rows.
+        row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}
+        park = {"order_id": 99, "rows": {"line425": row}, "proof": {"line425": {"variation": 425, "quantity": 1}}}
+        session = dict({"molosoc_gift_parked_rows": park}, **paid_record({"line425": 1}, order_id=123))
+        out = run_php({"cart": {}, "session": session}, "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), [])
+        # And it is snapshotted when the rows are parked.
+        _, _, out = self.submit(dict(FORM), {"cart": {"line425": 1}, "session": paid_record({"line425": 1})})
+        parked = section(out, "SESSION")["molosoc_gift_parked_rows"]
+        self.assertEqual(parked["proof"], {"line425": {"variation": 425, "quantity": 1}})
+
+    def test_parked_rows_come_back_with_the_pre_gift_checkout_address(self):
+        # Codex P2 on #148: the add-on copies the original order's address into the session customer.
+        scenario = {"cart": {"line999": 1}}
+        body = "WC()->customer->props = array( 'billing_first_name' => 'Eva', 'shipping_city' => 'Brno' ); " + self.BODY + " molosoc_gift_unpark_rows(); echo '|', json_encode( WC()->customer->props );"
+        out = run_php(scenario, body, post=dict(FORM))
+        saved = section(out, "SESSION")["molosoc_gift_parked_rows"]["address"]
+        self.assertEqual((saved["billing_first_name"], saved["shipping_city"]), ("Eva", "Brno"))
+        self.assertEqual(section(out, "CUSTOMER")["billing_first_name"], "Jana")  # the add-on checkout's address
+        restore = (
+            "WC()->customer->props = array( 'billing_first_name' => 'Jana' ); "
+            "molosoc_gift_unpark_rows(); echo json_encode( WC()->customer->props );"
+        )
+        session = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 1, "extra": []}}, "proof": [], "address": {"billing_first_name": "Eva", "shipping_city": "Brno"}}}
+        props = json.loads(run_php({"cart": {}, "session": session}, restore))
+        self.assertEqual((props["billing_first_name"], props["shipping_city"]), ("Eva", "Brno"))
 
     def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
         # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
