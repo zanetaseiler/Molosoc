@@ -36,9 +36,11 @@ untouched. B does not exist in WordPress yet (see "Draft creation + review path"
 | 15 | "Zakladatelky" — quote + photo | `.lpb-founders` |
 | footer | Thrive symbol 103 | theme footer (Comgate/Visa/MC/GPay/APay strip, legal links) |
 
-Type faces are page 580's own (DM Serif Display / Nunito Sans / Nunito / Open Sans),
-surface `#faf7f2`, black bands and black square buttons with 2 px tracking — read from
-the page's rendered CSS and `getComputedStyle`, not from the theme tokens.
+Body and label faces are page 580's own (Nunito Sans / Nunito / Open Sans); headings
+use the theme display face (Tenor Sans via `--font-display`) instead of 580's DM Serif
+Display, so B's headings match the rest of the site (Žaneta, 2026-10-13). Surface
+`#faf7f2`, black bands and black square buttons with 2 px tracking — read from the
+page's rendered CSS and `getComputedStyle`, not from the theme tokens.
 
 ## Operational purchase details adapted (the only intentional copy changes)
 

@@ -398,14 +398,16 @@ function molosoc_enqueue_assets() {
 	} elseif ( is_page( 'hydratacni-navleky-landing-b' ) ) {
 		// Landing Page B (Issue #122): faithful rebuild of Thrive page 580 as
 		// an unpublished variant of the CZ landing page — template
-		// page-hydratacni-navleky-landing-b.php. Loads page 580's own type
-		// faces (DM Serif Display / Nunito Sans / Open Sans; Nunito already
-		// comes with the global molosoc-fonts handle) plus its scoped CSS
-		// and the tabs/sticky-bar enhancement script. Nothing here touches
-		// the live 'hydratacni-navlek-na-nohy' branch below.
+		// page-hydratacni-navleky-landing-b.php. Loads page 580's own body/
+		// label faces (Nunito Sans / Open Sans; Nunito and the heading face
+		// Tenor Sans already come with the global molosoc-fonts handle —
+		// B's headings use the theme display font, not 580's DM Serif
+		// Display, so that request was dropped) plus its scoped CSS and the
+		// tabs/sticky-bar enhancement script. Nothing here touches the live
+		// 'hydratacni-navlek-na-nohy' branch below.
 		wp_enqueue_style(
 			'molosoc-landing-b-fonts',
-			'https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@300;400;600&family=Open+Sans:wght@300;400&display=swap',
+			'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600&family=Open+Sans:wght@300;400&display=swap',
 			array(),
 			null
 		);
