@@ -756,8 +756,8 @@ class LanguageSwitchAndFlow(unittest.TestCase):
             "https://example.test/cz/pokladna/order-received/77/?key=wc_order_key77",
         )
         self.assertEqual(
-            run_php({"request_lang": "en", "status": {"77": "pending"}}, "var_dump( molosoc_thankyou_order() );", get=KEY).strip(),
-            "NULL",
+            run_php({"request_lang": "en", "status": {"77": "pending"}}, "echo json_encode( molosoc_thankyou_order() );", get=KEY).strip(),
+            "null",
         )
 
     def test_switch_is_untouched_off_the_thank_you_page_or_without_the_key(self):
