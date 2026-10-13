@@ -5,6 +5,26 @@
   file only sizes the hero heading and lays out the gift add-on section.
 */
 
+/* ---------- Page backdrop ----------
+   Warm photo behind the whole Thank You page (2026-10-13, per request,
+   Issue #130 follow-up to #128): the same veiled cover image the homepage
+   hero section (homepage.css .molosoc-hero--card) and Landing Page B's
+   hero (landing-b.css .lpb-hero) use, so the order-received page carries
+   the same soft peach/linen warmth instead of flat cream. --color-bg stays
+   underneath as the fallback while the image loads or if it is blocked.
+   Attachment stays scroll (not fixed): iOS ignores fixed, and the page is
+   short enough that one cover-scaled image reads fine top to bottom. */
+
+body.woocommerce-order-received {
+  background-color: var(--color-bg);
+  background-image:
+    linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),
+    url("https://molosoc.com/wp-content/uploads/2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
 /* ---------- Hero heading (index.php's own <h1>) ---------- */
 
 body.woocommerce-order-received .molosoc-main h1 {
