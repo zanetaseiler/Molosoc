@@ -155,6 +155,10 @@ class LandingBTemplate(unittest.TestCase):
                     part.startswith(".lpb") or part.startswith("body:has(.lpb-sticky)"),
                     f"unscoped selector: {part}",
                 )
+        # The section-wide default width must stay at single-class specificity
+        # (:where) so .lpb-video / .lpb-gallery / .lpb-founders__photo keep
+        # their narrower max-widths (live regression: 1080px-wide YouTube embed).
+        self.assertIn(".lpb-section > :where(", self.css_rules)
         self.assertIn("data-lpb-tabs", self.js)
         self.assertIn("lpb-sticky", self.js)
 
