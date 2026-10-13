@@ -508,7 +508,8 @@ add_action( 'woocommerce_thankyou', 'molosoc_thankyou_gift_section', 20 );
  * Runs on wp_loaded at priority 20, the same point WooCommerce's own
  * add-to-cart form handler uses (session and cart are ready). A missing or
  * unavailable size is never guessed at, and a form whose original order can
- * no longer ship together is not honoured: in both cases the customer is
+ * no longer ship together is not honoured: in both cases (and when the cart
+ * holds a different product) the customer is
  * sent to the product page (where nothing about combined shipping is
  * promised) to choose there instead.
  */
@@ -559,30 +560,57 @@ function molosoc_gift_add_to_cart_action() {
 	// WooCommerce's own notice explains why — never on to checkout with
 	// only part of what they chose. Every pair is its own quantity-1 row
 	// carrying its overall pair number, which is what its price is read from.
-	$cart    = WC()->cart;
-	$restore = array();
-	$wanted  = array();
-	$slots   = array();
-	$failed  = false;
+	$cart = WC()->cart;
+
+	// The cart this form builds is a fresh one. WooCommerce only empties the
+	// cart when the order-received page is viewed in the same session as the
+	// checkout, so after a gateway return (or a second try from the same
+	// page) it can still hold the pairs just bought or the rows an earlier
+	// submit of this form added. Only rows provably ours are dropped: a gift
+	// row from an earlier submit of this same order (slot marker, listed in
+	// that order's session link). Any other row,
+	// another product or an ordinary pair (a cart row cannot show whether it
+	// was just bought or added in another tab), is never touched: the add is
+	// refused and the shopper chooses on the product page.
+	// Those rows are taken out of the cart before anything is added, because
+	// WooCommerce's stock check counts what the cart already holds (replacing a
+	// row when only one unit is left would otherwise be refused). They are kept
+	// in the removed-items list, so a failed add puts them back exactly as they
+	// were.
+	// A marked row only counts as ours when the session link says this same
+	// original order added it: rows of a gift cart built for another order
+	// (a second tab) are never discarded behind the shopper's back either.
+	$prior = WC()->session ? WC()->session->get( MOLOSOC_GIFT_SESSION_KEY ) : null;
+	$owned = array();
+	if ( is_array( $prior ) && isset( $prior['order_id'], $prior['key'], $prior['lines'] ) && is_array( $prior['lines'] )
+		&& (int) $prior['order_id'] === $parent->get_id() && hash_equals( $parent->get_order_key(), (string) $prior['key'] ) ) {
+		$owned = $prior['lines'];
+	}
+	$stale = array();
+	foreach ( $cart->get_cart() as $item_key => $item ) {
+		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] || ! isset( $item['molosoc_gift_slot'] ) || ! isset( $owned[ $item_key ] ) ) {
+			wp_safe_redirect( molosoc_product_url( $lang ) );
+			exit;
+		}
+		$stale[ $item_key ] = $item;
+	}
+	foreach ( array_keys( $stale ) as $item_key ) {
+		$cart->remove_cart_item( $item_key );
+	}
+
+	$wanted = array();
+	$slots  = array();
+	$failed = false;
 	foreach ( $picks as $slot => $key ) {
 		$variation  = $sizes[ $key ]['variation'];
 		$attributes = $variation->get_variation_attributes();
-		$data       = array( 'molosoc_gift_slot' => $slot );
-		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes, $data ) );
-		if ( $existing ) {
-			// Never merge into a row the shopper already had.
-			$failed = true;
-			break;
-		}
-
-		$item_key = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $variation->get_id(), $attributes, $data );
+		$item_key   = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $variation->get_id(), $attributes, array( 'molosoc_gift_slot' => $slot ) );
 		if ( ! $item_key ) {
 			$failed = true;
 			break;
 		}
-		$restore[ $item_key ] = 0;
-		$wanted[ $item_key ]  = 1;
-		$slots[ $item_key ]   = $slot;
+		$wanted[ $item_key ] = 1;
+		$slots[ $item_key ]  = $slot;
 	}
 
 	// The link must cover exactly the rows chosen on this form. A cart that
@@ -599,14 +627,23 @@ function molosoc_gift_add_to_cart_action() {
 		}
 	}
 	if ( $failed ) {
-		foreach ( $restore as $item_key => $before ) {
+		foreach ( array_keys( $wanted ) as $item_key ) {
 			$cart->remove_cart_item( $item_key );
+		}
+		// A replacement can share a stale row's key (same size, same pair
+		// number); removing it just overwrote WooCommerce's removed-items
+		// snapshot of the stale row with itself. Put the original rows'
+		// own data back in that list before restoring.
+		$removed = $cart->get_removed_cart_contents();
+		foreach ( $stale as $item_key => $item ) {
+			$removed[ $item_key ] = $item;
+		}
+		$cart->set_removed_cart_contents( $removed );
+		foreach ( array_keys( $stale ) as $item_key ) {
+			$cart->restore_cart_item( $item_key );
 		}
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
-	}
-	foreach ( $wanted as $item_key => $quantity ) {
-		$cart->set_quantity( $item_key, $quantity );
 	}
 
 	molosoc_gift_link_cart_to_order( $parent, $lang, $wanted, $slots );
