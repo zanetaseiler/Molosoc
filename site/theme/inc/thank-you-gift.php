@@ -1090,14 +1090,6 @@ function molosoc_gift_add_to_cart_action() {
 	// proof about those rows (#146 sent it to the product page whenever the session
 	// had none, e.g. for an order placed before the record existed), nothing is
 	// charged twice and nothing the shopper put in the cart is deleted.
-	// Rows still parked for an EARLIER pending add-on (another order) are judged
-	// against that order's own paid-row proof now, before they could be merged into
-	// this flow's park and lose that scope: what that proof covers stays out, the
-	// rest returns to the cart and is parked again below under this order.
-	$earlier = WC()->session ? WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY ) : null;
-	if ( is_array( $earlier ) && isset( $earlier['order_id'] ) && absint( $earlier['order_id'] ) !== $parent_id ) {
-		molosoc_gift_unpark_rows();
-	}
 	$parked = $cart->get_cart();
 	foreach ( array_keys( $parked ) as $item_key ) {
 		$cart->remove_cart_item( $item_key );
@@ -1139,6 +1131,22 @@ function molosoc_gift_add_to_cart_action() {
 		molosoc_gift_restore_rows( $cart, $stale + $parked );
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
+	}
+
+	// Rows still parked for an EARLIER pending add-on (another order) are judged
+	// against that order's own paid-row proof only now that every chosen row was
+	// added (a refused add above must leave that flow's park untouched): what that
+	// proof covers stays out, the rest returns to the cart and is parked again
+	// below under this order, so the park never mixes two orders' scopes.
+	$earlier = WC()->session ? WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY ) : null;
+	if ( is_array( $earlier ) && isset( $earlier['order_id'] ) && absint( $earlier['order_id'] ) !== $parent_id ) {
+		molosoc_gift_unpark_rows();
+		foreach ( $cart->get_cart() as $item_key => $item ) {
+			if ( ! isset( $wanted[ $item_key ] ) ) {
+				$parked[ $item_key ] = $item;
+				$cart->remove_cart_item( $item_key );
+			}
+		}
 	}
 
 	// The add-on cart is now exactly the gift rows: keep the parked rows, and drop

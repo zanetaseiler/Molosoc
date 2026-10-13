@@ -733,6 +733,14 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(parked["order_id"], 77)
         self.assertEqual({k: r["quantity"] for k, r in parked["rows"].items()}, {"line999": 2})
 
+    def test_a_refused_new_row_leaves_an_earlier_orders_park_untouched(self):
+        # Codex P2 on #148: order 99's park must survive order 77's submit when a chosen row is refused.
+        earlier = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {
+            "line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        redirect, _, out = self.submit(dict(FORM), {"cart": {}, "session": earlier, "fail_variation": 425})
+        self.assertNotEqual(redirect, "https://example.test/cz/pokladna/")
+        self.assertEqual(section(out, "SESSION")["molosoc_gift_parked_rows"], earlier["molosoc_gift_parked_rows"])
+
     def test_a_park_keeps_its_own_proof_when_another_order_replaces_the_session_record(self):
         # Codex P2 on #148: park A stores A's proof; order B's record must not decide A's rows.
         row = {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}
