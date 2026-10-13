@@ -619,14 +619,24 @@ function molosoc_gift_remember_paid_rows( $order ) {
 		return;
 	}
 	$rows = array();
+	$gift = false;
 	foreach ( WC()->cart->get_cart() as $item_key => $item ) {
-		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
+		if ( isset( $item['molosoc_gift_slot'] ) ) {
+			$gift = true;
+			continue;
+		}
+		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
 			continue;
 		}
 		$rows[ $item_key ] = array(
 			'variation' => isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0,
 			'quantity'  => isset( $item['quantity'] ) ? (int) $item['quantity'] : 0,
 		);
+	}
+	if ( $gift && ! $rows ) {
+		// The gift add-on checkout consumed no paid pair: it must not overwrite the
+		// record of the original order that the parked rows are judged by.
+		return;
 	}
 	WC()->session->set(
 		MOLOSOC_GIFT_PAID_SESSION_KEY,
@@ -800,6 +810,7 @@ function molosoc_gift_unpark_rows() {
 		}
 	}
 	$restored = 0;
+	$failed   = array();
 	foreach ( $todo as $item_key => $pair ) {
 		list( $row, $quantity ) = $pair;
 		$added = WC()->cart->add_to_cart(
@@ -812,8 +823,19 @@ function molosoc_gift_unpark_rows() {
 		if ( $added ) {
 			$restored++;
 		} else {
+			$failed[ $item_key ] = $row;
 			molosoc_gift_log( 'parked cart row could not be put back', array( 'row' => $item_key ) );
 		}
+	}
+	if ( $failed ) {
+		// Keep what WooCommerce refused (out of stock, validation filter) so a later request retries it.
+		WC()->session->set(
+			MOLOSOC_GIFT_PARKED_SESSION_KEY,
+			array(
+				'order_id' => isset( $park['order_id'] ) ? $park['order_id'] : 0,
+				'rows'     => $failed,
+			)
+		);
 	}
 	molosoc_gift_trace( 'parked rows restored', array( 'parked' => count( $park['rows'] ), 'restored' => $restored ) );
 	return $restored;
@@ -846,9 +868,16 @@ add_action( 'template_redirect', 'molosoc_gift_maybe_unpark_rows', 20 );
  * parked for the checkout.
  */
 function molosoc_gift_unpark_after_addon( $order_id ) {
-	if ( molosoc_gift_parent_order( wc_get_order( $order_id ) ) ) {
-		molosoc_gift_unpark_rows();
+	$parent = molosoc_gift_parent_order( wc_get_order( $order_id ) );
+	if ( ! $parent || ! function_exists( 'WC' ) || ! WC()->session ) {
+		return;
 	}
+	// Only the rows parked for this add-on: a newer gift checkout (another tab) keeps its own.
+	$park = WC()->session->get( MOLOSOC_GIFT_PARKED_SESSION_KEY );
+	if ( is_array( $park ) && isset( $park['order_id'] ) && absint( $park['order_id'] ) !== $parent->get_id() ) {
+		return;
+	}
+	molosoc_gift_unpark_rows();
 }
 add_action( 'woocommerce_thankyou', 'molosoc_gift_unpark_after_addon', 6, 1 );
 

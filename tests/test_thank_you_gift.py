@@ -659,6 +659,40 @@ class AddToCartHandler(unittest.TestCase):
         self.assertEqual(json.loads(run_php(dict(addon, cart={}, session=parked), body % 88)), {"line999": 2})
         self.assertEqual(json.loads(run_php({"cart": {}, "session": parked}, body % 77)), [])
 
+    def test_the_addon_checkout_does_not_overwrite_the_paid_row_record(self):
+        # Codex P1 on #148: the add-on order runs the same hook with a gift-only cart.
+        body = """
+        WC()->cart->items = array( 'line425s2' => 1 );
+        molosoc_gift_remember_paid_rows( 88 );
+        echo json_encode( WC()->session->get( 'molosoc_gift_paid_rows' ) );
+        """
+        self.assertEqual(json.loads(run_php({"session": paid_record({"line425": 1})}, body)), paid_record({"line425": 1})["molosoc_gift_paid_rows"])
+        # So the original paid pair is still not restored on the add-on Thank You page.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line425": {"product_id": 364, "variation_id": 425, "variation": [], "quantity": 1, "extra": []}}}}
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        out = run_php(dict(addon, cart={}, session=dict(parked, **paid_record({"line425": 1}))), "molosoc_gift_unpark_after_addon( 88 ); echo json_encode( WC()->cart->items );")
+        self.assertEqual(json.loads(out), [])
+
+    def test_a_parked_row_woocommerce_refuses_is_kept_for_a_later_retry(self):
+        # Codex P2 on #148: out of stock / validation filter must not lose the row.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 77, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        body = "molosoc_gift_unpark_rows(); echo json_encode( WC()->cart->items ), '|', json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        items, kept = run_php({"cart": {}, "session": parked, "fail_variation": 999}, body).split("|")
+        self.assertEqual(json.loads(items), [])
+        self.assertEqual(json.loads(kept), parked["molosoc_gift_parked_rows"])
+        items, kept = run_php({"cart": {}, "session": parked}, body).split("|")
+        self.assertEqual(json.loads(items), {"line999": 2})
+        self.assertEqual(kept, "null")
+
+    def test_another_addons_thank_you_page_leaves_a_newer_flows_parked_rows(self):
+        # Codex P2 on #148: parked for order 99, but the Thank You page is the add-on of order 77.
+        parked = {"molosoc_gift_parked_rows": {"order_id": 99, "rows": {"line999": {"product_id": 999, "variation_id": 999, "variation": [], "quantity": 2, "extra": []}}}}
+        addon = {"meta": {"88": {"_molosoc_gift_parent_order": 77}}}
+        body = "molosoc_gift_unpark_after_addon( 88 ); echo json_encode( WC()->cart->items ), '|', json_encode( WC()->session->get( 'molosoc_gift_parked_rows' ) );"
+        items, kept = run_php(dict(addon, cart={}, session=parked), body).split("|")
+        self.assertEqual(json.loads(items), [])
+        self.assertEqual(json.loads(kept), parked["molosoc_gift_parked_rows"])
+
     def test_order_creation_records_the_rows_and_a_later_add_voids_the_record(self):
         body = """
         WC()->cart->items = array( 'line425' => 1, 'line999' => 2, 'line425s2' => 1 );
