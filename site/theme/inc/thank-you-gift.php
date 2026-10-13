@@ -566,19 +566,34 @@ function molosoc_gift_add_to_cart_action() {
 	// cart when the order-received page is viewed in the same session as the
 	// checkout, so after a gateway return (or a second try from the same
 	// page) it can still hold the pairs just bought or the rows an earlier
-	// submit of this form added. Those rows are already paid for or ours, so
-	// they are dropped here instead of sending the shopper to the product
-	// page. Anything else in the cart is never touched: the add is refused.
-	$stale = array();
+	// submit of this form added. Only rows provably ours are dropped: a gift
+	// row from an earlier submit (it carries the slot marker), or ordinary
+	// pairs that the original order accounts for (together no more pairs than
+	// it contained). Any other row, another product or an unrecognised pair
+	// (e.g. one added in another tab), is never touched: the add is refused.
+	// Nothing is removed until every chosen pair has been added, so a failed
+	// add leaves the cart exactly as it was.
+	$bought = 0;
+	foreach ( $parent->get_items() as $order_item ) {
+		if ( MOLOSOC_PRODUCT_ID === (int) $order_item->get_product_id() ) {
+			$bought += (int) $order_item->get_quantity();
+		}
+	}
+	$stale    = array();
+	$ordinary = 0;
 	foreach ( $cart->get_cart() as $item_key => $item ) {
 		if ( ! isset( $item['product_id'] ) || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
 			wp_safe_redirect( molosoc_product_url( $lang ) );
 			exit;
 		}
-		$stale[] = $item_key;
+		if ( ! isset( $item['molosoc_gift_slot'] ) ) {
+			$ordinary += isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
+		}
+		$stale[ $item_key ] = isset( $item['quantity'] ) ? (int) $item['quantity'] : 0;
 	}
-	foreach ( $stale as $item_key ) {
-		$cart->remove_cart_item( $item_key );
+	if ( $ordinary > $bought ) {
+		wp_safe_redirect( molosoc_product_url( $lang ) );
+		exit;
 	}
 
 	$restore = array();
@@ -590,8 +605,9 @@ function molosoc_gift_add_to_cart_action() {
 		$attributes = $variation->get_variation_attributes();
 		$data       = array( 'molosoc_gift_slot' => $slot );
 		$existing   = $cart->find_product_in_cart( $cart->generate_cart_id( MOLOSOC_PRODUCT_ID, $variation->get_id(), $attributes, $data ) );
-		if ( $existing ) {
-			// Never merge into a row the shopper already had.
+		// Our own earlier row for this very pair may be added over (its
+		// quantity is set back to 1 below); anything else is never merged into.
+		if ( $existing && ! isset( $stale[ $existing ] ) ) {
 			$failed = true;
 			break;
 		}
@@ -601,7 +617,7 @@ function molosoc_gift_add_to_cart_action() {
 			$failed = true;
 			break;
 		}
-		$restore[ $item_key ] = 0;
+		$restore[ $item_key ] = isset( $stale[ $item_key ] ) ? $stale[ $item_key ] : 0;
 		$wanted[ $item_key ]  = 1;
 		$slots[ $item_key ]   = $slot;
 	}
@@ -613,7 +629,7 @@ function molosoc_gift_add_to_cart_action() {
 	// instead.
 	if ( ! $failed ) {
 		foreach ( array_keys( $cart->get_cart() ) as $item_key ) {
-			if ( ! isset( $wanted[ $item_key ] ) ) {
+			if ( ! isset( $wanted[ $item_key ] ) && ! isset( $stale[ $item_key ] ) ) {
 				$failed = true;
 				break;
 			}
@@ -621,10 +637,19 @@ function molosoc_gift_add_to_cart_action() {
 	}
 	if ( $failed ) {
 		foreach ( $restore as $item_key => $before ) {
-			$cart->remove_cart_item( $item_key );
+			if ( $before > 0 ) {
+				$cart->set_quantity( $item_key, $before );
+			} else {
+				$cart->remove_cart_item( $item_key );
+			}
 		}
 		wp_safe_redirect( molosoc_product_url( $lang ) );
 		exit;
+	}
+	foreach ( $stale as $item_key => $before ) {
+		if ( ! isset( $wanted[ $item_key ] ) ) {
+			$cart->remove_cart_item( $item_key );
+		}
 	}
 	foreach ( $wanted as $item_key => $quantity ) {
 		$cart->set_quantity( $item_key, $quantity );
