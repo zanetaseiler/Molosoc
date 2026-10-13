@@ -450,6 +450,15 @@
   object-fit: cover;
   transform: scale(1);
   will-change: transform;
+  /* Warm grade (2026-10-13, Issue #137): the bedroom photo is white-on-
+     white and read as gray under the scrim, even after the warm-ink pass
+     below. A light sepia + a touch of saturation shifts its whites to
+     linen/peach so it sits with the warm hero-bg frame around the card
+     and the rest of the site; brightness nudged so the grade doesn't
+     darken it. Compared live against laying the hero-bg photo over it as
+     a multiply overlay, which warmed the highlights but left the text
+     zone grayish. */
+  filter: sepia(0.22) saturate(1.15) brightness(1.02);
 }
 
 /* Continuous "breathing" zoom (100% <-> 106%), not a one-time reveal — a
@@ -501,17 +510,24 @@
      (#0c1115, blue-cast) to the warm espresso ink (--color-ink-warm,
      #241d17) at the same alphas, plus a very low-opacity warm greige
      veil under it so the bright upper photo reads as warm natural
-     daylight/linen instead of cool gray. Deliberately neutral-warm, not
-     sepia — saturation untouched. */
+     daylight/linen instead of cool gray.
+
+     Warmed again (2026-10-13, Issue #137, "goes to gray"): the gradient
+     base moves from the near-neutral espresso ink to a warmer brown
+     (rgb 70 45 25) at near-identical alphas, and the greige veil becomes
+     a peach one (--color-accent-peach #e3c4a8 at .18) — together with
+     the sepia grade on the photo above this is what finally reads as
+     warm linen rather than gray in the text zone. Text contrast at the
+     bottom is unchanged (same .52 ceiling). */
   background:
     linear-gradient(
       180deg,
-      rgba(36, 29, 23, 0.02) 0%,
-      rgba(36, 29, 23, 0.06) 40%,
-      rgba(36, 29, 23, 0.33) 65%,
-      rgba(36, 29, 23, 0.52) 100%
+      rgba(70, 45, 25, 0.03) 0%,
+      rgba(70, 45, 25, 0.08) 40%,
+      rgba(70, 45, 25, 0.34) 65%,
+      rgba(70, 45, 25, 0.52) 100%
     ),
-    rgba(210, 198, 183, 0.14);
+    rgba(227, 196, 168, 0.18);
 }
 
 .molosoc-hero__content {
