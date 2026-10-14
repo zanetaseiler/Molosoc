@@ -831,9 +831,10 @@
 
 /* ---------- Global sticky "Buy now" CTA ----------
    Injected on every page by assets/js/sticky-cta.js (functions.php skips
-   enqueueing it on Cart/Checkout and the product page — see that file's
-   comment). Charcoal/warm-white pill, bottom-right, positioned to the
-   LEFT of .molosoc-back-to-top with a fixed gap so the two never overlap
+   enqueueing it on Cart/Checkout, the product page and the legal pages —
+   see molosoc_sticky_cta_hidden() there; product.css hides it at phone
+   widths on Landing Page A, which has its own buy bar). Charcoal/warm-white
+   pill, bottom-right, positioned to the LEFT of .molosoc-back-to-top with a fixed gap so the two never overlap
    regardless of back-to-top's own scroll-triggered visibility (it stays
    in this same fixed slot whether shown or not, so no coordination
    between the two scripts is needed). Lower z-index than the WPConsent

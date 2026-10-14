@@ -371,7 +371,9 @@ class LandingBTemplate(unittest.TestCase):
         hidden = fn[fn.index("function molosoc_sticky_cta_hidden()"):]
         hidden = hidden[: hidden.index("\n}")]
         self.assertNotIn(f"'{SLUG}'", hidden)
-        self.assertIn("is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );", hidden)
+        # Issue #177: the gate lists the legal pages, not Landing A any more.
+        self.assertIn("'zasady-dopravy'", hidden)
+        self.assertNotIn("'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy'", hidden)
         self.assertNotIn("lpb-sticky", self.body)
         self.assertNotIn("id=\"lpb-sticky\"", self.tpl)
         self.assertNotIn("Objednat nyní", self.body)
@@ -387,8 +389,10 @@ class LandingBTemplate(unittest.TestCase):
         self.assertNotIn(f"'{SLUG}'", excluded)
         self.assertIn("'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',", excluded)
         # Live Page A gates untouched: the landing pair still appears exactly
-        # where it did before (preconnect, product.css branch, sticky hide).
-        self.assertEqual(fn.count("array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' )"), 3)
+        # where it did before (preconnect, product.css branch).
+        # Issue #177 took the pair out of the sticky-CTA gate: preconnect +
+        # product.css branch remain.
+        self.assertEqual(fn.count("array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' )"), 2)
 
     def test_css_and_js_are_scoped_to_the_page(self):
         selectors = re.findall(r"^([^@\s{}][^{]*)\{", self.css_rules, flags=re.M)
