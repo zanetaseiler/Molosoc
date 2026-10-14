@@ -224,15 +224,26 @@ class Issue179Reassurance(unittest.TestCase):
         self.assertNotIn("animation", note)
 
     def test_sticky_pill_gets_a_static_light_halo_and_stays_dark(self):
-        tail = self.css[self.css.index("Issue #179: on this light page"):]
+        tail = self.css[self.css.index("Issue #179 / #181: on this light page"):]
         self.assertIn("@media (min-width: 761px) {\n  .molosoc-sticky-cta {", tail)
         m = re.search(r"^  \.molosoc-sticky-cta \{(.*?)^  \}", tail, re.S | re.M)
         self.assertIsNotNone(m)
         rule = m.group(1)
-        self.assertIn("rgba(248, 247, 244", rule)
-        self.assertIn("var(--shadow-soft)", rule)
+        self.assertIn("rgba(250, 245, 232", rule)  # warm-ivory backplate
+        self.assertIn("inset 0 0 0 1px rgba(255, 255, 255", rule)  # crisp light edge
+        self.assertGreaterEqual(rule.count("rgba(30, 24, 16"), 3)  # layered shadow
         for forbidden in ("background", "animation", "outline", "border", "position", "display", "z-index"):
             self.assertNotIn(forbidden, rule)
+
+    def test_sticky_pill_has_static_arrow_icon_and_text_untouched(self):
+        tail = self.css[self.css.index("Issue #179 / #181: on this light page"):]
+        m = re.search(r"^  \.molosoc-sticky-cta::after \{(.*?)^  \}", tail, re.S | re.M)
+        self.assertIsNotNone(m)
+        arrow = m.group(1)
+        self.assertIn('content: "";', arrow)
+        self.assertIn("mask:", arrow)
+        for forbidden in ("animation", "transition", "transform"):
+            self.assertNotIn(forbidden, arrow)
 
 
 if __name__ == "__main__":
