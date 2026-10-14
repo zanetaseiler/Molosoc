@@ -210,6 +210,20 @@
   color: var(--color-text);
 }
 
+/* Issue #179: one quiet reassurance line under the price + Order button,
+   inside the same flex row (full-width wrap) so it stays grouped with them
+   and hides with the row at phone widths. Secondary label-size type in the
+   muted ink — deliberately not a second headline. */
+.molosoc-hero-buy__note {
+  flex: 0 0 100%;
+  font-family: var(--font-body);
+  font-size: var(--text-label);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
 /* EU display-price note ("Charged as 229 CZK at checkout.") — EN pages
    only; WooCommerce itself charges in CZK, so the € figure is display-only
    and this line keeps that honest. Deliberately secondary: label-size body
@@ -892,6 +906,28 @@
 @media (max-width: 760px) {
   .molosoc-sticky-cta {
     display: none;
+  }
+}
+
+/* Issue #179: on this light page the dark floating pill blended into the
+   cards behind it. A soft, static light halo (a wide low-alpha warm-white
+   spread plus a faint ring, no animation, no hard outline) lifts it off the
+   page; the dark fill, contrast, size, position and hover state are
+   untouched. Hover keeps its own lift shadow, with the halo layered back
+   in so it does not vanish on hover. */
+@media (min-width: 761px) {
+  .molosoc-sticky-cta {
+    box-shadow:
+      0 0 0 6px rgba(248, 247, 244, 0.55),
+      0 0 28px 10px rgba(248, 247, 244, 0.85),
+      var(--shadow-soft);
+  }
+
+  .molosoc-sticky-cta:hover {
+    box-shadow:
+      0 0 0 6px rgba(248, 247, 244, 0.55),
+      0 0 28px 10px rgba(248, 247, 244, 0.85),
+      var(--shadow-lift);
   }
 }
 
