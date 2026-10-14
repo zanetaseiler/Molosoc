@@ -164,7 +164,7 @@ get_header();
 		<div class="molosoc-product-proof-block__content">
 			<div class="molosoc-product-heading">
 				<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
-					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'Real results, no filters', 'molosoc' ) ); ?></p>
+					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Bez retuše a přikrášlování' : __( 'Real results, no filters', 'molosoc' ) ); ?></p>
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'Real results, no filters', 'molosoc' ) ); ?></h2>
 				</div>
 			</div>
@@ -211,7 +211,7 @@ get_header();
 	     used to run was removed 2026-09-21. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
-			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Ať vám pocit po pedikúře vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?></p>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Pro delší pocit hladkých nohou' : __( 'Make the pedicure last', 'molosoc' ) ); ?></p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Ať vám pocit po pedikúře vydrží déle' : __( 'Make the pedicure last', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
@@ -250,7 +250,7 @@ get_header();
 	     three points below are all static, same as above. -->
 	<div class="molosoc-product-heading">
 		<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
-			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?></p>
+			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Malá pozornost, která potěší' : __( 'Give it as a gift', 'molosoc' ) ); ?></p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Darujte ho dál' : __( 'Give it as a gift', 'molosoc' ) ); ?></h2>
 		</div>
 	</div>
