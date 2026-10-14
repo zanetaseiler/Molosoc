@@ -108,7 +108,10 @@ class LandingAHeroCss(unittest.TestCase):
     def test_headline_uses_display_l_scale(self):
         phrase = _rule(self.css, ".molosoc-hero-title__phrase")
         # Issue #167: +25% on the Issue #165 size, shared with every section H2.
-        self.assertIn("font-size: var(--text-product-heading);", phrase)
+        # Issue #171: the hero phrase alone is a further +15%.
+        self.assertIn("font-size: var(--text-hero-heading);", phrase)
+        self.assertIn("--text-hero-heading: clamp(3.59375rem, 4.6vw + 1.078125rem, 5.390625rem);", self.css)
+        self.assertIn("--text-hero-heading-mobile: clamp(3.234375rem, 13.65625vw, 3.953125rem);", self.css)
         self.assertIn("--text-product-heading: clamp(3.125rem, 4vw + 0.9375rem, 4.6875rem);", self.css)
         self.assertIn("--text-product-heading-mobile: clamp(2.8125rem, 11.875vw, 3.4375rem);", self.css)
         self.assertIn("font-size: var(--text-product-heading);", _rule(self.css, ".molosoc-product-heading h2"))
