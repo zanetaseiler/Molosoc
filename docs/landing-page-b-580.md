@@ -104,7 +104,7 @@ from `wp_head` (`molosoc_landing_b_head()`) with the identical srcset via
 | New-Sizes-WBG (hero thumb) | `lpb-sizes-wbg` | 480 | same |
 | New-Product.png (hero thumb) | `lpb-product-pack` | 480 | same |
 | New-Sofa-2 ("Co to je") | `lpb-sofa-2` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
-| Hero-New-White / New-Studio / New-Sizes-WBG-1 (size cards) | `lpb-hero-white` / `lpb-studio` / `lpb-sizes-wbg-1` | 480 / 960 | `(max-width: 900px) 100vw, 340px` |
+| Hero-New-White / New-Studio / New-Sizes-WBG-1 (size cards) | `lpb-hero-white` / `lpb-studio` / `lpb-sizes-wbg-1` | 480 / 960 | `230px` (matches the `.lpb-card img` 230px cap at every viewport) |
 | New-Apply-Cream-Ok | `lpb-apply-cream` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
 | Mami-Sofa / Holdind-It-First-Time-WBG (gallery) | `lpb-mami-sofa` / `lpb-holding-first-time` | 480 / 960 | `(max-width: 900px) 100vw, 430px` |
 | New-VariationCream-Ok | `lpb-variation-cream` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |

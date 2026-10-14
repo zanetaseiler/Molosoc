@@ -155,17 +155,17 @@ get_header();
 		</div>
 		<div class="lpb-cards lpb-cards--3 lpb-cards--photo">
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-White.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-hero-white', array( 480, 960 ), '(max-width: 900px) 100vw, 340px' ); ?> width="1152" height="860" alt="Návlek MOLOSOC velikost M" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-White.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-hero-white', array( 480, 960 ), '230px' ); ?> width="1152" height="860" alt="Návlek MOLOSOC velikost M" loading="lazy" decoding="async"></a>
 				<h3>Velikost M</h3>
 				<p>Velikost nohy 36–39</p>
 			</div>
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Studio.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-studio', array( 480, 960 ), '(max-width: 900px) 100vw, 340px' ); ?> width="1920" height="1434" alt="Návlek MOLOSOC velikost L" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Studio.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-studio', array( 480, 960 ), '230px' ); ?> width="1920" height="1434" alt="Návlek MOLOSOC velikost L" loading="lazy" decoding="async"></a>
 				<h3>Velikost L</h3>
 				<p>Velikost nohy 39.5–44</p>
 			</div>
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG-1.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-sizes-wbg-1', array( 480, 960 ), '(max-width: 900px) 100vw, 340px' ); ?> width="1152" height="860" alt="Porovnání velikostí M a L" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG-1.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-sizes-wbg-1', array( 480, 960 ), '230px' ); ?> width="1152" height="860" alt="Porovnání velikostí M a L" loading="lazy" decoding="async"></a>
 				<h3>Porovnání</h3>
 				<p>M nahoře, L dole</p>
 			</div>
