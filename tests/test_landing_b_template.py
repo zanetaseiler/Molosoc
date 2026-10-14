@@ -31,14 +31,17 @@ CSS = ROOT / "assets/css/landing-b.css"
 JS = ROOT / "assets/js/landing-b.js"
 WEBP_DIR = ROOT / "assets/images/landing-b"
 SLUG = "hydratacni-navleky-molosoc"
+# Issue #161 keyword retarget ("maska na nohy", KW Everywhere CZ 2026-10-14).
+TITLE = "Hydratační maska na nohy na opakované použití | Molosoc"
+H1 = "Maska na nohy, kterou použijete znovu<br>— s krémem, který už máte"
 
 # Section headings of page 580, in its own order (16 Thrive page sections;
 # the first two are the sticky header, which the theme header + sticky bar
 # replace).
 SECTION_HEADINGS = [
-    "Namazané nohy.",
+    "Maska na nohy, kterou použijete znovu",  # Issue #161 H1 (page 580: "Namazané nohy.")
     "Počet kusů je omezený",
-    "Pro koho MOLOSOC je",
+    "Pro koho MOLOSOC je: suché i popraskané paty",  # Issue #161 (page 580: "Pro koho MOLOSOC je")
     "Nejsou to ponožky.",
     "Dvě velikosti. Jeden účel.",
     "Jednoduchý rituál",
@@ -278,13 +281,41 @@ class LandingBTemplate(unittest.TestCase):
         self.assertNotIn("'wc-order-attribution'", dq)
         self.assertNotIn("'sourcebuster-js'", dq)
         self.assertIn("add_action( 'wp_enqueue_scripts', 'molosoc_dequeue_unused_homepage_assets', 100 );", fn)
-        # Title: "(varianta, koncept)" stripped on this page only.
-        title = fn[fn.index("add_filter( 'document_title_parts', function ( $parts ) {"):]
+        # Title (Issue #161): a fixed <title> for this page only, so the WP
+        # post title's "(varianta, koncept)" label never reaches the tab.
+        self.assertEqual(fn.count("add_filter( 'pre_get_document_title'"), 1)
+        self.assertNotIn("add_filter( 'document_title_parts'", fn)
+        title = fn[fn.index("add_filter( 'pre_get_document_title'"):]
         title = title[: title.index("} );")]
         self.assertIn(f"is_page( '{SLUG}' )", title)
-        self.assertIn("varianta", title)
-        self.assertIn("koncept", title)
-        self.assertEqual(fn.count("add_filter( 'document_title_parts'"), 1)
+        self.assertIn("return molosoc_landing_b_document_title();", title)
+        self.assertIn(f"return '{TITLE}';", fn)
+
+    def test_keyword_retarget_title_h1_and_pillar_link(self):
+        """Issue #161: "maska na nohy" in <title>/H1, Pillar 1 terms only in an H2 + body with a link."""
+        self.assertIn(f"<h1 class=\"lpb-hero__title\">{H1}</h1>", self.body)
+        self.assertIn('<p class="lpb-eyebrow">Hydratační maska na nohy</p>', self.body)
+        # The category page keeps "návleky na nohy" as its main term: not in title/H1.
+        self.assertNotIn("návleky na nohy", TITLE.lower())
+        self.assertNotIn("návleky na nohy", H1.lower())
+        # Pillar 1 owns "popraskané paty" / "suché paty": never in title/H1, one H2 + a body link.
+        for term in ("popraskané paty", "suché paty"):
+            self.assertNotIn(term, TITLE.lower())
+            self.assertNotIn(term, H1.lower())
+        h2s = re.findall(r"<h2>(.*?)</h2>", self.body)
+        self.assertEqual(sum("popraskané paty" in h.lower() for h in h2s), 1)
+        self.assertEqual(self.body.count("home_url( '/cz/popraskane-paty/' )"), 1)
+        link = re.search(r'<a href="<\?php echo esc_url\( home_url\( \'/cz/popraskane-paty/\' \) \); \?>">([^<]+)</a>', self.body)
+        self.assertEqual(link.group(1), "popraskané paty")
+        # Reusable-vs-disposable argument reuses the category page's wording (no new claim).
+        cat = (ROOT / "page-foot-covers.php").read_text()
+        for phrase in ("na jedno použití", "vydrží alespoň 10 použití", "skončí v koši"):
+            self.assertIn(phrase, self.body, phrase)
+            self.assertIn(phrase, cat, phrase)
+        self.assertIn("maska na nohy na opakované použití", self.body)
+        self.assertNotIn("Není to maska.", self.body)
+        # URL/slug unchanged (live Meta ads point at it).
+        self.assertEqual(TEMPLATE.name, f"page-{SLUG}.php")
 
     def test_video_embed_and_faq(self):
         self.assertIn("youtube-nocookie.com/embed/dXVivzbZBfc", self.tpl)
