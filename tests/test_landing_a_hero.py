@@ -114,8 +114,21 @@ class LandingAHeroCss(unittest.TestCase):
         self.assertIn("font-size: var(--text-product-heading);", _rule(self.css, ".molosoc-product-heading h2"))
         drawer = _rule(self.css, ".molosoc-orbit-drawer__heading h2")
         self.assertIn("font-size: var(--text-product-heading);", drawer)
-        self.assertIn("text-align: left;", _rule(self.css, ".molosoc-orbit-drawer__heading"))
+        self.assertIn("text-align: right;", _rule(self.css, ".molosoc-orbit-drawer__heading"))
         self.assertNotIn("white-space: nowrap", phrase)
+
+    def test_second_section_is_right_aligned(self):
+        # Issue #169: right, never justify; desktop and the phone breakpoint.
+        for sel in (".molosoc-orbit-drawer", ".molosoc-orbit-drawer__heading",
+                    ".molosoc-orbit-drawer__cards article"):
+            rule = _rule(self.css, sel)
+            self.assertIn("text-align: right;", rule, sel)
+            self.assertNotIn("justify", rule.replace("justify-content", ""), sel)
+        top = _rule(self.css, ".molosoc-orbit-drawer__top")
+        self.assertIn("justify-content: flex-end;", top)
+        self.assertIn("margin-left: auto;", _rule(self.css, ".molosoc-orbit-drawer__heading h2"))
+        self.assertIn("align-items: flex-end;\n    text-align: right;", self.css)
+        self.assertNotIn("text-align: justify", self.css.split(".molosoc-orbit-drawer {")[1].split("Tablet portrait")[0])
 
     def test_still_is_cropped_to_the_product(self):
         model = _rule(self.css, ".molosoc-orbit-model")

@@ -236,9 +236,11 @@
    #165 it is heading + three cards only; the price/CTA row that used to
    sit beside the heading is in the hero above. ---------- */
 
+/* Issue #169: the whole second section is RIGHT-aligned (text-align:right,
+   never justify) — heading block pinned to the section's right edge. */
 .molosoc-orbit-drawer {
   position: relative;
-  text-align: left;
+  text-align: right;
   margin-inline: auto;
   max-width: min(96vw, 84rem);
   padding: var(--space-m) var(--space-l) var(--space-l);
@@ -246,14 +248,14 @@
 
 .molosoc-orbit-drawer__top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: flex-end;
   gap: var(--space-m);
   flex-wrap: wrap;
 }
 
 .molosoc-orbit-drawer__heading {
-  text-align: left;
+  text-align: right;
 }
 
 .molosoc-orbit-drawer__heading .molosoc-eyebrow {
@@ -264,6 +266,7 @@
   color: var(--color-text);
   font-size: var(--text-product-heading);
   margin-top: var(--space-2xs);
+  margin-left: auto;
   max-width: 40rem;
 }
 
@@ -280,6 +283,7 @@
   border-radius: var(--radius-m);
   padding: var(--space-m);
   box-shadow: var(--shadow-soft);
+  text-align: right;
 }
 
 .molosoc-orbit-drawer__cards h3 {
@@ -377,8 +381,8 @@
 
   .molosoc-orbit-drawer__top {
     flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
+    align-items: flex-end;
+    text-align: right;
   }
 
   .molosoc-orbit-drawer__heading h2 {
