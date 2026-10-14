@@ -123,7 +123,7 @@ get_header();
 		<div class="molosoc-orbit-drawer">
 			<div class="molosoc-orbit-drawer__top">
 				<div class="molosoc-orbit-drawer__heading">
-					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Dopřejte svému krému čas, aby mohl působit' : __( 'Your cream, finally working', 'molosoc' ) ); ?></p>
+					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Jednodušší každodenní péče' : __( 'Your cream, finally working', 'molosoc' ) ); ?></p>
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Dopřejte svému krému čas, aby mohl působit' : __( 'Your cream, finally working', 'molosoc' ) ); ?></h2>
 				</div>
 			</div>
