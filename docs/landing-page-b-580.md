@@ -19,7 +19,7 @@ untouched. B exists in WordPress as page 1037, slug `hydratacni-navleky-molosoc`
 
 | # | Page 580 section (Thrive) | B |
 |---|---|---|
-| 0–1 | Thrive header: logo + pinned "Objednat nyní" button (sticky) | theme header (real nav + cart pill) + `.lpb-sticky` bottom bar that appears once the hero CTA scrolls out |
+| 0–1 | Thrive header: logo + pinned "Objednat nyní" button (sticky) | theme header (real nav + cart pill) + the site-wide sticky "Koupit nyní" pill (Issue #163; until then B had its own `.lpb-sticky` bottom bar that appeared once the hero CTA scrolled out) |
 | 2 | Hero over `hero-bg-v2…webp` + 50 % white; 2 cols: main photo + 3 thumbs / eyebrow, H1 "Namazané nohy. Bez nepořádku.", bold sub, lede, price, "Objednat za …" | `.lpb-hero` — same |
 | 3 | Black strip "Počet kusů je omezený" + "100% nitril · Bez latexu · Hypoalergenní" | `.lpb-strip` — same (**flagged**, see below) |
 | 4 | "Pro koho MOLOSOC je" — 3 icon cards | `.lpb-cards--3` — same icons (sparkle, shield-check, clock) |
@@ -58,7 +58,7 @@ page's rendered CSS and `getComputedStyle`, not from the theme tokens.
 2. **Empty crossed-out price span** before "199 Kč" in page 580's hero and dark band — leftover of a struck-through presale price. Reproduced as nothing; no "was" price invented.
 3. **Story tab 3 title** on page 580 is broken by a stray line break ("A pak se stal nápad sku / tečností."); B renders the evident intended text "A pak se stal nápad skutečností." — the only non-operational copy fix.
 4. Page 580 is **noindex-free and currently published** at `/hydratacni-navleky-na-nohy/` (it is listed as a normal page). That was outside Issue #122; B was noindexed + sitemap-excluded in `functions.php` at the time so a published B could not compete with A or with 580. Since Issue #159 B is indexable (see "Indexing" below); a 301 from 580 to B is still a separate owner decision.
-5. Page 580 wore no site header/nav and its own Thrive footer; B uses the theme header/footer like every other `page-{slug}.php` template. The pinned "Objednat nyní" header button became the bottom sticky bar.
+5. Page 580 wore no site header/nav and its own Thrive footer; B uses the theme header/footer like every other `page-{slug}.php` template. The pinned "Objednat nyní" header button first became a page-specific bottom sticky bar; since Issue #163 (2026-10-14, Žaneta: the sticky buy button must be the same on every device as on the rest of the site) B shows the global sticky "Koupit nyní" pill instead (`functions.php` no longer excludes the slug in `molosoc_sticky_cta_hidden()`; the `.lpb-sticky` markup/CSS/JS was removed, style.css 0.2.93).
 
 ## Asset inventory (all verified HTTP 200 on 2026-10-13, hot-linked exactly as page 580 does)
 

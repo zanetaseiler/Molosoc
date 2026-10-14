@@ -681,55 +681,9 @@
 
 /* ---------- Sticky CTA bar ---------- */
 
-.lpb-sticky {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 0.6rem 1rem;
-  background: rgba(250, 247, 242, 0.96);
-  border-top: 1px solid var(--lpb-line);
-  backdrop-filter: blur(6px);
-  transition: transform 220ms ease, opacity 220ms ease;
-}
-
-.lpb-sticky.is-hidden {
-  transform: translateY(110%);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.lpb-sticky__price {
-  font-family: var(--font-display, "Tenor Sans", "Helvetica Neue", Arial, sans-serif);
-  font-size: 1.4rem;
-  color: #000;
-}
-
-.lpb-sticky .lpb-btn,
-.lpb-sticky__btn {
-  display: inline-flex;
-  align-items: center;
-  background: #000;
-  color: #fff;
-  font-family: "Nunito Sans", "Nunito", sans-serif;
-  font-size: 0.85rem;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  text-decoration: none;
-  padding: 0.85em 1.8em;
-  border-radius: 0;
-}
-
-/* Keep the fixed bar from covering the footer's last lines. */
-body:has(.lpb-sticky) .site-footer,
-body:has(.lpb-sticky) footer {
-  padding-bottom: 4.5rem;
-}
+/* The page's own .lpb-sticky bottom bar was removed in Issue #163 — the
+   site-wide sticky "Koupit nyní" pill (components.css .molosoc-sticky-cta)
+   shows on this page like everywhere else. */
 
 /* ---------- Responsive ---------- */
 
@@ -783,14 +737,9 @@ body:has(.lpb-sticky) footer {
   .lpb .lpb-btn {
     width: 100%;
   }
-
-  .lpb-sticky .lpb-btn {
-    width: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lpb-sticky,
   .lpb .lpb-btn {
     transition: none;
   }
