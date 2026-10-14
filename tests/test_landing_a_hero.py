@@ -231,6 +231,8 @@ class Issue179Reassurance(unittest.TestCase):
         rule = m.group(1)
         self.assertIn("rgba(250, 245, 232", rule)  # warm-ivory backplate
         self.assertIn("inset 0 0 0 1px rgba(255, 255, 255", rule)  # crisp light edge
+        self.assertIn("0 0 0 6px rgba(84, 64, 42, 0.62)", rule)  # Issue #183 fine dark outer outline
+        self.assertEqual(rule.count("0 0 0 6px"), 1)  # exactly ONE outline ring
         self.assertGreaterEqual(rule.count("rgba(30, 24, 16"), 3)  # layered shadow
         for forbidden in ("background", "animation", "outline", "border", "position", "display", "z-index"):
             self.assertNotIn(forbidden, rule)
