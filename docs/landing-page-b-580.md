@@ -207,7 +207,10 @@ other pages and non-`cz` languages.
 
 Žaneta decided to index B. `functions.php` no longer lists `hydratacni-navleky-molosoc` in the
 `wp_robots` noindex gate nor in `molosoc_sitemap_excluded_page_ids()`, so the page gets core's
-default `max-image-preview:large` robots meta and is listed in `/wp-sitemap-posts-page-1.xml`.
+default `max-image-preview:large` robots meta and is listed in the sitemap. Polylang splits core's
+sitemaps per language: Czech pages (B included) are in `/cz/wp-sitemap-posts-page-1.xml`, while
+`/wp-sitemap-posts-page-1.xml` lists the EN-language pages (that is where the old page 580 sits).
+Verified live 2026-10-14 after PR #160 + the page-1037 purge.
 Along with that, `inc/landing-b-schema.php`:
 
 - prints a Czech `<meta name="description">` (~150 chars, hero + strip + FAQ wording only; the page
@@ -220,7 +223,7 @@ Along with that, `inc/landing-b-schema.php`:
 
 Post-merge checklist: purge the page cache for 1037 (`purge-home-cache.yml -f page_ids=1037`),
 then on the live page confirm no `noindex` in the robots meta, the URL listed in
-`/wp-sitemap-posts-page-1.xml`, the JSON-LD `name` showing `–`, the meta description present;
+`/cz/wp-sitemap-posts-page-1.xml`, the JSON-LD `name` showing `–`, the meta description present;
 then request indexing in Google Search Console.
 
 ## Keyword retarget (Issue #161, 2026-10-14)
