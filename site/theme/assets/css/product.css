@@ -909,25 +909,45 @@
   }
 }
 
-/* Issue #179: on this light page the dark floating pill blended into the
-   cards behind it. A soft, static light halo (a wide low-alpha warm-white
-   spread plus a faint ring, no animation, no hard outline) lifts it off the
-   page; the dark fill, contrast, size, position and hover state are
-   untouched. Hover keeps its own lift shadow, with the halo layered back
-   in so it does not vanish on hover. */
+/* Issue #179 / #181: on this light page the dark floating pill still got
+   lost against white and the cards. Static only (no animation): a solid
+   warm-ivory backplate ring around the pill, a faint warm hairline outside
+   it so the ivory reads on white, a crisp light inner edge on the dark fill,
+   and three stacked soft shadows for elevation. A small right-arrow (CSS
+   mask, so it follows the text colour and the text node is untouched) makes
+   it read as a button. Dark fill, label, position, link and hover colours
+   are untouched; the phone-width hide above still applies. Hover swaps only
+   the elevation layer. */
 @media (min-width: 761px) {
   .molosoc-sticky-cta {
+    gap: 0.6em;
     box-shadow:
-      0 0 0 6px rgba(248, 247, 244, 0.55),
-      0 0 28px 10px rgba(248, 247, 244, 0.85),
-      var(--shadow-soft);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 0 5px rgba(250, 245, 232, 0.96),
+      0 0 0 6px rgba(120, 98, 64, 0.16),
+      0 3px 8px rgba(30, 24, 16, 0.18),
+      0 10px 24px rgba(30, 24, 16, 0.16),
+      0 22px 44px rgba(30, 24, 16, 0.1);
+  }
+
+  .molosoc-sticky-cta::after {
+    content: "";
+    flex: 0 0 auto;
+    width: 1.1em;
+    height: 1.1em;
+    background: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h16M14 6l6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12h16M14 6l6 6-6 6'/%3E%3C/svg%3E") center / contain no-repeat;
   }
 
   .molosoc-sticky-cta:hover {
     box-shadow:
-      0 0 0 6px rgba(248, 247, 244, 0.55),
-      0 0 28px 10px rgba(248, 247, 244, 0.85),
-      var(--shadow-lift);
+      inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 0 5px rgba(250, 245, 232, 0.96),
+      0 0 0 6px rgba(120, 98, 64, 0.16),
+      0 4px 10px rgba(30, 24, 16, 0.22),
+      0 14px 30px rgba(30, 24, 16, 0.2),
+      0 28px 52px rgba(30, 24, 16, 0.12);
   }
 }
 
