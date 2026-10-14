@@ -139,3 +139,47 @@ in `landing-b.css`), `landing-b.js` is `defer`red, and `document_title_parts` st
    respectively (A and 580 unchanged); `/wp-sitemap-pages-page-1.xml` does not list B.
 5. Publishing B, any redirect, ad, analytics or A/B split is out of scope and needs a
    separate explicit decision.
+
+## JSON-LD (Issue #155)
+
+`site/theme/inc/landing-b-schema.php` prints one `<script type="application/ld+json">`
+in `wp_head` on `/cz/hydratacni-navleky-molosoc/` only (slug gate + Polylang `cz`).
+
+**Audit (repo; molosoc.com was not fetched from this cloud session):** the page had no
+JSON-LD; the site has no SEO plugin; every other schema block is slug-gated to other
+pages; WooCommerce prints its own Product graph only on the product page. So the page
+emits `WebPage` + `FAQPage` and **no Product/Offer** (links to the CZ product URL via
+`significantLink`; price/stock/seller stay WooCommerce's on the product page). It reuses
+`https://molosoc.com/#website` / `#organization` (defined by the homepage graph) instead of
+redefining the organization. Not emitted: BreadcrumbList (no visible breadcrumb), logo,
+sameAs, GTIN, ratings, images, shipping/returns, dates.
+
+Sanitized example (`<title>` comes from `wp_get_document_title()`):
+
+```json
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebPage","@id":"https://molosoc.com/cz/hydratacni-navleky-molosoc/#webpage",
+  "url":"https://molosoc.com/cz/hydratacni-navleky-molosoc/","name":"<document title>",
+  "description":"Hydratační návleky na nohy MOLOSOC: bez klouzání, …","inLanguage":"cs",
+  "isPartOf":{"@id":"https://molosoc.com/#website"},"about":{"@id":"https://molosoc.com/#organization"},
+  "publisher":{"@id":"https://molosoc.com/#organization"},
+  "significantLink":"https://molosoc.com/cz/produkt/hydratacni-navlek-na-nohy/"},
+ {"@type":"FAQPage","@id":"https://molosoc.com/cz/hydratacni-navleky-molosoc/#faq","url":"…","inLanguage":"cs",
+  "isPartOf":{"@id":"…#webpage"},"mainEntity":[ /* 6 Question/Answer pairs = the visible <details> */ ]}]}
+```
+
+**Tests:** `python3 -m unittest tests.test_landing_b_schema` (needs `php-cli` for the render
+tests; static tests always run). They cover syntax, canonical @ids, no duplicate ids / no
+Product / Offer, `</script>` escaping, FAQ text identical to the template, and silence on
+other pages and non-`cz` languages.
+
+**On-site verification needed (not possible from the repo):**
+1. View source of the live page: exactly one `ld+json` block; canonical `<link>` equals the `@id` base.
+2. Google Rich Results Test / validator.schema.org on the URL: `WebPage` + `FAQPage` parse, no errors.
+   (FAQ rich results are not promised; Google restricts them to a few site types.)
+3. Product page `/cz/produkt/hydratacni-navlek-na-nohy/`: still exactly one Product (WooCommerce); EN page and
+   an unrelated page: no new JSON-LD.
+4. Price/stock: the FAQ answer repeats the template's hardcoded `229 Kč` / `Doprava od 79 Kč`
+   (same constants as the template, guarded by a test). Making the template itself read WooCommerce is out of scope here.
+5. **Page B is currently `noindex` and sitemap-excluded** (Issue #122) and has no EN/hreflang twin; the
+   markup is inert for search until the owner indexes it. Not changed here.
