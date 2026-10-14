@@ -29,9 +29,10 @@
  *       the WebSite inLanguage "en" are deliberately not repeated on this
  *       Czech page.
  *     - WebPage @id <canonical>#webpage, inLanguage cs, name = the page's
- *       own <title> (post-"(varianta, koncept)" strip), entity-decoded —
- *       wp_get_document_title() returns an HTML-escaped string, so without
- *       the decode the en dash became the literal "&#8211;" inside the JSON.
+ *       own <title> (molosoc_landing_b_document_title() in functions.php
+ *       since Issue #161), entity-decoded — a WordPress-built title is
+ *       HTML-escaped, and before the decode the en dash became the literal
+ *       "&#8211;" inside the JSON (Issue #159).
  *       significantLink = the canonical CZ product URL.
  *     - FAQPage @id <canonical>#faq — the six visible <details> Q&As, text
  *       identical to the template (tests compare them).
@@ -46,12 +47,14 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Meta description / WebPage description of the page (~150 chars), using only
- * wording that is visible on it: hero title + subline, feature strip, FAQ
- * ("vydrží opakovaně", "s jakýmkoliv krémem … který už máte doma").
+ * Meta description / WebPage description of the page (~140 chars), using only
+ * wording that is visible on it: eyebrow + H1 ("maska na nohy", "na opakované
+ * použití", "s krémem, který už máte"), the page-580 H1 ("bez nepořádku"),
+ * the hero subline ("bez klouzání") and the visible price. Issue #161
+ * (keyword retarget to "maska na nohy") replaced the Issue #159 text.
  */
 function molosoc_landing_b_schema_description() {
-	return 'Hydratační návleky na nohy MOLOSOC – namazané nohy bez nepořádku a bez klouzání. 100% nitril, bez latexu, vydrží opakovaně, s krémem, který už máte doma.';
+	return 'Hydratační maska na nohy MOLOSOC na opakované použití. Funguje s krémem, který už máte — bez nepořádku a bez klouzání. 229 Kč.';
 }
 
 /**
@@ -168,6 +171,9 @@ function molosoc_landing_b_schema() {
 	}
 	echo '<meta name="description" content="' . esc_attr( molosoc_landing_b_schema_description() ) . '">' . "\n";
 	// Same constants the template renders (page-hydratacni-navleky-molosoc.php).
+	// The title is the pre_get_document_title constant from functions.php
+	// (Issue #161); the decode stays so a WordPress-built (escaped) title can
+	// never put a literal "&#8211;" into the JSON again (Issue #159).
 	$graph = molosoc_landing_b_schema_graph(
 		$canonical,
 		html_entity_decode( wp_get_document_title(), ENT_QUOTES, 'UTF-8' ),

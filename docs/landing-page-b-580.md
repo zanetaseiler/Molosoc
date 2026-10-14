@@ -223,6 +223,31 @@ then on the live page confirm no `noindex` in the robots meta, the URL listed in
 `/wp-sitemap-posts-page-1.xml`, the JSON-LD `name` showing `–`, the meta description present;
 then request indexing in Google Search Console.
 
+## Keyword retarget (Issue #161, 2026-10-14)
+
+KW Everywhere (CZ): "maska na nohy" 880/mo and rising, no page on the site targeted it;
+"popraskané paty" / "suché paty" belong to Pillar 1 (`/cz/popraskane-paty/`); "návleky na nohy"
+stays the category page's term. The URL/slug is unchanged (live Meta ads point at it). Changes:
+
+- `<title>`: `Hydratační maska na nohy na opakované použití | Molosoc` — a fixed string from
+  `molosoc_landing_b_document_title()` via `pre_get_document_title` in `functions.php` (replaces
+  the Issue #153 `document_title_parts` strip; the WP post title and its "(varianta, koncept)"
+  label are untouched). The JSON-LD WebPage `name` follows it (still entity-decoded).
+- Hero: eyebrow `Hydratační maska na nohy`, H1 `Maska na nohy, kterou použijete znovu — s krémem,
+  který už máte` (page 580: "Hydratační návleky na nohy" / "Namazané nohy. Bez nepořádku.").
+- Meta description (replaces the #159 one, on-page claims only): `Hydratační maska na nohy
+  MOLOSOC na opakované použití. Funguje s krémem, který už máte — bez nepořádku a bez klouzání.
+  229 Kč.`
+- Section 4 H2 reworked to `Pro koho MOLOSOC je: suché i popraskané paty` with a lede linking
+  `popraskané paty` to `/cz/popraskane-paty/` (the only place those terms appear in a heading).
+- Section 11 ("Kompatibilita"): page 580's "MOLOSOC není krém. Není to maska." would contradict
+  the new H1, so it now reads "není krém ani předplněná jednorázová maska. Je to maska na nohy na
+  opakované použití …", followed by the category page's one-use vs. reusable argument
+  (`page-foot-covers.php`: "na jedno použití", "skončí v koši", "vydrží alespoň 10 použití") —
+  no new claim.
+
+Post-merge: purge the page cache for 1037.
+
 Still open (owner decision): 301 the old page 580 (`/hydratacni-navleky-na-nohy/`, 199 Kč) to
 B via the Redirection plugin (`manage-redirects.yml`, action=add) and add its slug to
 `molosoc_sitemap_excluded_page_ids()`.

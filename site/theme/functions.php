@@ -637,16 +637,25 @@ function molosoc_landing_b_head() {
 add_action( 'wp_head', 'molosoc_landing_b_head', 1 );
 
 /**
- * Landing Page B document title (Issue #153): the WordPress page title of
- * page 1037 carries the working label "(varianta, koncept)", which was
- * showing up in the browser tab / <title>. Stripped here for this page only;
- * the post title itself is untouched so wp-admin still shows the label.
+ * Landing Page B document title. Issue #153 stripped the working label
+ * "(varianta, koncept)" of page 1037's WP title from the <title>; Issue #161
+ * (keyword retarget to "maska na nohy", KW Everywhere CZ 2026-10-14) replaces
+ * the whole <title> for this page with a fixed string, so the post title in
+ * wp-admin (label included) is untouched and the separator is the "|" the
+ * brief asks for rather than WordPress' en dash. pre_get_document_title is
+ * returned by wp_get_document_title() verbatim (no esc_html), which is why
+ * this is a plain constant — the Landing B schema include reuses it as the
+ * WebPage name. Keep it in sync with the H1 in
+ * page-hydratacni-navleky-molosoc.php (tests/test_landing_b_template.py).
  */
-add_filter( 'document_title_parts', function ( $parts ) {
-	if ( is_page( 'hydratacni-navleky-molosoc' ) && isset( $parts['title'] ) ) {
-		$parts['title'] = trim( preg_replace( '/\s*\(\s*varianta\s*,\s*koncept\s*\)/iu', '', $parts['title'] ) );
+function molosoc_landing_b_document_title() {
+	return 'Hydratační maska na nohy na opakované použití | Molosoc';
+}
+add_filter( 'pre_get_document_title', function ( $title ) {
+	if ( is_page( 'hydratacni-navleky-molosoc' ) ) {
+		return molosoc_landing_b_document_title();
 	}
-	return $parts;
+	return $title;
 } );
 
 /**

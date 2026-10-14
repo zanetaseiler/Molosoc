@@ -108,6 +108,13 @@ class LandingBSchemaStatic(unittest.TestCase):
         self.assertIn("esc_attr( molosoc_landing_b_schema_description() )", self.src)
         self.assertIn("html_entity_decode( wp_get_document_title(), ENT_QUOTES, 'UTF-8' )", self.src)
         self.assertNotIn("\t\twp_get_document_title(),", self.src)
+        # Issue #161: the WebPage name follows the fixed <title> that functions.php
+        # returns from pre_get_document_title (wp_get_document_title() passes it
+        # through verbatim), so it carries no "&#8211;" and no "(varianta, koncept)".
+        m = re.search(r"function molosoc_landing_b_document_title\(\) \{\s*return '(.*?)';", self.fn, re.S)
+        self.assertEqual(m.group(1), "Hydratační maska na nohy na opakované použití | Molosoc")
+        self.assertNotIn("&", m.group(1))
+        self.assertEqual(html.unescape(m.group(1)), m.group(1))
 
     def test_faq_matches_visible_template_exactly(self):
         details = re.findall(r"<details>\s*<summary>(.*?)</summary>\s*(?:<\?php.*?\?>\s*)?<p>(.*?)</p>", self.tpl, re.S)
@@ -135,14 +142,17 @@ class LandingBSchemaStatic(unittest.TestCase):
     def test_description_words_are_on_the_page(self):
         m = re.search(r"function molosoc_landing_b_schema_description\(\) \{\s*return '(.*?)';", self.src, re.S)
         desc = m.group(1)
-        # ~150 chars (Google truncates around 155-160) and only on-page claims.
-        self.assertTrue(130 <= len(desc) <= 158, len(desc))
-        self.assertTrue(desc.startswith("Hydratační návleky na nohy MOLOSOC – namazané nohy bez nepořádku a bez klouzání"), desc)
+        # Issue #161 text (Google truncates around 155-160) and only on-page claims.
+        self.assertEqual(desc, "Hydratační maska na nohy MOLOSOC na opakované použití. Funguje s krémem, který už máte — bez nepořádku a bez klouzání. 229 Kč.")
+        self.assertTrue(110 <= len(desc) <= 158, len(desc))
         page = html.unescape(self.tpl).lower()
-        for phrase in ("Hydratační návleky na nohy", "Namazané nohy", "Bez nepořádku", "Bez klouzání",
-                       "100% nitril", "Bez latexu", "vydrží opakovaně", "krémem", "který už máte doma"):
+        for phrase in ("Hydratační maska na nohy", "na opakované použití", "s krémem, který už máte",
+                       "bez nepořádku", "bez klouzání", "229 Kč"):
             self.assertIn(phrase.lower(), desc.lower(), phrase)
             self.assertIn(phrase.lower(), page, phrase)
+        # Pillar 1 / category terms stay out of the meta description.
+        for term in ("popraskané paty", "suché paty", "návleky na nohy"):
+            self.assertNotIn(term, desc.lower(), term)
         self.assertNotRegex(desc, r"(?i)léč|zdrav|vyléč|klinick|dermatolog")
         self.assertNotIn("&", desc)
         self.assertNotIn('"', desc)

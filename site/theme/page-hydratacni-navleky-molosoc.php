@@ -90,8 +90,9 @@ get_header();
 				</div>
 			</div>
 			<div class="lpb-hero__copy">
-				<p class="lpb-eyebrow">Hydratační návleky na nohy</p>
-				<h1 class="lpb-hero__title">Namazané nohy.<br>Bez nepořádku.</h1>
+				<?php /* Issue #161 keyword retarget ("maska na nohy"): eyebrow + H1 replaced; page 580 read "Hydratační návleky na nohy" / "Namazané nohy. Bez nepořádku." */ ?>
+				<p class="lpb-eyebrow">Hydratační maska na nohy</p>
+				<h1 class="lpb-hero__title">Maska na nohy, kterou použijete znovu<br>— s krémem, který už máte</h1>
 				<p class="lpb-hero__sub">Bez klouzání. Bez čekání. Bez mastných stop.</p>
 				<p class="lpb-hero__lede">Vzniklo doma. Z běžného života. Pro ženy jako jsme my.</p>
 				<?php /* FLAG: page 580 carried an EMPTY line-through <span> before the price — a leftover of a crossed-out presale price. Reproduced as nothing (no fake "was" price invented). */ ?>
@@ -113,7 +114,9 @@ get_header();
 	<section class="lpb-section lpb-section--cream" aria-label="Pro koho MOLOSOC je">
 		<div class="lpb-section__head">
 			<p class="lpb-eyebrow">Pro koho je</p>
-			<h2>Pro koho MOLOSOC je</h2>
+			<?php /* Issue #161: H2 reworked from page 580's "Pro koho MOLOSOC je" to carry the Pillar 1 terms; the lede links to /cz/popraskane-paty/, which owns "popraskané paty" / "suché paty". */ ?>
+			<h2>Pro koho MOLOSOC je: suché i popraskané paty</h2>
+			<p class="lpb-lede">Popraskané paty mají své příčiny – co je způsobuje a co opravdu pomáhá, čtěte v průvodci <a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">popraskané paty</a>. MOLOSOC je nástroj, který nechá váš krém pracovat.</p>
 		</div>
 		<div class="lpb-cards lpb-cards--3">
 			<div class="lpb-card">
@@ -259,7 +262,9 @@ get_header();
 		<div class="lpb-split__copy">
 			<p class="lpb-eyebrow">Kompatibilita</p>
 			<h2>Funguje s vaším oblíbeným krémem.</h2>
-			<p class="lpb-strong">MOLOSOC není krém. Není to maska. Je to nástroj, který zlepší účinek krému, který už máte doma.</p>
+			<?php /* Issue #161: page 580 read "MOLOSOC není krém. Není to maska." — reworded so the page does not contradict its own H1; the one-use vs. reusable comparison repeats the category page's argument (page-foot-covers.php), no new claim. */ ?>
+			<p class="lpb-strong">MOLOSOC není krém ani předplněná jednorázová maska. Je to maska na nohy na opakované použití – nástroj, který zlepší účinek krému, který už máte doma.</p>
+			<p>Většina masek na nohy v obchodě je na jedno použití: má vlastní formuli, použijete ji jednou a obojí skončí v koši. Návlek MOLOSOC vydrží alespoň 10 použití – stačí ho po použití umýt a výběr krému zůstává na vás.</p>
 			<p>Naneste svůj oblíbený krém, balzám nebo olej na chodidla. Nasaďte MOLOSOC. Nitrilový materiál zamkne vlhkost a nechá aktivní složky proniknout hlouběji do pokožky.</p>
 			<ul class="lpb-chips">
 				<li>Krém na paty</li>
