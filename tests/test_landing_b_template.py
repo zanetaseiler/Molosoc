@@ -12,6 +12,12 @@ prioritised + preloaded LCP image, the unused plugin CSS/JS stack is
 dequeued on this page, both Google Fonts stylesheets load non-blocking,
 landing-b.js is deferred and "(varianta, koncept)" is stripped from the
 document title.
+
+Issue #157: PageSpeed's actual LCP element is the .lpb-hero CSS background
+(hero-bg-v2), discovered only after the CSS bundle. It is now a theme-hosted
+WebP pair (960 for ≤900px / 1920 above) whose URLs come from one PHP helper:
+the template puts them on the section as custom properties the stylesheet
+reads, and wp_head preloads them with media-gated fetchpriority="high" links.
 """
 import re
 import unittest
@@ -47,8 +53,8 @@ SECTION_HEADINGS = [
 
 # Page 580's 13 content photos as the theme-hosted WebP derivative sets the
 # <img> tags now use (Issue #153): basename -> widths that must exist as
-# assets/images/landing-b/<basename>-<w>.webp. The hero background stays a
-# CSS url() to the live upload.
+# assets/images/landing-b/<basename>-<w>.webp. The hero background (Issue
+# #157) is a theme-hosted pair too, but a CSS background rather than an <img>.
 DERIVATIVES = {
     "lpb-hero-baige": [480, 800, 1152],  # hero main (LCP)
     "lpb-sofa-2": [480, 960],  # hero thumb (480 only) + "Co to je"
@@ -64,7 +70,8 @@ DERIVATIVES = {
     "lpb-product-shot-2": [480, 960],  # Objednávka
     "lpb-opening-package-mami": [400, 800],  # Zakladatelky
 }
-HERO_BG = "2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp"
+HERO_BG_UPLOAD = "2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp"
+HERO_BG = {"lpb-hero-bg": [960, 1920]}  # ≤900px / above (the CSS breakpoint)
 
 # The lightbox-style <a href> wrappers keep linking to page 580's original
 # full-size uploads (the 9 photos page 580 itself wrapped in links).
@@ -146,7 +153,9 @@ class LandingBTemplate(unittest.TestCase):
                 self.assertTrue(f.is_file(), f"missing derivative: {f.name}")
                 self.assertEqual(f.read_bytes()[:4], b"RIFF", f.name)
                 self.assertEqual(f.read_bytes()[8:12], b"WEBP", f.name)
-        expected_files = {f"{b}-{w}.webp" for b, ws in DERIVATIVES.items() for w in ws}
+        expected_files = {
+            f"{b}-{w}.webp" for b, ws in {**DERIVATIVES, **HERO_BG}.items() for w in ws
+        }
         self.assertEqual({p.name for p in WEBP_DIR.iterdir()}, expected_files)
         # The hero set is defined once (functions.php) and used by the <img>.
         self.assertIn(
@@ -154,11 +163,73 @@ class LandingBTemplate(unittest.TestCase):
             self.body,
         )
         self.assertIn("$lpb_hero        = molosoc_landing_b_hero_image();", self.tpl)
-        # Lightbox links + hero background still point at the live uploads.
+        # Lightbox links still point at the live uploads; the hero background
+        # upload is gone from the CSS (Issue #157, theme-hosted pair instead).
         found = set(re.findall(r"(2026/0\d/[A-Za-z0-9_.-]+)", self.body + self.css))
-        for img in UPLOAD_LINKS + [HERO_BG]:
+        for img in UPLOAD_LINKS:
             self.assertIn(img, found, f"upload link missing: {img}")
+        self.assertNotIn(HERO_BG_UPLOAD, found)
+        self.assertNotIn("hero-bg-v2", self.css_rules)
         self.assertNotIn("staging.molosoc.com", self.tpl + self.css)
+
+    def test_hero_background_is_a_preloaded_theme_webp_pair(self):
+        # Issue #157: the LCP element is the section background, not the <img>.
+        for base, widths in HERO_BG.items():
+            for w in widths:
+                f = WEBP_DIR / f"{base}-{w}.webp"
+                self.assertTrue(f.is_file(), f"missing derivative: {f.name}")
+                self.assertEqual(f.read_bytes()[:4], b"RIFF", f.name)
+                self.assertEqual(f.read_bytes()[8:12], b"WEBP", f.name)
+        # One PHP source of truth: file + media query per breakpoint, the
+        # same 900px cut as landing-b.css.
+        fn = self.fn
+        helper = fn[fn.index("function molosoc_landing_b_hero_background()"):]
+        helper = helper[: helper.index("\n}\n")]
+        self.assertIn("'/assets/images/landing-b/'", helper)
+        self.assertIn("'url' => $dir . 'lpb-hero-bg-960.webp', 'media' => '(max-width: 900px)'", helper)
+        self.assertIn("'url' => $dir . 'lpb-hero-bg-1920.webp', 'media' => '(min-width: 900.1px)'", helper)
+        style = fn[fn.index("function molosoc_landing_b_hero_background_style()"):]
+        style = style[: style.index("\n}\n")]
+        self.assertIn("'--lpb-hero-bg-mobile: url(%s); --lpb-hero-bg-desktop: url(%s)'", style)
+        self.assertIn("esc_url( $bg['mobile']['url'] )", style)
+        self.assertIn("esc_url( $bg['desktop']['url'] )", style)
+        self.assertIn("return esc_attr( sprintf(", style)
+        # wp_head: one media-gated high-priority preload per breakpoint,
+        # printed right after the hero <img> preload.
+        head = fn[fn.index("function molosoc_landing_b_head()"):]
+        head = head[: head.index("add_action( 'wp_head', 'molosoc_landing_b_head', 1 );")]
+        self.assertIn("foreach ( molosoc_landing_b_hero_background() as $bg ) {", head)
+        self.assertIn(
+            "'<link rel=\"preload\" as=\"image\" fetchpriority=\"high\" href=\"%s\" media=\"%s\">'", head
+        )
+        self.assertIn("esc_url( $bg['url'] )", head)
+        self.assertIn("esc_attr( $bg['media'] )", head)
+        self.assertLess(head.index("'imagesrcset=\"', 'imagesizes=\"'"), head.index("foreach ( molosoc_landing_b_hero_background()"))
+        # Template: the section carries the custom properties.
+        self.assertIn(
+            '<section class="lpb-hero" aria-label="Hydratační návleky na nohy" '
+            'style="<?php echo molosoc_landing_b_hero_background_style(); ?>">',
+            self.body,
+        )
+        self.assertEqual(self.body.count("molosoc_landing_b_hero_background_style()"), 1)
+        # CSS: the rule reads the custom properties (overlay unchanged) and
+        # swaps to the mobile copy at the shared 900px breakpoint.
+        css = self.css_rules
+        hero = css[css.index(".lpb-hero {"):]
+        hero = hero[: hero.index("\n}\n")]
+        self.assertIn("--lpb-hero-bg: var(--lpb-hero-bg-desktop, none);", hero)
+        self.assertIn(
+            "linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),\n"
+            "    var(--lpb-hero-bg) center / cover no-repeat;",
+            hero,
+        )
+        mobile = css[css.index("@media (max-width: 900px) {"):]
+        mobile = mobile[: mobile.index("@media (max-width: 560px)")]
+        self.assertIn(
+            ".lpb-hero {\n    --lpb-hero-bg: var(--lpb-hero-bg-mobile, var(--lpb-hero-bg-desktop, none));\n  }",
+            mobile,
+        )
+        self.assertNotIn("url(\"http", css)
 
     def test_hero_is_the_prioritised_lcp_image_and_the_rest_lazy(self):
         hero = self.body[self.body.index('class="lpb-hero__main"'):self.body.index('class="lpb-hero__thumbs"')]

@@ -64,7 +64,7 @@ page's rendered CSS and `getComputedStyle`, not from the theme tokens.
 
 | File (`https://molosoc.com/wp-content/uploads/…`) | WP media id | Used in |
 |---|---|---|
-| `2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp` | — (Thrive bg) | hero background |
+| `2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp` | — (Thrive bg) | hero background (since Issue #157 served from the theme pair `lpb-hero-bg-960/1920.webp`, see below) |
 | `2026/04/Molosoc-Photos-Product-Hero-New-Baige.jpg` (1152×860) | 638 | hero main |
 | `2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg` (1152×860) | 639 | hero thumb, "Co to je" |
 | `2026/04/Molosoc-Photos-Product-New-Sizes-WBG.jpg` (1152×860) | 444 | hero thumb |
@@ -110,6 +110,23 @@ from `wp_head` (`molosoc_landing_b_head()`) with the identical srcset via
 | New-VariationCream-Ok | `lpb-variation-cream` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
 | Product-Shot-2 | `lpb-product-shot-2` | 480 / 960 | `(max-width: 900px) 100vw, 400px` |
 | Opening-Package-Mami | `lpb-opening-package-mami` | 400 / 800 | `(max-width: 400px) 100vw, 400px` |
+| hero-bg-v2 (`.lpb-hero` CSS background, Issue #157) | `lpb-hero-bg` | 960 (`(max-width: 900px)`, 4.4 KB) / 1920 (`(min-width: 900.1px)`, 12.5 KB) | — (`cover`; `cwebp -q 70`, a soft watercolour wash under the 50 % white overlay) |
+
+**Issue #157 — the real LCP element.** After #153 PageSpeed still reported the `.lpb-hero`
+section's CSS background (`hero-bg-v2…webp`, 1920×1072, 15.5 KB hot-linked from the uploads)
+as the LCP element, not the prioritised `<img>`: a CSS `url()` is only discovered once the
+WPO Minify bundle has downloaded and been parsed. The background is now the theme-hosted pair
+above; `molosoc_landing_b_hero_background()` (functions.php) is the single source of the two
+URLs + media queries, the template writes them onto the section as
+`--lpb-hero-bg-mobile` / `--lpb-hero-bg-desktop` custom properties
+(`molosoc_landing_b_hero_background_style()`), `.lpb-hero` in `landing-b.css` paints
+`var(--lpb-hero-bg)` (desktop by default, the mobile copy inside the existing 900px media
+query) under the unchanged 50 % white overlay, and `molosoc_landing_b_head()` prints one
+`<link rel="preload" as="image" fetchpriority="high" media="…">` per breakpoint right after the
+hero `<img>` preload, so a phone fetches only the 4.4 KB copy and starts it from the HTML.
+The visual is unchanged; the fallback option (drop the image for a plain colour) stays open if
+the re-run still flags the background. `homepage.css` / `thank-you.css` still use the upload.
+Theme Version 0.2.92.
 
 Same Issue, same page only: the unused WooCommerce / select2 / photoswipe / Customer Reviews /
 PPL CZ / Comgate CSS+JS is dequeued (`molosoc_dequeue_unused_homepage_assets()`, now gated on
@@ -118,7 +135,8 @@ PPL enqueues its CSS late), both Google Fonts stylesheets are printed as non-blo
 `media="print"` + `onload` links from `wp_head` (page 580's Open Sans dropped — fallback-only
 in `landing-b.css`), `landing-b.js` is `defer`red, and `document_title_parts` strips
 "(varianta, koncept)" from the `<title>` (the WP post title is unchanged). Theme Version
-0.2.91. After the deploy: `purge-home-cache.yml -f page_ids=1037`, then re-run PageSpeed mobile.
+0.2.91 (0.2.92 with Issue #157). After the deploy: `purge-home-cache.yml -f page_ids=1037`,
+then re-run PageSpeed mobile.
 
 ## Draft creation + review path (after this PR is merged and the theme deployed)
 
