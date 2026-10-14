@@ -38,9 +38,19 @@
  * forced to the CZ shop URL because a REST-created draft lands in the
  * default (EN) Polylang language until the owner sets it to Cz.
  *
+ * IMAGES (Issue #153, mobile PageSpeed: LCP 9.2 s / score 60): every <img>
+ * below is served from the theme's own WebP derivatives in
+ * assets/images/landing-b/ (cwebp -q 78 renditions of the page-580 uploads,
+ * resized to the widths landing-b.css displays them at) via
+ * molosoc_landing_b_img_attrs() in functions.php (src/srcset/sizes). The
+ * hero photo is the LCP element: fetchpriority="high", eager, and preloaded
+ * from wp_head (molosoc_landing_b_head()) with the identical srcset — both
+ * read molosoc_landing_b_hero_image(). Every lightbox-style <a href> still
+ * points at the original full-size upload, exactly as page 580 did.
+ *
  * CSS/JS (assets/css/landing-b.css, assets/js/landing-b.js, Google Fonts
- * DM Serif Display / Nunito Sans / Open Sans as on page 580) are enqueued
- * conditionally in functions.php on is_page('hydratacni-navleky-molosoc').
+ * Nunito Sans as on page 580 — loaded non-blocking, see functions.php) are
+ * enqueued conditionally in functions.php on is_page('hydratacni-navleky-molosoc').
  * The same slug is noindexed and sitemap-excluded there (B is an
  * unpublished variant of A and must not compete with it if it is ever
  * published by mistake) and excluded from the global sticky "Koupit nyní"
@@ -53,6 +63,7 @@ $lpb_product_url = molosoc_product_url( 'cz' );
 $lpb_price       = '229 Kč';
 $lpb_shipping    = 'Doprava od 79 Kč';
 $lpb_uploads     = 'https://molosoc.com/wp-content/uploads';
+$lpb_hero        = molosoc_landing_b_hero_image(); // LCP image set, shared with the wp_head preload.
 
 get_header();
 ?>
@@ -64,12 +75,12 @@ get_header();
 		<div class="lpb-hero__inner">
 			<div class="lpb-hero__media">
 				<a class="lpb-hero__main" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-Baige.jpg' ); ?>">
-					<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-Baige.jpg' ); ?>" width="1152" height="860" alt="Bílé nitrilové návleky MOLOSOC na béžové látce vedle levandule a kelímku krému" loading="eager" decoding="async">
+					<img <?php echo molosoc_landing_b_img_attrs( $lpb_hero['base'], $lpb_hero['widths'], $lpb_hero['sizes'] ); ?> width="1152" height="860" alt="Bílé nitrilové návleky MOLOSOC na béžové látce vedle levandule a kelímku krému" fetchpriority="high" loading="eager" decoding="async">
 				</a>
 				<div class="lpb-hero__thumbs">
-					<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg' ); ?>"><img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg' ); ?>" width="1152" height="860" alt="Nohy v návlecích MOLOSOC položené na pohovce" loading="lazy" decoding="async"></a>
-					<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG.jpg' ); ?>" width="1152" height="860" alt="Dva páry návleků MOLOSOC, velikosti M a L" loading="lazy" decoding="async">
-					<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Product.png' ); ?>" width="1152" height="860" alt="Balení MOLOSOC s návlekem" loading="lazy" decoding="async">
+					<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-sofa-2', array( 480 ), '(max-width: 900px) 33vw, 230px' ); ?> width="1152" height="860" alt="Nohy v návlecích MOLOSOC položené na pohovce" loading="lazy" decoding="async"></a>
+					<img <?php echo molosoc_landing_b_img_attrs( 'lpb-sizes-wbg', array( 480 ), '(max-width: 900px) 33vw, 230px' ); ?> width="1152" height="860" alt="Dva páry návleků MOLOSOC, velikosti M a L" loading="lazy" decoding="async">
+					<img <?php echo molosoc_landing_b_img_attrs( 'lpb-product-pack', array( 480 ), '(max-width: 900px) 33vw, 230px' ); ?> width="1152" height="860" alt="Balení MOLOSOC s návlekem" loading="lazy" decoding="async">
 				</div>
 			</div>
 			<div class="lpb-hero__copy">
@@ -120,7 +131,7 @@ get_header();
 	<!-- ============ 5. Co to je (page 580 section 5: image left, copy right) ============ -->
 	<section class="lpb-section lpb-split" aria-label="Co to je">
 		<a class="lpb-split__media" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg' ); ?>">
-			<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sofa-2.jpg' ); ?>" width="1152" height="860" alt="Nohy v návlecích MOLOSOC položené na pohovce" loading="lazy" decoding="async">
+			<img <?php echo molosoc_landing_b_img_attrs( 'lpb-sofa-2', array( 480, 960 ), '(max-width: 900px) 100vw, 50vw' ); ?> width="1152" height="860" alt="Nohy v návlecích MOLOSOC položené na pohovce" loading="lazy" decoding="async">
 		</a>
 		<div class="lpb-split__copy">
 			<p class="lpb-eyebrow">Co to je</p>
@@ -144,17 +155,17 @@ get_header();
 		</div>
 		<div class="lpb-cards lpb-cards--3 lpb-cards--photo">
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-White.jpg' ); ?>"><img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-White.jpg' ); ?>" width="1152" height="860" alt="Návlek MOLOSOC velikost M" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-White.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-hero-white', array( 480, 960 ), '230px' ); ?> width="1152" height="860" alt="Návlek MOLOSOC velikost M" loading="lazy" decoding="async"></a>
 				<h3>Velikost M</h3>
 				<p>Velikost nohy 36–39</p>
 			</div>
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Studio.jpg' ); ?>"><img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Studio.jpg' ); ?>" width="1920" height="1434" alt="Návlek MOLOSOC velikost L" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Studio.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-studio', array( 480, 960 ), '230px' ); ?> width="1920" height="1434" alt="Návlek MOLOSOC velikost L" loading="lazy" decoding="async"></a>
 				<h3>Velikost L</h3>
 				<p>Velikost nohy 39.5–44</p>
 			</div>
 			<div class="lpb-card">
-				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG-1.jpg' ); ?>"><img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG-1.jpg' ); ?>" width="1152" height="860" alt="Porovnání velikostí M a L" loading="lazy" decoding="async"></a>
+				<a href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Sizes-WBG-1.jpg' ); ?>"><img <?php echo molosoc_landing_b_img_attrs( 'lpb-sizes-wbg-1', array( 480, 960 ), '230px' ); ?> width="1152" height="860" alt="Porovnání velikostí M a L" loading="lazy" decoding="async"></a>
 				<h3>Porovnání</h3>
 				<p>M nahoře, L dole</p>
 			</div>
@@ -169,7 +180,7 @@ get_header();
 		</div>
 		<div class="lpb-split lpb-split--inner">
 			<a class="lpb-split__media" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Apply-Cream-Ok.jpg' ); ?>">
-				<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-Apply-Cream-Ok.jpg' ); ?>" width="1920" height="1288" alt="Nanášení krému na chodidlo, vedle leží návleky MOLOSOC" loading="lazy" decoding="async">
+				<img <?php echo molosoc_landing_b_img_attrs( 'lpb-apply-cream', array( 480, 960 ), '(max-width: 900px) 100vw, 50vw' ); ?> width="1920" height="1288" alt="Nanášení krému na chodidlo, vedle leží návleky MOLOSOC" loading="lazy" decoding="async">
 			</a>
 			<ol class="lpb-steps">
 				<li><span class="lpb-steps__num">01</span>Umyjte a osušte si nohy</li>
@@ -215,11 +226,11 @@ get_header();
 		</div>
 		<div class="lpb-gallery">
 			<figure>
-				<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Mami-Sofa.jpg' ); ?>" width="1920" height="1434" alt="Nohy v návlecích MOLOSOC na oranžové pohovce" loading="lazy" decoding="async">
+				<img <?php echo molosoc_landing_b_img_attrs( 'lpb-mami-sofa', array( 480, 960 ), '(max-width: 900px) 100vw, 430px' ); ?> width="1920" height="1434" alt="Nohy v návlecích MOLOSOC na oranžové pohovce" loading="lazy" decoding="async">
 				<figcaption>Namazat, nasadit, sednout si – a krém pracuje za vás.</figcaption>
 			</figure>
 			<figure>
-				<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Holdind-It-First-Time-WBG.jpg' ); ?>" width="1920" height="1434" alt="Máma drží poprvé hotový návlek MOLOSOC" loading="lazy" decoding="async">
+				<img <?php echo molosoc_landing_b_img_attrs( 'lpb-holding-first-time', array( 480, 960 ), '(max-width: 900px) 100vw, 430px' ); ?> width="1920" height="1434" alt="Máma drží poprvé hotový návlek MOLOSOC" loading="lazy" decoding="async">
 				<figcaption>MOLOSOC jsme vytvořily my – máma s dcerou. Tady ho držíme poprvé.</figcaption>
 			</figure>
 		</div>
@@ -252,7 +263,7 @@ get_header();
 			</ul>
 		</div>
 		<a class="lpb-split__media" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-VariationCream-Ok.jpg' ); ?>">
-			<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-VariationCream-Ok.jpg' ); ?>" width="1152" height="860" alt="Návlek MOLOSOC mezi kelímky krému, balzámu a oleje" loading="lazy" decoding="async">
+			<img <?php echo molosoc_landing_b_img_attrs( 'lpb-variation-cream', array( 480, 960 ), '(max-width: 900px) 100vw, 50vw' ); ?> width="1152" height="860" alt="Návlek MOLOSOC mezi kelímky krému, balzámu a oleje" loading="lazy" decoding="async">
 		</a>
 	</section>
 
@@ -325,7 +336,7 @@ get_header();
 		</div>
 		<div class="lpb-order">
 			<a class="lpb-order__media" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Product-Shot-2.jpg' ); ?>">
-				<img src="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Product-Shot-2.jpg' ); ?>" width="2048" height="2048" alt="Balení MOLOSOC – 1 pár hydratačních návleků na nohy" loading="lazy" decoding="async">
+				<img <?php echo molosoc_landing_b_img_attrs( 'lpb-product-shot-2', array( 480, 960 ), '(max-width: 900px) 100vw, 400px' ); ?> width="2048" height="2048" alt="Balení MOLOSOC – 1 pár hydratačních návleků na nohy" loading="lazy" decoding="async">
 			</a>
 			<div class="lpb-order__copy">
 				<p class="lpb-eyebrow">MOLOSOC · 1 pár</p>
@@ -350,7 +361,7 @@ get_header();
 			<h2>MOLOSOC jsme vytvořily my – máma s dcerou.</h2>
 			<p class="lpb-quote"><em>“Protože víme, jaké to je – namazat se a pak nevědět, co dál.”</em></p>
 		</div>
-		<img class="lpb-founders__photo" src="<?php echo esc_url( $lpb_uploads . '/2026/01/Molosoc-Opening-Package-Mami.jpg' ); ?>" width="1290" height="1434" alt="Máma a dcera spolu otevírají balíček MOLOSOC" loading="lazy" decoding="async">
+		<img <?php echo molosoc_landing_b_img_attrs( 'lpb-opening-package-mami', array( 400, 800 ), '(max-width: 400px) 100vw, 400px' ); ?> class="lpb-founders__photo" width="1290" height="1434" alt="Máma a dcera spolu otevírají balíček MOLOSOC" loading="lazy" decoding="async">
 	</section>
 
 </main>

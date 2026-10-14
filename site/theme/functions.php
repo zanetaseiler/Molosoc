@@ -206,6 +206,26 @@ function molosoc_sticky_cta_hidden() {
 		|| is_page( 'hydratacni-navleky-molosoc' );
 }
 
+/**
+ * The site-wide Google Fonts stylesheet URL (Tenor Sans display face, Mulish,
+ * Nunito). One function so the normal render-blocking enqueue below and the
+ * non-blocking Landing Page B print (molosoc_landing_b_head()) can never
+ * drift apart on the font set.
+ */
+function molosoc_fonts_url() {
+	return 'https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Mulish:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap';
+}
+
+/**
+ * Landing Page B's own extra face (page 580's label face Nunito Sans).
+ * Page 580's Open Sans was dropped in Issue #153: landing-b.css only lists
+ * it as a fallback AFTER Nunito, which the global stylesheet always provides,
+ * so it was a fetched-but-never-rendered font.
+ */
+function molosoc_landing_b_fonts_url() {
+	return 'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600&display=swap';
+}
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
@@ -217,12 +237,7 @@ function molosoc_enqueue_assets() {
 	// 301ed to the homepage (~2s, uncacheable). All real CSS lives in
 	// assets/css/ below.
 
-	wp_enqueue_style(
-		'molosoc-fonts',
-		'https://fonts.googleapis.com/css2?family=Tenor+Sans&family=Mulish:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap',
-		array(),
-		null
-	);
+	wp_enqueue_style( 'molosoc-fonts', molosoc_fonts_url(), array(), null );
 
 	wp_enqueue_style( 'molosoc-tokens', $theme_uri . '/assets/css/tokens.css', array(), $theme_version );
 	wp_enqueue_style( 'molosoc-base', $theme_uri . '/assets/css/base.css', array( 'molosoc-tokens' ), $theme_version );
@@ -395,21 +410,29 @@ function molosoc_enqueue_assets() {
 	} elseif ( is_page( 'hydratacni-navleky-molosoc' ) ) {
 		// Landing Page B (Issue #122): faithful rebuild of Thrive page 580 as
 		// an unpublished variant of the CZ landing page — template
-		// page-hydratacni-navleky-molosoc.php. Loads page 580's own body/
-		// label faces (Nunito Sans / Open Sans; Nunito and the heading face
-		// Tenor Sans already come with the global molosoc-fonts handle —
-		// B's headings use the theme display font, not 580's DM Serif
-		// Display, so that request was dropped) plus its scoped CSS and the
-		// tabs/sticky-bar enhancement script. Nothing here touches the live
-		// 'hydratacni-navlek-na-nohy' branch below.
-		wp_enqueue_style(
-			'molosoc-landing-b-fonts',
-			'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600&family=Open+Sans:wght@300;400&display=swap',
-			array(),
-			null
-		);
-		wp_enqueue_style( 'molosoc-landing-b', $theme_uri . '/assets/css/landing-b.css', array( 'molosoc-components', 'molosoc-landing-b-fonts' ), $theme_version );
+		// page-hydratacni-navleky-molosoc.php. Its scoped CSS plus the
+		// tabs/sticky-bar enhancement script (deferred: it only wires up
+		// click/scroll handlers, nothing render-critical — the strategy is
+		// honoured when WP prints the tag itself; WP-Optimize Minify may
+		// drop the attribute, which just leaves the footer script where it
+		// was). Nothing here touches the live 'hydratacni-navlek-na-nohy'
+		// branch below.
+		//
+		// Fonts (Issue #153, mobile LCP 9.2 s): on this page NEITHER Google
+		// Fonts stylesheet is a render-blocking <link>. The global
+		// molosoc-fonts handle enqueued above is dequeued again here and
+		// both it and page 580's own label face (Nunito Sans — B's headings
+		// use the theme display font Tenor Sans, not 580's DM Serif Display,
+		// so that request was dropped; family=Nunito+Sans is the only
+		// page-specific family) are printed by molosoc_landing_b_head() as
+		// media="print" + onload swap links, which the browser downloads
+		// off the critical path (display=swap means text renders in the
+		// fallback face meanwhile). Raw wp_head output, not an enqueue, so
+		// WP-Optimize Minify cannot turn them back into blocking bundles.
+		wp_dequeue_style( 'molosoc-fonts' );
+		wp_enqueue_style( 'molosoc-landing-b', $theme_uri . '/assets/css/landing-b.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-landing-b', $theme_uri . '/assets/js/landing-b.js', array(), $theme_version, true );
+		wp_script_add_data( 'molosoc-landing-b', 'strategy', 'defer' );
 	} elseif ( is_page( array( 'blog', 'magazin' ) ) ) {
 		// Journal index — static photo-tile grid, no motion.js/GSAP needed
 		// (see page-blog.php's own header comment for why). 'magazin' is
@@ -490,6 +513,94 @@ add_action( 'wp_head', function () {
 		);
 	}
 }, 1 );
+
+/**
+ * Landing Page B (Issue #153) — theme-hosted WebP derivatives of page 580's
+ * photos, resized to the widths landing-b.css actually displays them at
+ * (assets/images/landing-b/, generated with cwebp -q 78 from the live
+ * uploads; see docs/landing-page-b-580.md "Asset inventory"). The template
+ * echoes molosoc_landing_b_img_attrs() for every <img>; the hero set is
+ * defined once in molosoc_landing_b_hero_image() so the <img> and the
+ * <link rel="preload"> below carry byte-identical srcset/sizes.
+ *
+ * @param string $base   Derivative basename, e.g. 'lpb-hero-baige'.
+ * @param int[]  $widths Available widths; files are "<base>-<w>.webp".
+ * @param string $sizes  The sizes attribute.
+ * @return string Escaped ' src="…" srcset="…" sizes="…"' attributes.
+ */
+function molosoc_landing_b_img_attrs( $base, array $widths, $sizes ) {
+	$dir    = get_stylesheet_directory_uri() . '/assets/images/landing-b/';
+	$srcset = array();
+	foreach ( $widths as $w ) {
+		$srcset[] = esc_url( $dir . $base . '-' . (int) $w . '.webp' ) . ' ' . (int) $w . 'w';
+	}
+	return sprintf(
+		'src="%s" srcset="%s" sizes="%s"',
+		esc_url( $dir . $base . '-' . (int) max( $widths ) . '.webp' ),
+		esc_attr( implode( ', ', $srcset ) ),
+		esc_attr( $sizes )
+	);
+}
+
+/**
+ * The hero (LCP) image set: full column width on phones, the 1.3fr media
+ * column (~700px of the 1240px .lpb-hero__inner) on desktop.
+ */
+function molosoc_landing_b_hero_image() {
+	return array(
+		'base'   => 'lpb-hero-baige',
+		'widths' => array( 480, 800, 1152 ),
+		'sizes'  => '(max-width: 900px) 100vw, 700px',
+	);
+}
+
+/**
+ * Landing Page B <head> output (Issue #153), priority 1 so it lands before
+ * the render-blocking stylesheets:
+ *   1. preconnect to the Google Fonts origins;
+ *   2. the hero image preload with fetchpriority="high" — the LCP element
+ *      otherwise waits for ~10 stylesheets to finish before the parser even
+ *      reaches it in the body;
+ *   3. both Google Fonts stylesheets as non-blocking media="print" links
+ *      that swap to media="all" once loaded (+ <noscript> fallback), see
+ *      the Landing B branch of molosoc_enqueue_assets().
+ * Printed raw (not enqueued) so WP-Optimize Minify leaves it alone.
+ */
+function molosoc_landing_b_head() {
+	if ( ! is_page( 'hydratacni-navleky-molosoc' ) ) {
+		return;
+	}
+	echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
+	echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
+
+	$hero  = molosoc_landing_b_hero_image();
+	$attrs = molosoc_landing_b_img_attrs( $hero['base'], $hero['widths'], $hero['sizes'] );
+	// Same escaped values as the <img>, under the preload attribute names.
+	$attrs = str_replace( array( 'src="', 'srcset="', 'sizes="' ), array( 'href="', 'imagesrcset="', 'imagesizes="' ), $attrs );
+	echo '<link rel="preload" as="image" fetchpriority="high" ' . $attrs . '>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- every value is esc_url()/esc_attr()ed in molosoc_landing_b_img_attrs().
+
+	foreach ( array( molosoc_fonts_url(), molosoc_landing_b_fonts_url() ) as $url ) {
+		printf(
+			'<link rel="stylesheet" href="%1$s" media="print" onload="this.media=\'all\'">' . "\n" .
+			'<noscript><link rel="stylesheet" href="%1$s"></noscript>' . "\n",
+			esc_url( $url )
+		);
+	}
+}
+add_action( 'wp_head', 'molosoc_landing_b_head', 1 );
+
+/**
+ * Landing Page B document title (Issue #153): the WordPress page title of
+ * page 1037 carries the working label "(varianta, koncept)", which was
+ * showing up in the browser tab / <title>. Stripped here for this page only;
+ * the post title itself is untouched so wp-admin still shows the label.
+ */
+add_filter( 'document_title_parts', function ( $parts ) {
+	if ( is_page( 'hydratacni-navleky-molosoc' ) && isset( $parts['title'] ) ) {
+		$parts['title'] = trim( preg_replace( '/\s*\(\s*varianta\s*,\s*koncept\s*\)/iu', '', $parts['title'] ) );
+	}
+	return $parts;
+} );
 
 /**
  * Category page ("Reusable Foot Covers") schema markup.
@@ -1989,9 +2100,23 @@ add_filter( 'wc_product_sku_enabled', '__return_false' );
  * chance to register) removes them from this page only; every other
  * template is untouched. Handles that don't exist are a silent no-op, so
  * this list errs generous rather than risk missing one.
+ *
+ * Landing Page B (Issue #153) gets the same treatment: its mobile PageSpeed
+ * audit (LCP 9.2 s, ~2.6 s render-blocking) showed the identical plugin
+ * stack — 16 stylesheets and 11 blocking head scripts (jquery-migrate,
+ * photoswipe, selectWoo, cart-fragments…) — on a page whose only purchase
+ * path is a link to the product page. The header cart badge needs none of
+ * it: WP-Optimize bypasses the page cache for visitors with cart items, so
+ * the server-rendered count is never stale (see molosoc_cart_link()). The
+ * PPL CZ plugin enqueues its map/label CSS late (they print in the footer),
+ * so the same pass also runs right before the footer assets print.
  */
+function molosoc_page_without_plugin_markup() {
+	return is_front_page() || is_page( 'hydratacni-navleky-molosoc' );
+}
+
 function molosoc_dequeue_unused_homepage_assets() {
-	if ( ! is_front_page() ) {
+	if ( ! molosoc_page_without_plugin_markup() ) {
 		return;
 	}
 
@@ -2036,12 +2161,27 @@ function molosoc_dequeue_unused_homepage_assets() {
 		'comgate',
 		'comgate-woocommerce',
 	);
+	if ( is_page( 'hydratacni-navleky-molosoc' ) ) {
+		// Landing Page B only (the homepage list above is left exactly as
+		// audited): WooCommerce's core frontend script (blockUI/js-cookie
+		// come along as its dependencies), the Customer Reviews masonry
+		// helper and the PPL CZ parcel-shop map scripts — none has a
+		// target on this page. Order-attribution/sourcebuster stay: they
+		// record where a later purchase started.
+		$scripts = array_merge( $scripts, array(
+			'woocommerce',
+			'cr-colcade',
+			'pplcz_map_js',
+			'pplcz_parcelshop-old-view',
+		) );
+	}
 	foreach ( $scripts as $handle ) {
 		wp_dequeue_script( $handle );
 		wp_deregister_script( $handle );
 	}
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_dequeue_unused_homepage_assets', 100 );
+add_action( 'wp_print_footer_scripts', 'molosoc_dequeue_unused_homepage_assets', 1 );
 
 /**
  * Header cart link — rendered by both header.php and front-page.php as a

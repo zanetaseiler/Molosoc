@@ -85,6 +85,41 @@ page's rendered CSS and `getComputedStyle`, not from the theme tokens.
 Note: page 580's content also references `Molosoc-Photos-Product-New-Sofa.jpg` only via
 `srcset`; B uses the `-2` variant the page actually displays.
 
+### WebP derivatives (Issue #153, mobile PageSpeed — LCP 9.2 s / score 60 before)
+
+Since Issue #153 the `<img>` tags no longer hot-link the uploads above: each photo is served
+from a theme-hosted WebP derivative set in `site/theme/assets/images/landing-b/`, resized to
+the width `landing-b.css` displays it at (`cwebp -q 78 -m 6 -sharp_yuv -resize <w> 0` from the
+live uploads; the hero "jpg" on the server is itself already a 1152×860 WebP). The template
+echoes `molosoc_landing_b_img_attrs( <base>, <widths>, <sizes> )` (functions.php) for
+`src`/`srcset`/`sizes`; the lightbox-style `<a href>` wrappers still point at the original
+full-size uploads. The hero is the LCP element: `fetchpriority="high"`, eager, and preloaded
+from `wp_head` (`molosoc_landing_b_head()`) with the identical srcset via
+`molosoc_landing_b_hero_image()`.
+
+| Upload | Derivative set | Widths | `sizes` |
+|---|---|---|---|
+| Hero-New-Baige | `lpb-hero-baige` | 480 / 800 / 1152 | `(max-width: 900px) 100vw, 700px` |
+| New-Sofa-2 (hero thumb) | `lpb-sofa-2` | 480 | `(max-width: 900px) 33vw, 230px` |
+| New-Sizes-WBG (hero thumb) | `lpb-sizes-wbg` | 480 | same |
+| New-Product.png (hero thumb) | `lpb-product-pack` | 480 | same |
+| New-Sofa-2 ("Co to je") | `lpb-sofa-2` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
+| Hero-New-White / New-Studio / New-Sizes-WBG-1 (size cards) | `lpb-hero-white` / `lpb-studio` / `lpb-sizes-wbg-1` | 480 / 960 | `230px` (matches the `.lpb-card img` 230px cap at every viewport) |
+| New-Apply-Cream-Ok | `lpb-apply-cream` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
+| Mami-Sofa / Holdind-It-First-Time-WBG (gallery) | `lpb-mami-sofa` / `lpb-holding-first-time` | 480 / 960 | `(max-width: 900px) 100vw, 430px` |
+| New-VariationCream-Ok | `lpb-variation-cream` | 480 / 960 | `(max-width: 900px) 100vw, 50vw` |
+| Product-Shot-2 | `lpb-product-shot-2` | 480 / 960 | `(max-width: 900px) 100vw, 400px` |
+| Opening-Package-Mami | `lpb-opening-package-mami` | 400 / 800 | `(max-width: 400px) 100vw, 400px` |
+
+Same Issue, same page only: the unused WooCommerce / select2 / photoswipe / Customer Reviews /
+PPL CZ / Comgate CSS+JS is dequeued (`molosoc_dequeue_unused_homepage_assets()`, now gated on
+`molosoc_page_without_plugin_markup()`, also run right before the footer assets print because
+PPL enqueues its CSS late), both Google Fonts stylesheets are printed as non-blocking
+`media="print"` + `onload` links from `wp_head` (page 580's Open Sans dropped — fallback-only
+in `landing-b.css`), `landing-b.js` is `defer`red, and `document_title_parts` strips
+"(varianta, koncept)" from the `<title>` (the WP post title is unchanged). Theme Version
+0.2.91. After the deploy: `purge-home-cache.yml -f page_ids=1037`, then re-run PageSpeed mobile.
+
 ## Draft creation + review path (after this PR is merged and the theme deployed)
 
 1. Theme deploy (production.yml on merge) puts the template, CSS and JS on the server.
