@@ -269,7 +269,8 @@
 
 .molosoc-orbit-drawer__heading h2 {
   color: var(--color-text);
-  font-size: var(--text-product-heading);
+  /* Issue #173: this H2 only, 0.85x its previous rendered size. */
+  font-size: calc(var(--text-product-heading) * 0.85);
   margin-top: var(--space-2xs);
   margin-left: auto;
   max-width: 40rem;
@@ -332,9 +333,12 @@
     display: contents;
   }
 
-  .molosoc-product-heading h2,
-  .molosoc-orbit-drawer__heading h2 {
+  .molosoc-product-heading h2 {
     font-size: var(--text-product-heading-mobile);
+  }
+
+  .molosoc-orbit-drawer__heading h2 {
+    font-size: calc(var(--text-product-heading-mobile) * 0.85);
   }
 
   .molosoc-hero-title__phrase {

@@ -116,7 +116,8 @@ class LandingAHeroCss(unittest.TestCase):
         self.assertIn("--text-product-heading-mobile: clamp(2.8125rem, 11.875vw, 3.4375rem);", self.css)
         self.assertIn("font-size: var(--text-product-heading);", _rule(self.css, ".molosoc-product-heading h2"))
         drawer = _rule(self.css, ".molosoc-orbit-drawer__heading h2")
-        self.assertIn("font-size: var(--text-product-heading);", drawer)
+        # Issue #173: this H2 alone is 0.85x the shared product-heading size.
+        self.assertIn("font-size: calc(var(--text-product-heading) * 0.85);", drawer)
         self.assertIn("text-align: right;", _rule(self.css, ".molosoc-orbit-drawer__heading"))
         self.assertNotIn("white-space: nowrap", phrase)
 
@@ -169,8 +170,12 @@ class LandingAHeroCss(unittest.TestCase):
         m = re.search(r"@media \(max-width: 860px\) \{(.*?)\n\}\n", self.css, re.S)
         self.assertIsNotNone(m)
         self.assertIn(
-            ".molosoc-product-heading h2,\n  .molosoc-orbit-drawer__heading h2 {\n"
-            "    font-size: var(--text-product-heading-mobile);",
+            ".molosoc-product-heading h2 {\n    font-size: var(--text-product-heading-mobile);",
+            m.group(1),
+        )
+        self.assertIn(
+            ".molosoc-orbit-drawer__heading h2 {\n"
+            "    font-size: calc(var(--text-product-heading-mobile) * 0.85);",
             m.group(1),
         )
         m760 = re.search(r"@media \(max-width: 760px\) \{(.*?)\n\}\n", self.css, re.S)
