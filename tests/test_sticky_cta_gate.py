@@ -78,17 +78,19 @@ class StickyCtaLandingA(unittest.TestCase):
     def setUp(self):
         self.css = PRODUCT_CSS.read_text(encoding="utf-8")
 
-    def test_global_pill_hidden_at_phone_widths_on_this_template_only(self):
+    def test_global_pill_hidden_at_phone_widths_on_landing_a_stylesheet(self):
         rule = (
             "@media (max-width: 760px) {\n"
-            "  .page-template-page-moisture-lock-foot-cover .molosoc-sticky-cta {\n"
+            "  .molosoc-sticky-cta {\n"
             "    display: none;\n"
             "  }\n"
             "}\n"
         )
         self.assertEqual(self.css.count(rule), 1)
-        # Scoped by the template body class — never a bare .molosoc-sticky-cta rule.
-        self.assertNotRegex(self.css, r"^\s*\.molosoc-sticky-cta\s*\{", )
+        # Bare selector (product.css loads only on the Landing A slugs); must not
+        # depend on a page-template-* body class, and must stay inside the media query.
+        self.assertNotIn("page-template-page-moisture-lock-foot-cover", self.css)
+        self.assertNotRegex(self.css, r"(?m)^\.molosoc-sticky-cta\s*\{")
 
     def test_phone_bar_stays_as_it_was(self):
         self.assertIn(".molosoc-sticky-buy {\n  display: none;\n}", self.css)
