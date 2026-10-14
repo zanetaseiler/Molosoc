@@ -98,8 +98,8 @@ therefore applies to the product page without exception. Since Issue #149
 the product page and on every Journal article's "why moisturizer alone
 doesn't fix it" section — `<model-viewer>`, the unpkg.com module and the
 4.1 MB `molosoc-3d.glb` are no longer loaded anywhere on the live site
-(mobile speed). (The `preview/product-preview.html` design artifact still
-shows the older rotating model-viewer version.)
+(mobile speed). (The `preview/product-preview.html` design artifact now uses the
+same static still; the `.glb` itself was deleted in Issue #151.)
 
 An earlier version of this hero also ran a scroll-pinned "glass drawer
 slides up over the fading/blurring model" sequence, per

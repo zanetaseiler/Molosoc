@@ -15,12 +15,14 @@ own corrected mistakes — so treat the mechanics below as a solid starting
 point, not battle-tested folklore. Verify the specific gotchas called out
 in §8 on whatever project this gets grafted onto.
 
-**Molosoc-specific note:** this pattern is live on the Product page hero
-(`site/theme/preview/product-preview.html`, `.molosoc-orbit-*`), using the
-real `molosoc-3d.glb` model as the rotating object instead of the default
-CSS ring look-alike below (§1.3's "project already has a specific 3D
-asset" branch). It's a sanctioned, reusable pattern for this site going
-forward — not a one-off confined to that single page — see
+**Molosoc-specific note:** this pattern is **not currently live** on the
+Product page. It was built there (`.molosoc-orbit-*`, using the real
+`molosoc-3d.glb` as the rotating object), then reverted; since Issue #149
+the Product hero and its `preview/product-preview.html` artifact are a
+static `molosoc-hero-still.webp` `<img>`, and the `.glb` was deleted in
+Issue #151. The pattern remains a sanctioned, reusable option for this
+site elsewhere — if a project needs a specific 3D asset again, it must be
+re-supplied (§1.3's "project already has a specific 3D asset" branch). See
 `docs/molosoc-animation-specification.md`'s "Product hero orbit" note
 under Product Animations for the exact scope of when it applies.
 

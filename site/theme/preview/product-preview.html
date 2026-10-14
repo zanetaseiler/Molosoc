@@ -14,14 +14,14 @@
   assets/js/sequential-text-reveal.js and
   docs/skills/Fixed-Image-Sequential-Text-Reveal.md). An orbit-scroll-drawer
   scroll-pin/fade/slide sequence (.claude/skills/orbit-scroll-drawer/SKILL.md)
-  was built and then explicitly reverted: the hero's molosoc-3d.glb model
-  still rotates continuously (its own <model-viewer> auto-rotate attribute,
-  independent of scroll/JS — still the one confirmed exception to
-  docs/molosoc-animation-specification.md's "Never spin products" rule, see
-  that doc's "Sanctioned pattern" note under Product Animations), but the
-  "cream you already own" content right below it is now a plain, firm
-  static block in normal document flow — not a glass panel sliding in over
-  the model.
+  was built and then explicitly reverted. The hero used to show the
+  molosoc-3d.glb model rotating continuously (model-viewer's own auto-rotate
+  attribute — at the time the one confirmed exception to
+  docs/molosoc-animation-specification.md's "Never spin products" rule);
+  since Issue #151 this preview mirrors the live page and shows the static
+  molosoc-hero-still.webp <img> instead (Issue #149). The "cream you
+  already own" content right below it is a plain, firm static block in
+  normal document flow — not a glass panel sliding in over the model.
 
   Content/structure source: docs/site-structure.md §4 "PRODUCT PAGE" —
   headings and H2/H3 order follow it exactly. Body copy is the locked copy
@@ -125,10 +125,11 @@
 
 <main id="main">
 
-  <!-- Hero: H1 + lede over the always-rotating molosoc-3d.glb model
-       (model-viewer's own auto-rotate — independent of scroll, never
-       paused). The "cream you already own" H2's 3 H3 points sit directly
-       below as static feature cards, in normal document flow — a firm
+  <!-- Hero: H1 + lede over a static still of the Molosoc model
+       (molosoc-hero-still.webp — the rotating model-viewer render of
+       molosoc-3d.glb was retired in Issue #151). The "cream you already
+       own" H2's 3 H3 points sit directly below as static feature cards, in
+       normal document flow — a firm
        static block under the hero, not a glass drawer sliding in over it
        (that scroll-pin mechanic was built, then explicitly reverted; see
        product.css's file-header comment). No JS runs on this section at
@@ -138,19 +139,14 @@
 
       <div class="molosoc-orbit-stage" aria-hidden="true">
         <div class="molosoc-orbit-glow"></div>
-        <model-viewer
+        <img
           class="molosoc-orbit-model"
-          src="../assets/models/molosoc-3d.glb"
+          src="https://molosoc.com/wp-content/uploads/2026/10/molosoc-hero-still.webp"
           alt=""
-          auto-rotate
-          rotation-per-second="10deg"
-          camera-orbit="0deg 75deg 105%"
-          exposure="0.95"
-          shadow-intensity="0.7"
-          shadow-softness="1"
-          environment-image="neutral"
-          loading="eager">
-        </model-viewer>
+          width="1440"
+          height="1440"
+          fetchpriority="high"
+          decoding="async">
       </div>
 
       <div class="molosoc-orbit-hero-copy">
@@ -452,14 +448,6 @@
   </span>
   <a class="molosoc-btn" href="#">Order Now</a>
 </div>
-
-<!-- model-viewer — renders the real molosoc-3d.glb as the hero's rotating
-     object. Google's web component, loaded the same way GSAP is loaded
-     elsewhere on this site: a single CDN <script>, no bundler. Its own
-     auto-rotate attribute drives the rotation — no page JS involved at
-     all. If this fails to load, the element falls back to empty space in
-     the hero; the rest of the page is unaffected. -->
-<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 
 <!-- GSAP + ScrollTrigger — for "Make the pedicure last" only (see
      assets/css/product.css's .molosoc-sequential-stage rules and

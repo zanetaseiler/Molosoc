@@ -190,7 +190,8 @@
   </section>
 
   <!-- 3. WHY ARE MY FEET SO DRY EVEN WHEN I MOISTURIZE — orbit-scroll-
-       drawer. The always-rotating molosoc-3d.glb model fades/blurs as a
+       drawer. a static still of the Molosoc model (molosoc-hero-still.webp — the
+       rotating model-viewer render of molosoc-3d.glb was retired in Issue #151) fades/blurs as a
        glass drawer carrying the 3 H3 points slides up over it. This
        pillar's copy puts the "routine/mechanism" content in the position
        Pillar 1/2 use their 4th section for, so it's built with that
@@ -200,19 +201,14 @@
 
       <div class="molosoc-mechanism-stage" aria-hidden="true">
         <div class="molosoc-mechanism-glow"></div>
-        <model-viewer
+        <img
           class="molosoc-mechanism-model"
-          src="../assets/models/molosoc-3d.glb"
+          src="https://molosoc.com/wp-content/uploads/2026/10/molosoc-hero-still.webp"
           alt=""
-          auto-rotate
-          rotation-per-second="10deg"
-          camera-orbit="0deg 75deg 105%"
-          exposure="0.95"
-          shadow-intensity="0.7"
-          shadow-softness="1"
-          environment-image="neutral"
-          loading="eager">
-        </model-viewer>
+          width="1440"
+          height="1440"
+          loading="lazy"
+          decoding="async">
       </div>
 
       <div class="molosoc-mechanism-intro">
@@ -366,11 +362,6 @@
     </div>
   </div>
 </footer>
-
-<!-- model-viewer — same CDN web component the product page uses for the
-     molosoc-3d.glb hero. Its own auto-rotate attribute drives rotation;
-     no page JS ever touches it. -->
-<script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
 
 <!-- GSAP + ScrollTrigger — for the "causes" (fixed-image-text-reveal) and
      "socks/tights" (editorial-feature-reveal) sections only. If this CDN
