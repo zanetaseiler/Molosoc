@@ -113,6 +113,7 @@ get_header();
 						<?php endif; ?>
 					</span>
 					<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
+					<span class="molosoc-hero-buy__note"><?php echo esc_html( $molosoc_is_cz ? '1 pár · Opakovaně použitelný · 100% nitril' : __( '1 pair · Reusable · 100% nitrile', 'molosoc' ) ); ?></span>
 				</div>
 			</div>
 

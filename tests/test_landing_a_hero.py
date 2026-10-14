@@ -203,5 +203,37 @@ class LandingAHeroCss(unittest.TestCase):
             self.assertEqual(out.stdout.strip(), "")
 
 
+class Issue179Reassurance(unittest.TestCase):
+    def setUp(self):
+        self.src = TEMPLATE.read_text(encoding="utf-8")
+        self.css = CSS.read_text(encoding="utf-8")
+
+    def test_note_sits_in_the_hero_buy_row_with_exact_czech_text(self):
+        row = _block(self.src, '<div class="molosoc-hero-buy">', "</div>")
+        self.assertIn('<span class="molosoc-hero-buy__note">', row)
+        self.assertIn("1 pár · Opakovaně použitelný · 100% nitril", row)
+        self.assertEqual(self.src.count("1 pár · Opakovaně použitelný · 100% nitril"), 1)
+        self.assertLess(row.index('class="molosoc-btn"'), row.index("molosoc-hero-buy__note"))
+
+    def test_note_is_secondary_full_width_and_static(self):
+        note = _rule(self.css, ".molosoc-hero-buy__note")
+        self.assertIsNotNone(note)
+        self.assertIn("flex: 0 0 100%;", note)
+        self.assertIn("var(--color-text-muted)", note)
+        self.assertIn("var(--text-label)", note)
+        self.assertNotIn("animation", note)
+
+    def test_sticky_pill_gets_a_static_light_halo_and_stays_dark(self):
+        tail = self.css[self.css.index("Issue #179: on this light page"):]
+        self.assertIn("@media (min-width: 761px) {\n  .molosoc-sticky-cta {", tail)
+        m = re.search(r"^  \.molosoc-sticky-cta \{(.*?)^  \}", tail, re.S | re.M)
+        self.assertIsNotNone(m)
+        rule = m.group(1)
+        self.assertIn("rgba(248, 247, 244", rule)
+        self.assertIn("var(--shadow-soft)", rule)
+        for forbidden in ("background", "animation", "outline", "border", "position", "display", "z-index"):
+            self.assertNotIn(forbidden, rule)
+
+
 if __name__ == "__main__":
     unittest.main()
