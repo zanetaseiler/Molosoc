@@ -127,6 +127,8 @@ class LandingAHeroCss(unittest.TestCase):
         top = _rule(self.css, ".molosoc-orbit-drawer__top")
         self.assertIn("justify-content: flex-end;", top)
         self.assertIn("margin-left: auto;", _rule(self.css, ".molosoc-orbit-drawer__heading h2"))
+        # Codex P2: the capped eyebrow box must also sit on the right edge.
+        self.assertIn("margin-left: auto;", _rule(self.css, ".molosoc-orbit-drawer__heading .molosoc-eyebrow"))
         self.assertIn("align-items: flex-end;\n    text-align: right;", self.css)
         self.assertNotIn("text-align: justify", self.css.split(".molosoc-orbit-drawer {")[1].split("Tablet portrait")[0])
 
