@@ -202,10 +202,22 @@ function molosoc_sticky_cta_hidden() {
 	return ( function_exists( 'is_cart' ) && is_cart() )
 		|| ( function_exists( 'is_checkout' ) && is_checkout() )
 		|| ( function_exists( 'is_product' ) && is_product() )
-		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
+		|| is_page( array(
+			// The legal pages, EN + CZ (Issue #177): no purchase pill over
+			// policy text. The CZ slugs are listed explicitly because they
+			// are regular Pages whose translation is not auto-matched (same
+			// is_page() convention as the other slug lists in this file).
+			'privacy-policies', 'terms-of-services', 'shipping-policy',
+			'zasady-ochrany-osobnich-udaju', 'obchodni-podminky', 'zasady-dopravy',
+		) );
 	// Landing Page B (hydratacni-navleky-molosoc) was excluded here while it
 	// shipped its own page-580-style bottom bar (Issue #122); since Issue #163
-	// it shows this global pill like every other public page.
+	// it shows this global pill like every other public page. Landing Page A
+	// ('moisture-lock-foot-cover' / 'hydratacni-navlek-na-nohy') was excluded
+	// until Issue #177 because of its own .molosoc-sticky-buy bar — but that
+	// bar is phone-only, so the page had no sticky CTA at all on desktop. The
+	// pill now shows there too; product.css hides it at <=760px, where the
+	// bar (same product URL, plus the price) takes over.
 }
 
 /**
@@ -284,19 +296,16 @@ function molosoc_enqueue_assets() {
 	// scroll animations). Unconditional: every page benefits.
 	wp_enqueue_script( 'molosoc-back-to-top', $theme_uri . '/assets/js/back-to-top.js', array(), $theme_version, true );
 
-	// Global bilingual sticky "Buy now" CTA — GitHub Issue #73. Hidden on
-	// Cart/Checkout (is_cart()/is_checkout() already resolve through the CZ
-	// kosik/pokladna filters in inc/woocommerce-lang.php, so this covers
-	// both languages with no separate slug check), on the single product
-	// page itself, and on the 'moisture-lock-foot-cover'/
-	// 'hydratacni-navlek-na-nohy' Pages — all three already have their own
-	// purchase CTAs (the hero's price+CTA row on desktop and
-	// .molosoc-sticky-buy on mobile, product.css) — so a second sticky buy
-	// pill there would duplicate and visually overlap them. The Page pair
-	// needs an explicit is_page() check because is_product() is false for
-	// them: they're regular WordPress Pages, not the WooCommerce product
-	// page (same is_page() convention used elsewhere in this file for
-	// slugs whose Czech translation isn't auto-matched).
+	// Global bilingual sticky "Buy now" CTA — GitHub Issue #73; every public
+	// page in both languages since Issue #177. Hidden on Cart/Checkout
+	// (is_cart()/is_checkout() already resolve through the CZ kosik/pokladna
+	// filters in inc/woocommerce-lang.php, so this covers both languages with
+	// no separate slug check), on the single product page itself (it is the
+	// pill's destination — the size is chosen there), and on the six legal
+	// pages (slugs in molosoc_sticky_cta_hidden()). Landing Page A
+	// ('moisture-lock-foot-cover' / 'hydratacni-navlek-na-nohy') keeps its
+	// phone-only .molosoc-sticky-buy bar (product.css); the pill shows there
+	// at wider widths only, so the two fixed CTAs never overlap.
 	//
 	// The window.molosocStickyCta data itself is NOT set here via
 	// wp_add_inline_script — see the wp_head hook below (molosoc_sticky_cta_hidden())

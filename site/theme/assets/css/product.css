@@ -879,5 +879,19 @@
   }
 }
 
+/* Issue #177: the global sticky "Buy now" pill (components.css
+   .molosoc-sticky-cta, injected by assets/js/sticky-cta.js) shows on this
+   template at tablet/desktop widths, where the bar above is display: none
+   and the page otherwise has no sticky CTA once the hero scrolls away. At
+   phone widths the bar carries the same product URL plus the price, so the
+   pill steps aside — two fixed buy CTAs would overlap bottom-right. Scoped
+   to this template's body class (page-template-page-moisture-lock-foot-cover,
+   both the CZ and the EN page) so no other page is affected. */
+@media (max-width: 760px) {
+  .page-template-page-moisture-lock-foot-cover .molosoc-sticky-cta {
+    display: none;
+  }
+}
+
 /* Touched to force WP-Optimize to rebuild a stale minify bundle that
    raced the previous deploy (same pattern as commit a265bc2). */
