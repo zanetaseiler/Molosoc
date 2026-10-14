@@ -55,10 +55,12 @@
  * CSS/JS (assets/css/landing-b.css, assets/js/landing-b.js, Google Fonts
  * Nunito Sans as on page 580 — loaded non-blocking, see functions.php) are
  * enqueued conditionally in functions.php on is_page('hydratacni-navleky-molosoc').
- * The same slug is noindexed and sitemap-excluded there (B is an
- * unpublished variant of A and must not compete with it if it is ever
- * published by mistake) and excluded from the global sticky "Koupit nyní"
- * pill (this page carries its own sticky CTA, like page 580 did).
+ * The same slug is excluded there from the global sticky "Koupit nyní"
+ * pill (this page carries its own sticky CTA, like page 580 did). It was
+ * also noindexed + sitemap-excluded while B was an unpublished variant of A
+ * (Issue #122); since Issue #159 the page is indexable and listed in the
+ * core sitemap, and inc/landing-b-schema.php prints its meta description
+ * and JSON-LD.
  */
 
 defined( 'ABSPATH' ) || exit;
