@@ -44,17 +44,22 @@ get_header();
 
 <main id="main">
 
-	<!-- Hero: H1 + lede over a STATIC still of the Molosoc model — a plain
+	<!-- Hero (Issue #165): a compact two-column block in normal document
+	     flow — H1 + lede + price/CTA on the left, a STATIC still of the
+	     Molosoc model on the right (stacked H1 → still → lede → price/CTA on
+	     phones) so the product, the 229 Kč price and the Order button all
+	     sit in the first screen without scrolling. The still is a plain
 	     <img> (molosoc-hero-still.webp, 1440x1440) since Issue #149; before
 	     that it was a <model-viewer> render of molosoc-3d.glb (its continuous
 	     spin was removed 2026-09-21 per explicit request; see
-	     docs/molosoc-animation-specification.md). fetchpriority="high" because
-	     it is the hero's largest above-the-fold element (LCP candidate).
-	     The "cream you already own" H2's 3 H3 points sit directly below
-	     as static feature cards,
-	     in normal document flow — a firm static block under the hero, not
-	     a glass drawer sliding in over it (that scroll-pin mechanic was
-	     built, then explicitly reverted; see product.css's file-header
+	     docs/molosoc-animation-specification.md). fetchpriority="high"
+	     because it is the hero's largest above-the-fold element (LCP
+	     candidate). Until #165 the hero was a 92vh box with an oversized
+	     headline floated over the still and the price/CTA lived in the
+	     "cream you already own" block below it — that block now keeps only
+	     its heading and its 3 H3 feature cards, in normal document flow (not
+	     a glass drawer sliding in over the hero — that scroll-pin mechanic
+	     was built, then explicitly reverted; see product.css's hero
 	     comment). No JS runs on this section at all. -->
 	<section class="molosoc-orbit-section">
 		<div class="molosoc-orbit-pin">
@@ -90,6 +95,25 @@ get_header();
 					<?php endif; ?>
 				</h1>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, žádné filtry. Opakovaně použitelný návlek, který udrží váš oblíbený krém na místě a usnadní pravidelnou péči.' : __( 'Real before/after results, no filters. A reusable foot cover that keeps your favorite cream in place and makes regular care easier.', 'molosoc' ) ); ?></p>
+				<?php
+				// Price + CTA row (moved up from the "cream you already own" block
+				// in Issue #165 so it is on the first screen). Same WooCommerce
+				// product URL and the same .molosoc-btn / .molosoc-price-group
+				// markup as the mobile .molosoc-sticky-buy bar at the bottom.
+				// translate="no" on every price group/note: browser auto-translate
+				// (e.g. Chrome for Czech visitors on the EN page) garbles the
+				// currency code — "229 CZK" was observed rendered as "229 CZH".
+				// Prices and ISO codes must survive machine translation verbatim.
+				?>
+				<div class="molosoc-hero-buy">
+					<span class="molosoc-price-group" translate="no">
+						<span class="molosoc-hero-buy__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
+						<?php if ( ! $molosoc_is_cz ) : ?>
+							<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
+						<?php endif; ?>
+					</span>
+					<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
+				</div>
 			</div>
 
 		</div>
@@ -101,19 +125,6 @@ get_header();
 				<div class="molosoc-orbit-drawer__heading">
 					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Dopřejte svému krému čas, aby mohl působit' : __( 'Your cream, finally working', 'molosoc' ) ); ?></p>
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Dopřejte svému krému čas, aby mohl působit' : __( 'Your cream, finally working', 'molosoc' ) ); ?></h2>
-				</div>
-				<div class="molosoc-orbit-drawer__buy">
-					<?php // translate="no" on every price group/note: browser auto-translate
-					      // (e.g. Chrome for Czech visitors on the EN page) garbles the
-					      // currency code — "229 CZK" was observed rendered as "229 CZH".
-					      // Prices and ISO codes must survive machine translation verbatim. ?>
-					<span class="molosoc-price-group" translate="no">
-						<span class="molosoc-orbit-drawer__price"><?php echo $molosoc_is_cz ? '229 Kč' : '€10'; ?></span>
-						<?php if ( ! $molosoc_is_cz ) : ?>
-							<span class="molosoc-price-note"><?php esc_html_e( 'Charged as 229 CZK at checkout.', 'molosoc' ); ?></span>
-						<?php endif; ?>
-					</span>
-					<a class="molosoc-btn" href="<?php echo esc_url( molosoc_product_url() ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Objednat nyní' : __( 'Order Now', 'molosoc' ) ); ?></a>
 				</div>
 			</div>
 			<div class="molosoc-orbit-drawer__cards">

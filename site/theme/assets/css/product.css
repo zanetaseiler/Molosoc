@@ -11,55 +11,68 @@
   text on top of it, same as every other page.
 */
 
-/* ---------- Hero — static model still, static layout ----------
+/* ---------- Hero — compact, in-flow two-column layout (Issue #165) ----------
+   Copy on the left (H1 → lede → price + Order button), the product still
+   on the right, both in normal document flow:
+
+       ┌───────────────────────────┬───────────────────────────┐
+       │ Návlek na nohy  (display-l)│                           │
+       │ lede (≤30rem)              │   product still, cropped  │
+       │ 229 Kč  [ OBJEDNAT NYNÍ ]  │                           │
+       └───────────────────────────┴───────────────────────────┘
+
+   Until Issue #165 this was a 92vh box with the H1 phrase at up to
+   8.75rem (≈122px at 1440) floated over a 60rem still nudged 190px down,
+   and the price + CTA lived in the "cream you already own" block BELOW
+   it — so the first desktop screen showed the headline and the top of
+   the product only; the 229 Kč price and the button needed a scroll.
+   Now the whole purchase decision sits in the first screen (hero ≈600px
+   tall under the header at 1440×900, ≈470px at 1280×720).
+
    The Molosoc model is a plain <img> still (molosoc-hero-still.webp,
    1440x1440) since Issue #149 — it replaced the <model-viewer> render of
-   molosoc-3d.glb (4.1 MB + the unpkg.com module) for mobile speed. The
-   model's continuous auto-rotate had already been removed 2026-09-21
-   (per explicit request: no animation anywhere on this page, the model
-   included).
-   Also gone: the orbit-scroll-drawer scroll-pin/fade/blur/slide mechanic
-   this section used to run (.claude/skills/orbit-scroll-drawer/SKILL.md).
-   Per explicit correction, that whole idea is reverted — the "cream you
-   already own" content (.molosoc-orbit-drawer below) is now a plain, firm
-   static block sitting in normal document flow directly under the hero,
-   not a glass panel sliding up over it. No scroll listener runs on this
-   page at all anymore (assets/js/orbit-scroll-drawer.js is no longer
-   loaded here — see product-preview.html). */
+   molosoc-3d.glb for mobile speed; the model's auto-rotate had already
+   been removed 2026-09-21 (per explicit request: no animation anywhere
+   on this page). The orbit-scroll-drawer pin/fade/blur/slide mechanic
+   this section once ran is long gone too (reverted per explicit
+   correction): the "cream you already own" content (.molosoc-orbit-drawer
+   below) is a plain static block after the hero and no JS runs on this
+   section at all. The .molosoc-orbit-* class names are kept from that era
+   so nothing downstream (tests, functions.php comments) has to be renamed. */
 
 .molosoc-orbit-section {
   position: relative;
   background: var(--color-cream);
 }
 
+/* Same outer box as .molosoc-orbit-drawer below (max-width + side
+   padding), so the headline's left edge lines up with the block heading
+   that follows. */
 .molosoc-orbit-pin {
   position: relative;
-  min-height: 92vh;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
+  column-gap: var(--space-l);
+  margin-inline: auto;
+  max-width: min(96vw, 84rem);
+  padding: var(--space-m) var(--space-l) var(--space-l);
 }
 
+/* The still's frame. overflow: hidden + the image's negative block
+   margins (see .molosoc-orbit-model) crop the empty top/bottom ~quarter
+   of the square render, so the product itself — not blank canvas —
+   fills the column. Decorative (aria-hidden in the template). */
 .molosoc-orbit-stage {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  /* Sent to the front layer, per explicit request — the model is tall
-     enough that its bottom edge bleeds past the hero into the block
-     below; this makes the rotating object paint on top of that content
-     where they overlap, instead of the block's text painting over it.
-     Bumped from 5 to 50 (still below base.css's .molosoc-skip-link at
-     100, the one thing that must always outrank it) per a follow-up
-     explicit request to make sure it's the topmost layer on this page —
-     higher than product.css's own .molosoc-sticky-buy bar (z-index: 30,
-     mobile only) and everything else here. */
-  z-index: 50;
-  /* The model box (formerly a transparent 960px model-viewer canvas, now
-     the <img> still) bleeds over the drawer's price/CTA row below the
-     hero — at z-index 50 it was swallowing clicks on the Order Now
-     button. The model is decorative only, so let clicks pass through. */
-  pointer-events: none;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 36rem;
+  justify-self: center;
+  /* The stage comes first in the markup (it did when it was the hero's
+     backdrop); `order` puts it in the right-hand column so the copy
+     reads first. */
+  order: 2;
 }
 
 /* Soft ambient light behind the model. Originally the brand's warm peach
@@ -69,74 +82,53 @@
    silicone/silver material better than a warm accent color would. */
 .molosoc-orbit-glow {
   position: absolute;
-  width: min(90vw, 64rem);
-  aspect-ratio: 1 / 1;
+  inset: 8% 4%;
   border-radius: 50%;
   background: radial-gradient(
     circle,
     color-mix(in srgb, #d8dbde 55%, transparent) 0%,
     transparent 72%
   );
-  filter: blur(50px);
-  /* Nudged down with the model below, so the glow stays centered behind it. */
-  transform: translateY(190px);
+  filter: blur(40px);
 }
 
 .molosoc-orbit-model {
+  /* An <img> (Issue #149): the 1:1 intrinsic ratio (width/height
+     attributes 1440x1440) gives the height, so height: auto keeps it
+     square and lets the browser reserve the box before the file arrives
+     (no layout shift). object-fit: contain is a no-op while the ratio
+     matches but keeps a differently-cropped replacement still from
+     stretching. position: relative so it paints over the absolutely
+     positioned glow. */
   position: relative;
-  /* Now an <img> (Issue #149). Same square footprint as the old
-     model-viewer canvas: the width rule is unchanged and the image's
-     1:1 intrinsic ratio (width/height attributes 1440x1440) gives the
-     height, so height: auto keeps it square and lets the browser
-     reserve the box before the file arrives (no layout shift).
-     object-fit: contain is a no-op while the ratio matches but keeps a
-     differently-cropped replacement still from stretching. */
   display: block;
-  width: min(95vw, 60rem);
+  width: min(100%, 36rem);
   height: auto;
   max-width: 100%;
   object-fit: contain;
   background-color: transparent;
-  /* Nudged down from dead-center so the headline above has breathing room
-     instead of the model's top edge sitting right under the paragraph. */
-  transform: translateY(190px);
+  /* The product occupies roughly the middle half of the square render
+     (≈26%–78% of its height). Pull the image up and shorten its box by
+     14% of its width each side; the frame's overflow: hidden clips the
+     rest, so the stage is 0.72× the image width tall. */
+  margin-block: -14%;
 }
 
-/* Editorial headline composition (2026-09-21, per explicit request) —
-   replaces the earlier narrow, centered 3-line stack. The H1 text is
-   unchanged; it's split into two spans (.molosoc-hero-title__phrase =
-   "Návlek na nohy" / "Foot Cover", .molosoc-hero-title__brand =
-   "Molosoc") and the copy block becomes a two-column grid spanning the
-   hero's full width between the gutters:
-
-       ┌──────────────────────────────────────────────┐
-       │ Návlek na nohy   (oversized, tracked, 1 line) │  row 1: phrase
-       │ lede (left, ≤30rem)                           │  row 2: lede
-       └──────────────────────────────────────────────┘
-                     [ 3D model, centered below ]
-
-   The phrase runs across the top of the hero with the lede under its
-   left end. The brand word ("Molosoc") stays in the H1 for screen
-   readers and search engines but is visually hidden — it was first set
-   bottom-right as a tracked-out second element and then removed from
-   view per explicit follow-up ("Molosoc on the right side hero needs to
-   go"). The H1 is display: contents so the phrase span and the lede <p>
-   are direct grid items — the accessible name stays the full headline.
-   Tenor Sans comes from base.css's h1 rule (var(--font-display)); no
-   decorative graphics. */
+/* Editorial two-part headline (2026-09-21): the H1 text is unchanged;
+   it's split into two spans (.molosoc-hero-title__phrase = "Návlek na
+   nohy" / "Foot Cover", .molosoc-hero-title__brand = "Molosoc"). The
+   brand word stays in the H1 for screen readers and search engines but
+   is visually hidden (removed from view per explicit follow-up —
+   "Molosoc on the right side hero needs to go"). The H1 is
+   display: contents so the phrase span, the lede <p> and the price/CTA
+   row are direct flex items of the copy column — the accessible name
+   stays the full headline. Tenor Sans comes from base.css's h1 rule
+   (var(--font-display)); no decorative graphics. */
 .molosoc-orbit-hero-copy {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 6vh;
-  padding: 0 var(--section-padding-x);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas:
-    "phrase"
-    "lede";
-  row-gap: var(--space-m);
-  align-items: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-s);
   text-align: left;
   color: var(--color-text);
 }
@@ -145,15 +137,14 @@
   display: contents;
 }
 
+/* Issue #165: brought down from the oversized clamp(3.75rem, 8.5vw,
+   8.75rem) single-line treatment to the site's display-l scale
+   (≈58px at 1440, ≈45px at 1024), wrapping normally. */
 .molosoc-hero-title__phrase {
-  grid-area: phrase;
   display: block;
-  /* 8.5vw ≈ 122px at 1440 / 87px at 1024 — a single line of "Návlek na
-     nohy" spans roughly two thirds of the hero width at either size. */
-  font-size: clamp(3.75rem, 8.5vw, 8.75rem);
-  line-height: 0.95;
+  font-size: clamp(2.5rem, 3.2vw + 0.75rem, 3.75rem);
+  line-height: 1;
   letter-spacing: 0.035em;
-  white-space: nowrap;
   color: var(--color-text);
 }
 
@@ -173,66 +164,28 @@
 }
 
 .molosoc-orbit-hero-copy p {
-  grid-area: lede;
   color: var(--color-text-muted);
   margin: 0;
   max-width: 30rem;
   font-size: var(--text-body-l);
 }
 
-/* Between phone and full desktop let the single-line phrase wrap rather
-   than run past the gutters. */
-@media (max-width: 1024px) {
-  .molosoc-hero-title__phrase {
-    white-space: normal;
-    font-size: clamp(3.25rem, 9vw, 6rem);
-  }
-}
-
-/* ---------- The second block — "The cream you already own, finally
-   working" — a firm, static section sitting in normal document flow
-   directly under the hero, per explicit correction. Every earlier version
-   of this (glass panel, sliding up from below the viewport, translucent
-   over the model) is gone: no position:absolute, no transform, no
-   backdrop-filter, no scroll dependency of any kind. Just plain content on
-   the page background, same as every other section here. ---------- */
-
-.molosoc-orbit-drawer {
-  position: relative;
-  margin-inline: auto;
-  max-width: min(96vw, 84rem);
-  padding: var(--space-xl) var(--space-l) var(--space-l);
-}
-
-.molosoc-orbit-drawer__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-}
-
-.molosoc-orbit-drawer__heading {
-  margin-top: 80px;
-}
-
-.molosoc-orbit-drawer__heading h2 {
-  color: var(--color-text);
-  font-size: var(--text-display-m);
-  margin-top: var(--space-2xs);
-  max-width: 26rem;
-}
-
-.molosoc-orbit-drawer__buy {
+/* Price + "Objednat nyní / Order Now" row — moved up here from the
+   "cream you already own" block in Issue #165 so it is on the first
+   screen. Same .molosoc-btn and .molosoc-price-group markup as before
+   (and as the mobile .molosoc-sticky-buy bar at the bottom of the file). */
+.molosoc-hero-buy {
   display: flex;
   align-items: center;
-  gap: var(--space-s);
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: var(--space-s) var(--space-m);
+  margin-top: var(--space-2xs);
 }
 
-.molosoc-orbit-drawer__price {
+.molosoc-hero-buy__price {
   font-family: var(--font-display);
   font-size: var(--text-display-m);
+  line-height: 1;
   color: var(--color-text);
 }
 
@@ -254,6 +207,38 @@
   color: var(--color-text-muted);
   letter-spacing: 0.01em;
   line-height: 1.35;
+}
+
+/* ---------- The second block — "The cream you already own, finally
+   working" — a firm, static section sitting in normal document flow
+   directly under the hero, per explicit correction. Every earlier version
+   of this (glass panel, sliding up from below the viewport, translucent
+   over the model) is gone: no position:absolute, no transform, no
+   backdrop-filter, no scroll dependency of any kind. Just plain content on
+   the page background, same as every other section here. Since Issue
+   #165 it is heading + three cards only; the price/CTA row that used to
+   sit beside the heading is in the hero above. ---------- */
+
+.molosoc-orbit-drawer {
+  position: relative;
+  margin-inline: auto;
+  max-width: min(96vw, 84rem);
+  padding: var(--space-m) var(--space-l) var(--space-l);
+}
+
+.molosoc-orbit-drawer__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+}
+
+.molosoc-orbit-drawer__heading h2 {
+  color: var(--color-text);
+  font-size: var(--text-display-m);
+  margin-top: var(--space-2xs);
+  max-width: 26rem;
 }
 
 .molosoc-orbit-drawer__cards {
@@ -285,120 +270,77 @@
   max-width: none;
 }
 
-/* ---------- Mobile — smaller model, hero copy in normal flow below it,
-   cards stack full-width. Purely responsive sizing now — no pin/scroll
-   overrides needed since the base rules are already static. ---------- */
+/* ---------- Tablet portrait + phones — the hero stacks into one centered
+   column: H1 → product still → lede → price/CTA (the price/CTA row hands
+   over to the fixed .molosoc-sticky-buy bar at ≤760px, see below), all
+   inside the first screen. 860px rather than the page's usual 760px so a
+   portrait tablet gets the stack instead of two cramped ~280px
+   columns. ---------- */
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .molosoc-orbit-pin {
-    min-height: auto;
-    flex-direction: column;
-    /* padding: var(--space-xl) 0 (120px top AND bottom) used to stack with
-       .molosoc-orbit-stage's own margin-bottom (50px, added per explicit
-       request) plus .molosoc-orbit-drawer's own 72px top padding plus
-       .molosoc-orbit-drawer__heading's 30px margin-top below — 272px of
-       combined gap in testing, not the ~80px actually intended, and
-       pushed the heading down far enough to visually collide with the
-       fixed .molosoc-sticky-buy bar at the bottom of the screen (read as
-       "overlapping" — confirmed via an actual mobile screenshot). Keeping
-       the top padding (space between the section start and the H1) but
-       dropping the bottom one — the space below the stage is now
-       entirely owned by the stage's own margin-bottom instead. */
-    padding: var(--space-xl) 0 0;
-  }
-
-  .molosoc-orbit-stage {
-    position: relative;
-    height: 22rem;
-    /* Hard safety net: .molosoc-orbit-model/.molosoc-orbit-glow both carry
-       a translateY(190px) nudge tuned for the desktop stage's 92vh box —
-       against this much shorter mobile box that pushed the (still
-       z-index: 5, paints-on-top) model down far enough to bleed into
-       .molosoc-orbit-hero-copy below, visually smearing the model over
-       the H1/paragraph text (confirmed via an actual mobile screenshot —
-       the two were overlapping, not just close). Overriding the offset
-       below is the real fix; this stays as a hard clip regardless. */
-    overflow: hidden;
-    /* On desktop the stage comes first in markup and the model
-       deliberately paints over the copy (z-index: 5, see the base rule's
-       comment) — an intentional overlap that only works with room to
-       spare on a big canvas. On mobile there's no overlap anymore (see
-       above), so DOM order alone put the model ABOVE the headline in the
-       stacked, single-column layout — per explicit request, the reading
-       order should be headline → sub-headline → rotating object.
-       .molosoc-orbit-pin is already flex-direction: column here, so a
-       plain order swap (no markup change) is enough; the stage is
-       aria-hidden anyway so this doesn't affect screen-reader order. */
-    order: 2;
-    /* Breathing room before .molosoc-orbit-drawer (sibling of
-       .molosoc-orbit-pin, starts right after it) — per explicit request. */
-    margin-bottom: 50px;
-  }
-
-  .molosoc-orbit-model {
-    /* Was min(95vw, 44rem) — at a typical 390px-wide phone that's a
-       370px box inside the 352px-tall (22rem) stage, already filling it
-       edge to edge with only ~15-30px of clip margin top/bottom. The
-       model keeps auto-rotating continuously (by design, never paused),
-       and its silhouette within that fixed-size canvas shifts as it
-       spins — with that little headroom, at some rotation angles it
-       visually crowded right up against the stage's own clip line, just
-       above the "cream you already own" heading (per explicit
-       follow-up: it's the shoe's own spin, not the phone's orientation).
-       overflow: hidden on the stage means it can never actually bleed
-       into the heading, but shrunk it further so there's real margin on
-       every side regardless of rotation angle, not just a few px. */
-    width: min(78vw, 32rem);
-    height: auto;
-    /* Smaller nudge to match the smaller box — enough to keep the model
-       feeling grounded/centered without pushing it back toward the
-       stage's bottom edge. */
-    transform: translateY(8px);
-  }
-
-  .molosoc-orbit-glow {
-    transform: translateY(8px);
-  }
-
-  .molosoc-orbit-hero-copy {
-    position: relative;
-    left: auto;
-    top: auto;
-    max-width: none;
-    padding: 0 var(--section-padding-x) var(--space-l);
-    /* Single centered column on phones: phrase (wrapping, still the
-       dominant element) → lede, above the model; the brand span stays
-       visually hidden here too. The H1 stays display: contents, so
-       `order` puts the phrase first regardless of the language's span
-       order. */
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-s);
+    max-width: none;
+    padding: var(--space-m) var(--section-padding-x) var(--space-l);
     text-align: center;
-    order: 1;
+  }
+
+  /* The copy wrapper dissolves so the still can sit between the H1 and
+     the lede: phrase, still, lede and price/CTA become direct flex items
+     of .molosoc-orbit-pin and `order` arranges them. The H1 is already
+     display: contents, so its phrase span is a flex item regardless of
+     each language's span order; the brand span stays visually hidden. */
+  .molosoc-orbit-hero-copy {
+    display: contents;
   }
 
   .molosoc-hero-title__phrase {
     order: 1;
-    white-space: normal;
-    font-size: clamp(2.75rem, 13vw, 4rem);
-    line-height: 1;
+    font-size: clamp(2.25rem, 9.5vw, 2.75rem);
     letter-spacing: 0.03em;
+  }
+
+  .molosoc-orbit-stage {
+    order: 2;
+    max-width: 20rem;
   }
 
   .molosoc-orbit-hero-copy p {
     order: 3;
-    margin: var(--space-2xs) auto 0;
-    max-width: 30rem;
+    margin: 0 auto;
+  }
+
+  .molosoc-hero-buy {
+    order: 4;
+    justify-content: center;
+  }
+
+  .molosoc-price-group {
+    align-items: center;
+  }
+}
+
+/* ---------- Mobile — the "cream" block's heading and cards stack
+   full-width. ---------- */
+
+@media (max-width: 760px) {
+  /* At phone widths the fixed .molosoc-sticky-buy bar (bottom of this
+     file) already keeps the same price + Order button on screen at all
+     times, so the hero's own row is hidden here: the first phone screen
+     is H1 → product still → lede, with price/CTA in the bar underneath
+     (measured at 390×664, Safari's visible viewport, the lede ends ≈40px
+     above the bar). Keeping the hero row too made it wrap under the bar
+     on short phones (the EN price note widens the row). Exactly the
+     widths where the bar is hidden (>760px) show the hero row instead,
+     so there is always exactly one price/CTA pair in view. */
+  .molosoc-hero-buy {
+    display: none;
   }
 
   .molosoc-orbit-drawer {
-    /* Top padding (var(--space-l), 72px) dropped — same reasoning as
-       .molosoc-orbit-pin above: it was stacking with the stage's
-       margin-bottom and the heading's own margin-top into far more gap
-       than intended. The heading's 30px margin-top is now the only
-       spacing above it. */
     padding: 0 var(--section-padding-x) var(--space-l);
   }
 
@@ -406,15 +348,6 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-  }
-
-  /* margin-top: 80px (base rule, unscoped) is a desktop value, sized for
-     the large bleed gap the model's 190px translateY leaves above this
-     block. Mobile's own translateY(24px) + the margin-bottom just added
-     to .molosoc-orbit-stage already provide that spacing, so this on top
-     of it was excessive — per explicit request, shrunk to 30px. */
-  .molosoc-orbit-drawer__heading {
-    margin-top: 30px;
   }
 
   .molosoc-orbit-drawer__heading h2 {
