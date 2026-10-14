@@ -55,9 +55,11 @@
  * CSS/JS (assets/css/landing-b.css, assets/js/landing-b.js, Google Fonts
  * Nunito Sans as on page 580 — loaded non-blocking, see functions.php) are
  * enqueued conditionally in functions.php on is_page('hydratacni-navleky-molosoc').
- * The same slug is excluded there from the global sticky "Koupit nyní"
- * pill (this page carries its own sticky CTA, like page 580 did). It was
- * also noindexed + sitemap-excluded while B was an unpublished variant of A
+ * The global sticky "Koupit nyní" pill (Issue #73, sticky-cta.js) shows on
+ * this page like everywhere else since Issue #163 — the page-580-style
+ * bottom bar (.lpb-sticky) it carried until then was removed with that
+ * Issue so the two never overlap. The slug was also noindexed +
+ * sitemap-excluded while B was an unpublished variant of A
  * (Issue #122); since Issue #159 the page is indexable and listed in the
  * core sitemap, and inc/landing-b-schema.php prints its meta description
  * and JSON-LD.
@@ -377,14 +379,13 @@ get_header();
 
 </main>
 
-<!-- Sticky CTA — page 580 pinned its header "Objednat nyní" button to the top of the
-     viewport (Thrive data-tve-scroll sticky). Rebuilt as a bottom bar that
-     assets/js/landing-b.js hides while the hero CTA is on screen; without JS it is
-     simply always visible. functions.php excludes this slug from the global
-     sticky "Koupit nyní" pill so the two never overlap. -->
-<div class="lpb-sticky" id="lpb-sticky" translate="no">
-	<span class="lpb-sticky__price"><?php echo esc_html( $lpb_price ); ?></span>
-	<a class="lpb-btn lpb-sticky__btn" href="<?php echo esc_url( $lpb_product_url ); ?>">Objednat nyní</a>
-</div>
-
-<?php get_footer(); ?>
+<?php
+/*
+ * Sticky CTA: page 580 pinned its header "Objednat nyní" button (Thrive
+ * data-tve-scroll); B rebuilt that as its own .lpb-sticky bottom bar until
+ * Issue #163 replaced it with the site-wide sticky "Koupit nyní" pill that
+ * every other public page shows (functions.php enqueues sticky-cta.js and
+ * prints window.molosocStickyCta here like anywhere else) — same button,
+ * every device, no page-specific markup.
+ */
+get_footer();

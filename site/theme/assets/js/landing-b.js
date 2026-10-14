@@ -1,15 +1,16 @@
 /*
   Landing Page B (page-hydratacni-navleky-molosoc.php) — enqueued by
-  functions.php only on that page. Two small progressive enhancements:
+  functions.php only on that page. One small progressive enhancement:
 
   1. Story tabs ("Jak MOLOSOC vznikl"): page 580 used Thrive's tabs module.
      Without JS all three panels stay visible stacked (landing-b.css); with
      JS the .is-enhanced class turns them into real tabs with arrow-key
      navigation.
-  2. Sticky CTA bar: hidden while the hero's own "Objednat" button is on
-     screen, shown once the visitor scrolls past it — the behaviour of page
-     580's pinned header button. Without IntersectionObserver the bar is
-     simply always visible.
+
+  The page's own sticky CTA bar (shown once the hero button scrolled away,
+  as page 580's pinned header button did) was removed in Issue #163 — the
+  site-wide sticky "Koupit nyní" pill (assets/js/sticky-cta.js) is used
+  here like on every other page.
 */
 (function () {
 	"use strict";
@@ -58,17 +59,7 @@
 		} );
 	} );
 
-	// 2. Sticky CTA bar
-	var bar  = document.getElementById( "lpb-sticky" );
-	var hero = document.getElementById( "lpb-hero-cta" );
-	if ( bar && hero && "IntersectionObserver" in window ) {
-		bar.classList.add( "is-hidden" );
-		new IntersectionObserver( function ( entries ) {
-			entries.forEach( function ( entry ) {
-				// Hidden while the hero CTA is visible or still below the fold.
-				var pastHero = ! entry.isIntersecting && entry.boundingClientRect.top < 0;
-				bar.classList.toggle( "is-hidden", ! pastHero );
-			} );
-		}, { threshold: 0 } ).observe( hero );
-	}
+	// The page's own sticky bar (#lpb-sticky, hidden/shown around the hero
+	// CTA) was removed in Issue #163: the site-wide sticky "Koupit nyní" pill
+	// (assets/js/sticky-cta.js) covers this page now.
 })();

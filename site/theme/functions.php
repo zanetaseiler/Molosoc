@@ -202,10 +202,10 @@ function molosoc_sticky_cta_hidden() {
 	return ( function_exists( 'is_cart' ) && is_cart() )
 		|| ( function_exists( 'is_checkout' ) && is_checkout() )
 		|| ( function_exists( 'is_product' ) && is_product() )
-		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) )
-		// Landing Page B (Issue #122) ships its own sticky CTA bar, like the
-		// page-580 original it rebuilds — see page-hydratacni-navleky-molosoc.php.
-		|| is_page( 'hydratacni-navleky-molosoc' );
+		|| is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
+	// Landing Page B (hydratacni-navleky-molosoc) was excluded here while it
+	// shipped its own page-580-style bottom bar (Issue #122); since Issue #163
+	// it shows this global pill like every other public page.
 }
 
 /**

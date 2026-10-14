@@ -3,8 +3,8 @@
 No PHP runtime is needed: these assert that the template reproduces page
 580's structure/copy, that ONLY the operational purchase details changed
 (price, shipping, size L, CTA target), and that functions.php wires the
-slug exactly once into each gate (assets, sticky CTA) and out of the
-noindex / sitemap-exclusion gates (indexable since Issue #159)
+slug exactly once into the assets gate and out of the sticky-CTA (Issue
+#163), noindex and sitemap-exclusion gates (indexable since Issue #159)
 without touching the live Page A branches.
 
 Issue #153 (mobile PageSpeed, LCP 9.2 s): every photo is served from a
@@ -36,7 +36,7 @@ TITLE = "Hydratační maska na nohy na opakované použití | Molosoc"
 H1 = "Maska na nohy, kterou použijete znovu<br>— s krémem, který už máte"
 
 # Section headings of page 580, in its own order (16 Thrive page sections;
-# the first two are the sticky header, which the theme header + sticky bar
+# the first two are the sticky header, which the theme header + global pill
 # replace).
 SECTION_HEADINGS = [
     "Maska na nohy, kterou použijete znovu",  # Issue #161 H1 (page 580: "Namazané nohy.")
@@ -337,7 +337,7 @@ class LandingBTemplate(unittest.TestCase):
         self.assertIn("39.5–44", self.tpl)
         # Every CTA goes through the shared CZ product URL helper.
         self.assertIn("molosoc_product_url( 'cz' )", self.tpl)
-        self.assertEqual(self.tpl.count("esc_url( $lpb_product_url )"), 4)
+        self.assertEqual(self.tpl.count("esc_url( $lpb_product_url )"), 3)  # hero, dark band, order card (own sticky bar gone, Issue #163)
         self.assertNotIn("/product/", self.body)
         # Presale scarcity line is kept verbatim but flagged for the owner.
         self.assertIn("Počet kusů je omezený", self.body)
@@ -365,10 +365,17 @@ class LandingBTemplate(unittest.TestCase):
         # The global enqueue and the non-blocking print share one URL source.
         self.assertIn("wp_enqueue_style( 'molosoc-fonts', molosoc_fonts_url(), array(), null );", fn)
         self.assertEqual(fn.count("fonts.googleapis.com/css2?"), 2)
-        # Sticky "Koupit nyní" pill hidden on B (own sticky bar).
+        # Issue #163: the global sticky "Koupit nyní" pill shows on B like on
+        # every other public page — B is NOT in the hidden gate (the slug may
+        # only appear in its comment), and its own bottom bar is gone.
         hidden = fn[fn.index("function molosoc_sticky_cta_hidden()"):]
-        hidden = hidden[: hidden.index("}")]
-        self.assertIn(f"is_page( '{SLUG}' )", hidden)
+        hidden = hidden[: hidden.index("\n}")]
+        self.assertNotIn(f"'{SLUG}'", hidden)
+        self.assertIn("is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );", hidden)
+        self.assertNotIn("lpb-sticky", self.body)
+        self.assertNotIn("id=\"lpb-sticky\"", self.tpl)
+        self.assertNotIn("Objednat nyní", self.body)
+        self.assertIn("sticky-cta.js", fn)
         # Indexable since Issue #159: neither noindexed nor sitemap-excluded
         # (the slug may only appear in comments there, never as a PHP string).
         robots = fn[fn.index("add_filter( 'wp_robots'"):]
@@ -390,16 +397,16 @@ class LandingBTemplate(unittest.TestCase):
                 part = part.strip()
                 if not part:
                     continue
-                self.assertTrue(
-                    part.startswith(".lpb") or part.startswith("body:has(.lpb-sticky)"),
-                    f"unscoped selector: {part}",
-                )
+                self.assertTrue(part.startswith(".lpb"), f"unscoped selector: {part}")
         # The section-wide default width must stay at single-class specificity
         # (:where) so .lpb-video / .lpb-gallery / .lpb-founders__photo keep
         # their narrower max-widths (live regression: 1080px-wide YouTube embed).
         self.assertIn(".lpb-section > :where(", self.css_rules)
         self.assertIn("data-lpb-tabs", self.js)
-        self.assertIn("lpb-sticky", self.js)
+        # Issue #163: no page-specific sticky code left in CSS/JS (comments aside).
+        self.assertNotIn("lpb-sticky", self.css_rules)
+        self.assertNotIn("getElementById( \"lpb-sticky\" )", self.js)
+        self.assertNotIn("IntersectionObserver", self.js)
 
 
 if __name__ == "__main__":
