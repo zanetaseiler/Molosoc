@@ -114,10 +114,9 @@ function molosoc_sitemap_excluded_page_ids() {
 		'kosik', 'pokladna',
 		'home-2', 'blog-2', 'blog-legacy-2018',
 		'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',
-		// Landing Page B (Issue #122): an unpublished variant of the live CZ
-		// landing page, rebuilt from page 580 — never listed, see
-		// page-hydratacni-navleky-molosoc.php.
-		'hydratacni-navleky-molosoc',
+		// Landing Page B (hydratacni-navleky-molosoc, page 1037) was listed
+		// here while it was an unpublished variant (Issue #122); since
+		// Issue #159 it is a normal indexable page, so it is NOT excluded.
 	);
 	foreach ( $slugs as $slug ) {
 		$page = get_page_by_path( $slug );
@@ -140,11 +139,11 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
 
 // noindex for thin/utility URLs that stay reachable: the post-purchase
 // thank-you page, the empty author archives, the empty Uncategorized
-// archive, Thrive's symbol-taxonomy archive pages, and Landing Page B
-// (Issue #122 — a variant of the live CZ landing page that must never
-// compete with it in search, even if it is published for review).
+// archive and Thrive's symbol-taxonomy archive pages. Landing Page B
+// (hydratacni-navleky-molosoc) was noindexed here while it was an
+// unpublished variant (Issue #122); it is indexable since Issue #159.
 add_filter( 'wp_robots', function ( $robots ) {
-	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( array( 'thank-you', 'hydratacni-navleky-molosoc' ) ) ) {
+	if ( is_author() || is_category( 'uncategorized' ) || is_tax( 'tcb_symbols_tax' ) || is_page( 'thank-you' ) ) {
 		$robots['noindex'] = true;
 	}
 	return $robots;

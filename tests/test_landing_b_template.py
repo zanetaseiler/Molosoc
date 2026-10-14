@@ -3,7 +3,8 @@
 No PHP runtime is needed: these assert that the template reproduces page
 580's structure/copy, that ONLY the operational purchase details changed
 (price, shipping, size L, CTA target), and that functions.php wires the
-slug exactly once into each gate (assets, sticky CTA, noindex, sitemap)
+slug exactly once into each gate (assets, sticky CTA) and out of the
+noindex / sitemap-exclusion gates (indexable since Issue #159)
 without touching the live Page A branches.
 
 Issue #153 (mobile PageSpeed, LCP 9.2 s): every photo is served from a
@@ -337,11 +338,16 @@ class LandingBTemplate(unittest.TestCase):
         hidden = fn[fn.index("function molosoc_sticky_cta_hidden()"):]
         hidden = hidden[: hidden.index("}")]
         self.assertIn(f"is_page( '{SLUG}' )", hidden)
-        # noindex + sitemap exclusion.
-        self.assertIn(f"is_page( array( 'thank-you', '{SLUG}' ) )", fn)
+        # Indexable since Issue #159: neither noindexed nor sitemap-excluded
+        # (the slug may only appear in comments there, never as a PHP string).
+        robots = fn[fn.index("add_filter( 'wp_robots'"):]
+        robots = robots[: robots.index("} );")]
+        self.assertIn("is_page( 'thank-you' )", robots)
+        self.assertNotIn(f"'{SLUG}'", robots)
         excluded = fn[fn.index("function molosoc_sitemap_excluded_page_ids()"):]
         excluded = excluded[: excluded.index("foreach ( $slugs as $slug )")]
-        self.assertIn(f"'{SLUG}',", excluded)
+        self.assertNotIn(f"'{SLUG}'", excluded)
+        self.assertIn("'hydratacni-navleky-na-nohy-2', 'doprava-a-platba', 'home-cestina',", excluded)
         # Live Page A gates untouched: the landing pair still appears exactly
         # where it did before (preconnect, product.css branch, sticky hide).
         self.assertEqual(fn.count("array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' )"), 3)

@@ -1,4 +1,5 @@
-"""Issue #155: JSON-LD for the CZ landing page /cz/hydratacni-navleky-molosoc/.
+"""Issue #155 / #159: meta description + JSON-LD for the CZ landing page
+/cz/hydratacni-navleky-molosoc/.
 
 Static checks plus php-cli runs of inc/landing-b-schema.php against a tiny
 WordPress stub (skipped when php is not installed).
@@ -29,7 +30,9 @@ $permalink = $argv[3];
 function add_action($h, $cb) {}
 function is_page($s) { global $slug_match; return $slug_match && $s === 'hydratacni-navleky-molosoc'; }
 function get_permalink() { global $permalink; return $permalink; }
-function wp_get_document_title() { return 'Hydratační návleky na nohy </script> & MOLOSOC'; }
+// wp_get_document_title() is HTML-escaped by WordPress (Issue #159: the en dash came out as the literal &#8211;).
+function wp_get_document_title() { return 'Hydratační návleky na nohy &#8211; MOLOSOC &lt;/script&gt; &amp; co'; }
+function esc_attr($s) { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
 function molosoc_product_url($l) { return 'https://molosoc.com/cz/produkt/hydratacni-navlek-na-nohy/'; }
 function wp_json_encode($d, $f = 0) { return json_encode($d, $f); }
 if ($lang !== '') { function pll_current_language() { global $lang; return $lang; } }
@@ -53,6 +56,13 @@ def blocks(out):
     return re.findall(r'<script type="application/ld\+json">(.*?)</script>', out, re.S)
 
 
+def homepage_block(fn):
+    """The inline JSON-LD of molosoc_homepage_schema() in functions.php, parsed."""
+    body = fn[fn.index("function molosoc_homepage_schema()"):]
+    body = body[: body.index("add_action( 'wp_head', 'molosoc_homepage_schema' )")]
+    return json.loads(blocks(body)[0])
+
+
 class LandingBSchemaStatic(unittest.TestCase):
     def setUp(self):
         self.src = SCHEMA.read_text()
@@ -70,9 +80,34 @@ class LandingBSchemaStatic(unittest.TestCase):
 
     def test_no_forbidden_markup(self):
         code = re.sub(r"/\*.*?\*/", "", self.src, flags=re.S)
+        # logo / sameAs are allowed only inside the site nodes mirrored from the homepage.
+        start = code.index("function molosoc_landing_b_schema_site_nodes()")
+        end = code.index("function molosoc_landing_b_schema_faq(")
+        code = code[:start] + code[end:]
         for bad in ("'Product'", "'Offer'", "'AggregateRating'", "'Review'", "gtin", "'logo'", "sameAs",
                     "'BreadcrumbList'", "'image'", "price", "availability", "hasMerchantReturnPolicy"):
             self.assertNotIn(bad, code.replace("$price", ""), bad)
+
+    def test_site_nodes_mirror_the_homepage_graph(self):
+        """Organization/WebSite values are copied from molosoc_homepage_schema(), never invented."""
+        home = {n["@type"]: n for n in homepage_block(self.fn)["@graph"]}
+        nodes = self.src[self.src.index("function molosoc_landing_b_schema_site_nodes()"):]
+        nodes = nodes[: nodes.index("function molosoc_landing_b_schema_faq(")]
+        org, site = home["Organization"], home["WebSite"]
+        for literal in (org["@id"], org["name"], org["url"], org["logo"]["url"], site["@id"], site["url"], site["name"]):
+            self.assertIn(f"'{literal}'", nodes, literal)
+        same_as = re.findall(r"'(https://[^']+)',\n", nodes[nodes.index("'sameAs'"):nodes.index("'WebSite'")])
+        self.assertEqual(same_as, org["sameAs"])
+        # The homepage's EN description / inLanguage are not repeated on the Czech page.
+        self.assertNotIn("'description'", nodes)
+        self.assertNotIn("'inLanguage'", nodes)
+        self.assertNotIn(org["description"][:30], self.src)
+
+    def test_meta_description_and_title_decode_are_wired(self):
+        self.assertEqual(self.src.count('<meta name="description" content="'), 1)
+        self.assertIn("esc_attr( molosoc_landing_b_schema_description() )", self.src)
+        self.assertIn("html_entity_decode( wp_get_document_title(), ENT_QUOTES, 'UTF-8' )", self.src)
+        self.assertNotIn("\t\twp_get_document_title(),", self.src)
 
     def test_faq_matches_visible_template_exactly(self):
         details = re.findall(r"<details>\s*<summary>(.*?)</summary>\s*(?:<\?php.*?\?>\s*)?<p>(.*?)</p>", self.tpl, re.S)
@@ -90,7 +125,7 @@ class LandingBSchemaStatic(unittest.TestCase):
         if not shutil.which("php"):
             self.skipTest("php not installed")
         g = json.loads(blocks(run_php(True, "cz"))[0])
-        return [(x["name"], x["acceptedAnswer"]["text"]) for x in g["@graph"][1]["mainEntity"]]
+        return [(x["name"], x["acceptedAnswer"]["text"]) for x in g["@graph"][3]["mainEntity"]]
 
     def test_template_price_constants_match_schema_call(self):
         self.assertIn("$lpb_price       = '229 Kč';", self.tpl)
@@ -100,9 +135,17 @@ class LandingBSchemaStatic(unittest.TestCase):
     def test_description_words_are_on_the_page(self):
         m = re.search(r"function molosoc_landing_b_schema_description\(\) \{\s*return '(.*?)';", self.src, re.S)
         desc = m.group(1)
-        for phrase in ("Bez klouzání", "Bez čekání", "Bez mastných stop", "100% nitril", "Bez latexu"):
-            self.assertIn(phrase.lower(), self.tpl.lower(), phrase)
+        # ~150 chars (Google truncates around 155-160) and only on-page claims.
+        self.assertTrue(130 <= len(desc) <= 158, len(desc))
+        self.assertTrue(desc.startswith("Hydratační návleky na nohy MOLOSOC – namazané nohy bez nepořádku a bez klouzání"), desc)
+        page = html.unescape(self.tpl).lower()
+        for phrase in ("Hydratační návleky na nohy", "Namazané nohy", "Bez nepořádku", "Bez klouzání",
+                       "100% nitril", "Bez latexu", "vydrží opakovaně", "krémem", "který už máte doma"):
+            self.assertIn(phrase.lower(), desc.lower(), phrase)
+            self.assertIn(phrase.lower(), page, phrase)
         self.assertNotRegex(desc, r"(?i)léč|zdrav|vyléč|klinick|dermatolog")
+        self.assertNotIn("&", desc)
+        self.assertNotIn('"', desc)
 
 
 @unittest.skipUnless(shutil.which("php"), "php not installed")
@@ -117,8 +160,16 @@ class LandingBSchemaRendered(unittest.TestCase):
         g = self.graph()
         self.assertEqual(g["@context"], "https://schema.org")
         types = [n["@type"] for n in g["@graph"]]
-        self.assertEqual(types, ["WebPage", "FAQPage"])
-        page, faq = g["@graph"]
+        self.assertEqual(types, ["Organization", "WebSite", "WebPage", "FAQPage"])
+        org, site, page, faq = g["@graph"]
+        self.assertEqual(org["@id"], "https://molosoc.com/#organization")
+        self.assertEqual(site["@id"], "https://molosoc.com/#website")
+        self.assertEqual(site["publisher"], {"@id": org["@id"]})
+        home = {n["@type"]: n for n in homepage_block(FUNCTIONS.read_text())["@graph"]}
+        self.assertEqual(org["sameAs"], home["Organization"]["sameAs"])
+        self.assertEqual(org["logo"], home["Organization"]["logo"])
+        # Title entity-decoded (Issue #159): "–" instead of the literal "&#8211;".
+        self.assertEqual(page["name"], "Hydratační návleky na nohy – MOLOSOC </script> & co")
         self.assertEqual(page["@id"], CANON + "#webpage")
         self.assertEqual(page["url"], CANON)
         self.assertEqual(page["inLanguage"], "cs")
@@ -141,6 +192,14 @@ class LandingBSchemaRendered(unittest.TestCase):
         out = run_php(True, "cz")
         self.assertEqual(out.count("</script>"), 1)
         self.assertIn("\\u003C/script\\u003E", out)
+        self.assertNotIn("&#8211;", out)
+
+    def test_meta_description_printed_once_before_the_graph(self):
+        out = run_php(True, "cz")
+        metas = re.findall(r'<meta name="description" content="([^"]*)">', out)
+        self.assertEqual(len(metas), 1)
+        self.assertLess(out.index('<meta name="description"'), out.index('<script type="application/ld+json">'))
+        self.assertEqual(html.unescape(metas[0]), json.loads(blocks(out)[0])["@graph"][2]["description"])
 
     def test_canonical_follows_permalink(self):
         out = run_php(True, "cz", "https://molosoc.com/cz/jiny-slug/")

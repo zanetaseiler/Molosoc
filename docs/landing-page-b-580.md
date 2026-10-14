@@ -57,7 +57,7 @@ page's rendered CSS and `getComputedStyle`, not from the theme tokens.
 1. **"Počet kusů je omezený"** (black strip under the hero) — presale scarcity claim; not an operational detail, so it was *not* changed. Remove the `.lpb-strip__scarcity` paragraph if B should not make this claim.
 2. **Empty crossed-out price span** before "199 Kč" in page 580's hero and dark band — leftover of a struck-through presale price. Reproduced as nothing; no "was" price invented.
 3. **Story tab 3 title** on page 580 is broken by a stray line break ("A pak se stal nápad sku / tečností."); B renders the evident intended text "A pak se stal nápad skutečností." — the only non-operational copy fix.
-4. Page 580 is **noindex-free and currently published** at `/hydratacni-navleky-na-nohy/` (it is listed as a normal page). That is outside this Issue; noted only because B is noindexed + sitemap-excluded in `functions.php` so a published B can never compete with A or with 580.
+4. Page 580 is **noindex-free and currently published** at `/hydratacni-navleky-na-nohy/` (it is listed as a normal page). That was outside Issue #122; B was noindexed + sitemap-excluded in `functions.php` at the time so a published B could not compete with A or with 580. Since Issue #159 B is indexable (see "Indexing" below); a 301 from 580 to B is still a separate owner decision.
 5. Page 580 wore no site header/nav and its own Thrive footer; B uses the theme header/footer like every other `page-{slug}.php` template. The pinned "Objednat nyní" header button became the bottom sticky bar.
 
 ## Asset inventory (all verified HTTP 200 on 2026-10-13, hot-linked exactly as page 580 does)
@@ -154,7 +154,8 @@ then re-run PageSpeed mobile.
    this template regardless of its (empty) content.
 4. Verification: B shows `status: draft` in Pages; `GET /wp-json/wp/v2/pages/886` and
    `/pages/580` still report `modified` 2026-09-29T16:41:52 / 2026-10-13T09:10:53
-   respectively (A and 580 unchanged); `/wp-sitemap-pages-page-1.xml` does not list B.
+   respectively (A and 580 unchanged); `/wp-sitemap-pages-page-1.xml` did not list B at the
+   time (it does since Issue #159, see "Indexing" below).
 5. Publishing B, any redirect, ad, analytics or A/B split is out of scope and needs a
    separate explicit decision.
 
@@ -199,5 +200,29 @@ other pages and non-`cz` languages.
    an unrelated page: no new JSON-LD.
 4. Price/stock: the FAQ answer repeats the template's hardcoded `229 Kč` / `Doprava od 79 Kč`
    (same constants as the template, guarded by a test). Making the template itself read WooCommerce is out of scope here.
-5. **Page B is currently `noindex` and sitemap-excluded** (Issue #122) and has no EN/hreflang twin; the
-   markup is inert for search until the owner indexes it. Not changed here.
+5. Page B was `noindex` and sitemap-excluded when this markup was added (Issue #122) and has no
+   EN/hreflang twin; it is indexable since Issue #159 (see "Indexing" below).
+
+## Indexing (Issue #159, 2026-10-14)
+
+Žaneta decided to index B. `functions.php` no longer lists `hydratacni-navleky-molosoc` in the
+`wp_robots` noindex gate nor in `molosoc_sitemap_excluded_page_ids()`, so the page gets core's
+default `max-image-preview:large` robots meta and is listed in `/wp-sitemap-posts-page-1.xml`.
+Along with that, `inc/landing-b-schema.php`:
+
+- prints a Czech `<meta name="description">` (~150 chars, hero + strip + FAQ wording only; the page
+  had none) — the same string is the WebPage `description`;
+- entity-decodes the WebPage `name` (`wp_get_document_title()` is HTML-escaped, so the title's
+  en dash was serialised as the literal `&#8211;` inside the JSON);
+- adds the `Organization` + `WebSite` nodes (same `@id`s, name, url, logo, sameAs as the homepage
+  graph in `functions.php`, checked by `tests/test_landing_b_schema.py`) that the graph referenced
+  but never defined on this page.
+
+Post-merge checklist: purge the page cache for 1037 (`purge-home-cache.yml -f page_ids=1037`),
+then on the live page confirm no `noindex` in the robots meta, the URL listed in
+`/wp-sitemap-posts-page-1.xml`, the JSON-LD `name` showing `–`, the meta description present;
+then request indexing in Google Search Console.
+
+Still open (owner decision): 301 the old page 580 (`/hydratacni-navleky-na-nohy/`, 199 Kč) to
+B via the Redirection plugin (`manage-redirects.yml`, action=add) and add its slug to
+`molosoc_sitemap_excluded_page_ids()`.
