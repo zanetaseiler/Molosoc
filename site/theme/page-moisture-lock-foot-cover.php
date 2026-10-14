@@ -334,7 +334,7 @@ get_header();
 		<div class="molosoc-product-how-block__content">
 			<div class="molosoc-product-heading">
 				<div class="molosoc-product-heading__inner molosoc-product-heading__inner--center">
-					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Jak to funguje' : __( 'How it works', 'molosoc' ) ); ?></p>
+					<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Co je v balení a jak ho použít' : __( 'How it works', 'molosoc' ) ); ?></p>
 					<h2><?php echo esc_html( $molosoc_is_cz ? 'Jak to funguje' : __( 'How it works', 'molosoc' ) ); ?></h2>
 				</div>
 			</div>
