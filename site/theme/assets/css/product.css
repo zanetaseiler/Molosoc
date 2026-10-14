@@ -917,14 +917,18 @@
    mask, so it follows the text colour and the text node is untouched) makes
    it read as a button. Dark fill, label, position, link and hover colours
    are untouched; the phone-width hide above still applies. Hover swaps only
-   the elevation layer. */
+   the elevation layer.
+   Issue #183: that outermost 1px ring is now a muted charcoal-brown stroke
+   (0.62 alpha) so the pale halo edge is clearly defined on the light page. It
+   is one continuous box-shadow ring, so it follows the pill's radius and
+   outlines only the halo's outer perimeter — not the scroll-to-top circle. */
 @media (min-width: 761px) {
   .molosoc-sticky-cta {
     gap: 0.6em;
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.22),
       0 0 0 5px rgba(250, 245, 232, 0.96),
-      0 0 0 6px rgba(120, 98, 64, 0.16),
+      0 0 0 6px rgba(84, 64, 42, 0.62),
       0 3px 8px rgba(30, 24, 16, 0.18),
       0 10px 24px rgba(30, 24, 16, 0.16),
       0 22px 44px rgba(30, 24, 16, 0.1);
@@ -944,7 +948,7 @@
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.22),
       0 0 0 5px rgba(250, 245, 232, 0.96),
-      0 0 0 6px rgba(120, 98, 64, 0.16),
+      0 0 0 6px rgba(84, 64, 42, 0.62),
       0 4px 10px rgba(30, 24, 16, 0.22),
       0 14px 30px rgba(30, 24, 16, 0.2),
       0 28px 52px rgba(30, 24, 16, 0.12);
