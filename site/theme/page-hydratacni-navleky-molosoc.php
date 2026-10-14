@@ -47,6 +47,10 @@
  * from wp_head (molosoc_landing_b_head()) with the identical srcset — both
  * read molosoc_landing_b_hero_image(). Every lightbox-style <a href> still
  * points at the original full-size upload, exactly as page 580 did.
+ * Issue #157: PageSpeed's real LCP element is the .lpb-hero CSS background
+ * (hero-bg-v2), so it is now a theme-hosted WebP pair too (960 ≤900px /
+ * 1920 above) whose URLs the section carries as custom properties from
+ * molosoc_landing_b_hero_background_style() and wp_head preloads.
  *
  * CSS/JS (assets/css/landing-b.css, assets/js/landing-b.js, Google Fonts
  * Nunito Sans as on page 580 — loaded non-blocking, see functions.php) are
@@ -70,8 +74,8 @@ get_header();
 
 <main id="main" class="lpb">
 
-	<!-- ============ 2. Hero (page 580 section 2: 2 columns over hero-bg-v2 webp + 50% white overlay) ============ -->
-	<section class="lpb-hero" aria-label="Hydratační návleky na nohy">
+	<!-- ============ 2. Hero (page 580 section 2: 2 columns over hero-bg-v2 webp + 50% white overlay; the bg URLs are custom properties from functions.php, preloaded in wp_head — Issue #157) ============ -->
+	<section class="lpb-hero" aria-label="Hydratační návleky na nohy" style="<?php echo molosoc_landing_b_hero_background_style(); ?>">
 		<div class="lpb-hero__inner">
 			<div class="lpb-hero__media">
 				<a class="lpb-hero__main" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-Hero-New-Baige.jpg' ); ?>">

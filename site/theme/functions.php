@@ -558,13 +558,50 @@ function molosoc_landing_b_hero_image() {
 }
 
 /**
+ * The .lpb-hero CSS background (Issue #157). PageSpeed reports this
+ * section's background image — not the hero <img> — as the LCP element: a
+ * CSS url() is only discovered once the stylesheet bundle has downloaded
+ * and parsed, so it paints last on the first phone viewport. Theme-hosted
+ * WebP derivatives of hero-bg-v2 (a soft watercolour wash under a 50 %
+ * white overlay, so 960px is plenty on phones), picked by the 900px
+ * breakpoint landing-b.css already uses. The template puts both URLs on
+ * the section as custom properties (molosoc_landing_b_hero_background_style())
+ * and molosoc_landing_b_head() preloads them, so the preloaded and the
+ * painted URL come from this one place.
+ *
+ * @return array[] 'mobile' / 'desktop' => array( 'url' => …, 'media' => … ).
+ */
+function molosoc_landing_b_hero_background() {
+	$dir = get_stylesheet_directory_uri() . '/assets/images/landing-b/';
+	return array(
+		'mobile'  => array( 'url' => $dir . 'lpb-hero-bg-960.webp', 'media' => '(max-width: 900px)' ),
+		'desktop' => array( 'url' => $dir . 'lpb-hero-bg-1920.webp', 'media' => '(min-width: 900.1px)' ),
+	);
+}
+
+/**
+ * Inline style for <section class="lpb-hero">: the custom properties the
+ * .lpb-hero rule in landing-b.css reads (escaped for a style="" attribute).
+ */
+function molosoc_landing_b_hero_background_style() {
+	$bg = molosoc_landing_b_hero_background();
+	return esc_attr( sprintf(
+		'--lpb-hero-bg-mobile: url(%s); --lpb-hero-bg-desktop: url(%s)',
+		esc_url( $bg['mobile']['url'] ),
+		esc_url( $bg['desktop']['url'] )
+	) );
+}
+
+/**
  * Landing Page B <head> output (Issue #153), priority 1 so it lands before
  * the render-blocking stylesheets:
  *   1. preconnect to the Google Fonts origins;
- *   2. the hero image preload with fetchpriority="high" — the LCP element
- *      otherwise waits for ~10 stylesheets to finish before the parser even
- *      reaches it in the body;
- *   3. both Google Fonts stylesheets as non-blocking media="print" links
+ *   2. the hero image preload with fetchpriority="high" — otherwise the
+ *      parser only reaches it in the body after ~10 stylesheets finish;
+ *   3. the .lpb-hero background preload (Issue #157: the actual LCP
+ *      element), one media-gated link per breakpoint so a phone fetches
+ *      only the 960px copy;
+ *   4. both Google Fonts stylesheets as non-blocking media="print" links
  *      that swap to media="all" once loaded (+ <noscript> fallback), see
  *      the Landing B branch of molosoc_enqueue_assets().
  * Printed raw (not enqueued) so WP-Optimize Minify leaves it alone.
@@ -581,6 +618,14 @@ function molosoc_landing_b_head() {
 	// Same escaped values as the <img>, under the preload attribute names.
 	$attrs = str_replace( array( 'src="', 'srcset="', 'sizes="' ), array( 'href="', 'imagesrcset="', 'imagesizes="' ), $attrs );
 	echo '<link rel="preload" as="image" fetchpriority="high" ' . $attrs . '>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- every value is esc_url()/esc_attr()ed in molosoc_landing_b_img_attrs().
+
+	foreach ( molosoc_landing_b_hero_background() as $bg ) {
+		printf(
+			'<link rel="preload" as="image" fetchpriority="high" href="%s" media="%s">' . "\n",
+			esc_url( $bg['url'] ),
+			esc_attr( $bg['media'] )
+		);
+	}
 
 	foreach ( array( molosoc_fonts_url(), molosoc_landing_b_fonts_url() ) as $url ) {
 		printf(

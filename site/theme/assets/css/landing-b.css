@@ -191,9 +191,14 @@
 .lpb-hero {
   position: relative;
   padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 5vw, 3rem) 0;
+  /* hero-bg-v2 is the LCP element (Issue #157): the theme-hosted WebP URLs
+     arrive as --lpb-hero-bg-desktop / --lpb-hero-bg-mobile on the section
+     (molosoc_landing_b_hero_background()) and are preloaded from wp_head,
+     so the paint no longer waits for this stylesheet to be parsed. */
+  --lpb-hero-bg: var(--lpb-hero-bg-desktop, none);
   background:
     linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),
-    url("https://molosoc.com/wp-content/uploads/2026/04/hero-bg-v2-nqbEYtifYWW4XirFSK5h8z.webp") center / cover no-repeat;
+    var(--lpb-hero-bg) center / cover no-repeat;
 }
 
 .lpb-hero__inner {
@@ -729,6 +734,9 @@ body:has(.lpb-sticky) footer {
 /* ---------- Responsive ---------- */
 
 @media (max-width: 900px) {
+  .lpb-hero {
+    --lpb-hero-bg: var(--lpb-hero-bg-mobile, var(--lpb-hero-bg-desktop, none));
+  }
   .lpb-hero__inner,
   .lpb-split,
   .lpb-order {
