@@ -11,10 +11,13 @@
   text on top of it, same as every other page.
 */
 
-/* ---------- Hero — static 3D model, static layout ----------
-   The molosoc-3d.glb model renders as a still via <model-viewer> — its
-   continuous auto-rotate was removed 2026-09-21 (per explicit request:
-   no animation anywhere on this page, the model included).
+/* ---------- Hero — static model still, static layout ----------
+   The Molosoc model is a plain <img> still (molosoc-hero-still.webp,
+   1440x1440) since Issue #149 — it replaced the <model-viewer> render of
+   molosoc-3d.glb (4.1 MB + the unpkg.com module) for mobile speed. The
+   model's continuous auto-rotate had already been removed 2026-09-21
+   (per explicit request: no animation anywhere on this page, the model
+   included).
    Also gone: the orbit-scroll-drawer scroll-pin/fade/blur/slide mechanic
    this section used to run (.claude/skills/orbit-scroll-drawer/SKILL.md).
    Per explicit correction, that whole idea is reverted — the "cream you
@@ -52,10 +55,10 @@
      higher than product.css's own .molosoc-sticky-buy bar (z-index: 30,
      mobile only) and everything else here. */
   z-index: 50;
-  /* The model-viewer canvas is a transparent 960px rectangle that bleeds
-     over the drawer's price/CTA row below the hero — at z-index 50 it was
-     swallowing clicks on the Order Now button. The model is decorative
-     only (static, no camera-controls), so let clicks pass through. */
+  /* The model box (formerly a transparent 960px model-viewer canvas, now
+     the <img> still) bleeds over the drawer's price/CTA row below the
+     hero — at z-index 50 it was swallowing clicks on the Order Now
+     button. The model is decorative only, so let clicks pass through. */
   pointer-events: none;
 }
 
@@ -81,16 +84,19 @@
 
 .molosoc-orbit-model {
   position: relative;
+  /* Now an <img> (Issue #149). Same square footprint as the old
+     model-viewer canvas: the width rule is unchanged and the image's
+     1:1 intrinsic ratio (width/height attributes 1440x1440) gives the
+     height, so height: auto keeps it square and lets the browser
+     reserve the box before the file arrives (no layout shift).
+     object-fit: contain is a no-op while the ratio matches but keeps a
+     differently-cropped replacement still from stretching. */
+  display: block;
   width: min(95vw, 60rem);
-  height: min(95vw, 60rem);
-  --poster-color: transparent;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
   background-color: transparent;
-  /* model-viewer's own default loading progress bar is a plain gray
-     horizontal bar drawn across the canvas while the .glb streams in —
-     visible for a moment on page load, on top of the hero, before the
-     model appears. Same transparent treatment as --poster-color above. */
-  --progress-bar-color: transparent;
-  --progress-bar-height: 0px;
   /* Nudged down from dead-center so the headline above has breathing room
      instead of the model's top edge sitting right under the paragraph. */
   transform: translateY(190px);
@@ -343,7 +349,7 @@
        into the heading, but shrunk it further so there's real margin on
        every side regardless of rotation angle, not just a few px. */
     width: min(78vw, 32rem);
-    height: min(78vw, 32rem);
+    height: auto;
     /* Smaller nudge to match the smaller box — enough to keep the model
        feeling grounded/centered without pushing it back toward the
        stage's bottom edge. */

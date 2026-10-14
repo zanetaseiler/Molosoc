@@ -36,14 +36,16 @@ class LandingPreconnectHints(unittest.TestCase):
         )
         return out.stdout
 
-    def test_landing_pages_get_exactly_three_preconnects(self):
+    def test_landing_pages_get_exactly_two_preconnects(self):
+        # Issue #149 dropped the unpkg.com hint along with the model-viewer
+        # module it warmed up; only the Google Fonts origins remain.
         for slug in ("moisture-lock-foot-cover", "hydratacni-navlek-na-nohy"):
             out = self.render(slug)
             self.assertEqual(
                 re.findall(r'<link rel="preconnect" href="([^"]+)"', out),
-                ["https://unpkg.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+                ["https://fonts.googleapis.com", "https://fonts.gstatic.com"],
             )
-            self.assertIn('<link rel="preconnect" href="https://unpkg.com" crossorigin>', out)
+            self.assertNotIn("unpkg.com", out)
             self.assertIn('<link rel="preconnect" href="https://fonts.googleapis.com">', out)
             self.assertIn('<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>', out)
             self.assertNotIn("preload", out)

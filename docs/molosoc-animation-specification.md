@@ -93,9 +93,13 @@ requested explicitly at the time, knowing it contradicted the rule above,
 and has since been explicitly withdrawn: the live product page is now
 fully static — the model renders as a still, and the page carries no
 scroll-reveal, breathing-zoom or hover-zoom motion either. The rule above
-therefore applies to the product page without exception. (The
-`preview/product-preview.html` design artifact still shows the older
-rotating version.)
+therefore applies to the product page without exception. Since Issue #149
+(2026-10-14) the still is a plain `<img>` (`molosoc-hero-still.webp`) on
+the product page and on every Journal article's "why moisturizer alone
+doesn't fix it" section — `<model-viewer>`, the unpkg.com module and the
+4.1 MB `molosoc-3d.glb` are no longer loaded anywhere on the live site
+(mobile speed). (The `preview/product-preview.html` design artifact still
+shows the older rotating model-viewer version.)
 
 An earlier version of this hero also ran a scroll-pinned "glass drawer
 slides up over the fading/blurring model" sequence, per
