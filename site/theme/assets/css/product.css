@@ -323,7 +323,8 @@
     display: contents;
   }
 
-  .molosoc-product-heading h2 {
+  .molosoc-product-heading h2,
+  .molosoc-orbit-drawer__heading h2 {
     font-size: var(--text-product-heading-mobile);
   }
 
@@ -381,7 +382,6 @@
   }
 
   .molosoc-orbit-drawer__heading h2 {
-    font-size: var(--text-product-heading-mobile);
     max-width: none;
   }
 

@@ -147,6 +147,17 @@ class LandingAHeroCss(unittest.TestCase):
         self.assertEqual(order[".molosoc-hero-buy"], 4)
         self.assertIn("flex-direction: column;", mobile)
 
+    def test_drawer_h2_switches_to_mobile_token_at_the_shared_860_breakpoint(self):
+        m = re.search(r"@media \(max-width: 860px\) \{(.*?)\n\}\n", self.css, re.S)
+        self.assertIsNotNone(m)
+        self.assertIn(
+            ".molosoc-product-heading h2,\n  .molosoc-orbit-drawer__heading h2 {\n"
+            "    font-size: var(--text-product-heading-mobile);",
+            m.group(1),
+        )
+        m760 = re.search(r"@media \(max-width: 760px\) \{(.*?)\n\}\n", self.css, re.S)
+        self.assertNotIn("--text-product-heading-mobile", m760.group(1).split(".molosoc-orbit-drawer__heading h2")[1].split("}")[0])
+
     def test_hero_buy_row_hands_over_to_the_sticky_bar_on_phones(self):
         m = re.search(r"@media \(max-width: 760px\) \{\n  /\* At phone widths(.*?)\n\}\n", self.css, re.S)
         self.assertIsNotNone(m)
