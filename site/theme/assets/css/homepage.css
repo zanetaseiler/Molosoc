@@ -357,7 +357,7 @@
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children):not(.lang-item) > a,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children {
     background: rgba(252, 251, 248, 0.95);
-    border-color: rgba(36, 29, 23, 0.3);
+    border-color: rgba(36, 29, 23, 0.4);
   }
 
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li > a {
@@ -373,7 +373,7 @@
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li:not(.menu-item-has-children):not(.lang-item) > a:hover,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children:hover {
     background: rgba(255, 255, 255, 0.97);
-    border-color: rgba(36, 29, 23, 0.34);
+    border-color: rgba(36, 29, 23, 0.48);
   }
 
   /* :not(.lang-item) — Polylang marks the active language's li with
@@ -386,13 +386,13 @@
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current-menu-ancestor,
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav > ul > li.menu-item-has-children.current_page_ancestor {
     background: rgba(255, 255, 255, 0.97);
-    border-color: rgba(36, 29, 23, 0.42);
+    border-color: rgba(36, 29, 23, 0.54);
   }
 
   .molosoc-home-header.is-past-hero .molosoc-home-header__nav .lang-item a {
     color: var(--color-ink-warm);
     background: rgba(252, 251, 248, 0.92);
-    border-color: rgba(36, 29, 23, 0.34);
+    border-color: rgba(36, 29, 23, 0.42);
     text-shadow: none;
   }
 
