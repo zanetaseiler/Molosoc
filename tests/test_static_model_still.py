@@ -99,6 +99,29 @@ class StaticModelStill(unittest.TestCase):
                 heights = re.findall(r"^\s*height:\s*([^;]+);", m.group(1), re.M)
                 self.assertEqual(heights, ["auto"], (css, m.group(1)[:80]))
 
+    # Issue #151 follow-up: the .glb itself and the preview artifacts.
+    def test_glb_asset_is_gone(self):
+        self.assertFalse((ROOT / "assets/models/molosoc-3d.glb").exists())
+
+    def test_preview_artifacts_use_the_still_too(self):
+        tag = re.compile(r"<model-viewer[\s>][^>]*\bsrc=")
+        swapped = 0
+        for path in sorted((ROOT / "preview").glob("*.html")):
+            src = path.read_text(encoding="utf-8")
+            self.assertIsNone(tag.search(src), path.name)
+            self.assertNotIn("unpkg.com/@google/model-viewer", src, path.name)
+            self.assertNotIn("assets/models/molosoc-3d.glb", src, path.name)
+            tags = [t for t in IMG_RE.findall(src)
+                    if 'class="molosoc-orbit-model"' in t or 'class="molosoc-mechanism-model"' in t]
+            for t in tags:
+                self.assertIn(f'src="{STILL}"', t, path.name)
+            swapped += len(tags)
+        self.assertEqual(swapped, 7)
+
+    def test_upload_media_workflow_has_no_glb_default(self):
+        wf = (ROOT.parents[1] / ".github/workflows/upload-media.yml").read_text(encoding="utf-8")
+        self.assertNotIn('default: "site/theme/assets/models/molosoc-3d.glb"', wf)
+
 
 if __name__ == "__main__":
     unittest.main()

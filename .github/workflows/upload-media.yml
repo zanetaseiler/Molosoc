@@ -10,9 +10,11 @@ on:
   workflow_dispatch:
     inputs:
       file_path:
-        description: "Path (relative to repo root) of the file to upload"
+        # No default: the former one (site/theme/assets/models/molosoc-3d.glb)
+        # was deleted in Issue #151 after #149 replaced the 3D model with a
+        # static image.
+        description: "Path (relative to repo root) of the file to upload, e.g. site/theme/assets/images/foo.webp"
         required: true
-        default: "site/theme/assets/models/molosoc-3d.glb"
       alt_text:
         description: "Optional alt text / description to attach"
         required: false
