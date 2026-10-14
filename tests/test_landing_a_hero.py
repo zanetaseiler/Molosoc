@@ -107,7 +107,14 @@ class LandingAHeroCss(unittest.TestCase):
 
     def test_headline_uses_display_l_scale(self):
         phrase = _rule(self.css, ".molosoc-hero-title__phrase")
-        self.assertIn("font-size: clamp(2.5rem, 3.2vw + 0.75rem, 3.75rem);", phrase)
+        # Issue #167: +25% on the Issue #165 size, shared with every section H2.
+        self.assertIn("font-size: var(--text-product-heading);", phrase)
+        self.assertIn("--text-product-heading: clamp(3.125rem, 4vw + 0.9375rem, 4.6875rem);", self.css)
+        self.assertIn("--text-product-heading-mobile: clamp(2.8125rem, 11.875vw, 3.4375rem);", self.css)
+        self.assertIn("font-size: var(--text-product-heading);", _rule(self.css, ".molosoc-product-heading h2"))
+        drawer = _rule(self.css, ".molosoc-orbit-drawer__heading h2")
+        self.assertIn("font-size: var(--text-product-heading);", drawer)
+        self.assertIn("text-align: left;", _rule(self.css, ".molosoc-orbit-drawer__heading"))
         self.assertNotIn("white-space: nowrap", phrase)
 
     def test_still_is_cropped_to_the_product(self):

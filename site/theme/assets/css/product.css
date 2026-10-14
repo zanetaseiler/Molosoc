@@ -137,12 +137,29 @@
   display: contents;
 }
 
+/* Issue #167: one shared major-heading size for Landing Page A — the hero
+   H1 phrase and every section H2 below it. +25% on the Issue #165 hero
+   size (was clamp(2.5rem, 3.2vw + 0.75rem, 3.75rem) / phone
+   clamp(2.25rem, 9.5vw, 2.75rem)). H3 card titles, nav, labels, prices
+   and buttons keep their own sizes. */
+:root {
+  --text-product-heading: clamp(3.125rem, 4vw + 0.9375rem, 4.6875rem);
+  --text-product-heading-mobile: clamp(2.8125rem, 11.875vw, 3.4375rem);
+}
+
+/* Section H2s (Real results, Make the pedicure last, Give it as a gift,
+   Created by a mother and daughter, How it works) — same size as the H1.
+   Overrides base.css's oversized --text-display-2xl h2 rule. */
+.molosoc-product-heading h2 {
+  font-size: var(--text-product-heading);
+}
+
 /* Issue #165: brought down from the oversized clamp(3.75rem, 8.5vw,
    8.75rem) single-line treatment to the site's display-l scale
    (≈58px at 1440, ≈45px at 1024), wrapping normally. */
 .molosoc-hero-title__phrase {
   display: block;
-  font-size: clamp(2.5rem, 3.2vw + 0.75rem, 3.75rem);
+  font-size: var(--text-product-heading);
   line-height: 1;
   letter-spacing: 0.035em;
   color: var(--color-text);
@@ -221,6 +238,7 @@
 
 .molosoc-orbit-drawer {
   position: relative;
+  text-align: left;
   margin-inline: auto;
   max-width: min(96vw, 84rem);
   padding: var(--space-m) var(--space-l) var(--space-l);
@@ -234,11 +252,19 @@
   flex-wrap: wrap;
 }
 
+.molosoc-orbit-drawer__heading {
+  text-align: left;
+}
+
+.molosoc-orbit-drawer__heading .molosoc-eyebrow {
+  margin: 0;
+}
+
 .molosoc-orbit-drawer__heading h2 {
   color: var(--color-text);
-  font-size: var(--text-display-m);
+  font-size: var(--text-product-heading);
   margin-top: var(--space-2xs);
-  max-width: 26rem;
+  max-width: 40rem;
 }
 
 .molosoc-orbit-drawer__cards {
@@ -297,9 +323,13 @@
     display: contents;
   }
 
+  .molosoc-product-heading h2 {
+    font-size: var(--text-product-heading-mobile);
+  }
+
   .molosoc-hero-title__phrase {
     order: 1;
-    font-size: clamp(2.25rem, 9.5vw, 2.75rem);
+    font-size: var(--text-product-heading-mobile);
     letter-spacing: 0.03em;
   }
 
@@ -346,11 +376,12 @@
 
   .molosoc-orbit-drawer__top {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .molosoc-orbit-drawer__heading h2 {
+    font-size: var(--text-product-heading-mobile);
     max-width: none;
   }
 
