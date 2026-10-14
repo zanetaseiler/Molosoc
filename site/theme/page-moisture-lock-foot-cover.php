@@ -24,12 +24,14 @@
  * schema hook existed, but this template file — the thing that actually
  * replaces the_content() with the real page — never did.
  *
- * CSS/JS for this page (product.css + model-viewer only) are enqueued
+ * CSS for this page (product.css only — no page-specific JS) is enqueued
  * conditionally in functions.php on is_page('moisture-lock-foot-cover').
  *
  * FULLY STATIC PAGE (2026-09-21, per explicit request): no animation of
- * any kind. The hero's molosoc-3d.glb model renders as a still — its
- * auto-rotate was removed — and no GSAP/ScrollTrigger, scroll-refresh,
+ * any kind. The hero shows a static still of the Molosoc model
+ * (molosoc-hero-still.webp — Issue #149 replaced the <model-viewer>
+ * render of molosoc-3d.glb and its unpkg.com module with this one ~43 KB
+ * image for mobile speed) and no GSAP/ScrollTrigger, scroll-refresh,
  * scroll-reveal, breathing-zoom or hover-zoom motion runs anywhere on
  * the page.
  */
@@ -42,10 +44,12 @@ get_header();
 
 <main id="main">
 
-	<!-- Hero: H1 + lede over a STATIC render of the molosoc-3d.glb model
-	     (model-viewer with no auto-rotate and no camera-controls — the
-	     continuous spin this hero used to run was removed 2026-09-21 per
-	     explicit request; see docs/molosoc-animation-specification.md).
+	<!-- Hero: H1 + lede over a STATIC still of the Molosoc model — a plain
+	     <img> (molosoc-hero-still.webp, 1440x1440) since Issue #149; before
+	     that it was a <model-viewer> render of molosoc-3d.glb (its continuous
+	     spin was removed 2026-09-21 per explicit request; see
+	     docs/molosoc-animation-specification.md). fetchpriority="high" because
+	     it is the hero's largest above-the-fold element (LCP candidate).
 	     The "cream you already own" H2's 3 H3 points sit directly below
 	     as static feature cards,
 	     in normal document flow — a firm static block under the hero, not
@@ -57,17 +61,14 @@ get_header();
 
 			<div class="molosoc-orbit-stage" aria-hidden="true">
 				<div class="molosoc-orbit-glow"></div>
-				<model-viewer
+				<img
 					class="molosoc-orbit-model"
-					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
+					src="https://molosoc.com/wp-content/uploads/2026/10/molosoc-hero-still.webp"
 					alt=""
-					camera-orbit="0deg 75deg 105%"
-					exposure="0.95"
-					shadow-intensity="0.7"
-					shadow-softness="1"
-					environment-image="neutral"
-					loading="eager">
-				</model-viewer>
+					width="1440"
+					height="1440"
+					fetchpriority="high"
+					decoding="async">
 			</div>
 
 			<div class="molosoc-orbit-hero-copy">

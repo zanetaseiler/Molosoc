@@ -106,7 +106,8 @@ get_header();
 	</section>
 
 	<!-- 4. BUILDING A PREVENTION ROUTINE THAT ACTUALLY STICKS — static glass
-	     drawer settled over the still (non-rotating) molosoc-3d.glb model (the
+	     drawer settled over the static still of the Molosoc model (molosoc-hero-still.webp, Issue #149:
+	     the model-viewer render of molosoc-3d.glb was dropped for mobile speed) (the
 	     old orbit-scroll-drawer fade/blur/slide and the model's auto-rotate
 	     were removed 2026-09-22). -->
 	<section class="molosoc-mechanism-section" aria-label="<?php esc_attr_e( 'Building a prevention routine that actually sticks', 'molosoc' ); ?>">
@@ -114,17 +115,14 @@ get_header();
 
 			<div class="molosoc-mechanism-stage" aria-hidden="true">
 				<div class="molosoc-mechanism-glow"></div>
-				<model-viewer
+				<img
 					class="molosoc-mechanism-model"
-					src="<?php echo esc_url( get_stylesheet_directory_uri() . '/assets/models/molosoc-3d.glb' ); ?>"
+					src="https://molosoc.com/wp-content/uploads/2026/10/molosoc-hero-still.webp"
 					alt=""
-					camera-orbit="0deg 75deg 105%"
-					exposure="0.95"
-					shadow-intensity="0.7"
-					shadow-softness="1"
-					environment-image="neutral"
-					loading="eager">
-				</model-viewer>
+					width="1440"
+					height="1440"
+					loading="lazy"
+					decoding="async">
 			</div>
 
 			<div class="molosoc-mechanism-drawer">

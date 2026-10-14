@@ -358,12 +358,11 @@ function molosoc_enqueue_assets() {
 		// generic, nothing cracked-heels-specific).
 		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
 
-		// model-viewer renders the molosoc-3d.glb model in the "why
-		// moisturizer alone doesn't fix it" section as a STILL (the
-		// templates omit auto-rotate) — same web component the Product
-		// page's hero uses. Needs type="module" (see the script_loader_tag
-		// filter below), not a plain classic script.
-		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		// No model-viewer here any more (Issue #149): the "why moisturizer
+		// alone doesn't fix it" section's still of the Molosoc model is a
+		// plain <img> (molosoc-hero-still.webp) in the templates, so the
+		// unpkg.com @google/model-viewer module and the 4.1 MB
+		// molosoc-3d.glb are no longer loaded on any Journal page.
 
 		// Deliberately NO motion.js / GSAP / ScrollTrigger /
 		// sequential-text-reveal.js / severity-reveal.js /
@@ -381,13 +380,11 @@ function molosoc_enqueue_assets() {
 		// above for why the Czech slug has to be listed explicitly.
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
-		// model-viewer renders the molosoc-3d.glb model in the hero as a
-		// STILL (no auto-rotate, no camera-controls — the template omits
-		// both attributes) — same web component page-cracked-heels.php uses
-		// for its "why moisturizer alone doesn't fix it" section. Needs
-		// type="module" (see the script_loader_tag filter below), not a
-		// plain classic script.
-		wp_enqueue_script( 'molosoc-model-viewer', 'https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js', array(), '3.5.0', true );
+		// No model-viewer here any more (Issue #149, mobile speed): the
+		// hero's still of the Molosoc model is a plain <img>
+		// (molosoc-hero-still.webp, ~43 KB) in the template, so neither the
+		// unpkg.com @google/model-viewer module nor the 4.1 MB
+		// molosoc-3d.glb is loaded on this page. No page-specific JS at all.
 
 		// Deliberately NO GSAP / ScrollTrigger / sequential-text-reveal.js /
 		// scroll-refresh.js here (2026-09-21, per explicit request): this
@@ -465,13 +462,13 @@ add_action( 'wp_head', function () {
 /**
  * Early connection hints for the foot-cover landing page (EN
  * 'moisture-lock-foot-cover' / CZ 'hydratacni-navlek-na-nohy') — Issue #99
- * Test 1, "hints only, zero visual change". The page's hero loads the
- * model-viewer module from unpkg.com and the Google Fonts CSS/files, all
- * third-party origins on the critical path; preconnect lets the browser
- * open those connections while it parses the head. Output is three <link>
- * tags on this page only — no markup, copy, layout or asset change.
- * (No .glb preload: it cannot be confirmed here that it would reuse
- * model-viewer's own request instead of fetching the 4.1 MB file twice.)
+ * Test 1, "hints only, zero visual change". The page loads the Google
+ * Fonts CSS/files, third-party origins on the critical path; preconnect
+ * lets the browser open those connections while it parses the head.
+ * Output is two <link> tags on this page only — no markup, copy, layout
+ * or asset change. (The unpkg.com hint was dropped in Issue #149 together
+ * with the model-viewer module it warmed up — the hero's model is a plain
+ * same-origin <img> now, so no page loads anything from unpkg.com.)
  *
  * @return array[] Each entry: array( 'href' => string, 'crossorigin' => bool ).
  */
@@ -480,7 +477,6 @@ function molosoc_landing_preconnect_hints() {
 		return array();
 	}
 	return array(
-		array( 'href' => 'https://unpkg.com', 'crossorigin' => true ),
 		array( 'href' => 'https://fonts.googleapis.com', 'crossorigin' => false ),
 		array( 'href' => 'https://fonts.gstatic.com', 'crossorigin' => true ),
 	);
@@ -494,19 +490,6 @@ add_action( 'wp_head', function () {
 		);
 	}
 }, 1 );
-
-/**
- * model-viewer is an ES module, not a classic script — wp_enqueue_script()
- * always outputs a plain <script src="...">. Swap in type="module" for
- * just this one handle rather than switching the whole enqueue API.
- */
-function molosoc_module_script_tag( $tag, $handle, $src ) {
-	if ( 'molosoc-model-viewer' !== $handle ) {
-		return $tag;
-	}
-	return '<script type="module" src="' . esc_url( $src ) . '"></script>';
-}
-add_filter( 'script_loader_tag', 'molosoc_module_script_tag', 10, 3 );
 
 /**
  * Category page ("Reusable Foot Covers") schema markup.
