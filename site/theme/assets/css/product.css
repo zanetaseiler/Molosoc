@@ -145,6 +145,10 @@
 :root {
   --text-product-heading: clamp(3.125rem, 4vw + 0.9375rem, 4.6875rem);
   --text-product-heading-mobile: clamp(2.8125rem, 11.875vw, 3.4375rem);
+  /* Issue #171: the hero H1 phrase alone is a further +15% (x1.15 on every
+     clamp term) over the shared heading size; section H2s stay put. */
+  --text-hero-heading: clamp(3.59375rem, 4.6vw + 1.078125rem, 5.390625rem);
+  --text-hero-heading-mobile: clamp(3.234375rem, 13.65625vw, 3.953125rem);
 }
 
 /* Section H2s (Real results, Make the pedicure last, Give it as a gift,
@@ -159,7 +163,7 @@
    (≈58px at 1440, ≈45px at 1024), wrapping normally. */
 .molosoc-hero-title__phrase {
   display: block;
-  font-size: var(--text-product-heading);
+  font-size: var(--text-hero-heading);
   line-height: 1;
   letter-spacing: 0.035em;
   color: var(--color-text);
@@ -335,7 +339,7 @@
 
   .molosoc-hero-title__phrase {
     order: 1;
-    font-size: var(--text-product-heading-mobile);
+    font-size: var(--text-hero-heading-mobile);
     letter-spacing: 0.03em;
   }
 
