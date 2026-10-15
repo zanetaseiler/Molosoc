@@ -20,7 +20,8 @@
  *     other status) are suppressed.
  *   - Exactly once: a claim flag is stored on the order BEFORE sending, so
  *     a retry or duplicate run finds it and does nothing. If wp_mail()
- *     reports failure the claim is released so a later run may retry.
+ *     reports failure the claim is released and a bounded follow-up action
+ *     (max 3, 1h apart) is scheduled.
  *   - Bank account details are NOT put in the e-mail; the customer already
  *     has them on the order page / order e-mail and may reply for help.
  *
@@ -35,6 +36,14 @@ if ( ! defined( 'MOLOSOC_BACS_REMINDER_HOOK' ) ) {
 // Delay after the order was placed.
 if ( ! defined( 'MOLOSOC_BACS_REMINDER_DELAY' ) ) {
 	define( 'MOLOSOC_BACS_REMINDER_DELAY', 24 * HOUR_IN_SECONDS );
+}
+// Max follow-up attempts after a failed wp_mail().
+if ( ! defined( 'MOLOSOC_BACS_REMINDER_MAX_RETRIES' ) ) {
+	define( 'MOLOSOC_BACS_REMINDER_MAX_RETRIES', 3 );
+}
+// Delay before retrying a failed send.
+if ( ! defined( 'MOLOSOC_BACS_REMINDER_RETRY_DELAY' ) ) {
+	define( 'MOLOSOC_BACS_REMINDER_RETRY_DELAY', HOUR_IN_SECONDS );
 }
 // Order meta set once the reminder is claimed/sent.
 if ( ! defined( 'MOLOSOC_BACS_REMINDER_META' ) ) {
@@ -93,7 +102,8 @@ function molosoc_bacs_reminder_message( $order ) {
 /**
  * Action Scheduler callback. Re-reads the order; sends at most once.
  */
-function molosoc_bacs_reminder_run( $order_id ) {
+function molosoc_bacs_reminder_run( $order_id, $attempt = 0 ) {
+	$attempt = (int) $attempt;
 	$order = wc_get_order( $order_id );
 	if ( ! molosoc_bacs_reminder_in_scope( $order ) ) {
 		return;
@@ -110,8 +120,11 @@ function molosoc_bacs_reminder_run( $order_id ) {
 	$created = $order->get_date_created();
 	$due     = ( $created ? $created->getTimestamp() : 0 ) + MOLOSOC_BACS_REMINDER_DELAY;
 	if ( time() < $due ) {
+		// The successor carries a bumped attempt number so its args differ from
+		// the currently running action; otherwise unique=true would reject it
+		// as a duplicate of the action that is still in progress.
 		if ( function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action( $due, MOLOSOC_BACS_REMINDER_HOOK, array( (int) $order_id ), 'molosoc', true );
+			as_schedule_single_action( $due, MOLOSOC_BACS_REMINDER_HOOK, array( (int) $order_id, $attempt + 1 ), 'molosoc', true );
 		}
 		return;
 	}
@@ -130,6 +143,11 @@ function molosoc_bacs_reminder_run( $order_id ) {
 	} else {
 		$order->delete_meta_data( MOLOSOC_BACS_REMINDER_META );
 		$order->save();
+		// A one-off action is complete once this callback returns, so queue a
+		// bounded follow-up (distinct args, see above) or the reminder is lost.
+		if ( $attempt < MOLOSOC_BACS_REMINDER_MAX_RETRIES && function_exists( 'as_schedule_single_action' ) ) {
+			as_schedule_single_action( time() + MOLOSOC_BACS_REMINDER_RETRY_DELAY, MOLOSOC_BACS_REMINDER_HOOK, array( (int) $order_id, $attempt + 1 ), 'molosoc', true );
+		}
 	}
 }
-add_action( MOLOSOC_BACS_REMINDER_HOOK, 'molosoc_bacs_reminder_run', 10, 1 );
+add_action( MOLOSOC_BACS_REMINDER_HOOK, 'molosoc_bacs_reminder_run', 10, 2 );

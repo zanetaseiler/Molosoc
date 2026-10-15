@@ -71,11 +71,12 @@ eval( $code );
 $GLOBALS['hooks']['woocommerce_order_status_on-hold']( 1 );
 $GLOBALS['hooks']['woocommerce_order_status_on-hold']( 1 );
 $after_schedule = $GLOBALS['scheduled'];
-$GLOBALS['scheduled'] = array();
+// The action being executed is still pending/running: model it so unique=true collides.
+$GLOBALS['scheduled'] = array( array( 'ts' => 0, 'hook' => 'molosoc_bacs_unpaid_reminder', 'args' => array( 1 ), 'group' => 'molosoc', 'running' => true ) );
 for ( $i = 0; $i < $GLOBALS['T']['runs']; $i++ ) { $GLOBALS['hooks']['molosoc_bacs_unpaid_reminder']( 1 ); }
 echo json_encode( array(
 	'scheduled' => $after_schedule,
-	'rescheduled' => $GLOBALS['scheduled'],
+	'rescheduled' => array_values( array_filter( $GLOBALS['scheduled'], function ( $s ) { return empty( $s['running'] ); } ) ),
 	'mails' => $GLOBALS['mails'],
 	'notes' => $GLOBALS['notes'],
 	'meta' => $GLOBALS['meta'],
@@ -138,7 +139,9 @@ class BacsReminderTests(unittest.TestCase):
         created = NOW - 2 * HOUR
         r = run_php(order={"created": created})
         self.assertEqual(r["mails"], [])
+        self.assertEqual(len(r["rescheduled"]), 1)  # not rejected as dup of the running action
         self.assertEqual(r["rescheduled"][0]["ts"], created + 24 * HOUR)
+        self.assertEqual(r["rescheduled"][0]["args"], [1, 1])
 
     def test_paid_order_suppressed(self):
         self.assertEqual(run_php(order={"date_paid": NOW - HOUR})["mails"], [])
@@ -173,6 +176,9 @@ class BacsReminderTests(unittest.TestCase):
     def test_failed_mail_releases_claim_for_retry(self):
         r = run_php(mail_fails=True)
         self.assertNotIn("_molosoc_bacs_reminder_sent", r["meta"])
+        self.assertEqual(len(r["rescheduled"]), 1)
+        self.assertEqual(r["rescheduled"][0]["ts"], NOW + HOUR)
+        self.assertEqual(r["rescheduled"][0]["args"], [1, 1])
 
     def test_no_marketing_consent_dependency(self):
         # Executable code only (comments stripped): no subscription/consent gate.
