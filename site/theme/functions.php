@@ -22,6 +22,9 @@ require_once get_stylesheet_directory() . '/inc/woocommerce-lang.php';
 // #106). Depends on inc/woocommerce-lang.php above.
 require_once get_stylesheet_directory() . '/inc/thank-you-gift.php';
 
+// CZ bank-transfer unpaid-order reminder after 24h (Issue #194).
+require_once get_stylesheet_directory() . '/inc/bacs-payment-reminder.php';
+
 // Landing Page B JSON-LD (Issue #155). Depends on inc/woocommerce-lang.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
 
