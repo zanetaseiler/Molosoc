@@ -2448,6 +2448,60 @@ add_action( 'wp_footer', 'molosoc_footer_buffer_start', PHP_INT_MIN );
 add_action( 'wp_footer', 'molosoc_footer_buffer_end', PHP_INT_MAX );
 
 /**
+ * WP-Optimize Minify is switched off on the block cart and the checkout
+ * (Issue #196, "/cz/kosik/ never leaves its skeleton").
+ *
+ * WP-Optimize's "Defer all JavaScript" setting is implemented as a blanket
+ * `script_loader_tag` filter (WP_Optimize_Minify_Front_End::defer_js) that
+ * adds `defer` to every local <script> tag except the ones on its own
+ * "Exclude JavaScript files from processing" list — it never consults
+ * WordPress's dependency graph. WordPress, on the other hand, prints a
+ * script's inline `before`/`after`/translations code as plain inline
+ * <script>s right next to a tag it believes is blocking, so once WP-Optimize
+ * defers the parent they run at parse time against a `wp` that does not
+ * exist yet ("wp is not defined" from wp-api-fetch-js-after, wp-data-js-after,
+ * the *-js-translations blocks). On most pages that only loses the REST root
+ * URL / nonce middleware; the block cart cannot survive it: when WooCommerce's
+ * wc-settings.js and wc-blocks-middleware.js were put on that exclusion list
+ * (wp-admin, 2026-10-15) they printed blocking while the whole wp.* stack
+ * stayed deferred, wc-settings.js threw on `wp.hooks` before defining
+ * wc.wcSettings, and every block bundle after it (registry, data store,
+ * cart/checkout base, cart frontend, payment methods, PPL parcelshop) threw
+ * in turn — no wc/store/v1/cart request, `is-loading` forever.
+ *
+ * WP-Optimize itself already refuses to run on the checkout page for exactly
+ * this class of problem (WP_Optimize_Minify_Functions::exclude_contents(),
+ * `is_checkout()`), which is why /cz/pokladna/ kept working. This gives the
+ * cart the same treatment through the plugin's supported filter, and lists
+ * checkout explicitly so the pair no longer depends on that internal check.
+ * The filter runs from WP-Optimize's `wp`-action init, after the main query,
+ * so is_cart()/is_checkout() resolve — including the CZ kosik/pokladna twins
+ * via the woocommerce_get_cart_page_id / _checkout_page_id filters in
+ * inc/woocommerce-lang.php. The pages then get WordPress's own script
+ * output: dependency-ordered, blocking where WooCommerce needs it, deferred
+ * only where WooCommerce asked for it (data-wp-strategy="defer"), unminified
+ * — correctness over the few KB minify saves on a page nobody lands on.
+ * Every other page is untouched (the first argument is returned as-is).
+ *
+ * Verified by loading the live cart HTML with WP-Optimize's blanket `defer`
+ * attributes removed: the block renders with no JS errors.
+ *
+ * @param bool   $run_on_page Whether WP-Optimize Minify processes this request.
+ * @param string $context     WP-Optimize's call-site context (unused).
+ * @return bool False on the cart and checkout pages, $run_on_page elsewhere.
+ */
+function molosoc_wpo_minify_skip_cart_checkout( $run_on_page, $context = 'default' ) {
+	if ( function_exists( 'is_cart' ) && is_cart() ) {
+		return false;
+	}
+	if ( function_exists( 'is_checkout' ) && is_checkout() ) {
+		return false;
+	}
+	return $run_on_page;
+}
+add_filter( 'wpo_minify_run_on_page', 'molosoc_wpo_minify_skip_cart_checkout', 10, 2 );
+
+/**
  * Header cart link — rendered by both header.php and front-page.php as a
  * direct child of the header row, after the nav (so it stays visible on
  * mobile instead of collapsing into the hamburger panel). Styled in
