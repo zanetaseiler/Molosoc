@@ -1379,3 +1379,146 @@ function molosoc_product_364_reviews_title_ngettext( $translation, $single, $plu
 	return $is_cz ? 'Recenze' : 'Reviews';
 }
 add_filter( 'ngettext', 'molosoc_product_364_reviews_title_ngettext', 10, 5 );
+
+/* =====================================================================
+ * 9. "Dobírka" (Cash on delivery) — Czech description + instructions
+ *    (Issue #198)
+ * =================================================================== */
+
+/**
+ * The COD gateway's stored Description and Instructions (WooCommerce →
+ * Payments → Cash on delivery) are, and stay, the English source values:
+ * the EN checkout (/checkout/, page 360), the EN order-received page and
+ * EN emails, and the wp-admin settings screen all read them unchanged.
+ * Czech shoppers see this text instead — one string for both fields, per
+ * the Issue. Nothing in this section reads-filters or writes any option:
+ * the title "Dobírka", enable_for_methods and the gateway order are never
+ * touched.
+ */
+function molosoc_cod_cz_text() {
+	return 'Zaplatíte při převzetí zásilky.';
+}
+
+/**
+ * Checkout payment box on /cz/pokladna/ (classic [woocommerce_checkout];
+ * WC_Payment_Gateway::get_description() runs this filter) and its
+ * /cz/?wc-ajax=update_order_review refreshes (section 3 keeps those under
+ * /cz/, so pll_current_language() still resolves). Same explicit-'cz'
+ * gate as every other CZ hook in this file: a falsy/unresolved language
+ * or 'en' returns the stored text untouched, so molosoc_en_gateway_description()
+ * above keeps sole ownership of 'en'. A deliberately blanked stored
+ * description stays blank in both languages.
+ */
+function molosoc_cz_cod_gateway_description( $description, $gateway_id = '' ) {
+	if ( 'cod' !== (string) $gateway_id || '' === trim( (string) $description ) ) {
+		return $description;
+	}
+	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
+		return $description;
+	}
+	return molosoc_cod_cz_text();
+}
+add_filter( 'woocommerce_gateway_description', 'molosoc_cz_cod_gateway_description', 10, 2 );
+
+/**
+ * WooCommerce has no filter for a gateway's Instructions:
+ * WC_Gateway_COD::thankyou_page() (hooked on woocommerce_thankyou_cod at
+ * priority 10) and WC_Gateway_COD::email_instructions() (hooked on
+ * woocommerce_email_before_order_table at priority 10) both echo the
+ * gateway's public $instructions property directly. Rather than replace
+ * WooCommerce's own callbacks, or read-filter the stored settings (which
+ * the admin screen and the EN side would then see too), the two hooks
+ * below swap that one property to the Czech text at priority 9 and put
+ * the stored value back at priority 11 — only around those two outputs,
+ * only on the COD gateway object, and only for a Czech order.
+ *
+ * "Czech order" means `_molosoc_lang` order meta === 'cz', stamped at
+ * checkout by molosoc_save_order_lang() (section 4) — the same ground
+ * truth the customer-email locale switch uses, so an admin-triggered
+ * status email for a CZ order (no /cz/ URL context, pll_current_language()
+ * false) still gets the Czech instructions and an EN order never does.
+ * An order without that meta (placed before Issue #53) falls back to the
+ * current request language, which only the order-received page asks for.
+ */
+function molosoc_order_is_cz( $order, $fallback_to_request_language = false ) {
+	if ( ! ( $order instanceof WC_Order ) ) {
+		return false;
+	}
+	$lang = (string) $order->get_meta( '_molosoc_lang' );
+	if ( '' !== $lang ) {
+		return 'cz' === $lang;
+	}
+	return $fallback_to_request_language && function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
+}
+
+/**
+ * The one COD gateway object WooCommerce instantiated (and whose
+ * thankyou_page()/email_instructions() are the hooked callbacks), or null
+ * when WooCommerce / the gateway isn't loaded.
+ */
+function molosoc_cod_gateway() {
+	if ( ! function_exists( 'WC' ) || ! method_exists( WC(), 'payment_gateways' ) || ! WC()->payment_gateways() ) {
+		return null;
+	}
+	$gateways = WC()->payment_gateways()->payment_gateways();
+	if ( isset( $gateways['cod'] ) && $gateways['cod'] instanceof WC_Payment_Gateway && property_exists( $gateways['cod'], 'instructions' ) ) {
+		return $gateways['cod'];
+	}
+	return null;
+}
+
+/**
+ * Swap the COD gateway's $instructions to the Czech text ($to_cz = true)
+ * or restore the stored value ($to_cz = false). Restoring with nothing
+ * stashed is a no-op, so the priority-11 restore is always safe to run;
+ * a deliberately blank stored Instructions stays blank in both languages.
+ */
+function molosoc_cod_swap_instructions( $to_cz ) {
+	static $saved = null;
+	$cod = molosoc_cod_gateway();
+	if ( ! $cod ) {
+		return;
+	}
+	if ( $to_cz ) {
+		if ( null !== $saved || '' === trim( (string) $cod->instructions ) ) {
+			return; // Already swapped, or nothing to translate.
+		}
+		$saved             = $cod->instructions;
+		$cod->instructions = molosoc_cod_cz_text();
+		return;
+	}
+	if ( null !== $saved ) {
+		$cod->instructions = $saved;
+		$saved             = null;
+	}
+}
+
+// Order-received page: thankyou.php fires woocommerce_thankyou_{gateway}
+// with the order id; for CZ orders that page lives under /cz/ (section 4).
+function molosoc_cz_cod_thankyou_before( $order_id ) {
+	if ( molosoc_order_is_cz( wc_get_order( $order_id ), true ) ) {
+		molosoc_cod_swap_instructions( true );
+	}
+}
+function molosoc_cz_cod_thankyou_after( $order_id ) {
+	molosoc_cod_swap_instructions( false );
+}
+add_action( 'woocommerce_thankyou_cod', 'molosoc_cz_cod_thankyou_before', 9 );
+add_action( 'woocommerce_thankyou_cod', 'molosoc_cz_cod_thankyou_after', 11 );
+
+// Customer emails: email_instructions() itself only prints for
+// ! $sent_to_admin && payment method 'cod', so the swap is gated the same
+// way and never runs for admin emails or other gateways' orders.
+function molosoc_cz_cod_email_before( $order, $sent_to_admin = false, $plain_text = false ) {
+	if ( $sent_to_admin || ! ( $order instanceof WC_Order ) || 'cod' !== $order->get_payment_method() ) {
+		return;
+	}
+	if ( molosoc_order_is_cz( $order ) ) {
+		molosoc_cod_swap_instructions( true );
+	}
+}
+function molosoc_cz_cod_email_after( $order, $sent_to_admin = false, $plain_text = false ) {
+	molosoc_cod_swap_instructions( false );
+}
+add_action( 'woocommerce_email_before_order_table', 'molosoc_cz_cod_email_before', 9, 3 );
+add_action( 'woocommerce_email_before_order_table', 'molosoc_cz_cod_email_after', 11, 3 );

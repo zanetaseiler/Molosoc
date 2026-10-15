@@ -1,0 +1,55 @@
+name: Translate CZ cart empty-state headings (page 1012)
+
+# Issue #198: the Czech cart page (/cz/kosik/, page 1012) still has the
+# WooCommerce Cart block's two empty-cart headings saved in English. This
+# runs automations/content-sync/translate_cz_cart_empty_state.py, which
+# replaces exactly those two heading texts in the page's saved content and
+# nothing else (see that script's header for the full safety model).
+#
+# workflow_dispatch ONLY — never on push/PR — because it edits published
+# production content. Same pattern and secrets as
+# create-cart-checkout-cz-pages.yml.
+#
+# Run from the Actions tab -> "Translate CZ cart empty-state headings
+# (page 1012)" -> Run workflow:
+#   1. first with "apply" unchecked: a read-only dry run that prints the
+#      two changes it would make and verifies the target page;
+#   2. then with "apply" checked to write them. The script re-reads the
+#      page afterwards and fails if WordPress stored anything other than
+#      the content it sent. Re-running is idempotent.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the two Czech headings to page 1012. Leave unchecked for a read-only dry run."
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  translate-cz-cart-empty-state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Translate empty-cart headings on page 1012
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY" = "true" ]; then
+            python3 automations/content-sync/translate_cz_cart_empty_state.py --apply
+          else
+            python3 automations/content-sync/translate_cz_cart_empty_state.py
+          fi
