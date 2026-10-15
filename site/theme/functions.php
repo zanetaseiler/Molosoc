@@ -406,6 +406,14 @@ function molosoc_enqueue_assets() {
 		// above for why the Czech slug has to be listed explicitly.
 		wp_enqueue_style( 'molosoc-product', $theme_uri . '/assets/css/product.css', array( 'molosoc-components' ), $theme_version );
 
+		// Fonts (Issue #190, Landing A first paint): same treatment as
+		// Landing B below — the global molosoc-fonts handle is dequeued and
+		// molosoc_landing_a_head() prints the one Google Fonts stylesheet as
+		// a media="print" + onload swap link, off the critical path. The
+		// font set is unchanged (molosoc_fonts_url()); only its blocking
+		// behaviour changes.
+		wp_dequeue_style( 'molosoc-fonts' );
+
 		// No model-viewer here any more (Issue #149, mobile speed): the
 		// hero's still of the Molosoc model is a plain <img>
 		// (molosoc-hero-still.webp, ~43 KB) in the template, so neither the
@@ -644,6 +652,119 @@ function molosoc_landing_b_head() {
 	}
 }
 add_action( 'wp_head', 'molosoc_landing_b_head', 1 );
+
+/**
+ * Landing Page A = the live foot-cover landing page, EN 'moisture-lock-foot-cover'
+ * (page 869) / CZ 'hydratacni-navlek-na-nohy' (page 886), template
+ * page-moisture-lock-foot-cover.php + product.css. Issue #190 gives it the
+ * Landing B speed treatment (no-plugin-markup gate, LCP preload, non-blocking
+ * fonts); this helper is the one place those new gates read the pair from.
+ * The older gates (preconnect hints, the product.css enqueue branch) keep
+ * their own literal pair so their tests stay byte-for-byte meaningful.
+ */
+function molosoc_is_landing_page_a() {
+	return is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) );
+}
+
+/**
+ * The hero still of Landing Page A — the LCP element on phones (Lighthouse
+ * mobile, Issue #190: img.molosoc-orbit-model, 1440x1440, ~43 KB). The
+ * template hardcodes this same URL on its <img> (tests/test_static_model_still.py
+ * pins it there); molosoc_landing_a_head() preloads it so the request starts
+ * with the HTML instead of after the head's stylesheets have parsed.
+ */
+function molosoc_landing_a_hero_still_url() {
+	return 'https://molosoc.com/wp-content/uploads/2026/10/molosoc-hero-still.webp';
+}
+
+/**
+ * Landing Page A <head> output (Issue #190), priority 1 so it lands before
+ * the render-blocking stylesheets — the same two moves molosoc_landing_b_head()
+ * makes for B, nothing page-visible:
+ *   1. the hero still preload with fetchpriority="high" (the <img> already
+ *      carries fetchpriority="high", but the parser only reaches it after
+ *      the head's stylesheets, which is where Lighthouse's 1.6 s LCP "load
+ *      delay" came from);
+ *   2. the site Google Fonts stylesheet as a non-blocking media="print"
+ *      link that swaps to media="all" once loaded (+ <noscript> fallback);
+ *      the Landing A branch of molosoc_enqueue_assets() dequeues the
+ *      blocking handle. display=swap is already in the URL, so text renders
+ *      in the fallback face until the files arrive — exactly as on B.
+ * The preconnect hints for the fonts origins are printed by the
+ * molosoc_landing_preconnect_hints() hook above (same priority).
+ * Printed raw (not enqueued) so WP-Optimize Minify leaves it alone.
+ */
+function molosoc_landing_a_head() {
+	if ( ! molosoc_is_landing_page_a() ) {
+		return;
+	}
+	printf(
+		'<link rel="preload" as="image" fetchpriority="high" href="%s">' . "\n",
+		esc_url( molosoc_landing_a_hero_still_url() )
+	);
+	printf(
+		'<link rel="stylesheet" href="%1$s" media="print" onload="this.media=\'all\'">' . "\n" .
+		'<noscript><link rel="stylesheet" href="%1$s"></noscript>' . "\n",
+		esc_url( molosoc_fonts_url() )
+	);
+}
+add_action( 'wp_head', 'molosoc_landing_a_head', 1 );
+
+/**
+ * Microsoft Clarity consent replay (Issue #190, "Clarity starts a new session
+ * on every page").
+ *
+ * Clarity is loaded by the Microsoft Clarity plugin (clarity_add_script_to_header
+ * on wp_head, priority 10 — the stub + async tag, no consent handling of its
+ * own). The cookie banner is WPConsent, which stores the visitor's decision
+ * in the `wpconsent_preferences` cookie ({"essential":true,"statistics":…,
+ * "marketing":…}) and, on the click itself, already tells Clarity via
+ * window.clarity('consentv2', …) on its `wpconsent_consent_saved` event. It
+ * never replays that stored decision on the NEXT page load, so with the
+ * project's "require cookie consent" setting Clarity ran cookieless on every
+ * page after the first: a fresh user ID and a one-page session each time
+ * (landing B → product → cart showed as three sessions).
+ *
+ * This prints, right after the plugin's stub (priority 11), the stored
+ * decision as Clarity's Consent API v2 call — analytics_Storage from the
+ * "statistics" category, ad_Storage from "marketing", each 'granted' only
+ * when that category was accepted and 'denied' otherwise — and re-sends it on
+ * every later `wpconsent_consent_saved` so the page-load path and the click
+ * path can never disagree. Visitors without a stored decision get no call at
+ * all (Clarity's default is denied/cookieless until the banner is answered,
+ * when WPConsent's own handler fires). The call is queued through the same
+ * `clarity.q` stub the plugin snippet defines, so it is processed as soon as
+ * the tag loads; if the plugin ever prints later than this, the stub is
+ * created here with the identical shape and the plugin's `c[a] = c[a] || …`
+ * keeps it. Raw wp_head markup, not an enqueue/inline-script, so WP-Optimize
+ * Minify cannot bundle or drop it (see the sticky-CTA data print above).
+ */
+function molosoc_clarity_consent_replay() {
+	?>
+<script>
+(function (w, d) {
+	function signal(p) {
+		if (!p || typeof p !== 'object') { return; }
+		w.clarity = w.clarity || function () { (w.clarity.q = w.clarity.q || []).push(arguments); };
+		w.clarity('consentv2', {
+			ad_Storage: p.marketing ? 'granted' : 'denied',
+			analytics_Storage: p.statistics ? 'granted' : 'denied'
+		});
+	}
+	var parts = ('; ' + d.cookie).split('; wpconsent_preferences=');
+	if (parts.length === 2) {
+		var raw = parts.pop().split(';').shift(), prefs = null;
+		try { prefs = JSON.parse(raw); } catch (e) {
+			try { prefs = JSON.parse(decodeURIComponent(raw)); } catch (e2) { prefs = null; }
+		}
+		signal(prefs);
+	}
+	w.addEventListener('wpconsent_consent_saved', function (e) { signal(e.detail); });
+})(window, document);
+</script>
+	<?php
+}
+add_action( 'wp_head', 'molosoc_clarity_consent_replay', 11 );
 
 /**
  * Landing Page B document title. Issue #153 stripped the working label
@@ -2175,9 +2296,34 @@ add_filter( 'wc_product_sku_enabled', '__return_false' );
  * the server-rendered count is never stale (see molosoc_cart_link()). The
  * PPL CZ plugin enqueues its map/label CSS late (they print in the footer),
  * so the same pass also runs right before the footer assets print.
+ *
+ * Landing Page A (Issue #190, molosoc_is_landing_page_a()) joins the gate:
+ * Lighthouse mobile showed the same 18 render-blocking resources (Customer
+ * Reviews, WooCommerce layout/general/smallscreen, Comgate, select2,
+ * PhotoSwipe, PPL — in the head there — plus jQuery + jquery-migrate) on a
+ * page with no form, gallery or review markup: every CTA is a link to the
+ * product page, and the header cart badge is server-rendered as on B. A
+ * headless-Chrome render of the live page with all of it removed was
+ * pixel-identical at 390 px and 1280 px.
+ *
+ * jQuery (Issue #190, "jQuery is not defined"): deregistering jquery-migrate
+ * breaks the `jquery` alias (deps: jquery-core + jquery-migrate), and
+ * WordPress then drops the alias and every script that properly declares a
+ * 'jquery' dependency — so these pages never had jQuery at all, which is
+ * what keeps their head free of 36 KB of blocking script. That is now
+ * explicit below (jquery, jquery-core, jquery-migrate). Two scripts call
+ * jQuery WITHOUT declaring it and were still printed, throwing
+ * "jQuery is not defined" / Safari's "Can't find variable: jQuery" in
+ * ~20 % of Clarity sessions: WooCommerce's deferred woocommerce-analytics-client
+ * bundle (`jQuery(() => …)` at top level, every page load) — dequeued below,
+ * it only ever errored here — and Thrive's inline footer toast script, which
+ * has no handle and is removed by molosoc_strip_thrive_toast_script(). Thrive
+ * Dashboard's frontend.min.js (`jQuery.noConflict()` at top level) declares
+ * the dependency and was already being dropped; it is listed for the same
+ * explicitness.
  */
 function molosoc_page_without_plugin_markup() {
-	return is_front_page() || is_page( 'hydratacni-navleky-molosoc' );
+	return is_front_page() || is_page( 'hydratacni-navleky-molosoc' ) || molosoc_is_landing_page_a();
 }
 
 function molosoc_dequeue_unused_homepage_assets() {
@@ -2209,7 +2355,11 @@ function molosoc_dequeue_unused_homepage_assets() {
 	}
 
 	$scripts = array(
+		'jquery',
+		'jquery-core',
 		'jquery-migrate',
+		'woocommerce-analytics-client',
+		'tve-dash-frontend',
 		'select2',
 		'photoswipe',
 		'photoswipe-ui-default',
@@ -2226,13 +2376,13 @@ function molosoc_dequeue_unused_homepage_assets() {
 		'comgate',
 		'comgate-woocommerce',
 	);
-	if ( is_page( 'hydratacni-navleky-molosoc' ) ) {
-		// Landing Page B only (the homepage list above is left exactly as
-		// audited): WooCommerce's core frontend script (blockUI/js-cookie
-		// come along as its dependencies), the Customer Reviews masonry
-		// helper and the PPL CZ parcel-shop map scripts — none has a
-		// target on this page. Order-attribution/sourcebuster stay: they
-		// record where a later purchase started.
+	if ( is_page( 'hydratacni-navleky-molosoc' ) || molosoc_is_landing_page_a() ) {
+		// Landing Pages B and A only (the homepage list above is left
+		// exactly as audited): WooCommerce's core frontend script
+		// (blockUI/js-cookie come along as its dependencies), the Customer
+		// Reviews masonry helper and the PPL CZ parcel-shop map scripts —
+		// none has a target on these pages. Order-attribution/sourcebuster
+		// stay: they record where a later purchase started.
 		$scripts = array_merge( $scripts, array(
 			'woocommerce',
 			'cr-colcade',
@@ -2247,6 +2397,52 @@ function molosoc_dequeue_unused_homepage_assets() {
 }
 add_action( 'wp_enqueue_scripts', 'molosoc_dequeue_unused_homepage_assets', 100 );
 add_action( 'wp_print_footer_scripts', 'molosoc_dequeue_unused_homepage_assets', 1 );
+
+/**
+ * Thrive's inline footer toast script (Issue #190, "jQuery is not defined").
+ *
+ * Thrive Architect/Dashboard echoes a handle-less `( $ => { … } )( typeof
+ * ThriveGlobal === 'undefined' ? jQuery : ThriveGlobal.$j );` block into
+ * wp_footer on every page (it replays a `tcb_toast_message` after a Thrive
+ * login redirect — nothing this theme's pages ever set). WPConsent wraps it
+ * as the blocked "thrive-leads" service and runs it on DOMContentLoaded once
+ * marketing consent exists, so on the pages where jQuery is deliberately not
+ * loaded (molosoc_page_without_plugin_markup()) every consenting visitor hit
+ * a ReferenceError. There is no handle to dequeue and no filter to switch it
+ * off, so wp_footer is buffered on those pages only and the one script is
+ * removed from the buffered output. The pattern is anchored on that exact
+ * arrow-IIFE opener, the `tcb_toast_message` key and the ThriveGlobal
+ * closer and cannot cross a </script> boundary; if Thrive changes the
+ * snippet it simply stops matching and the page is as it was.
+ *
+ * @param string $html Buffered wp_footer output.
+ * @return string The same output without the Thrive toast script.
+ */
+function molosoc_strip_thrive_toast_script( $html ) {
+	return preg_replace(
+		'#<script\b[^>]*>\s*\(\s*\$\s*=>\s*\{(?:(?!</script>).)*?tcb_toast_message(?:(?!</script>).)*?ThriveGlobal\.\$j\s*\)\s*;\s*</script>\s*#s',
+		'',
+		$html
+	);
+}
+
+function molosoc_footer_buffer_start() {
+	if ( ! molosoc_page_without_plugin_markup() ) {
+		return;
+	}
+	ob_start();
+	$GLOBALS['molosoc_footer_buffer_level'] = ob_get_level();
+}
+
+function molosoc_footer_buffer_end() {
+	if ( empty( $GLOBALS['molosoc_footer_buffer_level'] ) || ob_get_level() !== $GLOBALS['molosoc_footer_buffer_level'] ) {
+		return; // Not buffering here, or something else already closed/opened a buffer — leave the output alone.
+	}
+	unset( $GLOBALS['molosoc_footer_buffer_level'] );
+	echo molosoc_strip_thrive_toast_script( ob_get_clean() ); // phpcs:ignore WordPress.Security.EscapeOutput -- the footer markup other hooks already printed, minus one <script>.
+}
+add_action( 'wp_footer', 'molosoc_footer_buffer_start', PHP_INT_MIN );
+add_action( 'wp_footer', 'molosoc_footer_buffer_end', PHP_INT_MAX );
 
 /**
  * Header cart link — rendered by both header.php and front-page.php as a

@@ -391,8 +391,9 @@ class LandingBTemplate(unittest.TestCase):
         # Live Page A gates untouched: the landing pair still appears exactly
         # where it did before (preconnect, product.css branch).
         # Issue #177 took the pair out of the sticky-CTA gate: preconnect +
-        # product.css branch remain.
-        self.assertEqual(fn.count("array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' )"), 2)
+        # product.css branch remain. Issue #190 adds the one helper
+        # (molosoc_is_landing_page_a()) its new speed gates read the pair from.
+        self.assertEqual(fn.count("array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' )"), 3)
 
     def test_css_and_js_are_scoped_to_the_page(self):
         selectors = re.findall(r"^([^@\s{}][^{]*)\{", self.css_rules, flags=re.M)
