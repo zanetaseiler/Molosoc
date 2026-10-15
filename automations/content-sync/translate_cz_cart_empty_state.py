@@ -24,9 +24,10 @@ Safety model:
     molosoc.com production before anything is read.
   * The page must be id 1012, slug "kosik", served at /cz/kosik/ on a
     production host, or the script refuses.
-  * Each English heading must occur exactly once (a heading already in
-    Czech is skipped, so re-running is idempotent); anything else aborts
-    before the write.
+  * Each English heading must occur exactly once as a core/heading block
+    inside the page's single woocommerce/empty-cart-block (a heading already
+    in Czech is skipped, so re-running is idempotent); the same phrase
+    elsewhere on the page is ignored; anything else aborts before the write.
   * After the write the page is re-read and must equal the content this
     script sent, byte for byte; if WordPress altered anything else on save
     (kses, balanceTags, a plugin filter) the run fails loudly and names the
@@ -43,6 +44,7 @@ Usage:
 """
 
 import argparse
+import re
 import sys
 
 import requests
@@ -75,36 +77,68 @@ class ContentMismatch(Exception):
     """Page content is not in the one shape this script knows how to edit."""
 
 
+EMPTY_BLOCK_OPEN = "<!-- wp:woocommerce/empty-cart-block -->"
+EMPTY_BLOCK_CLOSE = "<!-- /wp:woocommerce/empty-cart-block -->"
+
+
+def _heading_block_pattern(text):
+    """Regex matching `text` as the closing part of a core/heading block's <h2>."""
+    return re.compile(
+        r"(<!-- wp:heading\b(?:(?!-->).)*-->\s*<h2\b[^>]*)" + re.escape(text),
+        re.S,
+    )
+
+
 def translate_cart_content(raw):
     """Return (new_raw, changed) for the saved block markup `raw`.
 
+    Only text inside the single `woocommerce/empty-cart-block` is considered,
+    and each heading must sit in a core/heading block's <h2> there; the same
+    phrase in any other heading on the page is never matched or modified.
     `changed` lists the (old, new) pairs actually replaced. A heading that
     already carries its Czech text (and no English one) is skipped, so the
-    function is idempotent; any other count of the English text raises
-    ContentMismatch rather than guessing.
+    function is idempotent; any other count raises ContentMismatch rather
+    than guessing.
     """
-    out = raw
+    if raw.count(EMPTY_BLOCK_OPEN) != 1 or raw.count(EMPTY_BLOCK_CLOSE) != 1:
+        raise ContentMismatch(
+            f"expected exactly one woocommerce/empty-cart-block in page {PAGE_ID}'s "
+            f"saved content, found {raw.count(EMPTY_BLOCK_OPEN)} opening and "
+            f"{raw.count(EMPTY_BLOCK_CLOSE)} closing markers. Nothing was written."
+        )
+    start = raw.index(EMPTY_BLOCK_OPEN)
+    end = raw.index(EMPTY_BLOCK_CLOSE) + len(EMPTY_BLOCK_CLOSE)
+    if end <= start:
+        raise ContentMismatch(
+            f"woocommerce/empty-cart-block markers in page {PAGE_ID} are out of "
+            f"order. Nothing was written."
+        )
+    head, block, tail = raw[:start], raw[start:end], raw[end:]
+
     changed = []
     for old, new in REPLACEMENTS:
-        n_old = out.count(old)
+        n_old = len(_heading_block_pattern(old).findall(block))
         if n_old == 1:
-            out = out.replace(old, new, 1)
+            block = _heading_block_pattern(old).sub(
+                lambda m, new=new: m.group(1) + new, block, count=1
+            )
             changed.append((old, new))
-        elif n_old == 0 and new in out:
+        elif n_old == 0 and len(_heading_block_pattern(new).findall(block)) == 1:
             continue  # Already translated on an earlier run.
         else:
             raise ContentMismatch(
-                f"expected exactly one {old!r} in page {PAGE_ID}'s saved content, "
-                f"found {n_old} (and Czech text present: {new in out}). Nothing "
-                f"was written — inspect the page in wp-admin before re-running."
+                f"expected exactly one heading block with {old!r} inside the "
+                f"empty-cart block of page {PAGE_ID}, found {n_old} (Czech heading "
+                f"present: {len(_heading_block_pattern(new).findall(block))}). "
+                f"Nothing was written — inspect the page in wp-admin before re-running."
             )
     for _, new in REPLACEMENTS:
-        if out.count(new) != 1:
+        if len(_heading_block_pattern(new).findall(block)) != 1:
             raise ContentMismatch(
-                f"after replacement {new!r} occurs {out.count(new)} times, expected 1. "
-                f"Nothing was written."
+                f"after replacement {new!r} does not occur exactly once as a heading "
+                f"in the empty-cart block. Nothing was written."
             )
-    return out, changed
+    return head + block + tail, changed
 
 
 def fetch_page_raw(page_id):

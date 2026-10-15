@@ -217,9 +217,38 @@ class TranslateCartContentTests(unittest.TestCase):
         with self.assertRaises(self.mod.ContentMismatch):
             self.mod.translate_cart_content(SAMPLE_RAW.replace(">New in store</h2>", ">Novinky</h2>"))
         with self.assertRaises(self.mod.ContentMismatch):
-            self.mod.translate_cart_content(SAMPLE_RAW + "\n<h2>New in store</h2>")
+            self.mod.translate_cart_content(SAMPLE_RAW.replace(
+                "<!-- /wp:woocommerce/empty-cart-block -->",
+                '<!-- wp:heading -->\n<h2>New in store</h2>\n<!-- /wp:heading -->\n<!-- /wp:woocommerce/empty-cart-block -->',
+            ))
         with self.assertRaises(self.mod.ContentMismatch):
             self.mod.translate_cart_content("")
+
+    def test_phrase_outside_empty_cart_block_is_never_touched(self):
+        outside = (
+            '<!-- wp:heading -->\n<h2 class="wp-block-heading">New in store</h2>\n<!-- /wp:heading -->\n'
+        )
+        # Heading removed from the empty-cart block, same phrase elsewhere once:
+        # must refuse rather than rewrite the unrelated heading.
+        gone = SAMPLE_RAW.replace(">New in store</h2>", ">Novinky</h2>") + "\n" + outside
+        with self.assertRaises(self.mod.ContentMismatch):
+            self.mod.translate_cart_content(gone)
+        # Phrase also present outside while the real one exists: outside is left alone.
+        both = SAMPLE_RAW + "\n" + outside
+        out, changed = self.mod.translate_cart_content(both)
+        self.assertEqual(len(changed), 2)
+        self.assertTrue(out.endswith(outside))
+        self.assertEqual(out.count("New in store"), 1)
+
+    def test_heading_must_be_a_heading_block_in_the_empty_cart_block(self):
+        bare = SAMPLE_RAW.replace(
+            '<!-- wp:heading {"textAlign":"center"} -->\n<h2 class="wp-block-heading has-text-align-center">New in store</h2>',
+            '<h2>New in store</h2>',
+        )
+        with self.assertRaises(self.mod.ContentMismatch):
+            self.mod.translate_cart_content(bare)
+        with self.assertRaises(self.mod.ContentMismatch):
+            self.mod.translate_cart_content(SAMPLE_RAW.replace("wp:woocommerce/empty-cart-block", "wp:woocommerce/other"))
 
     def _fake_requests(self, pages, post_status=200, stored_after_post=None):
         """A requests stand-in serving `pages` ({id: (json, raw)}) and
