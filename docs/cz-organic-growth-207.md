@@ -40,6 +40,7 @@ links in `i18n/cz/`. "Live state" is not verified here (see §1).
 | `/cz/magazin/` | Hub | Navigation: "Kde začít podle toho, co vás trápí" (#203) | — (theme template) |
 | `/cz/navleky-na-nohy/` | Category (EN: foot-covers) | Commercial investigation: reusable cover vs. disposable sock mask | Návleky na nohy \| Hydratační návlek na nohy — Molosoc |
 | `/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/` | Product | Transactional + proof (before/after, cream-you-own) | Návlek na nohy Molosoc — Krém, který už doma máte, konečně funguje |
+| `/cz/hydratacni-navleky-molosoc/` | Landing page (Meta-ads destination, page 1037) | Commercial: *maska na nohy*. Retargeted in Issue #161 to own this term; `docs/landing-page-b-580.md` records a Czech Keywords Everywhere volume of 880/month ("and rising"), the only Czech volume in the repo (single tool, dated 2026-10-14, not GSC) | Hydratační maska na nohy na opakované použití \| Molosoc |
 
 **Not published in Czech (EN exists or planned):** dry skin on feet
 (`/dry-skin-feet/`), foot cream that works (`/foot-cream-that-works/`),
@@ -67,7 +68,7 @@ medical cure). Volumes: **not available for CZ — none stated.**
 | 4 | **suchá kůže na chodidlech / suché nohy** | I | **High**, but no CZ page. EN pillar 4 exists (`/dry-skin-feet/`) with no CZ twin. | Interim: section in `/cz/popraskane-paty/`; later: CZ translation of pillar 4 (needs approval, see R7) | Same as #3 |
 | 5 | **kuří oko** (+ *jak odstranit kuří oko*, *kuří oko na chodidle*) | I | **Low–medium.** Cover/cream helps only with the "soften afterwards, keep it from returning" part; the main intent (removal) is not what the product does. | Already fully covered by 3 pages — **do not add more.** | GSC: impressions vs. clicks vs. product-page sessions from these URLs |
 | 6 | **zarostlý nehet** (+ *na palci*) | I (health-adjacent) | **Low.** Only the "softer surrounding skin" angle; high medical sensitivity; many searchers need a doctor. | Already covered by the pillar — **do not add more; keep claims minimal.** | GSC as #5 |
-| 7 | **maska na nohy / hydratační maska na nohy / ponožky na hydrataci** (the disposable-product search that the cover competes with) | C | **High for conversion**, but the category page is titled *návleky na nohy*, which in Czech may read as shoe covers/protective covers. This is a hypothesis taken from the EN "foot covers" PPE-overlap warning in `docs/seo-geo-plan.md` §3, **not** checked against Czech SERPs. | `/cz/navleky-na-nohy/` (category) | Live SERP check of *návleky na nohy* vs. *maska na nohy*; GSC: which queries the category/product pages receive |
+| 7 | **maska na nohy / hydratační maska na nohy / ponožky na hydrataci** (the disposable-product search that the cover competes with) | C | **High for conversion**, but the category page is titled *návleky na nohy*, which in Czech may read as shoe covers/protective covers. This is a hypothesis taken from the EN "foot covers" PPE-overlap warning in `docs/seo-geo-plan.md` §3, **not** checked against Czech SERPs. | **`/cz/hydratacni-navleky-molosoc/` already owns this term** (Issue #161, `docs/landing-page-b-580.md`, `site/theme/page-hydratacni-navleky-molosoc.php`). The category keeps *návleky na nohy*; do not assign *maska na nohy* to it. | GSC: performance of the landing page for *maska na nohy* (and whether the category cannibalises it); live SERP check of *návleky na nohy* vs. *maska na nohy* |
 
 Ranking logic: 1–2 first because the page exists, the intent is
 cream-adjacent, and the proof content already lives on the product page.
@@ -118,10 +119,14 @@ page is indexed and shows which query it actually receives (same stance as
   buying, and it supports #3/#4 wording ("hydratace", "přes noc") naturally.
 
 **R3 — `/cz/navleky-na-nohy/` (priority 3).**
-- Test whether Czech searchers use *maska na nohy* rather than *návleky na
-  nohy* (opportunity 7). If yes, qualify the title/H1 so the page is not read
-  as shoe covers (e.g. *Opakovaně použitelný hydratační návlek na nohy — na
-  krém, který už máte*), mirroring the EN "qualify `foot covers` fast" rule.
+- *Maska na nohy* is owned by the existing landing page
+  `/cz/hydratacni-navleky-molosoc/` (Issue #161); do not retarget this
+  category to it, which would make the two pages compete and invalidate that
+  keyword-ownership change. First evaluate the landing page's GSC performance.
+  Separately, if *návleky na nohy* in Czech reads as shoe covers, qualify the
+  title/H1 with the reusable-hydration meaning (e.g. *Opakovaně použitelný
+  hydratační návlek na nohy — na krém, který už máte*), mirroring the EN
+  "qualify `foot covers` fast" rule, without adopting *maska na nohy*.
   Do **not** change the slug or permalink.
 - The "co skutečně znamená hydratační" section is the right home for the
   *přes noc / hydratace nohou* wording until a dedicated page is approved.
@@ -142,7 +147,12 @@ page is indexed and shows which query it actually receives (same stance as
   text exists only in the non-rendered draft
   `seo/cz-pages/pillar-zarostly-nehet.md` (~lines 55-61). Add that
   escalation guidance to the actual template (safety fix, not a
-  growth/product change); no other change.
+  growth/product change). Second required change: the template's final CTA
+  (`page-ingrown-toenails.php` ~lines 221-224) says *"Skutečné zarostlé
+  nehty, zahojené díky pravidelné péči"* (EN: "treated through consistent
+  care"), which ties the product to healing an ingrown nail. Remove or soften
+  it to a non-medical statement (e.g. about visible skin comfort/hydration);
+  no other change.
 
 **R6 — `/cz/magazin/` (data task, not a content task).**
 - #203 already added topic navigation. Add nothing until GSC shows whether it
@@ -154,7 +164,8 @@ page is indexed and shows which query it actually receives (same stance as
    page) justified? It is the largest CZ topic with product fit and no page.
 2. Same question for the CZ twins of the EN cream spokes
    (`cracked-heels-cream`) — only if #1 queries show demand.
-3. Approve a CZ-language SERP check for *návleky na nohy* vs. *maska na nohy*.
+3. Approve a CZ-language SERP check for *návleky na nohy* vs. *maska na nohy*,
+   plus GSC review of `/cz/hydratacni-navleky-molosoc/` (owner of *maska na nohy*).
 
 ## 5. What can generate qualified traffic vs. only impressions
 
