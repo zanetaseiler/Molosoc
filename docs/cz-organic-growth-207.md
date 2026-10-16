@@ -94,7 +94,7 @@ page is indexed and shows which query it actually receives (same stance as
 - Genuinely useful FAQ (3–4 items, plain answers): *Jak často natírat paty?*,
   *Pomáhá krém přes noc?*, *Kdy s popraskanými patami k lékaři?* (e.g. deep,
   bleeding or infected-looking cracks — send them to a doctor, do not treat;
-  no condition-specific, e.g. diabetes, framing, per the non-medical content
+  no medical-condition-specific framing, per the non-medical content
   rules in `docs/site-structure.md` and `docs/wp-build-spec.md`). Note that FAQ rich results are largely limited to authoritative
   government/health sites, so the value is user usefulness and GEO
   extractability, not a SERP feature.
