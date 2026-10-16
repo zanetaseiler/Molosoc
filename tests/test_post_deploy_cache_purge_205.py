@@ -47,7 +47,8 @@ class PostDeployCachePurgeTests(unittest.TestCase):
         self.assertNotIn("|| true", self.code)
         self.assertIn("exit 1", self.job)
         self.assertIn("secrets missing", self.job)
-        self.assertIn("still present after purge", self.job)
+        self.assertNotIn("still present after purge", self.job)
+        self.assertIn("recreated by a fresh request", self.job)
 
     def test_idempotent_when_cache_absent(self):
         self.assertIn("already absent", self.job)

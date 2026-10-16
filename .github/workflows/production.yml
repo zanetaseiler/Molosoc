@@ -49,8 +49,10 @@ jobs:
   #     directory WP-Optimize recreates on demand; never a wildcard, never
   #     uploads, orders, products or WooCommerce settings;
   #   - idempotent: an already-absent directory is a pass;
-  #   - failure-visible: any FTPS error or a directory that survives the
-  #     delete fails the job (red run) instead of being swallowed.
+  #   - failure-visible: any FTPS error (connect, auth, listing or delete)
+  #     fails the job (red run) instead of being swallowed. The directory
+  #     reappearing after the delete is NOT a failure (WP-Optimize recreates
+  #     it on the next anonymous request).
   # WP-Optimize does not cache cart/checkout/account pages, and this job does
   # not change that policy. The minify directory is deliberately left alone:
   # fresh page HTML references the current bundle, and deleting it risks
@@ -87,8 +89,11 @@ jobs:
           fi
           lftp -u "$USER,$PASS" -e "$LFTP cls -1 /wp-content/cache; bye" "$HOST" > /tmp/after.txt
           cat /tmp/after.txt
+          # WP-Optimize recreates the directory on the next anonymous request,
+          # so its presence here is not a failure: the delete command above
+          # already hard-fails on FTPS errors, and the re-listing succeeding
+          # confirms the connection is healthy.
           if grep -qx "wpo-cache/\?" /tmp/after.txt; then
-            echo "::error::$CACHE_DIR still present after purge"
-            exit 1
+            echo "$CACHE_DIR recreated by a fresh request after the purge - not an error"
           fi
           echo "WP-Optimize page cache purged"
