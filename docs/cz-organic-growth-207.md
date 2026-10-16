@@ -93,8 +93,9 @@ page is indexed and shows which query it actually receives (same stance as
   opportunity 4 without a new URL.
 - Genuinely useful FAQ (3–4 items, plain answers): *Jak často natírat paty?*,
   *Pomáhá krém přes noc?*, *Kdy s popraskanými patami k lékaři?* (e.g. deep,
-  bleeding, infected-looking cracks, or diabetes — send them to a doctor, do
-  not treat). Note that FAQ rich results are largely limited to authoritative
+  bleeding or infected-looking cracks — send them to a doctor, do not treat;
+  no condition-specific, e.g. diabetes, framing, per the non-medical content
+  rules in `docs/site-structure.md` and `docs/wp-build-spec.md`). Note that FAQ rich results are largely limited to authoritative
   government/health sites, so the value is user usefulness and GEO
   extractability, not a SERP feature.
 - Internal links: one contextual link to the product page "Skutečné výsledky"
@@ -105,9 +106,11 @@ page is indexed and shows which query it actually receives (same stance as
 **R2 — `/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/` (priority 2).**
 - Highest-value *conversion* page; do not chase impressions here. Verify
   title/meta in GSC once indexed; keep the proof-led angle.
-- Add a short, practical "Jak ho použít s krémem, který už máte" and "Pro
-  koho je (a pro koho není)" block with honest limits (not a medical device,
-  not for broken or infected skin) — qualified visitors need this before
+- The page already has "Jak to funguje" / "Jak ho použít" (30–60 min, rinse,
+  dry, reuse) in `site/theme/page-moisture-lock-foot-cover.php`. Do not add a
+  second instructions block; extend that section with only the missing
+  "Pro koho je (a pro koho není)" eligibility and safety guidance, with honest
+  limits (not a medical device, not for broken or infected skin) — qualified visitors need this before
   buying, and it supports #3/#4 wording ("hydratace", "přes noc") naturally.
 
 **R3 — `/cz/navleky-na-nohy/` (priority 3).**
