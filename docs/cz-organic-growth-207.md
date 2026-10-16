@@ -61,7 +61,7 @@ medical cure). Volumes: **not available for CZ — none stated.**
 
 | # | Opportunity (CZ query theme) | Intent | Fit with cream + reusable cover | Existing page that should carry it | Confirm with |
 |---|---|---|---|---|---|
-| 1 | **popraskané paty** — co pomáhá, mast/krém na popraskané paty, proč praskají (incl. winter angle) | I → C | **Highest.** Pillar already frames "mast se otře dřív, než se vstřebá", which is exactly the cover's job; matches the best-performing proof content (before/after heels). | `/cz/popraskane-paty/` | GSC: queries containing *popraskan\*/paty/mast/krém* → page, country CZ; positions 8–30 are the quick wins |
+| 1 | **popraskané paty** — co pomáhá, mast/krém na popraskané paty, proč praskají (winter angle belongs in product/persona content, not the pillar) | I → C | **Highest.** Pillar already frames "mast se otře dřív, než se vstřebá", which is exactly the cover's job; matches the best-performing proof content (before/after heels). | `/cz/popraskane-paty/` | GSC: queries containing *popraskan\*/paty/mast/krém* → page, country CZ; positions 8–30 are the quick wins |
 | 2 | **mast / krém na popraskané paty** (the product-shaped half of #1) | C → T | **Highest.** Searcher already plans to buy a cream; "works with your cream" is the angle. | Section of `/cz/popraskane-paty/` — **to be added to the rendered template** `site/theme/page-cracked-heels.php`: the H3 "Mast na popraskané paty — co v ní hledat" exists only in the non-rendered copy drafts (`seo/cz-pages/`, `i18n/cz/`), not on the live page; then link to product | GSC: does this query appear against the pillar or not at all? |
 | 3 | **hydratace nohou / jak hydratovat nohy přes noc / krém na nohy přes noc / ponožky po krému** | I → C | **High.** Directly the "cream needs sealed contact time" story; closest match to the cover's use case. | **No CZ page.** Interim: strengthen the cracked-heels pillar and category; new CZ page is a later decision (see §4, R7) | GSC/Semrush CZ: any volume for *hydratace nohou*, *přes noc* variants |
 | 4 | **suchá kůže na chodidlech / suché nohy** | I | **High**, but no CZ page. EN pillar 4 exists (`/dry-skin-feet/`) with no CZ twin. | Interim: section in `/cz/popraskane-paty/`; later: CZ translation of pillar 4 (needs approval, see R7) | Same as #3 |
@@ -87,10 +87,14 @@ page is indexed and shows which query it actually receives (same stance as
   phrase the page already uses in its H3. Candidate (test only after GSC
   confirms): title *Popraskané paty: příčiny a mast, která se skutečně
   vstřebá*; keep the meta factual and non-curative.
-- Add a short seasonal block ("Proč paty praskají hlavně v zimě" — heating,
-  socks/tights; fits the Oct–Mar habit window in `docs/seo-geo-plan.md` §6)
-  and a short "Suchá kůže na patách a chodidlech" block. This captures
-  opportunity 4 without a new URL.
+- Add a short "Suchá kůže na patách a chodidlech" block. This captures
+  opportunity 4 without a new URL. No seasonal/winter block on this pillar:
+  `docs/wp-build-spec.md` §10 restricts seasonal content to product/persona
+  pages, not pillars or category pages. If the winter angle ("Proč paty
+  praskají hlavně v zimě" — heating, socks/tights; Oct–Mar habit window in
+  `docs/seo-geo-plan.md` §6) is pursued, carry it in product-layer/persona
+  content instead (e.g. the Persona 1 section of the product page), as a
+  later, separately scoped block.
 - Genuinely useful FAQ (3–4 items, plain answers): *Jak často natírat paty?*,
   *Pomáhá krém přes noc?*, *Kdy s popraskanými patami k lékaři?* (e.g. deep,
   bleeding or infected-looking cracks — send them to a doctor, do not treat;
