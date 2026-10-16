@@ -228,6 +228,8 @@ get_header();
 		</div>
 	</section>
 
+	<?php molosoc_related_links( 'hardened-skin-calluses' ); ?>
+
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2), same pattern as the other pillar pages. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">

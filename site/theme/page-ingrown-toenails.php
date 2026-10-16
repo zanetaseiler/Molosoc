@@ -206,6 +206,8 @@ get_header();
 	</section>
 	<?php endif; ?>
 
+	<?php molosoc_related_links( 'ingrown-toenails' ); ?>
+
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2 — Ingrown-Nail/Hardened-Skin, this pillar's
 	     own persona). -->

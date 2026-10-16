@@ -176,6 +176,8 @@ get_header();
 		</div>
 	</section>
 
+	<?php molosoc_related_links( 'ingrown-treatment' ); ?>
+
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2 — same persona this spoke's parent pillar
 	     targets). -->

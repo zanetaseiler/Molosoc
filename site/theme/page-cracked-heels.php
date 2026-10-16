@@ -202,6 +202,8 @@ get_header();
 	</section>
 	<?php endif; ?>
 
+	<?php molosoc_related_links( 'cracked-heels' ); ?>
+
 	<!-- FINAL CTA — deep-links to the Product page's "Real results, no
 	     filters" H2 (Persona 2), per docs/site-structure.md §7's own
 	     "Deep-links to" note for Pillar 1. -->

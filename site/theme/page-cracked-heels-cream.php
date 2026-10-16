@@ -162,6 +162,8 @@ get_header();
 		</div>
 	</section>
 
+	<?php molosoc_related_links( 'cracked-heels-cream' ); ?>
+
 	<!-- FINAL CTA — deep-links to the Product page's "The cream you
 	     already own, finally working" H2 (Persona 1), not the usual
 	     "Real results" H2 — deliberate exception per site-structure.md §8. -->
