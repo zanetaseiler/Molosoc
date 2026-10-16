@@ -35,3 +35,60 @@ jobs:
             .git*/**
             **/node_modules/**
             preview/**
+
+  # Issue #205: after PR #204 deployed, WP-Optimize kept serving pre-deploy
+  # page HTML (and the minified CSS bundle it references) to logged-out
+  # users until a manual purge. This job removes WP-Optimize's page-cache
+  # directory so the next anonymous request re-renders against the new theme.
+  #
+  # Safety properties (asserted by tests/test_post_deploy_cache_purge_205.py):
+  #   - runs only when the deploy job succeeded (needs + success());
+  #   - reuses the deploy's existing PROD_SFTP_* secrets - no new credential,
+  #     no WP admin/REST call, no SSH;
+  #   - deletes ONE exact path (/wp-content/cache/wpo-cache), a pure cache
+  #     directory WP-Optimize recreates on demand; never a wildcard, never
+  #     uploads, orders, products or WooCommerce settings;
+  #   - idempotent: an already-absent directory is a pass;
+  #   - failure-visible: any FTPS error or a directory that survives the
+  #     delete fails the job (red run) instead of being swallowed.
+  # WP-Optimize does not cache cart/checkout/account pages, and this job does
+  # not change that policy. The minify directory is deliberately left alone:
+  # fresh page HTML references the current bundle, and deleting it risks
+  # broken CSS until it regenerates.
+  purge-page-cache:
+    needs: deploy
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Purge WP-Optimize page cache (production)
+        env:
+          HOST: ${{ secrets.PROD_SFTP_HOST }}
+          USER: ${{ secrets.PROD_SFTP_USER }}
+          PASS: ${{ secrets.PROD_SFTP_PASS }}
+        run: |
+          set -eu
+          if [ -z "$HOST" ] || [ -z "$USER" ] || [ -z "$PASS" ]; then
+            echo "::error::PROD_SFTP_* secrets missing - page cache NOT purged"
+            exit 1
+          fi
+          CACHE_DIR=/wp-content/cache/wpo-cache
+          # TLS certificate verification stays on (lftp default).
+          LFTP="set ftp:ssl-force true; set net:max-retries 3; set net:timeout 30;"
+          # Hard failure on connection/auth errors (no '|| true').
+          lftp -u "$USER,$PASS" -e "$LFTP cls -1 /wp-content/cache; bye" "$HOST" > /tmp/before.txt
+          cat /tmp/before.txt
+          if grep -qx "wpo-cache/\?" /tmp/before.txt; then
+            lftp -u "$USER,$PASS" -e "$LFTP rm -rf $CACHE_DIR; bye" "$HOST"
+          else
+            echo "$CACHE_DIR already absent - nothing to purge"
+          fi
+          lftp -u "$USER,$PASS" -e "$LFTP cls -1 /wp-content/cache; bye" "$HOST" > /tmp/after.txt
+          cat /tmp/after.txt
+          if grep -qx "wpo-cache/\?" /tmp/after.txt; then
+            echo "::error::$CACHE_DIR still present after purge"
+            exit 1
+          fi
+          echo "WP-Optimize page cache purged"
