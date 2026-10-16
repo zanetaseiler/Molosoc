@@ -62,7 +62,7 @@ medical cure). Volumes: **not available for CZ — none stated.**
 | # | Opportunity (CZ query theme) | Intent | Fit with cream + reusable cover | Existing page that should carry it | Confirm with |
 |---|---|---|---|---|---|
 | 1 | **popraskané paty** — co pomáhá, mast/krém na popraskané paty, proč praskají (incl. winter angle) | I → C | **Highest.** Pillar already frames "mast se otře dřív, než se vstřebá", which is exactly the cover's job; matches the best-performing proof content (before/after heels). | `/cz/popraskane-paty/` | GSC: queries containing *popraskan\*/paty/mast/krém* → page, country CZ; positions 8–30 are the quick wins |
-| 2 | **mast / krém na popraskané paty** (the product-shaped half of #1) | C → T | **Highest.** Searcher already plans to buy a cream; "works with your cream" is the angle. | Section of `/cz/popraskane-paty/` (already has H3 "Mast na popraskané paty — co v ní hledat") then link to product | GSC: does this query appear against the pillar or not at all? |
+| 2 | **mast / krém na popraskané paty** (the product-shaped half of #1) | C → T | **Highest.** Searcher already plans to buy a cream; "works with your cream" is the angle. | Section of `/cz/popraskane-paty/` — **to be added to the rendered template** `site/theme/page-cracked-heels.php`: the H3 "Mast na popraskané paty — co v ní hledat" exists only in the non-rendered copy drafts (`seo/cz-pages/`, `i18n/cz/`), not on the live page; then link to product | GSC: does this query appear against the pillar or not at all? |
 | 3 | **hydratace nohou / jak hydratovat nohy přes noc / krém na nohy přes noc / ponožky po krému** | I → C | **High.** Directly the "cream needs sealed contact time" story; closest match to the cover's use case. | **No CZ page.** Interim: strengthen the cracked-heels pillar and category; new CZ page is a later decision (see §4, R7) | GSC/Semrush CZ: any volume for *hydratace nohou*, *přes noc* variants |
 | 4 | **suchá kůže na chodidlech / suché nohy** | I | **High**, but no CZ page. EN pillar 4 exists (`/dry-skin-feet/`) with no CZ twin. | Interim: section in `/cz/popraskane-paty/`; later: CZ translation of pillar 4 (needs approval, see R7) | Same as #3 |
 | 5 | **kuří oko** (+ *jak odstranit kuří oko*, *kuří oko na chodidle*) | I | **Low–medium.** Cover/cream helps only with the "soften afterwards, keep it from returning" part; the main intent (removal) is not what the product does. | Already fully covered by 3 pages — **do not add more.** | GSC: impressions vs. clicks vs. product-page sessions from these URLs |
@@ -130,9 +130,15 @@ page is indexed and shows which query it actually receives (same stance as
   corn remover. No title/meta change without GSC data.
 
 **R5 — `/cz/zarostly-nehet/` (priority 5, restraint).**
-- Keep as is. Do not push product calls harder here; this is the most
-  medically sensitive intent and the product fit is weakest. Confirm the
-  "kdy jde o víc než nehet" guidance stays prominent.
+- Do not push product calls harder here; this is the most medically
+  sensitive intent and the product fit is weakest. One required addition:
+  the rendered template `site/theme/page-ingrown-toenails.php` (severity
+  cards, ~lines 104-119) describes worsening symptoms but never tells the
+  reader to seek medical help. The explicit "Kdy nečekat a jít k lékaři"
+  text exists only in the non-rendered draft
+  `seo/cz-pages/pillar-zarostly-nehet.md` (~lines 55-61). Add that
+  escalation guidance to the actual template (safety fix, not a
+  growth/product change); no other change.
 
 **R6 — `/cz/magazin/` (data task, not a content task).**
 - #203 already added topic navigation. Add nothing until GSC shows whether it
