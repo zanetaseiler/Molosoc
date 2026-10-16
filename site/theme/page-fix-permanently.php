@@ -156,6 +156,8 @@ get_header();
 		</div>
 	</section>
 
+	<?php molosoc_related_links( 'fix-permanently' ); ?>
+
 	<!-- FINAL CTA — Persona 2. -->
 	<section class="molosoc-section molosoc-pillar-final-cta">
 		<div class="molosoc-pillar-final-cta__card">
