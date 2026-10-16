@@ -104,8 +104,12 @@ page is indexed and shows which query it actually receives (same stance as
   rules in `docs/site-structure.md` and `docs/wp-build-spec.md`). Note that FAQ rich results are largely limited to authoritative
   government/health sites, so the value is user usefulness and GEO
   extractability, not a SERP feature.
-- Internal links: one contextual link to the product page "Skutečné výsledky"
-  section (already present at the bottom — add a second one in the rendered
+- Internal links: one contextual link to the product page (the existing
+  bottom CTA in `page-cracked-heels.php` links only to the product-page root;
+  the "Skutečné výsledky" proof block in `page-moisture-lock-foot-cover.php`
+  has no `id`, so treat this as a page-level link — a `#fragment` link to the
+  proof section would first require a later block to add a stable anchor to
+  that block and use the fragment URL) — add a second one in the rendered
   `site/theme/page-cracked-heels.php` section "Proč samotné mastění problém
   nevyřeší", where the problem peaks; the "Proč se to stejně vrací" heading
   exists only in the non-rendered `seo/cz-pages/` and `i18n/cz/` drafts, so do
