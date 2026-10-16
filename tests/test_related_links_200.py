@@ -13,6 +13,7 @@ TEMPLATES = {
     "page-hardened-skin-calluses.php": "hardened-skin-calluses",
     "page-fix-permanently.php": "fix-permanently",
     "page-cracked-heels-treatment.php": "cracked-heels-treatment",
+    "page-cracked-heels-cream.php": "cracked-heels-cream",
     "page-treatment.php": "ingrown-treatment",
     "page-prevent.php": "ingrown-prevent",
     "page-callus-remover.php": "callus-remover",

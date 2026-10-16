@@ -45,6 +45,10 @@ function molosoc_related_links_map() {
 			array( '/cracked-heels/fix-permanently/', 'How to fix cracked heels permanently', 'Jak popraskané paty vyřešit trvale' ),
 			array( '/cracked-heels/cracked-heels-cream/', 'What to look for in a cracked heels cream', 'Na co se zaměřit u krému na popraskané paty' ),
 		),
+		'cracked-heels-cream'     => array(
+			array( '/cracked-heels/cracked-heels-treatment/', 'Cracked heels treatment', 'Ošetření popraskaných pat' ),
+			array( '/cracked-heels/fix-permanently/', 'How to fix cracked heels permanently', 'Jak popraskané paty vyřešit trvale' ),
+		),
 		'ingrown-treatment'       => array(
 			array( '/ingrown-toenails/prevent/', 'How to prevent ingrown toenails', 'Jak předcházet zarostlému nehtu' ),
 		),
