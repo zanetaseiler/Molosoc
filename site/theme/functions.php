@@ -155,6 +155,54 @@ add_filter( 'wp_robots', function ( $robots ) {
 	return $robots;
 } );
 
+/**
+ * Term IDs of the WooCommerce "foot-care" product category (Issue #203) plus
+ * any Polylang translations of it. That archive lists the one product the
+ * shop sells, which the Category page (/foot-covers/) and the product page
+ * already serve, so it is kept reachable for WooCommerce navigation but
+ * out of the index and the sitemap. Only this term is affected — other
+ * product taxonomy archives keep core/WooCommerce behaviour.
+ */
+function molosoc_thin_product_cat_term_ids() {
+	static $ids = null;
+	if ( null !== $ids ) {
+		return $ids;
+	}
+	$ids  = array();
+	$term = taxonomy_exists( 'product_cat' ) ? get_term_by( 'slug', 'foot-care', 'product_cat' ) : false;
+	if ( $term && ! is_wp_error( $term ) ) {
+		$ids[] = (int) $term->term_id;
+		if ( function_exists( 'pll_get_term_translations' ) ) {
+			$ids = array_merge( $ids, array_map( 'intval', array_values( (array) pll_get_term_translations( $term->term_id ) ) ) );
+		}
+		$ids = array_values( array_unique( $ids ) );
+	}
+	return $ids;
+}
+
+// noindex,follow for the thin foot-care category archive. Deliberately no
+// canonical tag is added: core only emits rel=canonical for singular posts,
+// and a canonical on a page that is noindexed is a mixed signal.
+add_filter( 'wp_robots', function ( $robots ) {
+	if ( is_tax( 'product_cat' ) && in_array( (int) get_queried_object_id(), molosoc_thin_product_cat_term_ids(), true ) ) {
+		$robots['noindex'] = true;
+		$robots['follow']  = true;
+		unset( $robots['index'] );
+	}
+	return $robots;
+} );
+
+// ...and keep it out of wp-sitemap.xml so sitemap and robots agree.
+add_filter( 'wp_sitemaps_taxonomies_query_args', function ( $args, $taxonomy ) {
+	if ( 'product_cat' === $taxonomy ) {
+		$args['exclude'] = array_merge(
+			isset( $args['exclude'] ) ? (array) $args['exclude'] : array(),
+			molosoc_thin_product_cat_term_ids()
+		);
+	}
+	return $args;
+}, 10, 2 );
+
 // hreflang x-default, pointing unmatched-language searchers at the EN
 // version. Free Polylang emits the en/cs alternate pair itself but never
 // an x-default, so this fills only that gap: it prints ONLY on pages that

@@ -186,6 +186,35 @@ if ( $molosoc_is_cz ) {
 		</div>
 	</section>
 
+	<?php if ( $molosoc_is_cz ) : ?>
+	<!-- Czech topic navigation (Issue #203): the CZ Magazín had only a
+	     one-sentence intro. Every link below is an existing CZ page; the
+	     three topics match the three CZ pillars, no EN-only guide is listed. -->
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-blog-topics">
+		<div class="molosoc-section__inner">
+			<h2>Kde začít podle toho, co vás trápí</h2>
+			<p class="molosoc-blog-topics__lede">Magazín je rozdělen do tří témat. U každého najdete nejdřív celkového průvodce a pak konkrétnější články, které jdou víc do hloubky.</p>
+			<ul class="molosoc-blog-topics__list">
+				<li>
+					<h3><a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">Popraskané paty</a></h3>
+					<p>Co popraskané paty způsobuje, co je zhoršuje a co jim skutečně pomáhá.</p>
+				</li>
+				<li>
+					<h3><a href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">Zarostlý nehet</a></h3>
+					<p>Co zarostlý nehet způsobuje, co pomáhá doma a kdy jde o víc než jen problém s nehtem.</p>
+				</li>
+				<li>
+					<h3><a href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">Kuří oko a mozoly</a></h3>
+					<p>Proč vzniká kuří oko a ztvrdlá kůže na nohou a co ji skutečně změkčí. Pokud hledáte konkrétní postup, pokračujte na článek
+						<a href="<?php echo esc_url( home_url( '/cz/kurici-oko/jak-odstranit/' ) ); ?>">Jak odstranit kuří oko</a>
+						nebo na
+						<a href="<?php echo esc_url( home_url( '/cz/kurici-oko/na-chodidle/' ) ); ?>">Kuří oko na chodidle</a>.</p>
+				</li>
+			</ul>
+		</div>
+	</section>
+	<?php endif; ?>
+
 </main>
 
 <?php get_footer(); ?>

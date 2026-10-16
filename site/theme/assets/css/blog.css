@@ -116,3 +116,28 @@
     aspect-ratio: 4 / 3;
   }
 }
+
+/* Czech topic navigation (Issue #203) */
+.molosoc-blog-topics .molosoc-section__inner {
+  max-width: 52rem;
+}
+
+.molosoc-blog-topics__lede {
+  margin-bottom: var(--space-m);
+}
+
+.molosoc-blog-topics__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-m);
+}
+
+.molosoc-blog-topics__list h3 {
+  margin-bottom: 0.25em;
+}
+
+.molosoc-blog-topics__list p {
+  margin: 0;
+}
