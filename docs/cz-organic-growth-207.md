@@ -41,6 +41,7 @@ links in `i18n/cz/`. "Live state" is not verified here (see §1).
 | `/cz/navleky-na-nohy/` | Category (EN: foot-covers) | Commercial investigation: reusable cover vs. disposable sock mask | Návleky na nohy \| Hydratační návlek na nohy — Molosoc |
 | `/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/` | Product | Transactional + proof (before/after, cream-you-own) | Návlek na nohy Molosoc — Krém, který už doma máte, konečně funguje |
 | `/cz/hydratacni-navleky-molosoc/` | Landing page (Meta-ads destination, page 1037) | Commercial: *maska na nohy*. Retargeted in Issue #161 to own this term; `docs/landing-page-b-580.md` records a Czech Keywords Everywhere volume of 880/month ("and rising"), the only Czech volume in the repo (single tool, dated 2026-10-14, not GSC) | Hydratační maska na nohy na opakované použití \| Molosoc |
+| `/cz/produkt/hydratacni-navlek-na-nohy/` | WooCommerce product page (product 364; canonical CZ URL per `site/theme/inc/woocommerce-lang.php:49-58`) | Transactional: variation select + add to cart. The CTAs on the content page above (`page-moisture-lock-foot-cover.php:115,371,391`) send visitors here | Not a content page; the final step of the organic funnel |
 
 **Not published in Czech (EN exists or planned):** dry skin on feet
 (`/dry-skin-feet/`), foot cream that works (`/foot-cream-that-works/`),
@@ -104,9 +105,11 @@ page is indexed and shows which query it actually receives (same stance as
   government/health sites, so the value is user usefulness and GEO
   extractability, not a SERP feature.
 - Internal links: one contextual link to the product page "Skutečné výsledky"
-  section (already present at the bottom — move a second one next to the
-  "Proč se to stejně vrací" H3, where the problem peaks); keep the existing
-  Související čtení block.
+  section (already present at the bottom — add a second one in the rendered
+  `site/theme/page-cracked-heels.php` section "Proč samotné mastění problém
+  nevyřeší", where the problem peaks; the "Proč se to stejně vrací" heading
+  exists only in the non-rendered `seo/cz-pages/` and `i18n/cz/` drafts, so do
+  not target it); keep the existing Související čtení block.
 
 **R2 — `/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/` (priority 2).**
 - Highest-value *conversion* page; do not chase impressions here. Verify
@@ -183,7 +186,9 @@ already marks this class as health-adjacent (`docs/site-structure.md` §7
 discard list).
 
 How to tell once data exists (all in GSC/GA4, read-only): per URL,
-impressions → clicks → sessions on the product/category page → add-to-cart.
+impressions → clicks → sessions on the product/category page → sessions on the
+canonical WooCommerce product URL `/cz/produkt/hydratacni-navlek-na-nohy/`
+(where variations are chosen) → add-to-cart.
 A page earning clicks but no product-page sessions is an impressions page.
 Judge success by product-page sessions and orders from organic CZ, not by
 impressions or average position.
