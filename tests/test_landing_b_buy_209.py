@@ -1,10 +1,10 @@
 """Issue #209: Landing B mobile purchase path — static checks (no PHP runtime
 or WordPress needed).
 
-Every purchase CTA on B is the shared direct add-to-cart pair from
-inc/landing-b-buy.php (hero + after each main section), the hero shows the
+Every purchase CTA on B is the shared size choice + "Pokračovat k pokladně"
+button from inc/landing-b-buy.php (hero + after each main section), the hero shows the
 Kč price and the COD line built only from approved wording, the 390px CSS
-keeps both buy buttons clear of the WPConsent card, and nothing here adds
+keeps the size choice and buy button clear of the WPConsent card, and nothing here adds
 jQuery/JS to B (jQuery is deliberately absent there, Issue #190).
 """
 import re
@@ -45,22 +45,37 @@ class LandingBBuyPath(unittest.TestCase):
     def test_no_cta_links_to_the_product_page_directly(self):
         self.assertNotIn("esc_url( $lpb_product_url )", TEMPLATE)
 
-    def test_links_are_woocommerce_add_to_cart_urls_to_the_cz_cart(self):
+    def test_links_are_woocommerce_add_to_cart_urls_to_the_cz_checkout(self):
         for needle in ("'add-to-cart'  => MOLOSOC_PRODUCT_ID", "'variation_id' => $variation_id",
-                       "'quantity'     => 1", "get_variation_attributes()", "molosoc_landing_b_cart_url()",
-                       "pll_get_post( $cart_id, 'cz' )"):
+                       "'quantity'     => 1", "'molosoc_lpb'  => 1", "get_variation_attributes()",
+                       "molosoc_landing_b_checkout_url()", "pll_get_post( $checkout_id, 'cz' )"):
             self.assertIn(needle, BUY, needle)
-        # Never worse than before: unresolved sizes fall back to the CZ product page.
+        # Never worse than before: unresolved sizes keep the CZ product-page link.
         self.assertIn("molosoc_product_url( 'cz' )", BUY)
         # Only purchasable, in-stock variations are linked.
         self.assertIn("is_purchasable()", BUY)
         self.assertIn("is_in_stock()", BUY)
 
-    def test_no_price_or_cart_logic_and_no_js_added(self):
-        for forbidden in ("add_filter", "add_action", "WC()->cart", "set_price", "woocommerce_add_to_cart_redirect"):
+    def test_size_choice_is_explicit_and_cta_is_pokracovat_k_pokladne(self):
+        self.assertIn("Pokračovat k pokladně", BUY)
+        self.assertIn('type="radio"', BUY)
+        self.assertNotIn("checked", BUY)  # no preselected size
+        self.assertIn("M (36–39)", BUY)
+        self.assertIn("L (39.5–44)", BUY)
+        # JS refuses to continue without a size and never sends two requests.
+        self.assertIn('input[type="radio"]:checked', JS)
+        self.assertIn("if ( busy )", JS)
+        self.assertIn("pageshow", JS)
+
+    def test_only_one_scoped_redirect_filter_and_no_cart_or_price_logic(self):
+        self.assertEqual(BUY.count("add_filter("), 1)
+        self.assertIn("add_filter( 'woocommerce_add_to_cart_redirect'", BUY)
+        self.assertIn("isset( $_REQUEST['molosoc_lpb'] )", BUY)
+        for forbidden in ("add_action", "WC()->cart", "set_price", "woocommerce_cart_redirect_after_add"):
             self.assertNotIn(forbidden, BUY, forbidden)
         code = re.sub(r"/\*.*?\*/", "", BUY, flags=re.S)  # the header comment names jQuery on purpose
-        self.assertNotIn("jQuery", code + JS)
+        js_code = re.sub(r"/\*.*?\*/", "", JS, flags=re.S)
+        self.assertNotIn("jQuery", code + js_code)
         self.assertNotIn("wp_enqueue_script", BUY)
 
     def test_price_is_still_the_checkout_price(self):

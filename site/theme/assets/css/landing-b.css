@@ -262,37 +262,107 @@
 }
 
 /* ---------- Purchase CTA group + COD line (Issue #209) ----------
-   One "Objednat" button per size (inc/landing-b-buy.php), each a direct
-   WooCommerce add-to-cart link to the cart. Printed in the hero and after
+   Size choice (M / L, none preselected) + one "Pokračovat k pokladně"
+   button (inc/landing-b-buy.php, landing-b.js). Printed in the hero and after
    every main section. */
 
 .lpb-buy {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
 }
 
-.lpb .lpb-buy__btn {
-  flex-direction: column;
-  gap: 0.25rem;
-  min-width: 11rem;
-  padding: 0.85em 1.4em;
+.lpb-hero__copy .lpb-buy {
+  align-items: stretch;
 }
 
-.lpb-buy__size {
+.lpb-buy__sizes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.lpb-buy__legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 0.35rem;
   font-size: 0.8rem;
   letter-spacing: 1px;
-  opacity: 0.85;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.lpb-buy__legend + .lpb-size {
+  clear: left;
+}
+
+.lpb-size {
+  flex: 1 1 0;
+  min-width: 8.5rem;
+  cursor: pointer;
+}
+
+.lpb-size input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.lpb-size__label {
+  display: block;
+  padding: 0.65em 0.5em;
+  text-align: center;
+  font-weight: 600;
+  border: 2px solid var(--lpb-ink);
+  border-radius: 0.4rem;
+  background: var(--lpb-white);
+  color: var(--lpb-ink);
+}
+
+.lpb-size input:checked + .lpb-size__label {
+  background: var(--lpb-ink);
+  color: var(--lpb-white);
+}
+
+.lpb-size input:focus-visible + .lpb-size__label {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
+.lpb-buy--dark .lpb-size__label {
+  background: transparent;
+  border-color: var(--lpb-white);
+  color: var(--lpb-white);
+}
+
+.lpb-buy--dark .lpb-size input:checked + .lpb-size__label {
+  background: var(--lpb-white);
+  color: var(--lpb-ink);
+}
+
+.lpb .lpb-buy__btn.is-busy {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.lpb-buy__error {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 .lpb-section__cta {
   margin-top: clamp(1.5rem, 4vw, 2.5rem);
   text-align: center;
-}
-
-.lpb-hero__copy .lpb-buy {
-  justify-content: flex-start;
 }
 
 .lpb-cod {
@@ -840,14 +910,29 @@
     margin-bottom: 0.7rem;
   }
 
-  .lpb-hero__copy .lpb-buy {
-    justify-content: center;
+  .lpb-buy {
+    gap: 0.4rem;
+  }
+
+  .lpb-buy__legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .lpb-size {
+    min-width: 0;
+  }
+
+  .lpb-size__label {
+    padding: 0.55em 0.3em;
+    font-size: 0.9rem;
   }
 
   .lpb .lpb-buy__btn {
-    flex: 1 1 0;
-    min-width: 0;
-    width: auto;
     padding: 0.7em 0.5em;
   }
 
