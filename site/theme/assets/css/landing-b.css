@@ -261,6 +261,50 @@
   color: var(--lpb-body);
 }
 
+/* ---------- Purchase CTA group + COD line (Issue #209) ----------
+   One "Objednat" button per size (inc/landing-b-buy.php), each a direct
+   WooCommerce add-to-cart link to the cart. Printed in the hero and after
+   every main section. */
+
+.lpb-buy {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.lpb .lpb-buy__btn {
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 11rem;
+  padding: 0.85em 1.4em;
+}
+
+.lpb-buy__size {
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+
+.lpb-section__cta {
+  margin-top: clamp(1.5rem, 4vw, 2.5rem);
+  text-align: center;
+}
+
+.lpb-hero__copy .lpb-buy {
+  justify-content: flex-start;
+}
+
+.lpb-cod {
+  font-size: 0.95rem;
+  color: var(--lpb-body);
+  margin: 0 0 1.25rem;
+}
+
+.lpb-cod strong {
+  color: var(--lpb-ink);
+}
+
 /* ---------- 3. Scarcity strip + feature strip ---------- */
 
 .lpb-strip {
@@ -736,6 +780,100 @@
 
   .lpb .lpb-btn {
     width: 100%;
+  }
+
+  /* Issue #209: at 390px the product, price, COD line and both buy buttons
+     must sit in the first screen. The hero photo becomes a short crop, the
+     thumbnails / sub-line / lede (the lede repeats the first card below)
+     are not shown here, and the headline is set smaller. */
+  .lpb-hero {
+    padding-top: 0.75rem;
+  }
+
+  .lpb-hero__inner {
+    gap: 0.75rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .lpb-hero__main img {
+    height: 170px;
+    object-fit: cover;
+  }
+
+  .lpb-hero__thumbs,
+  .lpb-hero__sub,
+  .lpb-hero__lede {
+    display: none;
+  }
+
+  .lpb-hero__title {
+    font-size: 1.55rem;
+    line-height: 1.12;
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .lpb-hero__copy .lpb-eyebrow {
+    margin: 0;
+  }
+
+  .lpb-hero .lpb-price {
+    margin-top: 0.25rem;
+  }
+
+  .lpb-hero .lpb-price__amount {
+    font-size: 2rem;
+  }
+
+  .lpb-hero .lpb-price__meta {
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0.15rem;
+  }
+
+  .lpb-cod {
+    font-size: 0.85rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .lpb-hero__copy .lpb-buy {
+    justify-content: center;
+  }
+
+  .lpb .lpb-buy__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    padding: 0.7em 0.5em;
+  }
+
+  /* WPConsent card (restyled in components.css: 20px bottom offset, 20px /
+     28px padding, stacked wrapped pills) covered the buy buttons at 390px.
+     On this page only (landing-b.css is enqueued here alone), compact it: tight padding, smaller type, buttons in
+     one row. The consent buttons, preferences modal and the Clarity consent
+     replay (Issue #190) are untouched. */
+  #wpconsent-container::part(wpconsent-banner) {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  #wpconsent-container::part(wpconsent-banner-body) {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  #wpconsent-container::part(wpconsent-banner-footer) {
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  #wpconsent-container::part(wpconsent-button-accept),
+  #wpconsent-container::part(wpconsent-button-cancel),
+  #wpconsent-container::part(wpconsent-button-preferences) {
+    height: 34px;
+    padding: 0 12px;
+    font-size: 0.75rem;
   }
 }
 

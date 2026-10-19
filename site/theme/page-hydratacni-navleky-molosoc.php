@@ -100,7 +100,9 @@ get_header();
 				<?php /* FLAG: page 580 carried an EMPTY line-through <span> before the price — a leftover of a crossed-out presale price. Reproduced as nothing (no fake "was" price invented). */ ?>
 				<p class="lpb-price" translate="no"><span class="lpb-price__amount"><?php echo esc_html( $lpb_price ); ?></span></p>
 				<p class="lpb-price__meta">Za 1 pár · <?php echo esc_html( $lpb_shipping ); ?></p>
-				<a class="lpb-btn lpb-hero__cta" id="lpb-hero-cta" href="<?php echo esc_url( $lpb_product_url ); ?>">Objednat za <?php echo esc_html( $lpb_price ); ?></a>
+				<?php /* Issue #209: COD availability line from approved wording only — the gateway title "Dobírka" + molosoc_cod_cz_text() (Issue #198). FLAG for Žaneta: the two are joined here, no new sentence. */ ?>
+				<p class="lpb-cod"><strong>Dobírka:</strong> <?php echo esc_html( molosoc_cod_cz_text() ); ?></p>
+				<?php molosoc_landing_b_buy_cta(); ?>
 			</div>
 		</div>
 	</section>
@@ -137,6 +139,7 @@ get_header();
 				<p>Pro chvíle péče – ne na celý den, jen na krátký rituál.</p>
 			</div>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 5. Co to je (page 580 section 5: image left, copy right) ============ -->
@@ -156,6 +159,7 @@ get_header();
 			</ul>
 			<p class="lpb-caps">100% nitril · Bez latexu · Bez pudru · Hypoalergenní</p>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 6. Velikosti (page 580 section 6: 3 image cards) ============ -->
@@ -181,6 +185,7 @@ get_header();
 				<p>M nahoře, L dole</p>
 			</div>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 7. Jak to funguje (page 580 section 7: image + 5 numbered steps) ============ -->
@@ -201,6 +206,7 @@ get_header();
 				<li><span class="lpb-steps__num">05</span>Sundejte a užijte si jemnější chodidla</li>
 			</ol>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 8. Příběh (page 580 section 8: Thrive tabs, 3 tabs) ============ -->
@@ -226,6 +232,7 @@ get_header();
 				<p>Po měsících testování, výběru materiálu a ladění detailů vznikl MOLOSOC – nitrilový návlek na nohy, který zamkne vlhkost a nechá krém pracovat. Jednoduše. Bez nepořádku.</p>
 			</div>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 9. Z reálu (page 580 section 9: 2 captioned photos) ============ -->
@@ -245,6 +252,7 @@ get_header();
 				<figcaption>MOLOSOC jsme vytvořily my – máma s dcerou. Tady ho držíme poprvé.</figcaption>
 			</figure>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 10. Podívejte se (page 580 section 10: YouTube embed dXVivzbZBfc, vertical) ============ -->
@@ -257,6 +265,7 @@ get_header();
 		<div class="lpb-video">
 			<iframe src="https://www.youtube-nocookie.com/embed/dXVivzbZBfc?rel=0&amp;modestbranding=1" title="Takhle nějak to vypadalo… když vznikal první MOLOSOC." width="315" height="560" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
 		</div>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 11. Kompatibilita (page 580 section 11: copy left, image right, 4 chips) ============ -->
@@ -278,6 +287,7 @@ get_header();
 		<a class="lpb-split__media" href="<?php echo esc_url( $lpb_uploads . '/2026/04/Molosoc-Photos-Product-New-VariationCream-Ok.jpg' ); ?>">
 			<img <?php echo molosoc_landing_b_img_attrs( 'lpb-variation-cream', array( 480, 960 ), '(max-width: 900px) 100vw, 50vw' ); ?> width="1152" height="860" alt="Návlek MOLOSOC mezi kelímky krému, balzámu a oleje" loading="lazy" decoding="async">
 		</a>
+		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 12. Proč MOLOSOC (page 580 section 12: black band, 3 icon cards, price + CTA) ============ -->
@@ -302,7 +312,7 @@ get_header();
 		</div>
 		<p class="lpb-price lpb-price--dark" translate="no"><span class="lpb-price__amount"><?php echo esc_html( $lpb_price ); ?></span></p>
 		<p class="lpb-price__meta">Za 1 pár · <?php echo esc_html( $lpb_shipping ); ?> · Bezpečná platba přes Comgate</p>
-		<a class="lpb-btn lpb-btn--ghost" href="<?php echo esc_url( $lpb_product_url ); ?>">Objednat MOLOSOC za <?php echo esc_html( $lpb_price ); ?></a>
+		<?php molosoc_landing_b_buy_cta( 'dark' ); ?>
 	</section>
 
 	<!-- ============ 13. FAQ (page 580 section 13: 6 Thrive toggles -> native <details>) ============ -->
@@ -357,7 +367,7 @@ get_header();
 				<p class="lpb-order__spec">100% nitril · Bez latexu · Hypoalergenní · Velikost M (36–39) nebo L (39.5–44)</p>
 				<p class="lpb-price" translate="no"><span class="lpb-price__amount"><?php echo esc_html( $lpb_price ); ?></span></p>
 				<p class="lpb-price__meta"><?php echo esc_html( $lpb_shipping ); ?> · Odesíláme do 24 hodin</p>
-				<a class="lpb-btn" href="<?php echo esc_url( $lpb_product_url ); ?>">Objednat za <?php echo esc_html( $lpb_price ); ?></a>
+				<?php molosoc_landing_b_buy_cta(); ?>
 				<ul class="lpb-badges">
 					<li><svg class="lpb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 18.5C18.83 18.5 19.5 17.83 19.5 17C19.5 16.17 18.83 15.5 18 15.5C17.17 15.5 16.5 16.17 16.5 17C16.5 17.83 17.17 18.5 18 18.5M19.5 9.5H17V12H21.46L19.5 9.5M6 18.5C6.83 18.5 7.5 17.83 7.5 17C7.5 16.17 6.83 15.5 6 15.5C5.17 15.5 4.5 16.17 4.5 17C4.5 17.83 5.17 18.5 6 18.5M20 8L23 12V17H21C21 18.66 19.66 20 18 20C16.34 20 15 18.66 15 17H9C9 18.66 7.66 20 6 20C4.34 20 3 18.66 3 17H1V6C1 4.89 1.89 4 3 4H17V8H20M3 6V15H3.76C4.31 14.39 5.11 14 6 14C6.89 14 7.69 14.39 8.24 15H15V6H3Z"/></svg><span>Bezpečná platba</span></li>
 					<li><svg class="lpb-icon" viewBox="0 0 512 512" aria-hidden="true"><path d="M225.8 468.2l-2.5-2.3L48.1 303.2C17.4 274.7 0 234.7 0 192.8v-3.3c0-70.4 50-130.8 119.2-144C158.6 37.9 198.9 47 231 69.6c9 6.4 17.4 13.8 25 22.3 4.2-4.8 8.7-9.2 13.5-13.3 3.7-3.2 7.5-6.2 11.5-9C313.1 47 353.4 37.9 392.8 45.4 462 58.6 512 119.1 512 189.5v3.3c0 41.9-17.4 81.9-48.1 110.4L288.7 465.9l-2.5 2.3c-8.2 7.6-19 11.9-30.2 11.9s-22-4.2-30.2-11.9zM239.1 145c-.4-.3-.7-.7-1-1.1l-17.8-20c-23.1-25.9-58-37.7-92-31.2C81.6 101.5 48 142.1 48 189.5v3.3c0 28.5 11.9 55.8 32.8 75.2L256 430.7 431.2 268c20.9-19.4 32.8-46.7 32.8-75.2v-3.3c0-47.3-33.6-88-80.1-96.9-34-6.5-69 5.4-92 31.2l-17.8 20c-.3.4-.7.7-1 1.1-4.5 4.5-10.6 7-16.9 7s-12.4-2.5-16.9-7z"/></svg><span>Doručení do 24h</span></li>

@@ -335,9 +335,10 @@ class LandingBTemplate(unittest.TestCase):
         self.assertIn("$lpb_price       = '229 Kč';", self.tpl)
         self.assertIn("$lpb_shipping    = 'Doprava od 79 Kč';", self.tpl)
         self.assertIn("39.5–44", self.tpl)
-        # Every CTA goes through the shared CZ product URL helper.
+        # Every CTA goes through the shared buy-CTA helper (Issue #209), whose
+        # fallback is the CZ product URL helper.
         self.assertIn("molosoc_product_url( 'cz' )", self.tpl)
-        self.assertEqual(self.tpl.count("esc_url( $lpb_product_url )"), 3)  # hero, dark band, order card (own sticky bar gone, Issue #163)
+        self.assertEqual(self.tpl.count("esc_url( $lpb_product_url )"), 0)
         self.assertNotIn("/product/", self.body)
         # Presale scarcity line is kept verbatim but flagged for the owner.
         self.assertIn("Počet kusů je omezený", self.body)
