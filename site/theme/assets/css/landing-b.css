@@ -442,6 +442,12 @@
   order: 1;
 }
 
+/* CTA inside a reverse split: always the last, full-width row (after copy and image). */
+.lpb-split > .lpb-section__cta {
+  grid-column: 1 / -1;
+  order: 2;
+}
+
 .lpb-list {
   margin: 0;
   padding-left: 1.2em;
