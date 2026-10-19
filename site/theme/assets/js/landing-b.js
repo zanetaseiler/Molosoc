@@ -1,11 +1,20 @@
 /*
   Landing Page B (page-hydratacni-navleky-molosoc.php) — enqueued by
-  functions.php only on that page. One small progressive enhancement:
+  functions.php only on that page. Small progressive enhancements:
 
   1. Story tabs ("Jak MOLOSOC vznikl"): page 580 used Thrive's tabs module.
      Without JS all three panels stay visible stacked (landing-b.css); with
      JS the .is-enhanced class turns them into real tabs with arrow-key
      navigation.
+
+  2. Size choice + "Pokračovat k pokladně" (Issue #209): every purchase CTA
+     group (hero + after each section, inc/landing-b-buy.php) has an M / L
+     radio pair and one button. The choice is shared by all groups, is never
+     preselected, and the button refuses to go on until a size is picked.
+     Then the button opens the WooCommerce add-to-cart URL of that size
+     (quantity 1), which adds the variation once and redirects to a clean
+     checkout URL. Vanilla JS: jQuery is deliberately absent on this page.
+     Without JS the button stays the plain product-page link.
 
   The page's own sticky CTA bar (shown once the hero button scrolled away,
   as page 580's pinned header button did) was removed in Issue #163 — the
@@ -57,6 +66,76 @@
 				}
 			} );
 		} );
+	} );
+
+	// 2. Size choice -> checkout
+	var groups = Array.prototype.slice.call( document.querySelectorAll( "[data-lpb-buy]" ) );
+	var busy   = false;
+
+	function setBusy( on ) {
+		busy = on;
+		groups.forEach( function ( g ) {
+			var btn = g.querySelector( "[data-lpb-checkout]" );
+			if ( btn ) {
+				btn.classList.toggle( "is-busy", on );
+				btn.setAttribute( "aria-disabled", on ? "true" : "false" );
+			}
+		} );
+	}
+
+	function showError( group, on ) {
+		var err = group.querySelector( ".lpb-buy__error" );
+		if ( err ) {
+			err.hidden = ! on;
+		}
+	}
+
+	groups.forEach( function ( group ) {
+		group.addEventListener( "change", function ( e ) {
+			if ( ! e.target || e.target.type !== "radio" ) {
+				return;
+			}
+			groups.forEach( function ( g ) {
+				Array.prototype.forEach.call( g.querySelectorAll( 'input[type="radio"]' ), function ( r ) {
+					r.checked = r.value === e.target.value;
+				} );
+				showError( g, false );
+			} );
+		} );
+
+		var button = group.querySelector( "[data-lpb-checkout]" );
+		if ( ! button ) {
+			return;
+		}
+		button.addEventListener( "click", function ( e ) {
+			var picked = group.querySelector( 'input[type="radio"]:checked' );
+			if ( ! picked ) {
+				e.preventDefault();
+				showError( group, true );
+				var first = group.querySelector( 'input[type="radio"]' );
+				if ( first ) {
+					first.focus();
+				}
+				return;
+			}
+			var url = picked.getAttribute( "data-lpb-url" );
+			if ( ! url ) {
+				return; // size without a checkout URL: keep the product-page link.
+			}
+			e.preventDefault();
+			if ( busy ) {
+				return; // already on its way: never add twice.
+			}
+			setBusy( true );
+			window.location.href = url;
+		} );
+	} );
+
+	// Back-navigation restores the page from the bfcache with the button locked.
+	window.addEventListener( "pageshow", function ( e ) {
+		if ( e.persisted ) {
+			setBusy( false );
+		}
 	} );
 
 	// The page's own sticky bar (#lpb-sticky, hidden/shown around the hero

@@ -1,48 +1,63 @@
 <?php
 /**
- * Landing Page B — direct add-to-cart links (Issue #209).
+ * Landing Page B — direct size selection to checkout (Issue #209).
  *
  * Every purchase CTA on B used to be a plain link to the product page, so a
  * mobile visitor needed a second page just to pick a size and press the real
  * button (Clarity: 1 of 38 visitors reached it). The product is variable
  * (M 36–39 / L 39.5–44), so there is no single "add to cart" URL: this file
- * resolves one per size, each pointing at the CZ cart with WooCommerce's own
- * add-to-cart query string (?add-to-cart=364&variation_id=…&attribute_…=…).
- * WooCommerce's standard form handler (wp_loaded) adds the item and the
- * visitor lands on the cart with the product in it — no JavaScript, no AJAX,
- * no jQuery/cart-fragments on B (they are deliberately dequeued there, see
- * molosoc_dequeue_unused_homepage_assets()), and no cart/checkout/price
- * logic of ours: the variation's own price is what the cart and checkout
- * charge.
+ * resolves one per size, each pointing at the CZ checkout with WooCommerce's
+ * own add-to-cart query string (?add-to-cart=364&variation_id=…&attribute_…=…
+ * &quantity=1&molosoc_lpb=1). The visitor picks a size (no default — the
+ * choice is explicit), landing-b.js sends them to the URL of that size, and
+ * WooCommerce's standard form handler (wp_loaded) adds the variation. A single
+ * `woocommerce_add_to_cart_redirect` filter, active only for requests that
+ * carry molosoc_lpb, then redirects to the clean checkout URL, so a reload or
+ * back-navigation can never re-add the item. Cart, checkout, payment,
+ * shipping, price and variation mapping are WooCommerce's own: the
+ * variation's price is what checkout charges.
  *
  * Anything that cannot be resolved (product missing, not variable, a size
- * with no purchasable variation) falls back to the CZ product-page URL for
- * that size — exactly what the CTAs linked to before, never a dead link.
+ * with no purchasable variation) has no checkout URL: the CTA keeps its
+ * href to the CZ product page for that case, never a dead link.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Czech cart page URL regardless of the language the (REST-created) landing
- * page itself carries — same reasoning as molosoc_product_url( 'cz' ) in the
- * template.
+ * Czech checkout page URL regardless of the language the (REST-created)
+ * landing page itself carries — same reasoning as molosoc_product_url( 'cz' )
+ * in the template.
  */
-function molosoc_landing_b_cart_url() {
-	if ( ! function_exists( 'wc_get_cart_url' ) ) {
-		return home_url( '/cz/kosik/' );
+function molosoc_landing_b_checkout_url() {
+	if ( ! function_exists( 'wc_get_checkout_url' ) ) {
+		return home_url( '/cz/pokladna/' );
 	}
 	if ( function_exists( 'wc_get_page_id' ) && function_exists( 'pll_get_post' ) ) {
-		$cart_id = wc_get_page_id( 'cart' );
-		$cz_id   = $cart_id > 0 ? pll_get_post( $cart_id, 'cz' ) : 0;
+		$checkout_id = wc_get_page_id( 'checkout' );
+		$cz_id       = $checkout_id > 0 ? pll_get_post( $checkout_id, 'cz' ) : 0;
 		if ( $cz_id && 'publish' === get_post_status( $cz_id ) ) {
 			return get_permalink( $cz_id );
 		}
 	}
-	return wc_get_cart_url();
+	return wc_get_checkout_url();
 }
 
 /**
- * Add-to-cart URL per size key ('M' / 'L') for product 364, plus the
+ * After WooCommerce adds the item for a Landing B request (molosoc_lpb), go
+ * to the clean checkout URL. Every other add-to-cart is untouched: the
+ * filter only returns a URL for requests carrying the marker.
+ */
+add_filter( 'woocommerce_add_to_cart_redirect', 'molosoc_landing_b_checkout_redirect' );
+function molosoc_landing_b_checkout_redirect( $url ) {
+	if ( isset( $_REQUEST['molosoc_lpb'] ) && function_exists( 'wc_get_checkout_url' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		return molosoc_landing_b_checkout_url();
+	}
+	return $url;
+}
+
+/**
+ * Add-to-cart-and-checkout URL per size key ('M' / 'L') for product 364, plus the
  * size labels the buttons print.
  *
  * @return array[] size key => array( 'url' => string, 'label' => string, 'direct' => bool ).
@@ -62,7 +77,7 @@ function molosoc_landing_b_buy_links() {
 		return $links;
 	}
 
-	$cart_url = molosoc_landing_b_cart_url();
+	$checkout_url = molosoc_landing_b_checkout_url();
 	$wanted   = array( 'M' => 0, 'L' => 1 ); // molosoc_size_value_rank() ranks.
 
 	foreach ( $product->get_children() as $variation_id ) {
@@ -103,10 +118,11 @@ function molosoc_landing_b_buy_links() {
 						'add-to-cart'  => MOLOSOC_PRODUCT_ID,
 						'variation_id' => $variation_id,
 						'quantity'     => 1,
+						'molosoc_lpb'  => 1,
 					),
 					array_map( 'strval', $filled )
 				),
-				$cart_url
+				$checkout_url
 			);
 			$links[ $key ]['direct'] = true;
 		}
@@ -116,24 +132,34 @@ function molosoc_landing_b_buy_links() {
 
 /**
  * The purchase CTA group printed in the hero and after every main section:
- * one button per size, same price on both (the product is one price).
+ * a size choice (no default) and one "Pokračovat k pokladně" button. All
+ * groups share one choice (landing-b.js), so the same size is bought from any
+ * of them. Without JS, or for a size with no checkout URL, the button is the
+ * plain product-page link.
  *
- * @param string $variant '' (default, black buttons) or 'dark' (outlined, for the black band).
+ * @param string $variant '' (default, black button) or 'dark' (outlined, for the black band).
  */
 function molosoc_landing_b_buy_cta( $variant = '' ) {
 	static $links = null;
+	static $group = 0;
 	if ( null === $links ) {
 		$links = molosoc_landing_b_buy_links();
 	}
+	++$group;
 	$class = 'lpb-buy' . ( 'dark' === $variant ? ' lpb-buy--dark' : '' );
 	?>
-	<div class="<?php echo esc_attr( $class ); ?>" role="group" aria-label="Objednat MOLOSOC">
-		<?php foreach ( $links as $key => $link ) : ?>
-			<a class="lpb-btn lpb-buy__btn<?php echo 'dark' === $variant ? ' lpb-btn--ghost' : ''; ?>" href="<?php echo esc_url( $link['url'] ); ?>" data-lpb-size="<?php echo esc_attr( $key ); ?>" rel="nofollow">
-				<span class="lpb-buy__action">Objednat</span>
-				<span class="lpb-buy__size"><?php echo esc_html( $link['label'] ); ?></span>
-			</a>
-		<?php endforeach; ?>
+	<div class="<?php echo esc_attr( $class ); ?>" data-lpb-buy>
+		<fieldset class="lpb-buy__sizes">
+			<legend class="lpb-buy__legend">Velikost</legend>
+			<?php foreach ( $links as $key => $link ) : ?>
+				<label class="lpb-size">
+					<input type="radio" name="lpb-size-<?php echo (int) $group; ?>" value="<?php echo esc_attr( $key ); ?>"<?php echo $link['direct'] ? ' data-lpb-url="' . esc_url( $link['url'] ) . '"' : ''; ?>>
+					<span class="lpb-size__label"><?php echo esc_html( $link['label'] ); ?></span>
+				</label>
+			<?php endforeach; ?>
+		</fieldset>
+		<a class="lpb-btn lpb-buy__btn<?php echo 'dark' === $variant ? ' lpb-btn--ghost' : ''; ?>" href="<?php echo esc_url( molosoc_product_url( 'cz' ) ); ?>" data-lpb-checkout rel="nofollow">Pokračovat k pokladně</a>
+		<p class="lpb-buy__error" role="alert" hidden>Vyberte velikost.</p>
 	</div>
 	<?php
 }
