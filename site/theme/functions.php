@@ -30,6 +30,7 @@ require_once get_stylesheet_directory() . '/inc/related-links.php';
 
 // Landing Page B JSON-LD (Issue #155). Depends on inc/woocommerce-lang.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
+require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
 
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );

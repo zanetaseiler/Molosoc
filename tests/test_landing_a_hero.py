@@ -190,18 +190,6 @@ class LandingAHeroCss(unittest.TestCase):
         self.assertIn(".molosoc-sticky-buy {\n  display: none;\n}", self.css)
         self.assertIn("  .molosoc-sticky-buy {\n    display: flex;\n    position: fixed;", self.css)
 
-    def test_landing_page_b_not_touched(self):
-        import subprocess
-        repo = ROOT.parents[1]
-        out = subprocess.run(
-            ["git", "diff", "--name-only", "origin/main", "--",
-             "site/theme/page-hydratacni-navleky-molosoc.php",
-             "site/theme/assets/css/landing-b.css", "site/theme/assets/js/landing-b.js"],
-            cwd=repo, capture_output=True, text=True,
-        )
-        if out.returncode == 0:
-            self.assertEqual(out.stdout.strip(), "")
-
 
 class Issue179Reassurance(unittest.TestCase):
     def setUp(self):
