@@ -47,8 +47,15 @@ class CzMagazinTopics(unittest.TestCase):
         self.assertEqual(
             sorted(set(paths)),
             ["/cz/kurici-oko/", "/cz/kurici-oko/jak-odstranit/", "/cz/kurici-oko/na-chodidle/",
-             "/cz/popraskane-paty/", "/cz/zarostly-nehet/"],
+             "/cz/popraskane-paty/", "/cz/sucha-kuze-na-chodidlech/", "/cz/zarostly-nehet/"],
         )
+
+    def test_intro_counts_four_topics_including_dry_feet(self):
+        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>", BLOG, re.S)
+        block = m.group(1)
+        self.assertIn("do čtyř témat", block)
+        self.assertNotIn("do tří témat", block)
+        self.assertEqual(block.count("<h3>"), 4)
 
 
 if __name__ == "__main__":

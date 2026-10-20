@@ -188,12 +188,12 @@ if ( $molosoc_is_cz ) {
 
 	<?php if ( $molosoc_is_cz ) : ?>
 	<!-- Czech topic navigation (Issue #203): the CZ Magazín had only a
-	     one-sentence intro. Every link below is an existing CZ page; the
-	     three topics match the three CZ pillars, no EN-only guide is listed. -->
+	     one-sentence intro. Every link below is an existing CZ page, no EN-only
+	     guide is listed. The dry-feet guide (Issue #236) is the fourth topic. -->
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-blog-topics">
 		<div class="molosoc-section__inner">
 			<h2>Kde začít podle toho, co vás trápí</h2>
-			<p class="molosoc-blog-topics__lede">Magazín je rozdělen do tří témat. U každého najdete nejdřív celkového průvodce a pak konkrétnější články, které jdou víc do hloubky.</p>
+			<p class="molosoc-blog-topics__lede">Magazín je rozdělen do čtyř témat. U každého najdete nejdřív celkového průvodce a pak konkrétnější články, které jdou víc do hloubky.</p>
 			<ul class="molosoc-blog-topics__list">
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">Popraskané paty</a></h3>
@@ -202,6 +202,10 @@ if ( $molosoc_is_cz ) {
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">Zarostlý nehet</a></h3>
 					<p>Co zarostlý nehet způsobuje, co pomáhá doma a kdy jde o víc než jen problém s nehtem.</p>
+				</li>
+				<li>
+					<h3><a href="<?php echo esc_url( home_url( '/cz/sucha-kuze-na-chodidlech/' ) ); ?>">Suchá kůže na chodidlech</a></h3>
+					<p>Proč je kůže na chodidlech drsná a matná, i když ještě nepraská, a jak o ni pečovat, než se z ní stanou popraskané paty.</p>
 				</li>
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">Kuří oko a mozoly</a></h3>
