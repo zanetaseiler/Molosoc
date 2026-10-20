@@ -25,6 +25,13 @@ Page's post_parent is set and the permalink nests correctly
 page up by slug via the REST API; if it isn't found, the Page is still
 created flat and a warning is printed — re-run once the parent exists, or
 set it manually in wp-admin.
+
+Pass --lang cz (Polylang language slug) for a Czech page. The script sends
+it as the Polylang `lang` REST parameter, then checks the returned permalink
+really sits under /cz/ and prints a loud ACTION REQUIRED notice if it does
+not (Polylang free's REST support for this varies by version). Do not
+publish a page, or deploy a link to it, until the check passes — set the
+language in wp-admin's Languages box and re-check the permalink first.
 """
 
 import argparse
@@ -32,6 +39,7 @@ import os
 import sys
 
 import requests
+from urllib.parse import urlparse
 
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
 WP_USER = os.environ.get("WP_USER", "")
@@ -45,6 +53,12 @@ def wp_auth():
             "Set these as GitHub secrets or export them locally before running."
         )
     return (WP_USER, WP_APP_PASSWORD)
+
+
+def permalink_in_language(link, lang):
+    """True if the permalink's first path segment is the language slug."""
+    path = urlparse(link or "").path.strip("/")
+    return path.split("/")[0] == lang
 
 
 def main():
@@ -63,6 +77,12 @@ def main():
         default=None,
         help="Parent page slug, for a spoke article nested under a pillar (sets post_parent so the permalink nests correctly)",
     )
+    parser.add_argument(
+        "--lang",
+        required=False,
+        default=None,
+        help="Polylang language slug (e.g. cz). Sent as `lang`; the permalink is then verified to sit under /<lang>/",
+    )
     args = parser.parse_args()
 
     resp = requests.get(
@@ -76,6 +96,12 @@ def main():
 
     if existing:
         page = existing[0]
+        if args.lang and not permalink_in_language(page.get("link", ""), args.lang):
+            print(
+                f"  ACTION REQUIRED: existing page link {page.get('link')!r} is not "
+                f"under /{args.lang}/ — set its language in wp-admin before publishing."
+            )
+            sys.exit(2)
         print(
             f"Page already exists — id={page['id']}, status={page['status']}, "
             f"link={page.get('link', '(none)')}. Nothing to do."
@@ -88,6 +114,9 @@ def main():
         "status": "draft",
         "content": "",
     }
+
+    if args.lang:
+        payload["lang"] = args.lang
 
     if args.parent_slug:
         parent_resp = requests.get(
@@ -114,6 +143,18 @@ def main():
         data = resp.json()
         print(f"CREATED draft page — id={data['id']}, title={args.title!r}")
         print(f"Review at: {WP_URL}/wp-admin/post.php?post={data['id']}&action=edit")
+        if args.lang:
+            link = data.get("link", "")
+            if not permalink_in_language(link, args.lang):
+                print(
+                    f"  ACTION REQUIRED: permalink {link!r} is not under /{args.lang}/ — "
+                    f"Polylang did not apply language {args.lang!r}. In wp-admin set "
+                    f"Languages = {args.lang} on this Page and confirm the permalink "
+                    f"becomes {WP_URL}/{args.lang}/{args.slug}/ BEFORE publishing or "
+                    f"linking to it."
+                )
+                sys.exit(2)
+            print(f"Language check OK — permalink {link!r} is under /{args.lang}/")
     else:
         sys.exit(f"ERROR {resp.status_code}: {resp.text[:300]}")
 

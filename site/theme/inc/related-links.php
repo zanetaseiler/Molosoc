@@ -65,6 +65,20 @@ function molosoc_related_links_map() {
 }
 
 /**
+ * True when a published Page exists for a /cz/{slug}/ path AND Polylang
+ * reports it as Czech. Guards CZ-only rows (Issue #229) so the link appears
+ * only after the page is provisioned in Czech, not merely deployed.
+ */
+function molosoc_cz_page_is_live( $cz_path ) {
+	$slug = basename( untrailingslashit( $cz_path ) );
+	$page = get_page_by_path( $slug );
+	if ( ! $page || 'publish' !== $page->post_status ) {
+		return false;
+	}
+	return function_exists( 'pll_get_post_language' ) && 'cz' === pll_get_post_language( $page->ID );
+}
+
+/**
  * Print the Related reading section for a page key. Prints nothing for an
  * unknown key. Language: Czech when Polylang reports 'cz', else English.
  * Czech links to /cz/ equivalents where the CZ page exists (see $cz_paths);
@@ -93,6 +107,9 @@ function molosoc_related_links( $key ) {
 		if ( $is_cz ) {
 			if ( ! isset( $cz_path[ $path ] ) ) {
 				continue;
+			}
+			if ( null === $en && ! molosoc_cz_page_is_live( $cz_path[ $path ] ) ) {
+				continue; // CZ-only page not yet published in Czech: never expose a 404 link.
 			}
 			$items[] = array( $cz_path[ $path ], $cz );
 		} else {

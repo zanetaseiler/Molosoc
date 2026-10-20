@@ -11,6 +11,8 @@ FUNCTIONS = (THEME / "functions.php").read_text(encoding="utf-8")
 RELATED = (THEME / "inc/related-links.php").read_text(encoding="utf-8")
 PRODUCT = "/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
 SLUG = "sucha-kuze-na-chodidlech"
+CREATE_PAGE = (ROOT / "automations/content-sync/create_wp_page.py").read_text(encoding="utf-8")
+CREATE_WF = (ROOT / ".github/workflows/create-wp-page.yml").read_text(encoding="utf-8")
 
 
 class CzDrySkinFeetPage(unittest.TestCase):
@@ -51,6 +53,20 @@ class CzDrySkinFeetPage(unittest.TestCase):
 
     def test_no_hardcoded_hreflang_or_en_pairing(self):
         self.assertNotRegex(FUNCTIONS, rf"hreflang[^\n]*{SLUG}|{SLUG}[^\n]*hreflang")
+
+class CzProvisioning(unittest.TestCase):
+    def test_cz_only_link_gated_on_published_czech_page(self):
+        self.assertIn("function molosoc_cz_page_is_live", RELATED)
+        self.assertIn("pll_get_post_language", RELATED)
+        self.assertIn("null === $en && ! molosoc_cz_page_is_live", RELATED)
+
+    def test_create_page_supports_czech_language_and_checks_permalink(self):
+        self.assertIn("--lang", CREATE_PAGE)
+        self.assertIn('payload["lang"]', CREATE_PAGE)
+        self.assertIn("permalink_in_language", CREATE_PAGE)
+        self.assertIn("ACTION REQUIRED", CREATE_PAGE)
+        self.assertIn("lang:", CREATE_WF)
+        self.assertIn("--lang", CREATE_WF)
 
 
 if __name__ == "__main__":
