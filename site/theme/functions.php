@@ -2376,6 +2376,14 @@ add_filter( 'wc_product_sku_enabled', '__return_false' );
  * Dashboard's frontend.min.js (`jQuery.noConflict()` at top level) declares
  * the dependency and was already being dropped; it is listed for the same
  * explicitness.
+ *
+ * Issue #214: the PPL CZ parcel-shop scripts (`pplcz_parcelshop-old-view`,
+ * `pplcz_map_js`) were only dequeued on the landing pages, so the homepage
+ * still printed the footer bundle, whose top-level `jQuery(...)` call threw
+ * "jQuery is not defined" on the CZ/EN homepages (WP-Optimize minified it
+ * into wpo-minify-footer-pplcz_parcelshop-old-view*.min.js). They are now in
+ * the shared list: no page behind this gate has a shipping selector, and the
+ * checkout/cart are not behind it.
  */
 function molosoc_page_without_plugin_markup() {
 	return is_front_page() || is_page( 'hydratacni-navleky-molosoc' ) || molosoc_is_landing_page_a();
@@ -2427,6 +2435,8 @@ function molosoc_dequeue_unused_homepage_assets() {
 		'cr-frontend-js',
 		'ppl-label-position',
 		'pplcz-map',
+		'pplcz_map_js',
+		'pplcz_parcelshop-old-view',
 		'wf-woo-comgate',
 		'comgate',
 		'comgate-woocommerce',
@@ -2434,15 +2444,13 @@ function molosoc_dequeue_unused_homepage_assets() {
 	if ( is_page( 'hydratacni-navleky-molosoc' ) || molosoc_is_landing_page_a() ) {
 		// Landing Pages B and A only (the homepage list above is left
 		// exactly as audited): WooCommerce's core frontend script
-		// (blockUI/js-cookie come along as its dependencies), the Customer
-		// Reviews masonry helper and the PPL CZ parcel-shop map scripts —
-		// none has a target on these pages. Order-attribution/sourcebuster
+		// (blockUI/js-cookie come along as its dependencies) and the
+		// Customer Reviews masonry helper — none has a target on these
+		// pages. Order-attribution/sourcebuster
 		// stay: they record where a later purchase started.
 		$scripts = array_merge( $scripts, array(
 			'woocommerce',
 			'cr-colcade',
-			'pplcz_map_js',
-			'pplcz_parcelshop-old-view',
 		) );
 	}
 	foreach ( $scripts as $handle ) {
