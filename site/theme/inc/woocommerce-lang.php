@@ -622,6 +622,34 @@ function molosoc_cz_product_title( $title, $post_id = 0 ) {
 add_filter( 'the_title', 'molosoc_cz_product_title', 10, 2 );
 
 /**
+ * Czech <title> and meta description for product 364 (Issue #224). Core's
+ * title-tag builds the document title from the product's raw post_title
+ * (never the `the_title` filter above), so the CZ URL otherwise gets the
+ * English product name, and no theme or plugin prints a description for it.
+ * Both strings are i18n/cz/cz-product-copy.md's "Title tag" / "Meta
+ * description", verbatim. Gated to CZ product 364 only; the EN product, the
+ * canonical/hreflang block and every other URL are untouched.
+ */
+function molosoc_cz_product_document_title( $title ) {
+	if ( ! molosoc_is_cz_product_364() ) {
+		return $title;
+	}
+	return 'Návlek na nohy Molosoc — Krém, který už doma máte, konečně funguje';
+}
+add_filter( 'pre_get_document_title', 'molosoc_cz_product_document_title' );
+
+function molosoc_cz_product_meta_description() {
+	if ( ! molosoc_is_cz_product_364() ) {
+		return;
+	}
+	printf(
+		'<meta name="description" content="%s" />' . "\n",
+		esc_attr( 'Skutečné výsledky před/po, žádné filtry. Opakovaně použitelný návlek, který zadrží váš oblíbený krém, omezí nepořádek a pomůže vám u rutiny vydržet.' )
+	);
+}
+add_action( 'wp_head', 'molosoc_cz_product_meta_description' );
+
+/**
  * Czech short description (WooCommerce's own excerpt-based
  * woocommerce_short_description filter, single-product template hero
  * lede). This filter's signature carries no post ID — molosoc_is_cz_
