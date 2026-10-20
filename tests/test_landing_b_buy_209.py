@@ -34,13 +34,24 @@ class LandingBBuyPath(unittest.TestCase):
         self.assertIn("molosoc_cod_cz_text()", hero)
         self.assertIn("<strong>Dobírka:</strong>", hero)
 
-    def test_cta_repeats_after_every_main_section(self):
-        for label in ("Pro koho MOLOSOC je", "Co to je", "Velikosti", "Jak to funguje", "Příběh",
-                      "MOLOSOC v reálu", "Jak to vše začalo", "Kompatibilita", "Proč MOLOSOC", "Objednávka"):
+    def test_cta_is_in_hero_every_second_section_and_final_purchase(self):
+        # Issue #216: hero + every second main section + final purchase section.
+        with_cta = ("Co to je", "Jak to funguje", "MOLOSOC v reálu", "Kompatibilita", "Objednávka")
+        without = ("Pro koho MOLOSOC je", "Velikosti", "Příběh", "Jak to vše začalo", "Proč MOLOSOC", "FAQ")
+        for label in with_cta + without:
             m = re.search(r'<section[^>]*aria-label="%s".*?</section>' % re.escape(label), TEMPLATE, re.S)
             self.assertIsNotNone(m, label)
-            self.assertIn("molosoc_landing_b_buy_cta(", m.group(0), label)
-        self.assertEqual(TEMPLATE.count("molosoc_landing_b_buy_cta("), 11)  # hero + 10 sections
+            has = "molosoc_landing_b_buy_cta(" in m.group(0)
+            self.assertEqual(has, label in with_cta, label)
+        self.assertEqual(TEMPLATE.count("molosoc_landing_b_buy_cta("), 6)  # hero + 5 sections
+
+    def test_sticky_pill_halo_is_styled_for_landing_b(self):
+        css = (ROOT / "assets/css/landing-b.css").read_text(encoding="utf-8")
+        i = css.index("Issue #216")
+        block = css[i:]
+        self.assertIn(".molosoc-sticky-cta {", block)
+        self.assertIn("rgba(250, 245, 232", block)
+        self.assertNotIn("animation", block)
 
     def test_no_cta_links_to_the_product_page_directly(self):
         self.assertNotIn("esc_url( $lpb_product_url )", TEMPLATE)

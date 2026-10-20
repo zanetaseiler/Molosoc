@@ -139,7 +139,6 @@ get_header();
 				<p>Pro chvíle péče – ne na celý den, jen na krátký rituál.</p>
 			</div>
 		</div>
-		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 5. Co to je (page 580 section 5: image left, copy right) ============ -->
@@ -185,7 +184,6 @@ get_header();
 				<p>M nahoře, L dole</p>
 			</div>
 		</div>
-		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 7. Jak to funguje (page 580 section 7: image + 5 numbered steps) ============ -->
@@ -232,7 +230,6 @@ get_header();
 				<p>Po měsících testování, výběru materiálu a ladění detailů vznikl MOLOSOC – nitrilový návlek na nohy, který zamkne vlhkost a nechá krém pracovat. Jednoduše. Bez nepořádku.</p>
 			</div>
 		</div>
-		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 9. Z reálu (page 580 section 9: 2 captioned photos) ============ -->
@@ -265,7 +262,6 @@ get_header();
 		<div class="lpb-video">
 			<iframe src="https://www.youtube-nocookie.com/embed/dXVivzbZBfc?rel=0&amp;modestbranding=1" title="Takhle nějak to vypadalo… když vznikal první MOLOSOC." width="315" height="560" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
 		</div>
-		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
 	<!-- ============ 11. Kompatibilita (page 580 section 11: copy left, image right, 4 chips) ============ -->
@@ -312,7 +308,6 @@ get_header();
 		</div>
 		<p class="lpb-price lpb-price--dark" translate="no"><span class="lpb-price__amount"><?php echo esc_html( $lpb_price ); ?></span></p>
 		<p class="lpb-price__meta">Za 1 pár · <?php echo esc_html( $lpb_shipping ); ?> · Bezpečná platba přes Comgate</p>
-		<?php molosoc_landing_b_buy_cta( 'dark' ); ?>
 	</section>
 
 	<!-- ============ 13. FAQ (page 580 section 13: 6 Thrive toggles -> native <details>) ============ -->

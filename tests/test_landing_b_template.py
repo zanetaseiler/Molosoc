@@ -409,7 +409,9 @@ class LandingBTemplate(unittest.TestCase):
                 part = part.strip()
                 if not part:
                     continue
-                self.assertTrue(part.startswith(".lpb"), f"unscoped selector: {part}")
+                # Issue #216: the global sticky pill is styled here too (this
+                # stylesheet is enqueued on Landing B only).
+                self.assertTrue(part.startswith((".lpb", ".molosoc-sticky-cta")), f"unscoped selector: {part}")
         # The section-wide default width must stay at single-class specificity
         # (:where) so .lpb-video / .lpb-gallery / .lpb-founders__photo keep
         # their narrower max-widths (live regression: 1080px-wide YouTube embed).
