@@ -697,8 +697,9 @@ add_filter( 'woocommerce_attribute_label', 'molosoc_cz_attribute_label', 10, 3 )
  */
 function molosoc_size_value_rank( $value ) {
 	$v = strtolower( trim( (string) $value ) );
-	$m_hints = array( 'm', 'medium', '36', '36-39', '36–39' );
-	$l_hints = array( 'l', 'large', '39.5', '39.5-44', '39,5', '39.5–44' );
+	// 'm-medium' / 'l-large' are the live attribute slugs (Issue #220).
+	$m_hints = array( 'm', 'medium', 'm-medium', '36', '36-39', '36–39' );
+	$l_hints = array( 'l', 'large', 'l-large', '39.5', '39.5-44', '39,5', '39.5–44' );
 	if ( in_array( $v, $m_hints, true ) ) {
 		return 0;
 	}
