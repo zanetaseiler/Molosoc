@@ -187,13 +187,20 @@ if ( $molosoc_is_cz ) {
 	</section>
 
 	<?php if ( $molosoc_is_cz ) : ?>
+	<?php
+	// The dry-feet topic is only linked once its WordPress Page is published
+	// in Czech (deploying the theme does not create the Page), so the topic
+	// count in the intro follows whether the entry is rendered.
+	$molosoc_dry_feet_live = function_exists( 'molosoc_cz_page_is_live' ) && molosoc_cz_page_is_live( '/cz/sucha-kuze-na-chodidlech/' );
+	$molosoc_topic_count   = $molosoc_dry_feet_live ? 'čtyř' : 'tří';
+	?>
 	<!-- Czech topic navigation (Issue #203): the CZ Magazín had only a
 	     one-sentence intro. Every link below is an existing CZ page, no EN-only
 	     guide is listed. The dry-feet guide (Issue #236) is the fourth topic. -->
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-blog-topics">
 		<div class="molosoc-section__inner">
 			<h2>Kde začít podle toho, co vás trápí</h2>
-			<p class="molosoc-blog-topics__lede">Magazín je rozdělen do čtyř témat. U každého najdete nejdřív celkového průvodce a pak konkrétnější články, které jdou víc do hloubky.</p>
+			<p class="molosoc-blog-topics__lede">Magazín je rozdělen do <?php echo esc_html( $molosoc_topic_count ); ?> témat. U každého najdete nejdřív celkového průvodce a pak konkrétnější články, které jdou víc do hloubky.</p>
 			<ul class="molosoc-blog-topics__list">
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">Popraskané paty</a></h3>
@@ -203,10 +210,12 @@ if ( $molosoc_is_cz ) {
 					<h3><a href="<?php echo esc_url( home_url( '/cz/zarostly-nehet/' ) ); ?>">Zarostlý nehet</a></h3>
 					<p>Co zarostlý nehet způsobuje, co pomáhá doma a kdy jde o víc než jen problém s nehtem.</p>
 				</li>
+				<?php if ( $molosoc_dry_feet_live ) : ?>
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/sucha-kuze-na-chodidlech/' ) ); ?>">Suchá kůže na chodidlech</a></h3>
 					<p>Proč je kůže na chodidlech drsná a matná, i když ještě nepraská, a jak o ni pečovat, než se z ní stanou popraskané paty.</p>
 				</li>
+				<?php endif; ?>
 				<li>
 					<h3><a href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">Kuří oko a mozoly</a></h3>
 					<p>Proč vzniká kuří oko a ztvrdlá kůže na nohou a co ji skutečně změkčí. Pokud hledáte konkrétní postup, pokračujte na článek

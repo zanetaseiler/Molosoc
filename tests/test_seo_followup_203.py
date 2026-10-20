@@ -41,7 +41,7 @@ class CzOnlySpokeHreflang(unittest.TestCase):
 
 class CzMagazinTopics(unittest.TestCase):
     def test_topics_section_is_cz_only_and_links_existing_cz_pages(self):
-        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>", BLOG, re.S)
+        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>\s*</main>", BLOG, re.S)
         self.assertIsNotNone(m)
         paths = re.findall(r"home_url\( '(/[^']+)' \)", m.group(1))
         self.assertEqual(
@@ -51,11 +51,19 @@ class CzMagazinTopics(unittest.TestCase):
         )
 
     def test_intro_counts_four_topics_including_dry_feet(self):
-        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>", BLOG, re.S)
+        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>\s*</main>", BLOG, re.S)
         block = m.group(1)
-        self.assertIn("do čtyř témat", block)
-        self.assertNotIn("do tří témat", block)
+        self.assertIn("molosoc_topic_count", block)
+        self.assertIn("'čtyř' : 'tří'", block)
         self.assertEqual(block.count("<h3>"), 4)
+
+    def test_dry_feet_topic_gated_on_published_czech_page(self):
+        m = re.search(r"<\?php if \( \$molosoc_is_cz \) : \?>(.*?)<\?php endif; \?>\s*</main>", BLOG, re.S)
+        block = m.group(1)
+        self.assertIn("molosoc_cz_page_is_live( '/cz/sucha-kuze-na-chodidlech/' )", block)
+        gated = re.search(r"<\?php if \( \$molosoc_dry_feet_live \) : \?>(.*?)<\?php endif; \?>", block, re.S)
+        self.assertIn("/cz/sucha-kuze-na-chodidlech/", gated.group(1))
+        self.assertNotIn("/cz/zarostly-nehet/", gated.group(1))
 
 
 if __name__ == "__main__":
