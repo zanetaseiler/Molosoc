@@ -453,6 +453,7 @@ function molosoc_enqueue_assets() {
 		'treatment',
 		'callus-remover', 'jak-odstranit',
 		'na-chodidle',
+		'sucha-kuze-na-chodidlech',
 		'prevent',
 		'cracked-heels-cream',
 		'cracked-heels-treatment',
@@ -2224,6 +2225,39 @@ function molosoc_cz_schema() {
 		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
 		        { "@type": "ListItem", "position": 2, "name": "Kuří oko a mozoly", "item": "https://molosoc.com/cz/kurici-oko/" },
 		        { "@type": "ListItem", "position": 3, "name": "Kuří oko na chodidle", "item": "https://molosoc.com/cz/kurici-oko/na-chodidle/" }
+		      ]
+		    }
+		  ]
+		}
+		</script>
+		<?php
+	} elseif ( is_page( 'sucha-kuze-na-chodidlech' ) ) {
+		?>
+		<meta name="description" content="Suchá kůže na chodidlech: proč chodidla vysychají, jak o ně šetrně pečovat krémem a kdy je vhodné poradit se s lékařem nebo lékárníkem.">
+		<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@graph": [
+		    {
+		      "@type": "Article",
+		      "@id": "https://molosoc.com/cz/sucha-kuze-na-chodidlech/#article",
+		      "headline": "Suchá kůže na chodidlech: proč se vrací a jak o ni pečovat",
+		      "description": "Suchá kůže na chodidlech: proč chodidla vysychají, jak o ně šetrně pečovat krémem a kdy je vhodné poradit se s lékařem nebo lékárníkem.",
+		      "url": "https://molosoc.com/cz/sucha-kuze-na-chodidlech/",
+		      "mainEntityOfPage": "https://molosoc.com/cz/sucha-kuze-na-chodidlech/",
+		      "author": { "@id": "https://molosoc.com/#organization" },
+		      "publisher": { "@id": "https://molosoc.com/#organization" },
+		      "isPartOf": { "@id": "https://molosoc.com/#website" },
+		      "datePublished": "2026-10-20",
+		      "dateModified": "2026-10-20",
+		      "inLanguage": "cs"
+		    },
+		    {
+		      "@type": "BreadcrumbList",
+		      "@id": "https://molosoc.com/cz/sucha-kuze-na-chodidlech/#breadcrumb",
+		      "itemListElement": [
+		        { "@type": "ListItem", "position": 1, "name": "Domů", "item": "https://molosoc.com/cz/molosoc-home-cestina/" },
+		        { "@type": "ListItem", "position": 2, "name": "Suchá kůže na chodidlech", "item": "https://molosoc.com/cz/sucha-kuze-na-chodidlech/" }
 		      ]
 		    }
 		  ]

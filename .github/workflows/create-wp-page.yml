@@ -26,6 +26,11 @@ on:
         required: false
         default: ""
 
+      lang:
+        description: "Polylang language slug for a non-default-language page (e.g. cz for /cz/ pages). The run fails loudly if the permalink is not under /<lang>/. Leave blank for the default language."
+        required: false
+        default: ""
+
 jobs:
   create-page:
     runs-on: ubuntu-latest
@@ -49,4 +54,5 @@ jobs:
           python3 automations/content-sync/create_wp_page.py \
             --slug "${{ inputs.slug }}" \
             --title "${{ inputs.title }}" \
-            ${{ inputs.parent_slug != '' && format('--parent-slug "{0}"', inputs.parent_slug) || '' }}
+            ${{ inputs.parent_slug != '' && format('--parent-slug "{0}"', inputs.parent_slug) || '' }} \
+            ${{ inputs.lang != '' && format('--lang "{0}"', inputs.lang) || '' }}

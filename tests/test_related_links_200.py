@@ -18,6 +18,7 @@ TEMPLATES = {
     "page-prevent.php": "ingrown-prevent",
     "page-callus-remover.php": "callus-remover",
     "page-na-chodidle.php": "callus-remover",
+    "page-sucha-kuze-na-chodidlech.php": "sucha-kuze",
 }
 
 
@@ -37,7 +38,10 @@ class RelatedLinks(unittest.TestCase):
         cz = re.findall(r"=> '(/cz/[^']+)'", HELPER)
         self.assertEqual(
             sorted(cz),
-            ["/cz/kurici-oko/", "/cz/magazin/", "/cz/popraskane-paty/", "/cz/zarostly-nehet/"],
+            [
+                "/cz/kurici-oko/", "/cz/magazin/", "/cz/popraskane-paty/",
+                "/cz/sucha-kuze-na-chodidlech/", "/cz/zarostly-nehet/",
+            ],
         )
 
     def test_en_targets_are_known_urls(self):
@@ -46,8 +50,9 @@ class RelatedLinks(unittest.TestCase):
             "/cracked-heels/cracked-heels-treatment/", "/cracked-heels/cracked-heels-cream/",
             "/cracked-heels/fix-permanently/", "/ingrown-toenails/treatment/",
             "/ingrown-toenails/prevent/",
+            "/dry-skin-feet/",
         }
-        for path in re.findall(r"array\( '(/[^']+)', '", HELPER):
+        for path in re.findall(r"array\( '(/[^']+)', (?:'|null)", HELPER):
             self.assertIn(path, known)
 
 

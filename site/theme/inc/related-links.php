@@ -21,6 +21,12 @@ function molosoc_related_links_map() {
 		'cracked-heels'           => array(
 			array( '/ingrown-toenails/', 'Ingrown toenails: causes and care', 'Zarostlý nehet: příčiny a péče' ),
 			array( '/hardened-skin-calluses/', 'Hardened skin and calluses', 'Kuří oko a mozoly' ),
+			array( '/dry-skin-feet/', null, 'Suchá kůže na chodidlech' ),
+			array( '/blog/', 'More foot-care guides in the Journal', 'Další průvodci péčí o nohy v Magazínu' ),
+		),
+		'sucha-kuze'              => array(
+			array( '/cracked-heels/', 'Cracked heels: what helps', 'Popraskané paty: co pomáhá' ),
+			array( '/hardened-skin-calluses/', 'Hardened skin and calluses', 'Kuří oko a mozoly' ),
 			array( '/blog/', 'More foot-care guides in the Journal', 'Další průvodci péčí o nohy v Magazínu' ),
 		),
 		'ingrown-toenails'        => array(
@@ -59,10 +65,25 @@ function molosoc_related_links_map() {
 }
 
 /**
+ * True when a published Page exists for a /cz/{slug}/ path AND Polylang
+ * reports it as Czech. Guards CZ-only rows (Issue #229) so the link appears
+ * only after the page is provisioned in Czech, not merely deployed.
+ */
+function molosoc_cz_page_is_live( $cz_path ) {
+	$slug = basename( untrailingslashit( $cz_path ) );
+	$page = get_page_by_path( $slug );
+	if ( ! $page || 'publish' !== $page->post_status ) {
+		return false;
+	}
+	return function_exists( 'pll_get_post_language' ) && 'cz' === pll_get_post_language( $page->ID );
+}
+
+/**
  * Print the Related reading section for a page key. Prints nothing for an
  * unknown key. Language: Czech when Polylang reports 'cz', else English.
  * Czech links to /cz/ equivalents where the CZ page exists (see $cz_paths);
  * paths with no CZ twin are skipped in Czech rather than cross-linking to EN.
+ * A row whose EN label is null is Czech-only (e.g. Issue #229): skipped in EN.
  */
 function molosoc_related_links( $key ) {
 	$map = molosoc_related_links_map();
@@ -75,13 +96,20 @@ function molosoc_related_links( $key ) {
 		'/ingrown-toenails/'      => '/cz/zarostly-nehet/',
 		'/hardened-skin-calluses/' => '/cz/kurici-oko/',
 		'/blog/'                  => '/cz/magazin/',
+		'/dry-skin-feet/'         => '/cz/sucha-kuze-na-chodidlech/',
 	);
 	$items = array();
 	foreach ( $map[ $key ] as $row ) {
 		list( $path, $en, $cz ) = $row;
+		if ( ! $is_cz && null === $en ) {
+			continue; // CZ-only row (no EN label): the EN page keeps its own links.
+		}
 		if ( $is_cz ) {
 			if ( ! isset( $cz_path[ $path ] ) ) {
 				continue;
+			}
+			if ( null === $en && ! molosoc_cz_page_is_live( $cz_path[ $path ] ) ) {
+				continue; // CZ-only page not yet published in Czech: never expose a 404 link.
 			}
 			$items[] = array( $cz_path[ $path ], $cz );
 		} else {
