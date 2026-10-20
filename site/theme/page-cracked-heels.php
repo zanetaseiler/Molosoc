@@ -184,7 +184,7 @@ get_header();
 			<h3>Pomáhá krém na nohy přes noc?</h3>
 			<p>Přes noc má krém dlouhý klidný čas, aby se vstřebával, a neotře se hned o podlahu ani obuv. Proto mnoho lidí natírá paty večer a chrání je přes noc, aby se krém neotíral do ložního prádla. Výsledek se liší podle stavu kůže.</p>
 			<h3>Kdy s popraskanými patami k lékaři?</h3>
-			<p>Pokud jsou praskliny hluboké, krvácejí, bolí při každém kroku, vypadají zanícené (zarudnutí, otok, teplo, hnis) nebo se nehojí, neléčte je sami a objednejte se k lékaři. Poradit by se měli také lidé s cukrovkou nebo sníženým cítěním v nohou už při prvních prasklinách. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
+			<p>Pokud jsou praskliny hluboké, krvácejí, bolí při každém kroku, vypadají zanícené (zarudnutí, otok, teplo, hnis) nebo se nehojí, neléčte je sami a objednejte se k lékaři. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
 		</div>
 	</section>
 	<?php endif; ?>
