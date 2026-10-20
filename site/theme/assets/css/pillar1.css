@@ -630,6 +630,42 @@
 }
 
 /* ============================================================= */
+/* 4b. CZ dry-skin prose + FAQ (Issue #218) — plain section; base.css */
+/* zeroes heading/paragraph margins, so spacing is scoped here.      */
+/* ============================================================= */
+
+.molosoc-pillar-dry-skin .molosoc-section__inner {
+  max-width: 46rem;
+}
+
+.molosoc-pillar-dry-skin .molosoc-eyebrow {
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar-dry-skin h2 {
+  font-size: var(--text-display-m);
+  margin-bottom: var(--space-s);
+}
+
+.molosoc-pillar-dry-skin h2:not(:first-of-type) {
+  margin-top: var(--space-m);
+}
+
+.molosoc-pillar-dry-skin h3 {
+  margin-top: var(--space-m);
+  margin-bottom: var(--space-2xs);
+}
+
+.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) {
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+
+.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) + p {
+  margin-top: var(--space-xs);
+}
+
+/* ============================================================= */
 /* 6. FINAL CTA — "See the real results" as one MOLOSOC elevated  */
 /* card (2026-09-22). Deep-links to the Product page's Persona 2   */
 /* proof section (per docs/site-structure.md §7's "Deep-links to"  */

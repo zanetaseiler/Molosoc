@@ -36,6 +36,12 @@ class CzCrackedHeels(unittest.TestCase):
             block = SRC[SRC.index("4b. CZ ONLY"):SRC.index("5. GO DEEPER")]
             self.assertNotIn(bad, block.lower())
 
+    def test_dry_skin_block_has_scoped_spacing(self):
+        css = (ROOT / "site/theme/assets/css/pillar1.css").read_text(encoding="utf-8")
+        for sel in (".molosoc-pillar-dry-skin h2", ".molosoc-pillar-dry-skin h3",
+                    ".molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) + p"):
+            self.assertIn(sel, css)
+
 
 if __name__ == "__main__":
     unittest.main()
