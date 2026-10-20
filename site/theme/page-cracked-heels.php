@@ -156,12 +156,38 @@ get_header();
 					</article>
 					<article>
 						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je skutečně potřeba, aby mast/krém fungovaly' : __( 'What actually needs to happen for cream to work', 'molosoc' ) ); ?></h3>
-						<p><?php echo esc_html( $molosoc_is_cz ? 'Mast potřebuje nepřerušovaný kontakt s kůží, aby fungovala — ne silnější vrstvu, jen dost času zapečetěného na kůži, aby se skutečně vstřebala.' : __( 'Cream needs uninterrupted contact with skin to work — not a bigger dose, just enough sealed time to actually absorb.', 'molosoc' ) ); ?></p>
+						<p><?php echo esc_html( $molosoc_is_cz ? 'Mast potřebuje nepřerušovaný kontakt s kůží, aby fungovala — ne silnější vrstvu, jen dost času zapečetěného na kůži, aby se skutečně vstřebala.' : __( 'Cream needs uninterrupted contact with skin to work — not a bigger dose, just enough sealed time to actually absorb.', 'molosoc' ) ); ?>
+						<?php if ( $molosoc_is_cz ) : ?>
+							<a href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Jak funguje hydratační návlek na nohy na krém, který už máte</a>.
+						<?php endif; ?></p>
 					</article>
 				</div>
 			</div>
 		</div>
 	</section>
+
+	<!-- 4b. CZ ONLY — dry skin on heels/feet + FAQ (Issue #218, R1 of
+	     docs/cz-organic-growth-207.md). Plain text on existing section
+	     styles; no product link here (the single contextual link lives in
+	     section 4, the CTA at the bottom). No FAQ schema: out of scope. -->
+	<?php if ( $molosoc_is_cz ) : ?>
+	<section class="molosoc-section molosoc-pillar-dry-skin" aria-label="Suchá kůže na patách a chodidlech">
+		<div class="molosoc-section__inner">
+			<p class="molosoc-eyebrow">Suchá kůže</p>
+			<h2>Suchá kůže na patách a chodidlech</h2>
+			<p>Kůže na chodidlech nemá mazové žlázy a při chůzi je pod stálým tlakem, proto vysychá snáz než kůže jinde na těle. Suchá kůže na patách bývá matná, drsná nebo se šupinatí a při dalším vysychání se může začít trhat. Pomáhá pravidelná péče: mytí vlažnou vodou, důkladné osušení, krém na nohy nanášený pravidelně a dost času, aby se krém na kůži udržel.</p>
+			<p>Pokud suchá kůže přetrvává i přes pravidelnou péči, svědí, zarudne nebo se výrazně zhoršuje, nechte si poradit u lékaře nebo lékárníka — příčinou může být i jiné onemocnění kůže.</p>
+
+			<h2>Časté otázky o popraskaných patách</h2>
+			<h3>Jak často natírat paty krémem?</h3>
+			<p>Nejlépe pravidelně, tedy alespoň jednou denně, ideálně večer po umytí a osušení nohou. Při velmi suché kůži můžete krém nanést i dvakrát denně. Důležitější než množství je pravidelnost — příležitostné mazání obvykle nestačí.</p>
+			<h3>Pomáhá krém na nohy přes noc?</h3>
+			<p>Přes noc má krém dlouhý klidný čas, aby se vstřebával, a neotře se hned o podlahu ani obuv. Proto mnoho lidí natírá paty večer a chrání je přes noc, aby se krém neotíral do ložního prádla. Výsledek se liší podle stavu kůže.</p>
+			<h3>Kdy s popraskanými patami k lékaři?</h3>
+			<p>Pokud jsou praskliny hluboké, krvácejí, bolí při každém kroku, vypadají zanícené (zarudnutí, otok, teplo, hnis) nebo se nehojí, neléčte je sami a objednejte se k lékaři. Poradit by se měli také lidé s cukrovkou nebo sníženým cítěním v nohou už při prvních prasklinách. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
+		</div>
+	</section>
+	<?php endif; ?>
 
 	<!-- 5. GO DEEPER — static, reuses components.css's .molosoc-topic-grid/
 	     .molosoc-topic-card ("educational content beat"). Spoke articles
