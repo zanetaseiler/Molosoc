@@ -34,6 +34,12 @@ class EnvironmentSelection(unittest.TestCase):
             ("https://molosoc.com.evil.test", "production"),
             ("https://user:pw@molosoc.com", "production"),
             ("https://molosoc.com:8443", "production"),
+            ("https://molosoc.com?x", "production"),
+            ("https://molosoc.com/?x=1", "production"),
+            ("https://molosoc.com#x", "production"),
+            ("https://molosoc.com?", "production"),
+            ("https://molosoc.com#", "production"),
+            ("https://staging.molosoc.com?x", "staging"),
             ("", "production"),
         ]:
             with self.subTest(url=url, env=env), self.assertRaises(SystemExit):

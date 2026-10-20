@@ -82,6 +82,11 @@ def validate_wp_url(url, environment):
         or parsed.username
         or parsed.password
         or parsed.path.strip("/")
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+        or "?" in url
+        or "#" in url
     ):
         sys.exit(
             f"REFUSING to run: --environment {environment} requires WP_URL to be "
