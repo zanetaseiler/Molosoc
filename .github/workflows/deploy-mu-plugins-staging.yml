@@ -111,7 +111,13 @@ jobs:
             sleep 10
           done
           [ "$ok" = "1" ] || { echo "::error::staging response lacks X-Robots-Tag noindex"; cat /tmp/staging.hdr; exit 1; }
-          curl -sS -m 30 -o /dev/null -D /tmp/live.hdr "https://molosoc.com/" || true
+          # The live probe must actually reach production: a DNS failure,
+          # refused connection or timeout (curl exit 6/7/28) is a job failure,
+          # never a vacuous "no noindex header".
+          curl -sS -m 30 -o /dev/null -D /tmp/live.hdr "https://molosoc.com/" \
+            || { echo "::error::live-host probe failed (no response from molosoc.com)"; exit 1; }
+          grep -q '^HTTP/' /tmp/live.hdr \
+            || { echo "::error::live-host probe returned no HTTP status line"; exit 1; }
           if grep -qi '^x-robots-tag:.*noindex' /tmp/live.hdr; then
             echo "::error::live host carries a noindex X-Robots-Tag"; cat /tmp/live.hdr; exit 1
           fi

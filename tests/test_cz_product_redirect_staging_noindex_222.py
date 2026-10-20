@@ -116,6 +116,15 @@ class StagingDeployWiring(unittest.TestCase):
         self.assertIn("staging.molosoc.com/?noindex-check", STAGING_WF)
         self.assertIn("https://molosoc.com/", STAGING_WF)
 
+    def test_live_probe_must_connect(self):
+        live = [l for l in STAGING_WF.splitlines() if "live.hdr" in l and "curl" in l]
+        self.assertEqual(len(live), 1)
+        idx = STAGING_WF.index(live[0])
+        probe = STAGING_WF[idx:idx + 400]
+        self.assertNotIn("|| true", probe.split("grep -qi")[0])
+        self.assertIn("exit 1", probe)
+        self.assertIn("grep -q '^HTTP/' /tmp/live.hdr", STAGING_WF)
+
     def test_production_workflow_untouched_by_staging_plugin(self):
         prod = (ROOT / ".github/workflows/deploy-mu-plugins.yml").read_text(encoding="utf-8")
         self.assertNotIn("staging-noindex", prod)
