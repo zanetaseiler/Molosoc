@@ -365,6 +365,12 @@ get_header();
 							<h3><?php echo esc_html( $molosoc_is_cz ? 'Použijte znovu' : __( 'Use it again', 'molosoc' ) ); ?></h3>
 							<p><?php echo esc_html( $molosoc_is_cz ? 'Jeden návlek vydrží alespoň 10 použití a při správné péči může vydržet déle.' : __( 'One cover lasts at least 10 uses, and with proper care it can last longer.', 'molosoc' ) ); ?></p>
 						</div>
+						<?php if ( $molosoc_is_cz ) : ?>
+						<div class="molosoc-argument__item molosoc-argument__item--suitability">
+							<h3>Pro koho je (a pro koho není)</h3>
+							<p>Je pro běžnou domácí péči o suchá a drsná chodidla s vaším vlastním krémem nebo balzámem. Nenahrazuje lékařské ošetření. Nepoužívejte ho na porušenou, popraskanou do krve, zanícenou nebo infikovanou kůži; při bolesti, zarudnutí či přetrvávajících obtížích se poraďte s lékařem nebo pedikérem. Pokud po použití krému kůže podráždí, návlek sundejte.</p>
+						</div>
+						<?php endif; ?>
 					</div>
 				</div>
 				<div class="molosoc-product-buy">
