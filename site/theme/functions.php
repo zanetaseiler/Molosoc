@@ -157,6 +157,30 @@ add_filter( 'wp_robots', function ( $robots ) {
 } );
 
 /**
+ * Issue #222: the retired Czech product slug 301s to the equivalent Czech
+ * WooCommerce purchase page, not (as WordPress' old-slug redirect did) to the
+ * English product. Exact path match on this single source only; runs before
+ * wp_old_slug_redirect (template_redirect priority 10). The target is built
+ * from home_url(), so staging stays on staging, and it can never equal the
+ * source path, so it cannot loop.
+ */
+function molosoc_cz_product_redirect_target( $request_uri ) {
+	$path = (string) wp_parse_url( (string) $request_uri, PHP_URL_PATH );
+	if ( '/product/molosoc-hydratacni-navleky-na-nohy' !== untrailingslashit( $path ) ) {
+		return '';
+	}
+	return home_url( '/cz/produkt/hydratacni-navlek-na-nohy/' );
+}
+
+add_action( 'template_redirect', function () {
+	$target = molosoc_cz_product_redirect_target( $_SERVER['REQUEST_URI'] ?? '' );
+	if ( '' !== $target ) {
+		wp_redirect( $target, 301, 'Molosoc' );
+		exit;
+	}
+}, 1 );
+
+/**
  * Term IDs of the WooCommerce "foot-care" product category (Issue #203) plus
  * any Polylang translations of it. That archive lists the one product the
  * shop sells, which the Category page (/foot-covers/) and the product page

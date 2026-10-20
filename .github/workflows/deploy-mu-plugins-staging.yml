@@ -3,7 +3,10 @@ name: Deploy MU-Plugins to Staging
 # Staging counterpart of deploy-mu-plugins.yml, used to rehearse and verify
 # an MU-plugin on staging before it reaches production.
 #
-# Scope is deliberately ONE file: sitemap-404-status-fix.php. The
+# Scope is deliberately TWO files: sitemap-404-status-fix.php (under test)
+# and staging-noindex.php (automations/staging/, host-gated to
+# staging.molosoc.com; keeps staging out of search indexes, Issue #222).
+# Formerly ONE file: sitemap-404-status-fix.php. The
 # production workflow syncs all of site/mu-plugins/, which would also push
 # brevo-checkout-capture-shim.php onto staging — an unrelated change to a
 # server we are only using to verify the sitemap fix. So the file under
@@ -23,6 +26,7 @@ on:
     branches: [staging]
     paths:
       - "site/mu-plugins/sitemap-404-status-fix.php"
+      - "automations/staging/staging-noindex.php"
   workflow_dispatch: {}
 
 jobs:
@@ -31,14 +35,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Stage only the sitemap fix
+      - name: Stage only the sitemap fix and the staging noindex guard
         run: |
           mkdir -p build/mu-plugins
           cp site/mu-plugins/sitemap-404-status-fix.php build/mu-plugins/
+          cp automations/staging/staging-noindex.php build/mu-plugins/
           echo "--- files that will be uploaded ---"
           ls -la build/mu-plugins/
           n=$(ls -1 build/mu-plugins/ | wc -l)
-          [ "$n" = "1" ] || { echo "::error::expected exactly 1 file to upload, found $n"; exit 1; }
+          [ "$n" = "2" ] || { echo "::error::expected exactly 2 files to upload, found $n"; exit 1; }
 
       - name: Upload mu-plugin via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.4.0
@@ -75,6 +80,9 @@ jobs:
           grep -q "sitemap-404-status-fix.php" /tmp/listing.txt \
             && echo "sitemap fix present on staging" \
             || { echo "::error::sitemap fix missing from staging listing"; exit 1; }
+          grep -q "staging-noindex.php" /tmp/listing.txt \
+            && echo "staging noindex guard present on staging" \
+            || { echo "::error::staging-noindex.php missing from staging listing"; exit 1; }
           if grep -q "brevo-checkout-capture-shim.php" /tmp/listing.txt; then
             echo "::warning::brevo shim already present on staging — not uploaded by this workflow"
           else
@@ -88,3 +96,23 @@ jobs:
             fi
           done
           echo "no obsolete sitemap workarounds on staging"
+
+      - name: Regression check - staging is noindex, live host is not
+        run: |
+          # Staging must answer with X-Robots-Tag noindex (a 401 from
+          # host-level basic-auth is also acceptable protection). The live
+          # host must NOT carry the staging header. Either miss fails the job.
+          # Page-cache can briefly serve a pre-deploy copy, hence the retries.
+          ok=0
+          for i in 1 2 3 4 5; do
+            curl -sS -m 30 -o /dev/null -D /tmp/staging.hdr "https://staging.molosoc.com/?noindex-check=$i" || true
+            head -1 /tmp/staging.hdr
+            if grep -qi '^x-robots-tag:.*noindex' /tmp/staging.hdr || head -1 /tmp/staging.hdr | grep -q ' 401'; then ok=1; break; fi
+            sleep 10
+          done
+          [ "$ok" = "1" ] || { echo "::error::staging response lacks X-Robots-Tag noindex"; cat /tmp/staging.hdr; exit 1; }
+          curl -sS -m 30 -o /dev/null -D /tmp/live.hdr "https://molosoc.com/" || true
+          if grep -qi '^x-robots-tag:.*noindex' /tmp/live.hdr; then
+            echo "::error::live host carries a noindex X-Robots-Tag"; cat /tmp/live.hdr; exit 1
+          fi
+          echo "staging noindex confirmed; live host has no noindex header"
