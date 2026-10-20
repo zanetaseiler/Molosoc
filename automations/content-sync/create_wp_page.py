@@ -16,7 +16,7 @@ Post content is intentionally empty — page-{slug}.php templates render
 their own hardcoded markup and never call the_content().
 
 Usage:
-    python3 create_wp_page.py --slug cracked-heels --title "Cracked Heels: Why They Happen..."
+    python3 create_wp_page.py --environment staging --slug cracked-heels --title "Cracked Heels: Why They Happen..."
 
 --environment production|staging is required and WP_URL must match that
 environment's exact host (checked before any request).
