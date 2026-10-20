@@ -8,6 +8,10 @@ name: Create WP Page (draft)
 # Page first and does nothing if one is found. Always creates as a draft,
 # never publishes — a human hits Publish in wp-admin.
 #
+# The "environment" input is explicit (production | staging); it selects the
+# matching existing secret set and the script refuses, before any request, if
+# the secret's host is not exactly that environment's host.
+#
 # Run from the Actions tab → "Create WP Page (draft)" → Run workflow,
 # fill in slug + title. Pick the branch/ref where the matching
 # page-{slug}.php template already lives (usually staging).
@@ -15,6 +19,14 @@ name: Create WP Page (draft)
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Target site. production uses PROD_WP_* secrets (https://molosoc.com); staging uses WP_* secrets (https://staging.molosoc.com). The run refuses if the secret's host does not match."
+        type: choice
+        required: true
+        default: production
+        options:
+          - production
+          - staging
       slug:
         description: "Page slug — must match the page-{slug}.php template filename (e.g. cracked-heels)"
         required: true
@@ -47,11 +59,12 @@ jobs:
 
       - name: Ensure Page exists (draft)
         env:
-          WP_URL: ${{ secrets.WP_URL }}
-          WP_USER: ${{ secrets.WP_USER }}
-          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          WP_URL: ${{ inputs.environment == 'production' && secrets.PROD_WP_URL || secrets.WP_URL }}
+          WP_USER: ${{ inputs.environment == 'production' && secrets.PROD_WP_USER || secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ inputs.environment == 'production' && secrets.PROD_WP_APP_PASSWORD || secrets.WP_APP_PASSWORD }}
         run: |
           python3 automations/content-sync/create_wp_page.py \
+            --environment "${{ inputs.environment }}" \
             --slug "${{ inputs.slug }}" \
             --title "${{ inputs.title }}" \
             ${{ inputs.parent_slug != '' && format('--parent-slug "{0}"', inputs.parent_slug) || '' }} \
