@@ -16,7 +16,10 @@ Post content is intentionally empty — page-{slug}.php templates render
 their own hardcoded markup and never call the_content().
 
 Usage:
-    python3 create_wp_page.py --slug cracked-heels --title "Cracked Heels: Why They Happen..."
+    python3 create_wp_page.py --environment staging --slug cracked-heels --title "Cracked Heels: Why They Happen..."
+
+--environment production|staging is required and WP_URL must match that
+environment's exact host (checked before any request).
 
 Pass --parent-slug for a spoke article nested under a pillar (e.g.
 --parent-slug ingrown-toenails for the "treatment" spoke), so the created
@@ -41,6 +44,14 @@ import sys
 import requests
 from urllib.parse import urlparse
 
+# Exact hosts each --environment may talk to. WP_URL is validated against this
+# before any request, so a staging secret can never create a production page
+# (or vice versa) just because the wrong secret set was wired in.
+EXPECTED_HOSTS = {
+    "production": "molosoc.com",
+    "staging": "staging.molosoc.com",
+}
+
 WP_URL = os.environ.get("WP_URL", "").rstrip("/")
 WP_USER = os.environ.get("WP_USER", "")
 WP_APP_PASSWORD = os.environ.get("WP_APP_PASSWORD", "")
@@ -53,6 +64,35 @@ def wp_auth():
             "Set these as GitHub secrets or export them locally before running."
         )
     return (WP_USER, WP_APP_PASSWORD)
+
+
+def validate_wp_url(url, environment):
+    """Exit unless `url` is exactly https://<expected host> for the environment.
+
+    Runs before any GET/POST. Never prints credentials.
+    """
+    expected = EXPECTED_HOSTS.get(environment)
+    if expected is None:
+        sys.exit(f"Unknown --environment {environment!r}; use one of {sorted(EXPECTED_HOSTS)}.")
+    parsed = urlparse(url or "")
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != expected
+        or parsed.port is not None
+        or parsed.username
+        or parsed.password
+        or parsed.path.strip("/")
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+        or "?" in url
+        or "#" in url
+    ):
+        sys.exit(
+            f"REFUSING to run: --environment {environment} requires WP_URL to be "
+            f"https://{expected}, but it resolves to host {parsed.hostname!r}. "
+            f"No request was made."
+        )
 
 
 def permalink_in_language(link, lang):
@@ -83,7 +123,15 @@ def main():
         default=None,
         help="Polylang language slug (e.g. cz). Sent as `lang`; the permalink is then verified to sit under /<lang>/",
     )
+    parser.add_argument(
+        "--environment",
+        required=True,
+        choices=sorted(EXPECTED_HOSTS),
+        help="Target site. WP_URL must be exactly https://<that environment's host> or nothing is requested",
+    )
     args = parser.parse_args()
+
+    validate_wp_url(WP_URL, args.environment)
 
     resp = requests.get(
         f"{WP_URL}/wp-json/wp/v2/pages",
