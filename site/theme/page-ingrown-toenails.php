@@ -135,7 +135,7 @@ get_header();
 				<li>bolest se zhoršuje nebo vás omezuje při chůzi,</li>
 				<li>máte horečku nebo se necítíte dobře.</li>
 			</ul>
-			<p>Pokud máte cukrovku, špatné prokrvení dolních končetin nebo oslabenou imunitu, vyhledejte lékaře rychleji, už při prvních příznacích zánětu. I drobný problém na noze se u vás může snadno zhoršit.</p>
+			<p>Pokud máte cukrovku, špatné prokrvení dolních končetin nebo oslabenou imunitu, kontaktujte lékaře hned, jakmile zjistíte zarostlý nehet, i když zatím není zanícený. Nezkoušejte ho řešit doma. I drobný problém na noze se u vás může snadno zhoršit.</p>
 			<p>Návleky nenasazujte na poraněnou nebo zanícenou kůži a nenechte jimi odložit návštěvu lékaře. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
 		</div>
 	</section>

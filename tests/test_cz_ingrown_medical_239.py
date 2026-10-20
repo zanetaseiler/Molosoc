@@ -35,6 +35,11 @@ class IngrownMedical(unittest.TestCase):
         self.assertIn("nenasazujte na poraněnou nebo zanícenou kůži", BLOCK)
         self.assertNotIn("<a ", BLOCK)
 
+    def test_high_risk_readers_told_to_contact_doctor_now(self):
+        self.assertIn("kontaktujte lékaře hned", BLOCK)
+        self.assertIn("Nezkoušejte ho řešit doma", BLOCK)
+        self.assertNotIn("už při prvních příznacích zánětu", BLOCK)
+
     def test_warning_after_worsening_section_before_next(self):
         self.assertLess(SRC.index("Kdy neodezní — příznaky zhoršení"), START)
 
