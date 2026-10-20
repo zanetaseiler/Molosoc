@@ -277,6 +277,12 @@ class LandingBTemplate(unittest.TestCase):
             "'cr-colcade'", "'pplcz_map_js'", "'pplcz_parcelshop-old-view'",
         ):
             self.assertIn(handle, dq, handle)
+        # Issue #214: the PPL parcel-shop scripts call jQuery without declaring
+        # it, so they must be in the shared list (homepage too), not only in
+        # the landing-page-only merge.
+        shared = dq[: dq.index("if ( is_page(")]
+        for handle in ("'pplcz_map_js'", "'pplcz_parcelshop-old-view'"):
+            self.assertIn(handle, shared, handle)
         # Order attribution must survive (it records where a purchase started).
         self.assertNotIn("'wc-order-attribution'", dq)
         self.assertNotIn("'sourcebuster-js'", dq)
