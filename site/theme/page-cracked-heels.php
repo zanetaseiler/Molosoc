@@ -166,6 +166,33 @@ get_header();
 		</div>
 	</section>
 
+	<!-- 4a. CZ ONLY — further causes, practical care and physician guidance
+	     (Issue #243). Complements the 3 cause points in section 2 and avoids
+	     the generic wash/dry/cream routine owned by
+	     /cz/sucha-kuze-na-chodidlech/. No links (related links + CTA below). -->
+	<?php if ( $molosoc_is_cz ) : ?>
+	<section class="molosoc-section molosoc-pillar-dry-skin molosoc-pillar-causes-care" aria-label="Další příčiny popraskaných pat a co s nimi">
+		<div class="molosoc-section__inner">
+			<p class="molosoc-eyebrow">Příčiny a péče</p>
+			<h2>Další příčiny popraskaných pat</h2>
+			<p>Kromě sucha, tlaku a dlouhého stání se na popraskaných patách často podílí i ztluštělá, ztvrdlá kůže na okraji paty, která se při zátěži hůř natahuje, a také obuv bez opory paty, například pantofle nebo sandály. S věkem navíc kůže přirozeně ztrácí pružnost.</p>
+			<p>Někdy za praskáním stojí i zdravotní důvod, například kožní onemocnění, plísňová infekce nebo cukrovka. Pokud paty praskají opakovaně i při pravidelné péči, stojí za to to s lékařem nebo lékárníkem probrat.</p>
+
+			<h2>Co na prasklé paty</h2>
+			<p>Základem je pravidelná péče o suchou kůži — podrobně ji popisujeme v článku o suché kůži na chodidlech. U popraskaných pat navíc pomáhá:</p>
+			<ul>
+				<li>nechat okraje prasklin na pokoji — kůži nerozdírejte, neodřezávejte ani neodtrhávejte,</li>
+				<li>ztvrdlou kůži případně jen jemně zjemnit po koupeli, bez tlaku a nikdy až do bolesti nebo krve,</li>
+				<li>nosit obuv, která patu drží, a doma ponožky místo bosých chodidel na tvrdé podlaze,</li>
+				<li>dát kůži čas — praskliny se obvykle nezlepší ze dne na den, rozhoduje pravidelnost.</li>
+			</ul>
+
+			<h2>Kdy nečekat a jít k lékaři</h2>
+			<p>Praskliny, které jsou hluboké, krvácejí, vypadají zanícené nebo se nehojí, řešte s lékařem. Zvlášť opatrní by měli být lidé s cukrovkou, poruchou prokrvení dolních končetin nebo oslabenou imunitou — u nich se s lékařem poraďte hned, jakmile se na patě objeví prasklina.</p>
+		</div>
+	</section>
+	<?php endif; ?>
+
 	<!-- 4b. CZ ONLY — dry skin on heels/feet + FAQ (Issue #218, R1 of
 	     docs/cz-organic-growth-207.md). Plain text on existing section
 	     styles; no product link here (the single contextual link lives in
