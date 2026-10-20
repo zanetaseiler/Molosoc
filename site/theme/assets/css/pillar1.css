@@ -840,3 +840,15 @@ main .molosoc-media:hover img {
   font-size: var(--text-body);
   line-height: 1.6;
 }
+
+/* Issue #243: bullet list in the CZ causes/care section (base.css resets lists). */
+.molosoc-pillar-causes-care ul {
+  margin: var(--space-xs) 0 0 1.25em;
+  list-style: disc;
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+
+.molosoc-pillar-causes-care li + li {
+  margin-top: var(--space-2xs);
+}
