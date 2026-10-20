@@ -831,3 +831,12 @@ main .molosoc-media img {
 main .molosoc-media:hover img {
   transform: none;
 }
+
+/* Issue #239 — CZ ingrown-nail "Kdy nečekat a jít k lékaři" list; reuses */
+/* the dry-skin prose block above, only the list needs its own spacing.   */
+.molosoc-pillar-see-doctor ul {
+  margin: var(--space-xs) 0 var(--space-xs) 1.25rem;
+  list-style: disc;
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
