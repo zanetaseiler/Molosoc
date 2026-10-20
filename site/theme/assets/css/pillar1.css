@@ -750,6 +750,32 @@
   margin-top: var(--space-m);
 }
 
+/* Issue #234: halo on the final CTA button — opt-in via the
+   --halo modifier, so the other pillars' buttons are unchanged. Same
+   static recipe as the sticky "Koupit nyní" pill (product.css Issue
+   #179/#181/#183, landing-b.css Issue #216): warm-ivory ring, fine
+   brown hairline so the ring reads on the ivory card, soft ivory glow
+   and gentle elevation. No animation; colour, label, link and size are
+   the shared .molosoc-btn ones. The ring is box-shadow only, so it
+   adds no layout width at any breakpoint. */
+.molosoc-pillar-final-cta--halo .molosoc-btn {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 4px rgba(250, 245, 232, 0.96),
+    0 0 0 5px rgba(84, 64, 42, 0.62),
+    0 0 18px 6px rgba(250, 245, 232, 0.45),
+    0 6px 16px rgba(30, 24, 16, 0.2);
+}
+
+.molosoc-pillar-final-cta--halo .molosoc-btn:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 4px rgba(250, 245, 232, 0.96),
+    0 0 0 5px rgba(84, 64, 42, 0.62),
+    0 0 22px 8px rgba(250, 245, 232, 0.55),
+    0 10px 24px rgba(30, 24, 16, 0.26);
+}
+
 /* Tablet and phone — one column, photo first, copy underneath; still a
    card (rounded, bordered, lifted). Stacks at the same 960px point the
    mechanism card's points do: below that the copy column beside a

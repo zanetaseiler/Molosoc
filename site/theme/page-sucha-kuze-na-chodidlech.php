@@ -113,7 +113,7 @@ get_header();
 	<?php molosoc_related_links( 'sucha-kuze' ); ?>
 
 	<!-- FINAL CTA — gentle link to the product-info page. -->
-	<section class="molosoc-section molosoc-pillar-final-cta">
+	<section class="molosoc-section molosoc-pillar-final-cta molosoc-pillar-final-cta--halo">
 		<div class="molosoc-pillar-final-cta__card">
 			<div class="molosoc-pillar-final-cta__media">
 				<img src="https://molosoc.com/wp-content/uploads/2026/05/Compare-Molosoc-Nails.jpg"

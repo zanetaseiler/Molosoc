@@ -54,6 +54,32 @@ class CzDrySkinFeetPage(unittest.TestCase):
     def test_no_hardcoded_hreflang_or_en_pairing(self):
         self.assertNotRegex(FUNCTIONS, rf"hreflang[^\n]*{SLUG}|{SLUG}[^\n]*hreflang")
 
+class FinalCtaHalo234(unittest.TestCase):
+    """Issue #234: the final CTA gets the site's sticky-pill halo, scoped to this page."""
+
+    CSS = (THEME / "assets/css/pillar1.css").read_text(encoding="utf-8")
+
+    def test_only_this_template_opts_in(self):
+        self.assertIn('class="molosoc-section molosoc-pillar-final-cta molosoc-pillar-final-cta--halo"', TPL)
+        for other in THEME.glob("page-*.php"):
+            if other.name != "page-sucha-kuze-na-chodidlech.php":
+                self.assertNotIn("--halo", other.read_text(encoding="utf-8"), other.name)
+
+    def test_halo_css_is_scoped_and_matches_sticky_recipe(self):
+        sel = ".molosoc-pillar-final-cta--halo .molosoc-btn"
+        self.assertIn(sel + " {", self.CSS)
+        self.assertIn(sel + ":hover {", self.CSS)
+        block = self.CSS.split(sel + " {", 1)[1].split("}", 1)[0]
+        for layer in ("0 0 0 4px rgba(250, 245, 232, 0.96)", "0 0 0 5px rgba(84, 64, 42, 0.62)", "0 0 18px 6px rgba(250, 245, 232, 0.45)"):
+            self.assertIn(layer, block)
+        # no bare .molosoc-btn rule was added to the shared pillar stylesheet
+        self.assertNotRegex(self.CSS, r"(?m)^\.molosoc-btn\b")
+
+    def test_cta_text_destination_and_schema_untouched(self):
+        self.assertIn(f'home_url( \'{PRODUCT}\' ) ); ?>">Skutečné výsledky, žádné filtry</a>', TPL)
+        self.assertIn("molosoc_cz_schema", FUNCTIONS)
+
+
 class CzProvisioning(unittest.TestCase):
     def test_cz_only_link_gated_on_published_czech_page(self):
         self.assertIn("function molosoc_cz_page_is_live", RELATED)
