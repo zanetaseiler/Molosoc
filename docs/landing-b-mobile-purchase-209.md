@@ -65,3 +65,15 @@ is from the repo:
   harness the real JS was driven: 11 groups, the choice syncs across all, no size → error and no navigation,
   two clicks on the button → exactly one navigation to the chosen variation's checkout URL. Live add-to-cart,
   the redirect to checkout, the real consent card height and the live console need checking on staging/prod.
+
+## Issue #216 — fewer CTA groups, sticky halo
+
+* The size + checkout group now appears in the hero, after "Co to je", "Jak to funguje", "MOLOSOC v reálu",
+  "Kompatibilita" and in the final "Objednávka" section (6 groups, was 11). Removed from "Pro koho",
+  "Velikosti", "Příběh", "Jak to vše začalo" and the dark "Proč MOLOSOC" section; section layout and copy
+  untouched. No default size; the JS still shares the choice across groups; checkout/redirect logic unchanged.
+* The sticky "Koupit nyní" halo (ivory ring + fine brown outline + soft ivory glow, static, no animation)
+  was only in `product.css` (Landing A), so B showed the plain pill. The recipe is repeated in `landing-b.css`
+  at all widths; Landing A styles are untouched. Position/z-index stay the global ones (below the consent card).
+* Theme `Version` bumped to 0.2.99 so WP-Optimize rebuilds the bundle. Not verified in a browser here
+  (no WordPress runtime / screenshot reference); check 390px and desktop on staging, incl. consent overlap.
