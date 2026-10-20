@@ -121,6 +121,26 @@ get_header();
 		</div>
 	</section>
 
+	<!-- 3b. CZ ONLY — medical escalation guidance (Issue #239, R5 of
+	     docs/cz-organic-growth-207.md). Plain text on the dry-skin section
+	     styles (pillar1.css); no product link, no schema. -->
+	<?php if ( $molosoc_is_cz ) : ?>
+	<section class="molosoc-section molosoc-pillar-dry-skin molosoc-pillar-see-doctor" aria-label="Kdy nečekat a jít k lékaři">
+		<div class="molosoc-section__inner">
+			<h3>Kdy nečekat a jít k lékaři</h3>
+			<p>Zarostlý nehet, který se zhoršuje, patří k lékaři. Nečekejte a objednejte se, pokud:</p>
+			<ul>
+				<li>se zarudnutí nebo otok kolem nehtu šíří nebo zesilují,</li>
+				<li>z prstu vytéká hnis nebo se tvoří puchýřek s hnisem,</li>
+				<li>bolest se zhoršuje nebo vás omezuje při chůzi,</li>
+				<li>máte horečku nebo se necítíte dobře.</li>
+			</ul>
+			<p>Pokud máte cukrovku, špatné prokrvení dolních končetin nebo oslabenou imunitu, vyhledejte lékaře rychleji, už při prvních příznacích zánětu. I drobný problém na noze se u vás může snadno zhoršit.</p>
+			<p>Návleky nenasazujte na poraněnou nebo zanícenou kůži a nenechte jimi odložit návštěvu lékaře. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
+		</div>
+	</section>
+	<?php endif; ?>
+
 	<!-- 4. WHY CUTTING IT YOURSELF OFTEN BACKFIRES — static glass drawer
 	     settled over the static still of the Molosoc model (molosoc-hero-still.webp, Issue #149:
 	     the model-viewer render of molosoc-3d.glb was dropped for mobile speed) (the old
@@ -220,7 +240,7 @@ get_header();
 			<div class="molosoc-pillar-final-cta__copy">
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
-				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné zarostlé nehty, zahojené díky pravidelné péči — ne jednorázovému zásahu.' : __( 'Real ingrown toenails, treated through consistent care — not a one-time fix.', 'molosoc' ) ); ?></p>
+				<p><?php echo esc_html( $molosoc_is_cz ? 'Opakovaně použitelný návlek pomáhá udržet váš vlastní krém na okolní zdravé kůži a podporuje péči o pokožku. Zarostlý nehet neléčí.' : __( "A reusable cover helps keep your own cream on the surrounding intact skin and supports a skin-care routine. It does not treat an ingrown toenail.", 'molosoc' ) ); ?></p>
 				<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 			</div>
 		</div>
