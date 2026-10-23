@@ -69,7 +69,7 @@ defined( 'ABSPATH' ) || exit;
 
 $lpb_product_url = molosoc_product_url( 'cz' );
 $lpb_price       = '229 Kč';
-$lpb_shipping    = 'Doprava od 79 Kč';
+$lpb_shipping    = 'Doprava od 69 Kč';
 $lpb_uploads     = 'https://molosoc.com/wp-content/uploads';
 $lpb_hero        = molosoc_landing_b_hero_image(); // LCP image set, shared with the wp_head preload.
 

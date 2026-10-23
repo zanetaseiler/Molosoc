@@ -178,7 +178,7 @@ function molosoc_landing_b_schema() {
 		$canonical,
 		html_entity_decode( wp_get_document_title(), ENT_QUOTES, 'UTF-8' ),
 		molosoc_product_url( 'cz' ),
-		molosoc_landing_b_schema_faq( '229 Kč', 'Doprava od 79 Kč' )
+		molosoc_landing_b_schema_faq( '229 Kč', 'Doprava od 69 Kč' )
 	);
 	echo '<script type="application/ld+json">' . wp_json_encode( $graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- JSON with HEX_TAG/AMP.
 }

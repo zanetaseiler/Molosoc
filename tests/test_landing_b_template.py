@@ -336,10 +336,10 @@ class LandingBTemplate(unittest.TestCase):
 
     def test_only_operational_purchase_details_were_adapted(self):
         # Stale presale-era values must not survive anywhere in the markup.
-        for stale in ("199 Kč", "69 Kč", "49 Kč", "40–44", "molosoc-hydratacni-ponozky"):
+        for stale in ("199 Kč", "79 Kč", "49 Kč", "40–44", "molosoc-hydratacni-ponozky"):
             self.assertNotIn(stale, self.body, f"stale value present: {stale}")
         self.assertIn("$lpb_price       = '229 Kč';", self.tpl)
-        self.assertIn("$lpb_shipping    = 'Doprava od 79 Kč';", self.tpl)
+        self.assertIn("$lpb_shipping    = 'Doprava od 69 Kč';", self.tpl)
         self.assertIn("39.5–44", self.tpl)
         # Every CTA goes through the shared buy-CTA helper (Issue #209), whose
         # fallback is the CZ product URL helper.

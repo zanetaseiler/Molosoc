@@ -1360,7 +1360,7 @@ function molosoc_product_364_shipping_note() {
 	$is_cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
 	printf(
 		'<p class="molosoc-product-shipping-note" translate="no">%s</p>',
-		esc_html( $is_cz ? 'Doprava od 79 Kč' : 'Shipping from 79 CZK' )
+		esc_html( $is_cz ? 'Doprava od 69 Kč' : 'Shipping from 69 CZK' )
 	);
 }
 add_action( 'woocommerce_after_variations_table', 'molosoc_product_364_shipping_note' );
