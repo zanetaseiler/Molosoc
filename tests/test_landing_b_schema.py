@@ -124,7 +124,7 @@ class LandingBSchemaStatic(unittest.TestCase):
             a = re.sub(r"<\?php echo esc_html\( \$lpb_price \); \?>", "{PRICE}", a)
             a = re.sub(r"<\?php echo esc_html\( \$lpb_shipping \); \?>", "{SHIP}", a)
             visible.append((html.unescape(q), html.unescape(a)))
-        faq = [(q, a.replace("229 Kč", "{PRICE}").replace("Doprava od 79 Kč", "{SHIP}"))
+        faq = [(q, a.replace("229 Kč", "{PRICE}").replace("Doprava od 69 Kč", "{SHIP}"))
                for q, a in self._php_faq()]
         self.assertEqual(visible, faq)
 
@@ -136,8 +136,8 @@ class LandingBSchemaStatic(unittest.TestCase):
 
     def test_template_price_constants_match_schema_call(self):
         self.assertIn("$lpb_price       = '229 Kč';", self.tpl)
-        self.assertIn("$lpb_shipping    = 'Doprava od 79 Kč';", self.tpl)
-        self.assertIn("molosoc_landing_b_schema_faq( '229 Kč', 'Doprava od 79 Kč' )", self.src)
+        self.assertIn("$lpb_shipping    = 'Doprava od 69 Kč';", self.tpl)
+        self.assertIn("molosoc_landing_b_schema_faq( '229 Kč', 'Doprava od 69 Kč' )", self.src)
 
     def test_description_words_are_on_the_page(self):
         m = re.search(r"function molosoc_landing_b_schema_description\(\) \{\s*return '(.*?)';", self.src, re.S)
