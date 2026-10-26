@@ -31,6 +31,7 @@ require_once get_stylesheet_directory() . '/inc/related-links.php';
 // Landing Page B JSON-LD (Issue #155). Depends on inc/woocommerce-lang.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
 require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
+require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
 
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
@@ -532,6 +533,14 @@ function molosoc_enqueue_assets() {
 		wp_enqueue_style( 'molosoc-landing-b', $theme_uri . '/assets/css/landing-b.css', array( 'molosoc-components' ), $theme_version );
 		wp_enqueue_script( 'molosoc-landing-b', $theme_uri . '/assets/js/landing-b.js', array(), $theme_version, true );
 		wp_script_add_data( 'molosoc-landing-b', 'strategy', 'defer' );
+	} elseif ( function_exists( 'molosoc_xmas_current_lang' ) && molosoc_xmas_current_lang() ) {
+		// Christmas 2026 gift landing (Issue #251, CZ + EN): Landing B's
+		// stylesheet as the base plus its own small CSS/JS. B's branch above
+		// is slug-gated and unchanged.
+		wp_enqueue_style( 'molosoc-landing-b', $theme_uri . '/assets/css/landing-b.css', array( 'molosoc-components' ), $theme_version );
+		wp_enqueue_style( 'molosoc-landing-xmas', $theme_uri . '/assets/css/landing-xmas.css', array( 'molosoc-landing-b' ), $theme_version );
+		wp_enqueue_script( 'molosoc-landing-xmas', $theme_uri . '/assets/js/landing-xmas.js', array(), $theme_version, true );
+		wp_script_add_data( 'molosoc-landing-xmas', 'strategy', 'defer' );
 	} elseif ( is_page( array( 'blog', 'magazin' ) ) ) {
 		// Journal index — static photo-tile grid, no motion.js/GSAP needed
 		// (see page-blog.php's own header comment for why). 'magazin' is
