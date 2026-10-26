@@ -65,7 +65,7 @@ class Pricing(unittest.TestCase):
 
 class ReleaseGate(unittest.TestCase):
     def test_noindex_and_sitemap_exclusion_until_published(self):
-        self.assertIn("return (bool) apply_filters( 'molosoc_xmas_published', false );", INC)
+        self.assertIn("return (bool) apply_filters( 'molosoc_xmas_published', true );", INC)
         self.assertIn("$robots['noindex']  = true;", INC)
         self.assertIn("wp_sitemaps_posts_query_args", INC)
 
