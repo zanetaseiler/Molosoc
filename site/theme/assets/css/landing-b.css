@@ -375,6 +375,15 @@
   color: var(--lpb-ink);
 }
 
+/* Issue #249: compact conversion line under the hero CTA. */
+.lpb-hero__nudge {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--lpb-body);
+  text-align: center;
+  margin: 0.75rem 0 0;
+}
+
 /* ---------- 3. Scarcity strip + feature strip ---------- */
 
 .lpb-strip {
@@ -944,6 +953,11 @@
   .lpb-cod {
     font-size: 0.85rem;
     margin-bottom: 0.7rem;
+  }
+
+  .lpb-hero__nudge {
+    font-size: 0.8rem;
+    margin-top: 0.45rem;
   }
 
   .lpb-buy {
