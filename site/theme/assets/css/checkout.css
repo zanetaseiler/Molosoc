@@ -1,0 +1,19 @@
+/* Checkout payment methods (Issue #267). The Comgate gateway plugin
+   outputs its logo at full PNG size; keep it ~112px and responsive. Scoped to
+   the payment list and to images whose src contains "comgate". */
+.woocommerce-checkout #payment ul.payment_methods li img[src*="comgate"] {
+	width: 112px;
+	max-width: 100%;
+	height: auto;
+	max-height: 40px;
+	object-fit: contain;
+	vertical-align: middle;
+	margin: 0 0 0 0.5em;
+	float: none;
+}
+
+@media (max-width: 480px) {
+	.woocommerce-checkout #payment ul.payment_methods li img[src*="comgate"] {
+		width: 100px;
+	}
+}
