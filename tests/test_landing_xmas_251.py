@@ -33,7 +33,17 @@ class Pricing(unittest.TestCase):
         self.assertNotIn("$_GET", fn)
         self.assertNotIn("$_REQUEST", fn)
         self.assertNotIn("$_POST", fn)
-        self.assertIn("set_price( $prices[ $slot ] )", fn)
+        self.assertIn("set_price( $prices[ $unit ] )", fn)
+
+    def test_bundle_is_repacked_and_base_price_restored(self):
+        fn = INC[INC.index("function molosoc_xmas_apply_prices"):INC.index("release gate")]
+        self.assertIn("usort( $eligible", fn)
+        self.assertIn("_molosoc_xmas_base_price", fn)
+        self.assertIn("set_price( $base )", fn)
+
+    def test_add_to_cart_rolls_back_on_failure(self):
+        self.assertIn("set_cart_contents( $snapshot )", INC)
+        self.assertIn("if ( ! $added )", INC)
 
     def test_gift_addon_rows_are_skipped(self):
         fn = INC[INC.index("function molosoc_xmas_apply_prices"):INC.index("release gate")]

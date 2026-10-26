@@ -181,6 +181,7 @@ function molosoc_xmas_add_to_cart() {
 			exit;
 		}
 	}
+	$snapshot = $cart->get_cart_contents();
 	foreach ( $cart->get_cart() as $key => $item ) {
 		if ( isset( $item['molosoc_xmas_slot'] ) ) {
 			$cart->remove_cart_item( $key );
@@ -189,7 +190,17 @@ function molosoc_xmas_add_to_cart() {
 	foreach ( $sizes as $i => $size ) {
 		$v = $variations[ $size ];
 		// One line per pair: a unique slot tag keeps lines apart and fixes the price.
-		$cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $v['variation_id'], $v['attributes'], array( 'molosoc_xmas_slot' => $i + 1 ) );
+		$added = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $v['variation_id'], $v['attributes'], array( 'molosoc_xmas_slot' => $i + 1 ) );
+		if ( ! $added ) {
+			// All or nothing: put the cart back as it was (e.g. not enough stock for every pair).
+			$cart->set_cart_contents( $snapshot );
+			$cart->calculate_totals();
+			if ( method_exists( $cart, 'set_session' ) ) {
+				$cart->set_session();
+			}
+			wp_safe_redirect( molosoc_product_url( $lang ) );
+			exit;
+		}
 	}
 	wp_safe_redirect( molosoc_xmas_checkout_url( $lang ) );
 	exit;
@@ -197,27 +208,44 @@ function molosoc_xmas_add_to_cart() {
 
 /**
  * Reprice tagged lines. Priority 20 (the gift add-on runs at 100 and only
- * touches its own rows). The price comes from the slot tag alone; a malformed
- * tag, a duplicated slot or a quantity other than 1 leaves that line at the
- * normal Woo price.
+ * touches its own rows). Eligible lines (tagged, product 364, quantity 1) are
+ * ranked by slot tag and priced by rank, so removing a line from the bundle
+ * re-packs the remaining ones (1 pair 209, 2 pairs 408, 3 pairs 607). Any
+ * other tagged line goes back to its remembered normal Woo price.
  */
 add_action( 'woocommerce_before_calculate_totals', 'molosoc_xmas_apply_prices', 20, 1 );
 function molosoc_xmas_apply_prices( $cart ) {
 	if ( ! is_object( $cart ) || ! method_exists( $cart, 'get_cart' ) || ( is_admin() && ! defined( 'DOING_AJAX' ) ) ) {
 		return;
 	}
-	$prices = molosoc_xmas_unit_prices();
-	$seen   = array();
-	foreach ( $cart->get_cart() as $item ) {
+	$prices   = molosoc_xmas_unit_prices();
+	$eligible = array();
+	foreach ( $cart->get_cart() as $key => $item ) {
 		if ( isset( $item['molosoc_gift_slot'] ) || ! isset( $item['molosoc_xmas_slot'], $item['data'] ) || ! is_object( $item['data'] ) ) {
 			continue;
 		}
-		$slot = (int) $item['molosoc_xmas_slot'];
-		if ( ! isset( $prices[ $slot ] ) || isset( $seen[ $slot ] ) || 1 !== (int) $item['quantity'] || MOLOSOC_PRODUCT_ID !== (int) $item['product_id'] ) {
-			continue;
+		$base = $item['data']->get_meta( '_molosoc_xmas_base_price', true, 'edit' );
+		if ( '' === (string) $base ) {
+			$base = $item['data']->get_price( 'edit' );
+			$item['data']->update_meta_data( '_molosoc_xmas_base_price', $base );
 		}
-		$seen[ $slot ] = true;
-		$item['data']->set_price( $prices[ $slot ] );
+		$slot = (int) $item['molosoc_xmas_slot'];
+		if ( isset( $prices[ $slot ] ) && 1 === (int) $item['quantity'] && MOLOSOC_PRODUCT_ID === (int) $item['product_id'] ) {
+			$eligible[] = array( 'slot' => $slot, 'item' => $item );
+		} else {
+			$item['data']->set_price( $base );
+		}
+	}
+	usort( $eligible, function ( $a, $b ) {
+		return $a['slot'] <=> $b['slot'];
+	} );
+	foreach ( $eligible as $rank => $row ) {
+		$unit = $rank + 1;
+		if ( isset( $prices[ $unit ] ) ) {
+			$row['item']['data']->set_price( $prices[ $unit ] );
+		} else {
+			$row['item']['data']->set_price( $row['item']['data']->get_meta( '_molosoc_xmas_base_price', true, 'edit' ) );
+		}
 	}
 }
 
