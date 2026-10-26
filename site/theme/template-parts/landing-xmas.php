@@ -108,10 +108,11 @@ foreach ( array( 1, 2, 3 ) as $n ) {
 	);
 }
 $lpx_checkout = molosoc_xmas_checkout_url( $lpx_lang );
-$lpx_buyable  = count( molosoc_xmas_variations() ) === 2;
+$lpx_avail    = molosoc_xmas_variations(); // sizes with a purchasable variation right now.
+$lpx_buyable  = count( $lpx_avail ) > 0;
 
 /** Bundle picker: a fieldset of 1/2/3 pairs, then a size fieldset per pair. */
-$lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt, $lpx_url, $lpx_checkout, $lpx_buyable ) {
+$lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt, $lpx_url, $lpx_checkout, $lpx_buyable, $lpx_avail ) {
 	?>
 	<div class="lpb-buy lpx-buy" data-lpx-buy data-lpx-checkout-url="<?php echo esc_url( $lpx_checkout ); ?>" data-lpx-enabled="<?php echo $lpx_buyable ? '1' : '0'; ?>">
 		<fieldset class="lpx-bundles">
@@ -134,7 +135,7 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 				<legend class="lpb-buy__legend"><?php echo esc_html( sprintf( $t['pair_n'], $n ) . ' · ' . $t['size'] ); ?></legend>
 				<?php foreach ( $lpx_sizes as $key => $label ) : ?>
 					<label class="lpb-size">
-						<input type="radio" name="lpx-size-<?php echo esc_attr( $id ); ?>-<?php echo (int) $n; ?>" value="<?php echo esc_attr( $key ); ?>">
+						<input type="radio" name="lpx-size-<?php echo esc_attr( $id ); ?>-<?php echo (int) $n; ?>" value="<?php echo esc_attr( $key ); ?>"<?php echo $lpx_buyable && ! isset( $lpx_avail[ $key ] ) ? ' disabled' : ''; ?>>
 						<span class="lpb-size__label"><?php echo esc_html( $label ); ?></span>
 					</label>
 				<?php endforeach; ?>

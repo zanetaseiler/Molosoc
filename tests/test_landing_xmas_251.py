@@ -107,6 +107,15 @@ class Images(unittest.TestCase):
         self.assertFalse((ROOT / "assets/images/landing-xmas").exists(), "images must come from the owner's originals, not be substituted")
 
 
+class SizeAvailability(unittest.TestCase):
+    def test_one_sold_out_size_does_not_disable_the_picker(self):
+        self.assertNotIn("=== 2", PART_CODE)  # no "both variations required"
+        self.assertIn("count( $lpx_avail ) > 0", PART_CODE)
+
+    def test_only_the_unavailable_size_is_disabled(self):
+        self.assertIn("! isset( $lpx_avail[ $key ] ) ? ' disabled'", PART_CODE)
+
+
 class EvergreenUntouched(unittest.TestCase):
     def test_changed_files_are_additive_only(self):
         base = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], cwd=REPO, capture_output=True, text=True).stdout.strip()
