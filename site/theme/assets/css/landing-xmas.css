@@ -23,3 +23,8 @@
 .lpx-bundle input:focus-visible + .lpx-bundle__body { outline: 2px solid #000; outline-offset: 2px; }
 .lpx-pair[hidden] { display: none; }
 .lpx-buy { text-align: center; }
+
+/* Issue #258: at narrow widths the L label wraps to two lines while M stays on one,
+   so the M card was shorter than L. Stretch both cards to the row height and centre the text. */
+.lpx-pair .lpb-size { display: flex; }
+.lpx-pair .lpb-size__label { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
