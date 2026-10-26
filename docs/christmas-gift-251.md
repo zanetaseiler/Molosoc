@@ -7,12 +7,8 @@ Draft-first CZ/EN gift landing based on Landing B. Nothing here creates or publi
 - Pricing (approved 2026-10-26): 209 / 408 / 607 CZK for 1 / 2 / 3 pairs (209 + 199 + 199). One cart line per pair, tagged `molosoc_xmas_slot`; the price is set server-side from that tag in `woocommerce_before_calculate_totals`. Other add-to-carts, A/B/product pages and the post-purchase gift add-on (`molosoc_gift_slot`) keep their own prices. Product 364 stays 229 CZK.
 - Release gate: noindex + sitemap-excluded until `molosoc_xmas_published` returns true.
 
-## Image ingestion (BLOCKER for publication)
+## Images (Issue #255)
 
-The three owner-edited photos live in Google Drive, which the cloud session cannot reach, so no image is in the repo and none was substituted. The page renders without any image until they exist. To finish:
+The three owner-edited photos are imported from `zanetaseiler-patch-1` @ `3cf7b19` (`landing-xmas-01/02/03.webp`, byte-identical) as `site/theme/assets/images/landing-xmas/MOLOSOC_Christmas_Gift_Scene_01/02/03.webp`: real lossy WebP, 1536x1024 each. Scene 01 is the hero, 02 sits under "why a thoughtful gift", 03 under the story; the same images serve CZ and EN (only alt text differs). Note: scene 01's gift tag reads "Po krásné chvíli" (Czech) on the EN page too — an owner call whether to swap it.
 
-1. Commit the full-resolution originals under `site/theme/assets/images/landing-xmas/source/` (or upload to WP media).
-2. Add web renditions (e.g. `cwebp -q 80`, ~1600 px wide) as `site/theme/assets/images/landing-xmas/MOLOSOC_Christmas_Gift_Scene_01.webp`, `_02.webp`, `_03.webp`.
-3. Confirm the files are real full-resolution images (Drive metadata showed ~11 KB each).
-
-Scene 01 is the hero slot, 02 sits under "why a thoughtful gift", 03 under the story; reassign in `template-parts/landing-xmas.php` once the strongest hero is chosen.
+Not verified: rendering in a browser (mobile/desktop), no WP/staging. The WooCommerce staging bundle tests (1/2/3 pairs = 209/408/607 CZK, regular 229 CZK unchanged) remain BLOCKED pending staging access/owner approval; no real transactions were made. Pages stay draft/noindex/unpublished.

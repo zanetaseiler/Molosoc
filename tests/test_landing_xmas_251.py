@@ -4,6 +4,7 @@ server-side-only price rule, copy bans, asset handling and that the evergreen
 pages and the post-purchase gift add-on are untouched."""
 import re
 import subprocess
+import struct
 import unittest
 from pathlib import Path
 
@@ -102,9 +103,23 @@ class Images(unittest.TestCase):
         for drive in ("1JHezsiFVICxddNfOX1_7AQfe1Nq36u9k", "12WhUf4aciD21JAoG1_X1cC1-mY8Sto0M", "18RlEVxkbHFW0hH7LRUlLBitualjBxsvm"):
             self.assertIn(drive, INC)
 
-    def test_missing_files_render_nothing_and_none_are_faked(self):
+    def test_missing_files_render_nothing(self):
         self.assertIn("if ( ! file_exists( $path ) )", INC)
-        self.assertFalse((ROOT / "assets/images/landing-xmas").exists(), "images must come from the owner's originals, not be substituted")
+
+    def test_imported_webp_files_are_real_and_ordered(self):
+        for n in ("01", "02", "03"):
+            self.assertIn(f"MOLOSOC_Christmas_Gift_Scene_{n}.webp", INC)
+            data = (ROOT / f"assets/images/landing-xmas/MOLOSOC_Christmas_Gift_Scene_{n}.webp").read_bytes()
+            self.assertEqual(data[:4], b"RIFF")
+            self.assertEqual(data[8:12], b"WEBP")
+            self.assertGreater(len(data), 50_000, "must be a real image, not a placeholder")
+            self.assertEqual(struct.unpack("<H", data[26:28])[0] & 0x3FFF, 1536)  # VP8 lossy width
+        self.assertLess(INC.index("scene-01"), INC.index("scene-02"))
+        self.assertLess(INC.index("scene-02"), INC.index("scene-03"))
+
+    def test_both_languages_use_all_three_scenes(self):
+        for key in ("scene-01", "scene-02", "scene-03"):
+            self.assertIn(f"molosoc_xmas_image( '{key}'", PART)
 
 
 class SizeAvailability(unittest.TestCase):
