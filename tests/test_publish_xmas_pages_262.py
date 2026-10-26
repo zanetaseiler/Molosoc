@@ -1,6 +1,13 @@
 import importlib.util
 import pathlib
+import sys
+import types
 import unittest
+
+try:
+    import requests  # noqa: F401
+except ImportError:
+    sys.modules["requests"] = types.ModuleType("requests")
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("pub", ROOT / "automations/content-sync/publish_xmas_pages.py")
