@@ -37,6 +37,60 @@ class PublishXmas262(unittest.TestCase):
         self.assertIn("molosoc-migrate/v1/status/", src)
         self.assertIn("molosoc-migrate/v1/link-translations", src)
 
+    def _resp(self, status, body=None, bad_json=False):
+        class R:
+            status_code = status
+
+            def json(self_):
+                if bad_json:
+                    raise ValueError("no json")
+                return body
+
+            def raise_for_status(self_):
+                if status >= 400:
+                    raise RuntimeError(f"HTTP {status}")
+
+        return R()
+
+    def _get_pll(self, resp):
+        orig = getattr(pub.requests, "get", None)
+        pub.requests.get = lambda *a, **k: resp
+        try:
+            return pub.get_pll("https://molosoc.com", ("u", "p"), 1065)
+        finally:
+            if orig is None:
+                del pub.requests.get
+            else:
+                pub.requests.get = orig
+
+    def test_missing_endpoint_aborts_with_diagnosis(self):
+        for resp in (self._resp(404, {"code": "rest_no_route"}), self._resp(404, bad_json=True)):
+            with self.assertRaises(SystemExit) as cm:
+                self._get_pll(resp)
+            self.assertIn("deploy-helper", str(cm.exception))
+            self.assertIn("rest_no_route", str(cm.exception))
+
+    def test_missing_post_is_not_reported_as_missing_endpoint(self):
+        with self.assertRaises(RuntimeError):
+            self._get_pll(self._resp(404, {"code": "no_post"}))
+
+    def test_ok_response_returned(self):
+        self.assertEqual(self._get_pll(self._resp(200, {"language": "cz"})), {"language": "cz"})
+
+    def test_no_write_on_missing_endpoint(self):
+        calls = []
+        orig = getattr(pub.requests, "post", None)
+        pub.requests.post = lambda *a, **k: calls.append(a)
+        try:
+            with self.assertRaises(SystemExit):
+                self._get_pll(self._resp(404, {"code": "rest_no_route"}))
+        finally:
+            if orig is None:
+                del pub.requests.post
+            else:
+                pub.requests.post = orig
+        self.assertEqual(calls, [])
+
     def test_workflow_gated_and_no_create(self):
         wf = (ROOT / ".github/workflows/publish-xmas-pages.yml").read_text()
         self.assertIn("PUBLISH-1065-1066", wf)

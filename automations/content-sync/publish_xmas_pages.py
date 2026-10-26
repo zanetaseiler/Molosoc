@@ -43,8 +43,26 @@ def get_page(base, auth, pid):
     return r.json()
 
 
+def helper_missing_msg(pid):
+    return (
+        "ABORT: Polylang helper endpoint /wp-json/molosoc-migrate/v1/status is not registered on "
+        f"{HOST} (REST code rest_no_route, page id {pid}). The molosoc-migration-helper mu-plugin is "
+        "not deployed (it is removed after migration). Polylang language/translation checks cannot "
+        "be skipped. Run migrate-to-production.yml phase=deploy-helper (needs Zaneta's approval), "
+        "re-run this dry run, then remove-helper afterwards. Nothing was changed."
+    )
+
+
 def get_pll(base, auth, pid):
     r = requests.get(f"{base}/wp-json/molosoc-migrate/v1/status/{pid}", auth=auth, timeout=30)
+    if r.status_code == 404:
+        try:
+            code = r.json().get("code")
+        except ValueError:
+            code = None
+        # rest_no_route (or a non-JSON 404) = the route itself is absent, not a missing post.
+        if code != "no_post":
+            sys.exit(helper_missing_msg(pid))
     r.raise_for_status()
     return r.json()
 
