@@ -7,9 +7,11 @@
  * rendering template-parts/landing-xmas.php. Landing A, B, the product pages,
  * checkout and the homepage are not touched.
  *
- * RELEASE GATE. The pages stay noindex + out of the sitemap until the single
- * filter `molosoc_xmas_published` returns true (default false), which needs a
- * separate approval from Žaneta. This file never creates or publishes a WP page.
+ * RELEASE GATE. The pages are noindex + out of the sitemap only while the
+ * filter `molosoc_xmas_published` returns false. It now defaults to true
+ * (Issue #260, approved by Žaneta), so the two pages are indexable and in the
+ * sitemap once the WP pages are published. This file never creates or
+ * publishes a WP page; draft pages stay non-public.
  *
  * BUNDLE PURCHASE. The visitor picks 1, 2 or 3 pairs and M/L per pair. The
  * button opens the checkout URL with `molosoc_xmas=1&molosoc_xmas_sizes=M,L,…`;
@@ -45,9 +47,9 @@ function molosoc_xmas_current_lang() {
 	return '';
 }
 
-/** Release flag: false until Žaneta approves publication. */
+/** Release flag: on by default (Issue #260, ZANETA_DECISION 2026-10-26); the filter can still switch it off. */
 function molosoc_xmas_published() {
-	return (bool) apply_filters( 'molosoc_xmas_published', false );
+	return (bool) apply_filters( 'molosoc_xmas_published', true );
 }
 
 /**
