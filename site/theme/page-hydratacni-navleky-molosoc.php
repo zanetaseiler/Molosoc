@@ -103,6 +103,8 @@ get_header();
 				<?php /* Issue #209: COD availability line from approved wording only — the gateway title "Dobírka" + molosoc_cod_cz_text() (Issue #198). FLAG for Žaneta: the two are joined here, no new sentence. */ ?>
 				<p class="lpb-cod"><strong>Dobírka:</strong> <?php echo esc_html( molosoc_cod_cz_text() ); ?></p>
 				<?php molosoc_landing_b_buy_cta(); ?>
+				<?php /* Issue #249: one approved conversion-copy line under the hero CTA (CZ Landing B only). No scarcity/discount/countdown. */ ?>
+				<p class="lpb-hero__nudge">Nečekejte, až budou paty zase suché. Dopřejte jim péči už dnes.</p>
 			</div>
 		</div>
 	</section>

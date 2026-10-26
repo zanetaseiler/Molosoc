@@ -34,6 +34,14 @@ class LandingBBuyPath(unittest.TestCase):
         self.assertIn("molosoc_cod_cz_text()", hero)
         self.assertIn("<strong>Dobírka:</strong>", hero)
 
+    def test_hero_has_conversion_line_right_after_buy_group_issue_249(self):
+        hero = TEMPLATE[TEMPLATE.index('<section class="lpb-hero"'):TEMPLATE.index("</section>")]
+        line = "Nečekejte, až budou paty zase suché. Dopřejte jim péči už dnes."
+        self.assertEqual(TEMPLATE.count(line), 1)
+        self.assertLess(hero.index("molosoc_landing_b_buy_cta()"), hero.index(line))
+        for banned in ("sleva", "odpočet", "pouze dnes", "posledn"):
+            self.assertNotIn(banned, line.lower())
+
     def test_cta_is_in_hero_every_second_section_and_final_purchase(self):
         # Issue #216: hero + every second main section + final purchase section.
         with_cta = ("Co to je", "Jak to funguje", "MOLOSOC v reálu", "Kompatibilita", "Objednávka")
