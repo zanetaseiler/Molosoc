@@ -144,5 +144,15 @@ class EvergreenUntouched(unittest.TestCase):
         self.assertEqual(removed, [])
 
 
+class SizeSelectorHeight258(unittest.TestCase):
+    """Issue #258: M and L size cards must share one height on mobile, even when
+    the L label wraps. Pinned statically; the rendered check is a 390px layout."""
+
+    def test_pair_size_cards_stretch_to_equal_height(self):
+        css = (ROOT / "assets/css/landing-xmas.css").read_text(encoding="utf-8")
+        self.assertRegex(css, r"\.lpx-pair \.lpb-size\s*\{[^}]*display:\s*flex")
+        self.assertRegex(css, r"\.lpx-pair \.lpb-size__label\s*\{[^}]*flex:\s*1 1 auto")
+
+
 if __name__ == "__main__":
     unittest.main()
