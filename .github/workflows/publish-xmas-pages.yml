@@ -1,0 +1,39 @@
+name: Publish Christmas pages + link Polylang (Issue #262)
+
+# Publishes the existing production drafts 1065 (CZ) and 1066 (EN) and links
+# them as a Polylang pair. Never creates pages. Default is a read-only dry
+# run; a write needs apply=true AND the exact confirm phrase, which must only
+# be typed after a ZANETA_DECISION recorded on Issue #262.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "false = read-only dry run (default). true = link + publish."
+        type: boolean
+        default: false
+      confirm:
+        description: "Required for apply=true: type PUBLISH-1065-1066"
+        required: false
+        default: ""
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Gate
+        if: ${{ inputs.apply && inputs.confirm != 'PUBLISH-1065-1066' }}
+        run: |
+          echo "::error::apply=true requires confirm=PUBLISH-1065-1066"
+          exit 1
+      - name: Run
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: python3 automations/content-sync/publish_xmas_pages.py ${{ inputs.apply && '--apply' || '' }}
