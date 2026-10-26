@@ -84,8 +84,10 @@ class Copy(unittest.TestCase):
     def test_headlines(self):
         self.assertIn("Darujte péči, která nekončí Vánocemi.", PART)
         self.assertIn("Give care that doesn\\'t end with Christmas.", PART)
-        self.assertIn("Doprava od 79 Kč", PART)
-        self.assertIn("Shipping from 79 CZK", PART)
+        self.assertIn("Doprava od 69 Kč", PART)
+        self.assertIn("Shipping from 69 CZK", PART)
+        self.assertNotIn("79 Kč", PART)
+        self.assertNotIn("79 CZK", PART)
 
     def test_banned_claims(self):
         low = PART_CODE.lower()
