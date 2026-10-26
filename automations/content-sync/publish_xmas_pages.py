@@ -9,8 +9,11 @@ checking each is the expected slug/language. Safe to re-run.
 Order (nothing is published unless the link is verified first):
   1. read both pages, verify slug + Polylang language
   2. dry-run (default) stops here and prints the plan
-  3. --apply: set translations {cz:1065, en:1066}, re-read and verify the link
+  3. --apply: link via the molosoc-migrate helper, re-read and verify the link
   4. only then set status=publish on any page still draft
+Polylang state (language, translations) is read and written through the
+molosoc-migration-helper mu-plugin (/molosoc-migrate/v1/status, /link-translations),
+because the core pages endpoint does not expose it on Polylang Free.
 Requires WP_URL to be exactly https://molosoc.com (checked before any request).
 """
 
@@ -40,21 +43,26 @@ def get_page(base, auth, pid):
     return r.json()
 
 
-def check(page, lang):
+def get_pll(base, auth, pid):
+    r = requests.get(f"{base}/wp-json/molosoc-migrate/v1/status/{pid}", auth=auth, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def check(page, pll, lang):
     exp = PAGES[lang]
-    if page.get("slug") != exp["slug"] or page.get("lang") != lang:
+    if page.get("slug") != exp["slug"] or pll.get("language") != lang:
         sys.exit(
-            f"REFUSING: page {exp['id']} is slug={page.get('slug')!r} lang={page.get('lang')!r}, "
+            f"REFUSING: page {exp['id']} is slug={page.get('slug')!r} lang={pll.get('language')!r}, "
             f"expected slug={exp['slug']!r} lang={lang!r}. Nothing changed."
         )
 
 
 def linked(base, auth):
-    cz = get_page(base, auth, PAGES["cz"]["id"])
-    en = get_page(base, auth, PAGES["en"]["id"])
+    cz = get_pll(base, auth, PAGES["cz"]["id"])
+    en = get_pll(base, auth, PAGES["en"]["id"])
     t_cz, t_en = cz.get("translations") or {}, en.get("translations") or {}
-    ok = t_cz.get("en") == PAGES["en"]["id"] and t_en.get("cz") == PAGES["cz"]["id"]
-    return ok, cz, en
+    return t_cz.get("en") == PAGES["en"]["id"] and t_en.get("cz") == PAGES["cz"]["id"]
 
 
 def main():
@@ -71,9 +79,9 @@ def main():
 
     pages = {lang: get_page(base, auth, spec["id"]) for lang, spec in PAGES.items()}
     for lang, page in pages.items():
-        check(page, lang)
+        check(page, get_pll(base, auth, page["id"]), lang)
         print(f"{lang}: id={page['id']} status={page['status']} link={page.get('link')}")
-    ok, _, _ = linked(base, auth)
+    ok = linked(base, auth)
     print(f"translation link already set: {ok}")
 
     if not args.apply:
@@ -82,12 +90,12 @@ def main():
 
     if not ok:
         r = requests.post(
-            f"{base}/wp-json/wp/v2/pages/{PAGES['cz']['id']}",
+            f"{base}/wp-json/molosoc-migrate/v1/link-translations",
             json={"translations": {"cz": PAGES["cz"]["id"], "en": PAGES["en"]["id"]}},
             auth=auth, timeout=30,
         )
         r.raise_for_status()
-        ok, _, _ = linked(base, auth)
+        ok = linked(base, auth)
         if not ok:
             sys.exit("ABORT: translation link not confirmed after write. Nothing published. "
                      "Link manually in wp-admin (Languages box) then re-run.")
