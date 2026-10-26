@@ -303,11 +303,8 @@ add_action( 'wp_head', function () {
 /* ---------- images ---------- */
 
 /**
- * The three owner-edited Christmas photos (Drive IDs in Issue #251). They are
- * NOT in the repository yet: Drive is unreachable from the cloud session.
- * Ingestion step: commit the full-resolution originals under
- * assets/images/landing-xmas/source/ and the web renditions named below
- * (e.g. cwebp -q 80, 1600 px wide) to assets/images/landing-xmas/.
+ * The three owner-edited Christmas photos (Drive IDs in Issue #251), imported
+ * as 1536x1024 WebP files into assets/images/landing-xmas/ (Issue #255).
  * Until a file exists, molosoc_xmas_image() prints nothing for it.
  */
 function molosoc_xmas_images() {
