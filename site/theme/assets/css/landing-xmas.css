@@ -1,0 +1,25 @@
+/*
+  Christmas 2026 gift landing (Issue #251). Loaded after landing-b.css (which
+  styles everything under .lpb); only the pieces B does not have live here:
+  the hero and the 1/2/3-pair bundle picker. Warm, minimal, no red/green.
+*/
+.lpx-hero { background: var(--lpb-cream, #faf7f2); padding: 48px 20px; }
+.lpx-hero__inner { max-width: var(--lpb-max, 1080px); margin: 0 auto; display: grid; gap: 32px; align-items: center; }
+.lpx-hero__media img { display: block; width: 100%; height: auto; }
+.lpx-hero__title { font-family: var(--lpb-display); font-weight: 400; font-size: clamp(32px, 6vw, 56px); line-height: 1.1; color: #000; margin: 8px 0 16px; }
+@media (min-width: 901px) { .lpx-hero__inner:has(.lpx-hero__media) { grid-template-columns: 1fr 1fr; } }
+
+.lpx-figure { max-width: var(--lpb-max, 1080px); margin: 32px auto 0; }
+.lpx-figure img { display: block; width: 100%; height: auto; }
+
+.lpx-bundles { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.lpx-bundle { cursor: pointer; }
+.lpx-bundle input { position: absolute; opacity: 0; }
+.lpx-bundle__body { display: flex; flex-direction: column; align-items: center; min-width: 120px; padding: 14px 18px; border: 1px solid var(--lpb-line, rgba(12, 17, 21, .12)); background: #fff; }
+.lpx-bundle__name { font-family: var(--lpb-sans); text-transform: uppercase; letter-spacing: 2px; font-size: 13px; }
+.lpx-bundle__price { font-size: 24px; color: #000; }
+.lpx-bundle__was { font-size: 13px; color: var(--lpb-muted, #86878b); }
+.lpx-bundle input:checked + .lpx-bundle__body { border-color: #000; box-shadow: inset 0 0 0 1px #000; }
+.lpx-bundle input:focus-visible + .lpx-bundle__body { outline: 2px solid #000; outline-offset: 2px; }
+.lpx-pair[hidden] { display: none; }
+.lpx-buy { text-align: center; }
