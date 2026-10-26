@@ -33,6 +33,9 @@ require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
 require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
 
+// Checkout cleanup (Issue #267): CZ payment labels, CusRev checkbox text, Comgate logo size.
+require_once get_stylesheet_directory() . '/inc/checkout-cleanup.php';
+
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
 	add_theme_support( 'post-thumbnails' );
