@@ -251,6 +251,20 @@ get_header();
 				<figcaption>MOLOSOC jsme vytvořily my – máma s dcerou. Tady ho držíme poprvé.</figcaption>
 			</figure>
 		</div>
+		<?php
+		/* Issue #271: consent-gated customer testimonial. OFF by default — nothing renders (production output unchanged) until Žaneta confirms the customer's permission for website use and the attribution. Enable ONLY via the `molosoc_landing_b_testimonial_enabled` filter (return true) after approval. Attribution defaults to none; the approved label comes from the `molosoc_landing_b_testimonial_attribution` filter. No verified-purchase label without evidence of the order. */
+		if ( apply_filters( 'molosoc_landing_b_testimonial_enabled', false ) ) :
+			$lpb_attribution = trim( (string) apply_filters( 'molosoc_landing_b_testimonial_attribution', '' ) );
+			?>
+		<figure class="lpb-testimonial">
+			<blockquote>
+				<p>„Zkusila jsem koupit vaše návleky a maminka je s nimi nesmírně spokojená. Vydrží je mít 30 minut na nohách úplně v pohodě.“</p>
+			</blockquote>
+			<?php if ( '' !== $lpb_attribution ) : ?>
+			<figcaption>— <?php echo esc_html( $lpb_attribution ); ?></figcaption>
+			<?php endif; ?>
+		</figure>
+		<?php endif; ?>
 		<div class="lpb-section__cta"><?php molosoc_landing_b_buy_cta(); ?></div>
 	</section>
 
