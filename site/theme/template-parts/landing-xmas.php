@@ -6,7 +6,8 @@
  * page-christmas-gift-molosoc.php. Structure and classes follow Landing B
  * (landing-b.css is a dependency of landing-xmas.css); copy lives in the
  * $t array below, one entry per language. No countdown, no scarcity, no
- * delivery-date promise, no free-gift-wrap claim, no medical claim.
+ * free-gift-wrap claim, no medical claim. One order-by line (18 December,
+ * Issue #269 decision) and no crossed-out reference price (Issue #269).
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -27,11 +28,11 @@ $copy = array(
 		'h1'        => 'Darujte péči, která nekončí Vánocemi.',
 		'sub'       => 'Malý dárek pro maminku, partnera nebo někoho, na kom vám záleží. MOLOSOC pomáhá proměnit obyčejný krém na nohy v jednoduchý pečující rituál.',
 		'ship'      => 'Doprava od 69 Kč',
+		'deadline'  => 'Objednejte do 18. prosince, doručíme před Vánoci.',
 		'cod'       => molosoc_cod_cz_text(),
 		'cod_label' => 'Dobírka:',
 		'cta'       => 'Pokračovat k pokladně',
 		'pairs'     => array( 1 => '1 pár', 2 => '2 páry', 3 => '3 páry' ),
-		'normally'  => 'běžně',
 		'pair_n'    => 'Pár %d',
 		'size'      => 'Velikost',
 		'size_err'  => 'Vyberte velikost pro každý pár.',
@@ -49,11 +50,11 @@ $copy = array(
 		'story_h'   => 'Vytvořily jsme ho my – máma s dcerou',
 		'story'     => 'MOLOSOC vznikl doma, v koupelně: namazaly jsme si nohy krémem a nevěděly, co dál. Hledaly jsme něco, co udrží krém na noze a dovolí nám normálně se pohybovat. Tak jsme to vytvořily samy. Teď ho můžete dát dál.',
 		'order_h'   => 'Objednejte dárek',
-		'order_p'   => 'Normální WooCommerce objednávka: výběr dopravy a platby proběhne v pokladně. Bezpečná platba přes Comgate.',
+		'order_p'   => 'Bezpečná platba přes Comgate.',
 		'faq_h'     => 'Časté otázky',
 		'faq'       => array(
 			array( 'Jakou velikost vybrat?', 'M sedí na velikost nohy 36–39, L na 39.5–44. Pokud si nejste jistí, zeptejte se obdarovaného na velikost bot.' ),
-			array( 'Kolik stojí doprava a platba?', 'Doprava od 69 Kč. Platbu a dopravu vybíráte v pokladně; ' . molosoc_cod_cz_text() ),
+			array( 'Kolik stojí doprava a platba?', 'Doprava od 69 Kč. Objednejte do 18. prosince, doručíme před Vánoci. Platbu a dopravu vybíráte v pokladně; ' . molosoc_cod_cz_text() ),
 			array( 'Jak se o návleky starat?', 'Po použití je umyjte mýdlem a vodou, nechte uschnout a použijte znovu.' ),
 			array( 'Je to vhodné jako dárek?', 'Ano – je to malý praktický dárek k domácí péči o nohy. Dárkové balení v ceně není; objednávka přijde v běžném balení.' ),
 		),
@@ -64,11 +65,11 @@ $copy = array(
 		'h1'        => 'Give care that doesn\'t end with Christmas.',
 		'sub'       => 'A small gift for your mum, partner or someone you care about. MOLOSOC turns an ordinary foot cream into a simple caring ritual.',
 		'ship'      => 'Shipping from 69 CZK',
+		'deadline'  => 'Order by 18 December for delivery before Christmas.',
 		'cod'       => '',
 		'cod_label' => '',
 		'cta'       => 'Continue to checkout',
 		'pairs'     => array( 1 => '1 pair', 2 => '2 pairs', 3 => '3 pairs' ),
-		'normally'  => 'normally',
 		'pair_n'    => 'Pair %d',
 		'size'      => 'Size',
 		'size_err'  => 'Please choose a size for every pair.',
@@ -86,11 +87,11 @@ $copy = array(
 		'story_h'   => 'Made by a mother and her daughter',
 		'story'     => 'MOLOSOC started at home, in the bathroom: we put cream on our feet and wondered what to do next. We wanted something that keeps the cream on the foot and still lets you move around. So we made it ourselves. Now you can pass it on.',
 		'order_h'   => 'Order the gift',
-		'order_p'   => 'A normal WooCommerce order: shipping and payment are chosen at checkout. Secure payment via Comgate.',
+		'order_p'   => 'Secure payment via Comgate.',
 		'faq_h'     => 'FAQ',
 		'faq'       => array(
 			array( 'Which size should I choose?', 'M fits shoe sizes EU 36–39, L fits 39.5–44. If unsure, ask the recipient for their shoe size.' ),
-			array( 'What do shipping and payment cost?', 'Shipping from 69 CZK. Shipping and payment methods are chosen at checkout.' ),
+			array( 'What do shipping and payment cost?', 'Shipping from 69 CZK. Order by 18 December for delivery before Christmas. Shipping and payment methods are chosen at checkout.' ),
 			array( 'How do I care for the covers?', 'Wash with soap and water after use, let them dry and use them again.' ),
 			array( 'Is it suitable as a gift?', 'Yes – a small, practical gift for at-home foot care. Gift wrapping is not included; the order ships in standard packaging.' ),
 		),
@@ -103,7 +104,6 @@ $lpx_base  = array();
 foreach ( array( 1, 2, 3 ) as $n ) {
 	$lpx_base[ $n ] = array(
 		'total'   => molosoc_xmas_bundle_total( $n ),
-		'regular' => MOLOSOC_XMAS_REGULAR_PRICE * $n,
 		'url'     => '', // filled from the size picks by landing-xmas.js
 	);
 }
@@ -123,9 +123,6 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 					<span class="lpx-bundle__body">
 						<span class="lpx-bundle__name"><?php echo esc_html( $t['pairs'][ $n ] ); ?></span>
 						<span class="lpx-bundle__price" translate="no"><?php echo esc_html( $lpx_fmt( $b['total'] ) ); ?></span>
-						<?php if ( $b['total'] < $b['regular'] ) : ?>
-							<s class="lpx-bundle__was" translate="no"><?php echo esc_html( $t['normally'] . ' ' . $lpx_fmt( $b['regular'] ) ); ?></s>
-						<?php endif; ?>
 					</span>
 				</label>
 			<?php endforeach; ?>
@@ -166,6 +163,7 @@ get_header();
 				<h1 class="lpx-hero__title"><?php echo esc_html( $t['h1'] ); ?></h1>
 				<p class="lpb-hero__lede"><?php echo esc_html( $t['sub'] ); ?></p>
 				<p class="lpb-price__meta"><?php echo esc_html( $lpx_fmt( $lpx_prices[1] ) . ' · ' . $t['ship'] ); ?></p>
+				<p class="lpx-deadline"><?php echo esc_html( $t['deadline'] ); ?></p>
 				<?php if ( $t['cod'] ) : ?>
 					<p class="lpb-cod"><strong><?php echo esc_html( $t['cod_label'] ); ?></strong> <?php echo esc_html( $t['cod'] ); ?></p>
 				<?php endif; ?>
@@ -212,7 +210,7 @@ get_header();
 	<section class="lpb-section lpb-section--cream" aria-label="<?php echo esc_attr( $t['order_h'] ); ?>">
 		<div class="lpb-section__head">
 			<h2><?php echo esc_html( $t['order_h'] ); ?></h2>
-			<p class="lpb-lede"><?php echo esc_html( $t['order_p'] . ' ' . $t['ship'] . '.' ); ?></p>
+			<p class="lpb-lede"><?php echo esc_html( $t['order_p'] . ' ' . $t['ship'] . '. ' . $t['deadline'] ); ?></p>
 		</div>
 		<div class="lpb-section__cta"><?php $lpx_picker( 'order' ); ?></div>
 	</section>

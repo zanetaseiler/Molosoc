@@ -21,3 +21,11 @@ Remaining manual production tasks / not verified:
 - Polylang CZ↔EN translation link (1065 <-> 1066) is NOT set; hreflang will not be emitted until it is (WP admin: edit 1065 -> Languages -> translation = 1066).
 - Not verified on production: 209/408/607 CZK, regular 229 CZK unchanged, M/L selectors, CZ/EN output, canonical/hreflang, images/mobile layout, checkout. No orders or payments were made. Owner accepted this risk (Option C).
 - Scene 01 keeps the Czech gift tag on EN for now (owner decision).
+
+## Pre-launch fixes (Issue #269, 2026-10-27)
+
+- Removed the internal "Normální WooCommerce objednávka…" / "A normal WooCommerce order…" sentence. The order section now reads "Bezpečná platba přes Comgate. Doprava od 69 Kč. Objednejte do 18. prosince, doručíme před Vánoci." (EN equivalent).
+- Order-by line, 18 December (Žaneta's decision): in the hero under the price, in the order section and in the shipping FAQ answer. This replaces the #251 rule of "no delivery-date promise".
+- Removed the crossed-out "běžně 229 Kč" / "normally 229 CZK" (Žaneta's decision; EU Omnibus rule: a reference price must be the lowest of the previous 30 days, which could not be confirmed). Bundle prices 209 / 408 / 607 are unchanged.
+- CZ block cart showed "MOLOSOC Moisture Lock Foot Cover": the Store API cart item name comes from `get_title()` (`woocommerce_product_title`), which the CZ name filters did not cover. `molosoc_cz_store_api_product_name()` now also runs on that hook (CZ + product 364 only).
+- Not changed: checkout loaded halfway once in review; not reproducible, to monitor.
