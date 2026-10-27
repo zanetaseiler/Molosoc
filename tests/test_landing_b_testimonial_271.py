@@ -39,6 +39,13 @@ class Enabled278(unittest.TestCase):
         self.assertIn("add_filter( 'molosoc_landing_b_testimonial_enabled'", FUNCTIONS)
         self.assertIn("is_page( 'hydratacni-navleky-molosoc' ) ? true : $enabled", FUNCTIONS)
 
+    def test_gate_is_slug_based_not_assigned_template(self):
+        # is_page_template() is false for automatic page-{slug}.php selection (Codex P2, PR #279).
+        start = FUNCTIONS.index("add_filter( 'molosoc_landing_b_testimonial_enabled'")
+        hook = FUNCTIONS[start:FUNCTIONS.index("} );", start)]
+        self.assertNotIn("is_page_template", hook)
+        self.assertIn("is_page( 'hydratacni-navleky-molosoc' )", hook)
+
     def test_indirect_speech_not_a_verbatim_quote(self):
         block = TEMPLATE[TEMPLATE.index('class="lpb-testimonial"'):TEMPLATE.index("<?php endif; ?>\n\t\t<div class=\"lpb-section__cta\">")]
         self.assertNotIn("<blockquote", block)
