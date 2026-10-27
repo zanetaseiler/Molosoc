@@ -646,6 +646,30 @@
   padding: 0.5rem 0 0;
 }
 
+/* Issue #271: consent-gated testimonial (renders only when the PHP flag is on). */
+.lpb-testimonial {
+  max-width: 36rem;
+  margin: 1.5rem auto 0;
+  padding: 0 0.25rem;
+  text-align: center;
+}
+
+.lpb-testimonial blockquote {
+  margin: 0;
+}
+
+.lpb-testimonial p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.lpb-testimonial figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--lpb-muted);
+}
+
 /* ---------- 10. Video (vertical Shorts embed, as on page 580) ---------- */
 
 .lpb-video {
