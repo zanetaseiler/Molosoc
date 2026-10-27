@@ -630,12 +630,21 @@
 }
 
 /* ============================================================= */
-/* 4b. CZ dry-skin prose + FAQ (Issue #218) — plain section; base.css */
-/* zeroes heading/paragraph margins, so spacing is scoped here.      */
+/* 4b. Article prose + FAQ (Issues #218, #273) — the editorial      */
+/* "lower article" block: one ~800px reading column, 16-18px body,  */
+/* 28-34px H2, 21-24px H3, one shared vertical rhythm. base.css     */
+/* zeroes heading/paragraph margins and caps every <p> at 36rem, so */
+/* spacing and measure are scoped here. FAQ questions are the H3s   */
+/* inside the block, separated by a hairline.                       */
 /* ============================================================= */
 
+.molosoc-pillar-dry-skin {
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
 .molosoc-pillar-dry-skin .molosoc-section__inner {
-  max-width: 46rem;
+  max-width: 50rem;
 }
 
 .molosoc-pillar-dry-skin .molosoc-eyebrow {
@@ -643,26 +652,94 @@
 }
 
 .molosoc-pillar-dry-skin h2 {
-  font-size: var(--text-display-m);
+  font-size: clamp(1.75rem, 1.2vw + 1.45rem, 2.125rem);
+  line-height: 1.2;
   margin-bottom: var(--space-s);
 }
 
 .molosoc-pillar-dry-skin h2:not(:first-of-type) {
-  margin-top: var(--space-m);
+  margin-top: var(--space-l);
 }
 
 .molosoc-pillar-dry-skin h3 {
+  font-size: clamp(1.3125rem, 0.6vw + 1.15rem, 1.5rem);
+  line-height: 1.3;
   margin-top: var(--space-m);
   margin-bottom: var(--space-2xs);
+  padding-top: var(--space-m);
+  border-top: 1px solid #e4dfd6;
+}
+
+/* The first H3 after an H2 opens the FAQ list: no double rule under the H2. */
+.molosoc-pillar-dry-skin h2 + h3 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) {
-  font-size: var(--text-body);
-  line-height: 1.6;
+  max-width: none;
+  font-size: clamp(1rem, 0.3vw + 0.95rem, 1.125rem);
+  line-height: 1.7;
 }
 
 .molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) + p {
+  margin-top: var(--space-s);
+}
+
+/* ============================================================= */
+/* 4c. BACK TO PILLAR band + RELATED READING (Issue #273) — the     */
+/* closing run-in to the final CTA. Replaces the inline styles the  */
+/* templates used to carry; tight, consistent padding and a        */
+/* readable (not display-2xl) link heading.                         */
+/* ============================================================= */
+
+.molosoc-pillar-backband,
+.molosoc-related-links {
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+  padding-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.molosoc-pillar-backband .molosoc-section__inner,
+.molosoc-related-links .molosoc-section__inner {
+  max-width: 50rem;
+  text-align: center;
+}
+
+.molosoc-pillar-backband .molosoc-eyebrow,
+.molosoc-related-links .molosoc-eyebrow {
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar-backband h2 {
+  font-size: clamp(1.75rem, 1.2vw + 1.45rem, 2.125rem);
+  line-height: 1.25;
+}
+
+.molosoc-pillar-backband h2 a {
+  text-decoration: none;
+}
+
+.molosoc-pillar-backband h2 a:hover,
+.molosoc-pillar-backband h2 a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.molosoc-related-links ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.molosoc-related-links li + li {
   margin-top: var(--space-xs);
+}
+
+.molosoc-related-links a {
+  font-size: clamp(1rem, 0.3vw + 0.95rem, 1.125rem);
+  line-height: 1.5;
+  text-underline-offset: 0.2em;
 }
 
 /* ============================================================= */
@@ -687,6 +764,9 @@
 .molosoc-pillar-final-cta {
   background: var(--color-bg-alt);
   color: var(--color-ink);
+  /* Issue #273: tighter run-in from the Related-reading band above. */
+  padding-top: clamp(2.5rem, 5vw, 4rem);
+  padding-bottom: clamp(3rem, 6vw, 5rem);
 }
 
 .molosoc-pillar-final-cta__card {
@@ -835,20 +915,20 @@ main .molosoc-media:hover img {
 /* Issue #239 — CZ ingrown-nail "Kdy nečekat a jít k lékaři" list; reuses */
 /* the dry-skin prose block above, only the list needs its own spacing.   */
 .molosoc-pillar-see-doctor ul {
-  margin: var(--space-xs) 0 var(--space-xs) 1.25rem;
+  margin: var(--space-s) 0 var(--space-s) 1.25rem;
   list-style: disc;
-  font-size: var(--text-body);
-  line-height: 1.6;
+  font-size: clamp(1rem, 0.3vw + 0.95rem, 1.125rem);
+  line-height: 1.7;
 }
 
 /* Issue #243: bullet list in the CZ causes/care section (base.css resets lists). */
 .molosoc-pillar-causes-care ul {
-  margin: var(--space-xs) 0 0 1.25em;
+  margin: var(--space-s) 0 0 1.25em;
   list-style: disc;
-  font-size: var(--text-body);
-  line-height: 1.6;
+  font-size: clamp(1rem, 0.3vw + 0.95rem, 1.125rem);
+  line-height: 1.7;
 }
 
 .molosoc-pillar-causes-care li + li {
-  margin-top: var(--space-2xs);
+  margin-top: var(--space-xs);
 }
