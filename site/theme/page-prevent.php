@@ -148,8 +148,8 @@ get_header();
 	</section>
 
 	<!-- BACK TO PILLAR -->
-	<section class="molosoc-section molosoc-section--bg-cream">
-		<div class="molosoc-section__inner" style="text-align:center;">
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-back">
+		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Part of a bigger picture', 'molosoc' ); ?></p>
 			<h2><a href="<?php echo esc_url( home_url( '/ingrown-toenails/' ) ); ?>">&larr; <?php esc_html_e( 'Back to Ingrown Toenails', 'molosoc' ); ?></a></h2>
 		</div>

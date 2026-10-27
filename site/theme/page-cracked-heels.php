@@ -206,12 +206,14 @@ get_header();
 			<p>Pokud suchá kůže přetrvává i přes pravidelnou péči, svědí, zarudne nebo se výrazně zhoršuje, nechte si poradit u lékaře nebo lékárníka — příčinou může být i jiné onemocnění kůže.</p>
 
 			<h2>Časté otázky o popraskaných patách</h2>
-			<h3>Jak často natírat paty krémem?</h3>
-			<p>Nejlépe pravidelně, tedy alespoň jednou denně, ideálně večer po umytí a osušení nohou. Při velmi suché kůži můžete krém nanést i dvakrát denně. Důležitější než množství je pravidelnost — příležitostné mazání obvykle nestačí.</p>
-			<h3>Pomáhá krém na nohy přes noc?</h3>
-			<p>Přes noc má krém dlouhý klidný čas, aby se vstřebával, a neotře se hned o podlahu ani obuv. Proto mnoho lidí natírá paty večer a chrání je přes noc, aby se krém neotíral do ložního prádla. Výsledek se liší podle stavu kůže.</p>
-			<h3>Kdy s popraskanými patami k lékaři?</h3>
-			<p>Pokud jsou praskliny hluboké, krvácejí, bolí při každém kroku, vypadají zanícené (zarudnutí, otok, teplo, hnis) nebo se nehojí, neléčte je sami a objednejte se k lékaři. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
+			<div class="molosoc-pillar-faq">
+				<h3>Jak často natírat paty krémem?</h3>
+				<p>Nejlépe pravidelně, tedy alespoň jednou denně, ideálně večer po umytí a osušení nohou. Při velmi suché kůži můžete krém nanést i dvakrát denně. Důležitější než množství je pravidelnost — příležitostné mazání obvykle nestačí.</p>
+				<h3>Pomáhá krém na nohy přes noc?</h3>
+				<p>Přes noc má krém dlouhý klidný čas, aby se vstřebával, a neotře se hned o podlahu ani obuv. Proto mnoho lidí natírá paty večer a chrání je přes noc, aby se krém neotíral do ložního prádla. Výsledek se liší podle stavu kůže.</p>
+				<h3>Kdy s popraskanými patami k lékaři?</h3>
+				<p>Pokud jsou praskliny hluboké, krvácejí, bolí při každém kroku, vypadají zanícené (zarudnutí, otok, teplo, hnis) nebo se nehojí, neléčte je sami a objednejte se k lékaři. Text slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
+			</div>
 		</div>
 	</section>
 	<?php endif; ?>

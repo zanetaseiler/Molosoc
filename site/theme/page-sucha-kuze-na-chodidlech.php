@@ -100,13 +100,15 @@ get_header();
 			<p>Pokud suchá kůže přetrvává i přes pravidelnou péči, výrazně se zhoršuje, svědí, zarudne, mokvá, nebo se objeví praskliny, které krvácejí či vypadají zanícené, nechte si poradit u lékaře nebo lékárníka. Příčinou může být i jiné kožní onemocnění, třeba mykóza nebo ekzém, a to si žádá vyšetření. Pozornost zvlášť věnujte kůži na nohou při cukrovce nebo poruše prokrvení. Tato stránka slouží jen jako obecná informace a nenahrazuje vyšetření.</p>
 
 			<h2>Časté otázky o suché kůži na chodidlech</h2>
-			<h3>Proč mám suchá chodidla, i když je mažu?</h3>
-			<p>Často je důvodem, že se krém otře do ponožek nebo o podlahu dřív, než se vstřebá, nebo že se mazání vynechává. Pomáhá pravidelnost a dostatek času, aby krém zůstal na kůži.</p>
-			<h3>Jak často mazat suchá chodidla?</h3>
-			<p>Alespoň jednou denně, nejlépe večer po umytí a osušení nohou. Při velmi suché kůži můžete krém nanést i ráno.</p>
-			<h3>Je suchá kůže na chodidlech stejná věc jako popraskané paty?</h3>
-			<p>Ne tak úplně. Suchost je výchozí stav, popraskané paty jsou pokročilejší stav, kdy suchá a nepružná kůže pod tlakem praská. Podrobnosti najdete na stránce
-				<a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">Popraskané paty</a>.</p>
+			<div class="molosoc-pillar-faq">
+				<h3>Proč mám suchá chodidla, i když je mažu?</h3>
+				<p>Často je důvodem, že se krém otře do ponožek nebo o podlahu dřív, než se vstřebá, nebo že se mazání vynechává. Pomáhá pravidelnost a dostatek času, aby krém zůstal na kůži.</p>
+				<h3>Jak často mazat suchá chodidla?</h3>
+				<p>Alespoň jednou denně, nejlépe večer po umytí a osušení nohou. Při velmi suché kůži můžete krém nanést i ráno.</p>
+				<h3>Je suchá kůže na chodidlech stejná věc jako popraskané paty?</h3>
+				<p>Ne tak úplně. Suchost je výchozí stav, popraskané paty jsou pokročilejší stav, kdy suchá a nepružná kůže pod tlakem praská. Podrobnosti najdete na stránce
+					<a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">Popraskané paty</a>.</p>
+			</div>
 		</div>
 	</section>
 

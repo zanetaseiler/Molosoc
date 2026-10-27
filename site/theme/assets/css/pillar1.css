@@ -22,6 +22,9 @@
                                            drawer settled over a still
                                            (non-rotating) model
     5. Go deeper / final CTA             → static (always was)
+  Below the mechanism card, every lower section (prose/FAQ, back band,
+  related reading, final CTA) shares the article-body system in §4b
+  (Issue #273).
   The old class names are kept so the templates need no restructuring and
   the (no longer enqueued) reveal scripts would still find their hooks if
   motion were ever restored.
@@ -630,12 +633,67 @@
 }
 
 /* ============================================================= */
-/* 4b. CZ dry-skin prose + FAQ (Issue #218) — plain section; base.css */
-/* zeroes heading/paragraph margins, so spacing is scoped here.      */
+/* 4b. ARTICLE BODY — shared lower-section system (Issue #273)     */
+/* Every Journal article's lower half: the CZ prose + FAQ blocks   */
+/* (.molosoc-pillar-dry-skin, incl. the --causes-care / --see-doctor*/
+/* siblings from Issues #218/#239/#243), the spokes' "Back to       */
+/* pillar" band (.molosoc-pillar-back), Related reading             */
+/* (.molosoc-related-links, inc/related-links.php) and the run-in   */
+/* to the final CTA. One rhythm, one measure, one type scale —      */
+/* editorial, not marketing: ~800px column, 17–18px body, 28–34px   */
+/* H2, 21–24px H3. Nothing above the mechanism card is touched.    */
+/* pillar1.css is enqueued ONLY on Journal article pages            */
+/* (functions.php), so the tokens below are scoped on <main>.       */
 /* ============================================================= */
 
+main {
+  /* 800px — the brief's 760–850px reading measure. */
+  --article-measure: 50rem;
+  /* 17px on a phone → 18px on a desktop. */
+  --article-text: clamp(1.0625rem, 0.3vw + 0.95rem, 1.125rem);
+  --article-leading: 1.7;
+  /* 28px → 34px (display face, Tenor Sans). */
+  --article-h2: clamp(1.75rem, 1.2vw + 1.3rem, 2.125rem);
+  /* 21px → 24px (body face, bold — same voice as the card H3s above). */
+  --article-h3: clamp(1.3125rem, 0.5vw + 1.15rem, 1.5rem);
+  /* Vertical rhythm of the lower sections: 48px → 80px, instead of
+     components.css's 80–168px --section-padding-y, which stacked to
+     160–336px between two adjacent text blocks. */
+  --article-section-y: clamp(3rem, 6vw, 5rem);
+  /* Gap between two H2 topics inside one block, and between a block
+     and the one directly below it when they share a background. */
+  --article-gap: clamp(2.5rem, 4.5vw, 3.75rem);
+  --article-line: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  --article-answer: color-mix(in srgb, var(--color-ink) 80%, transparent);
+}
+
+/* ---- Prose block ------------------------------------------------ */
+
+.molosoc-pillar-dry-skin {
+  padding: var(--article-section-y) var(--section-padding-x);
+  background: var(--color-bg);
+}
+
 .molosoc-pillar-dry-skin .molosoc-section__inner {
-  max-width: 46rem;
+  max-width: var(--article-measure);
+}
+
+/* Two prose blocks back to back (CZ cracked heels: 4a + 4b) read as
+   one article, separated by a hairline rather than by two full section
+   paddings. :has() trims the upper block's bottom padding in browsers
+   that support it; without it the upper block just keeps the normal
+   bottom padding — still far less than before. */
+.molosoc-pillar-dry-skin:has(+ .molosoc-pillar-dry-skin) {
+  padding-bottom: var(--article-gap);
+}
+
+.molosoc-pillar-dry-skin + .molosoc-pillar-dry-skin {
+  padding-top: 0;
+}
+
+.molosoc-pillar-dry-skin + .molosoc-pillar-dry-skin .molosoc-section__inner {
+  border-top: 1px solid var(--article-line);
+  padding-top: var(--article-gap);
 }
 
 .molosoc-pillar-dry-skin .molosoc-eyebrow {
@@ -643,26 +701,236 @@
 }
 
 .molosoc-pillar-dry-skin h2 {
-  font-size: var(--text-display-m);
+  font-size: var(--article-h2);
+  line-height: 1.15;
+  letter-spacing: -0.005em;
   margin-bottom: var(--space-s);
 }
 
 .molosoc-pillar-dry-skin h2:not(:first-of-type) {
-  margin-top: var(--space-m);
+  margin-top: var(--article-gap);
 }
 
 .molosoc-pillar-dry-skin h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: var(--article-h3);
+  line-height: 1.3;
+  color: var(--color-ink);
   margin-top: var(--space-m);
   margin-bottom: var(--space-2xs);
 }
 
-.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) {
-  font-size: var(--text-body);
-  line-height: 1.6;
+.molosoc-pillar-dry-skin h2 + h3,
+.molosoc-pillar-dry-skin h3:first-child {
+  margin-top: 0;
 }
 
-.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) + p {
+.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) {
+  font-size: var(--article-text);
+  line-height: var(--article-leading);
+  /* base.css caps every <p> at --content-max-width (36rem) — inside
+     the article column that left a 576px text block in an 800px
+     measure. The column is the measure. */
+  max-width: none;
+  color: var(--color-ink);
+}
+
+.molosoc-pillar-dry-skin p:not(.molosoc-eyebrow) + p,
+.molosoc-pillar-dry-skin ul + p,
+.molosoc-pillar-dry-skin ol + p {
+  margin-top: 1em;
+}
+
+/* Lists — base.css resets list styling; the two CZ-only selectors
+   (Issues #239/#243) are kept in the list so nothing that referenced
+   them changes, they just share the one rule now. */
+.molosoc-pillar-dry-skin ul,
+.molosoc-pillar-dry-skin ol,
+.molosoc-pillar-see-doctor ul,
+.molosoc-pillar-causes-care ul {
+  margin: 0.9em 0 0;
+  padding: 0 0 0 1.4em;
+  list-style: disc;
+  font-size: var(--article-text);
+  line-height: 1.65;
+}
+
+.molosoc-pillar-dry-skin ol {
+  list-style: decimal;
+}
+
+.molosoc-pillar-dry-skin li + li,
+.molosoc-pillar-causes-care li + li {
+  margin-top: 0.45em;
+}
+
+.molosoc-pillar-dry-skin li::marker {
+  color: var(--color-ink-muted);
+}
+
+/* In-copy links: hairline underline that darkens on hover — no colour
+   change, no motion. */
+.molosoc-pillar-dry-skin a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+}
+
+.molosoc-pillar-dry-skin a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---- FAQ -------------------------------------------------------- */
+/* The Q/A pairs (h3 question + p answer, hierarchy unchanged) sit in a
+   .molosoc-pillar-faq wrapper: each pair is a hairline-ruled row, the
+   question in the bold body face, the answer a step softer so the two
+   read as question/answer and not as a run of prose. */
+
+.molosoc-pillar-faq {
   margin-top: var(--space-xs);
+  border-top: 1px solid var(--article-line);
+}
+
+.molosoc-pillar-dry-skin .molosoc-pillar-faq h3 {
+  margin: 0;
+  padding: var(--space-s) 0 var(--space-2xs);
+}
+
+.molosoc-pillar-dry-skin .molosoc-pillar-faq p {
+  margin: 0;
+  padding-bottom: var(--space-s);
+  border-bottom: 1px solid var(--article-line);
+  color: var(--article-answer);
+}
+
+/* ---- "Back to pillar" band (spokes) ----------------------------- */
+/* Was the oversized shared <h2> scale (64–110px) around a bare link in
+   a full 80–168px section; now a compact centred signpost on the
+   article H2 scale. The <h2> stays an <h2>. */
+
+.molosoc-pillar-back {
+  padding: var(--article-section-y) var(--section-padding-x);
+  text-align: center;
+}
+
+.molosoc-pillar-back .molosoc-section__inner {
+  max-width: var(--article-measure);
+}
+
+.molosoc-pillar-back .molosoc-eyebrow {
+  margin-bottom: var(--space-xs);
+}
+
+.molosoc-pillar-back h2 {
+  font-size: var(--article-h2);
+  line-height: 1.2;
+}
+
+.molosoc-pillar-back h2 a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, var(--color-ink) 30%, transparent);
+}
+
+.molosoc-pillar-back h2 a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---- Related reading -------------------------------------------- */
+/* Centred eyebrow + a row of pill links (wrapping on phones), on the
+   shared rhythm. Follows a prose block with a hairline; follows the
+   back band or the Go-deeper cards with no extra top padding, so the
+   two navigation blocks read as one. */
+
+.molosoc-related-links {
+  padding: var(--article-section-y) var(--section-padding-x);
+  text-align: center;
+}
+
+.molosoc-related-links .molosoc-section__inner {
+  max-width: var(--article-measure);
+}
+
+.molosoc-pillar-back + .molosoc-related-links,
+.molosoc-pillar-go-deeper + .molosoc-related-links,
+.molosoc-pillar-dry-skin + .molosoc-related-links {
+  padding-top: 0;
+}
+
+.molosoc-pillar-dry-skin + .molosoc-related-links .molosoc-section__inner {
+  border-top: 1px solid var(--article-line);
+  padding-top: var(--article-gap);
+}
+
+/* …unless that prose block ends with the FAQ, whose last row already
+   draws a closing hairline — one rule, not two. */
+.molosoc-pillar-dry-skin:has(.molosoc-pillar-faq) + .molosoc-related-links .molosoc-section__inner {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.molosoc-related-links .molosoc-eyebrow {
+  margin-bottom: var(--space-s);
+}
+
+.molosoc-related-links__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.molosoc-related-links__list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.7em 1.2em;
+  border: 1px solid var(--article-line);
+  border-radius: 999px;
+  background: var(--color-white);
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.molosoc-related-links__list a::after {
+  content: "\2192";
+  color: var(--color-ink-muted);
+}
+
+.molosoc-related-links__list a:hover {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-white);
+}
+
+.molosoc-related-links__list a:hover::after {
+  color: inherit;
+}
+
+/* ---- Go deeper + final CTA: join the rhythm ---------------------- */
+/* Go deeper keeps its heading and cards (components.css) and its full
+   top padding after the 100svh mechanism scene; only its bottom edge
+   drops to the article rhythm so the cards → Related reading → CTA
+   run is evenly spaced. The CTA band breathes a little more than the
+   prose (56–96px) since it closes the page, but no longer the
+   80–168px that left a near-empty screen above the card. */
+
+.molosoc-pillar-go-deeper {
+  padding-bottom: var(--article-section-y);
+}
+
+.molosoc-pillar-final-cta {
+  padding-top: clamp(3.5rem, 7vw, 6rem);
+  padding-bottom: clamp(3.5rem, 7vw, 6rem);
 }
 
 /* ============================================================= */
@@ -830,25 +1098,4 @@ main .molosoc-media img {
 
 main .molosoc-media:hover img {
   transform: none;
-}
-
-/* Issue #239 — CZ ingrown-nail "Kdy nečekat a jít k lékaři" list; reuses */
-/* the dry-skin prose block above, only the list needs its own spacing.   */
-.molosoc-pillar-see-doctor ul {
-  margin: var(--space-xs) 0 var(--space-xs) 1.25rem;
-  list-style: disc;
-  font-size: var(--text-body);
-  line-height: 1.6;
-}
-
-/* Issue #243: bullet list in the CZ causes/care section (base.css resets lists). */
-.molosoc-pillar-causes-care ul {
-  margin: var(--space-xs) 0 0 1.25em;
-  list-style: disc;
-  font-size: var(--text-body);
-  line-height: 1.6;
-}
-
-.molosoc-pillar-causes-care li + li {
-  margin-top: var(--space-2xs);
 }
