@@ -141,7 +141,8 @@ class EvergreenUntouched(unittest.TestCase):
         changed = subprocess.run(["git", "diff", "--name-only", base], cwd=REPO, capture_output=True, text=True).stdout.split()
         protected = re.compile(r"page-hydratacni-navleky-molosoc|page-moisture-lock|landing-b|thank-you-gift|front-page|page-foot-covers")
         # Issue #278 deliberately enables the Landing B feedback summary in its template.
-        allowed = {"site/theme/page-hydratacni-navleky-molosoc.php"}
+        # Issue #281 adds the numbered feedback list styles to landing-b.css.
+        allowed = {"site/theme/page-hydratacni-navleky-molosoc.php", "site/theme/assets/css/landing-b.css"}
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
         # adds one CZ cart-name filter to woocommerce-lang.php).
