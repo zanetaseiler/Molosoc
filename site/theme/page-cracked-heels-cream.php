@@ -155,7 +155,7 @@ get_header();
 	</section>
 
 	<!-- BACK TO PILLAR -->
-	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-backband">
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-back">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php esc_html_e( 'Part of a bigger picture', 'molosoc' ); ?></p>
 			<h2><a href="<?php echo esc_url( home_url( '/cracked-heels/' ) ); ?>">&larr; <?php esc_html_e( 'Back to Cracked Heels', 'molosoc' ); ?></a></h2>

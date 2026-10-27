@@ -154,7 +154,7 @@ get_header();
 	</section>
 
 	<!-- BACK TO PILLAR -->
-	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-backband">
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-back">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow">Součást širšího tématu</p>
 			<h2><a href="<?php echo esc_url( home_url( '/cz/kurici-oko/' ) ); ?>">&larr; Kuří oko a mozoly</a></h2>

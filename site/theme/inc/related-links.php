@@ -120,11 +120,11 @@ function molosoc_related_links( $key ) {
 		return;
 	}
 	?>
-	<!-- RELATED READING (Issue #200) -->
+	<!-- RELATED READING (Issue #200; styled by pillar1.css §4b, Issue #273) -->
 	<section class="molosoc-section molosoc-section--bg-cream molosoc-related-links">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $is_cz ? 'Související čtení' : 'Related reading' ); ?></p>
-			<ul>
+			<ul class="molosoc-related-links__list">
 				<?php foreach ( $items as $item ) : ?>
 					<li><a href="<?php echo esc_url( home_url( $item[0] ) ); ?>"><?php echo esc_html( $item[1] ); ?></a></li>
 				<?php endforeach; ?>

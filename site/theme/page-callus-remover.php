@@ -155,7 +155,7 @@ get_header();
 	</section>
 
 	<!-- BACK TO PILLAR -->
-	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-backband">
+	<section class="molosoc-section molosoc-section--bg-cream molosoc-pillar-back">
 		<div class="molosoc-section__inner">
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Součást širšího tématu' : __( 'Part of a bigger picture', 'molosoc' ) ); ?></p>
 			<h2><a href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/kurici-oko/' ) : home_url( '/hardened-skin-calluses/' ) ); ?>">&larr; <?php echo esc_html( $molosoc_is_cz ? 'Kuří oko a mozoly' : __( 'Back to Hardened Skin & Calluses', 'molosoc' ) ); ?></a></h2>
