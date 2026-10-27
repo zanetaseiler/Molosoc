@@ -252,17 +252,15 @@ get_header();
 			</figure>
 		</div>
 		<?php
-		/* Issues #271/#276: consent-gated, anonymous customer testimonial. OFF by default — nothing renders (production output unchanged) until Žaneta confirms the customer's permission for website use and the attribution. Enable ONLY via the `molosoc_landing_b_testimonial_enabled` filter (return true) after approval. Attribution defaults to none; the approved label comes from the `molosoc_landing_b_testimonial_attribution` filter. No verified-purchase label without evidence of the order. */
+		/* Issues #271/#276/#278: anonymous customer feedback, shown as an editorial summary in indirect speech (NOT a verbatim quote: no quotation marks, no blockquote). Enabled for this template by the `molosoc_landing_b_testimonial_enabled` filter in functions.php (Žaneta confirmed customer permission 2026-10-27). Attribution stays empty; no name, condition, outcome claim or verified-purchase label. */
 		if ( apply_filters( 'molosoc_landing_b_testimonial_enabled', false ) ) :
 			$lpb_attribution = trim( (string) apply_filters( 'molosoc_landing_b_testimonial_attribution', '' ) );
 			?>
 		<figure class="lpb-testimonial">
 			<p class="lpb-testimonial__title">Co o nás říkají zákazníci</p>
-			<blockquote>
-				<p>„Zkusila jsem koupit vaše návleky a maminka je s nimi nesmírně spokojená. Vydrží je mít 30 minut na nohách úplně v pohodě.“</p>
-			</blockquote>
+			<p>Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená a pohodlně je nosí přibližně 30 minut.</p>
 			<?php if ( '' !== $lpb_attribution ) : ?>
-			<figcaption>— <?php echo esc_html( $lpb_attribution ); ?></figcaption>
+			<figcaption><?php echo esc_html( $lpb_attribution ); ?></figcaption>
 			<?php endif; ?>
 		</figure>
 		<?php endif; ?>

@@ -1,12 +1,13 @@
-"""Issue #271: the Landing B testimonial is consent-gated and off by default."""
+"""Issues #271/#278: the Landing B feedback summary is flag-gated and enabled only for the Landing B template."""
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1] / "site/theme"
 TEMPLATE = (ROOT / "page-hydratacni-navleky-molosoc.php").read_text(encoding="utf-8")
 CSS = (ROOT / "assets/css/landing-b.css").read_text(encoding="utf-8")
-QUOTE = ("Zkusila jsem koupit vaše návleky a maminka je s nimi nesmírně spokojená. "
-         "Vydrží je mít 30 minut na nohách úplně v pohodě.")
+FUNCTIONS = (ROOT / "functions.php").read_text(encoding="utf-8")
+QUOTE = ("Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená "
+         "a pohodlně je nosí přibližně 30 minut.")
 
 
 class TestimonialGate(unittest.TestCase):
@@ -16,7 +17,7 @@ class TestimonialGate(unittest.TestCase):
         self.assertLess(TEMPLATE.index(gate), TEMPLATE.index('class="lpb-testimonial"'))
         self.assertLess(TEMPLATE.index(QUOTE), TEMPLATE.index("<?php endif; ?>\n\t\t<div class=\"lpb-section__cta\">", TEMPLATE.index(gate)))
 
-    def test_quote_is_exact_and_inside_the_real_section(self):
+    def test_summary_text_is_exact_and_inside_the_real_section(self):
         self.assertEqual(TEMPLATE.count(QUOTE), 1)
         sec = TEMPLATE.index('aria-label="MOLOSOC v reálu"')
         self.assertGreater(TEMPLATE.index(QUOTE), sec)
@@ -31,6 +32,26 @@ class TestimonialGate(unittest.TestCase):
         sec = TEMPLATE[TEMPLATE.index('aria-label="MOLOSOC v reálu"'):TEMPLATE.index('aria-label="Jak to vše začalo"')]
         self.assertIn("molosoc_landing_b_buy_cta();", sec)
         self.assertIn(".lpb-testimonial", CSS)
+
+
+class Enabled278(unittest.TestCase):
+    def test_flag_enabled_only_on_landing_b_page(self):
+        self.assertIn("add_filter( 'molosoc_landing_b_testimonial_enabled'", FUNCTIONS)
+        self.assertIn("is_page( 'hydratacni-navleky-molosoc' ) ? true : $enabled", FUNCTIONS)
+
+    def test_gate_is_slug_based_not_assigned_template(self):
+        # is_page_template() is false for automatic page-{slug}.php selection (Codex P2, PR #279).
+        start = FUNCTIONS.index("add_filter( 'molosoc_landing_b_testimonial_enabled'")
+        hook = FUNCTIONS[start:FUNCTIONS.index("} );", start)]
+        self.assertNotIn("is_page_template", hook)
+        self.assertIn("is_page( 'hydratacni-navleky-molosoc' )", hook)
+
+    def test_indirect_speech_not_a_verbatim_quote(self):
+        block = TEMPLATE[TEMPLATE.index('class="lpb-testimonial"'):TEMPLATE.index("<?php endif; ?>\n\t\t<div class=\"lpb-section__cta\">")]
+        self.assertNotIn("<blockquote", block)
+        for quote_mark in ("„", "“", '"', "”"):
+            self.assertNotIn(quote_mark, block.split(">", 1)[1].replace('class="lpb-testimonial__title"', ""))
+        self.assertNotIn("Zkusila jsem koupit", TEMPLATE)
 
 
 class AnonymousCard276(unittest.TestCase):

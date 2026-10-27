@@ -140,7 +140,9 @@ class EvergreenUntouched(unittest.TestCase):
             self.skipTest("no origin/main")
         changed = subprocess.run(["git", "diff", "--name-only", base], cwd=REPO, capture_output=True, text=True).stdout.split()
         protected = re.compile(r"page-hydratacni-navleky-molosoc|page-moisture-lock|landing-b|thank-you-gift|front-page|page-foot-covers")
-        self.assertEqual([c for c in changed if protected.search(c)], [])
+        # Issue #278 deliberately enables the Landing B feedback summary in its template.
+        allowed = {"site/theme/page-hydratacni-navleky-molosoc.php"}
+        self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
         # adds one CZ cart-name filter to woocommerce-lang.php).
         for path in ("site/theme/functions.php", "site/theme/inc/woocommerce-lang.php"):
