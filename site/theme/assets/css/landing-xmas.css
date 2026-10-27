@@ -18,7 +18,6 @@
 .lpx-bundle__body { display: flex; flex-direction: column; align-items: center; min-width: 120px; padding: 14px 18px; border: 1px solid var(--lpb-line, rgba(12, 17, 21, .12)); background: #fff; }
 .lpx-bundle__name { font-family: var(--lpb-sans); text-transform: uppercase; letter-spacing: 2px; font-size: 13px; }
 .lpx-bundle__price { font-size: 24px; color: #000; }
-.lpx-bundle__was { font-size: 13px; color: var(--lpb-muted, #86878b); }
 .lpx-bundle input:checked + .lpx-bundle__body { border-color: #000; box-shadow: inset 0 0 0 1px #000; }
 .lpx-bundle input:focus-visible + .lpx-bundle__body { outline: 2px solid #000; outline-offset: 2px; }
 .lpx-pair[hidden] { display: none; }
@@ -28,3 +27,6 @@
    so the M card was shorter than L. Stretch both cards to the row height and centre the text. */
 .lpx-pair .lpb-size { display: flex; }
 .lpx-pair .lpb-size__label { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
+
+/* Issue #269: Christmas order-by line under the hero price. */
+.lpx-deadline { margin: -0.75rem 0 1.25rem; font-size: 1rem; font-weight: 600; color: var(--lpb-ink, #000); }

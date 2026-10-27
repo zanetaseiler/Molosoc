@@ -1,4 +1,4 @@
-"""Issue #251: Christmas 2026 gift landing (CZ + EN) — static checks (no PHP
+"""Issue #251 (+ #269): Christmas 2026 gift landing (CZ + EN) — static checks (no PHP
 runtime or WordPress needed). Pins the approved pricing, the release gate, the
 server-side-only price rule, copy bans, asset handling and that the evergreen
 pages and the post-purchase gift add-on are untouched."""
@@ -139,11 +139,14 @@ class EvergreenUntouched(unittest.TestCase):
         if not base:
             self.skipTest("no origin/main")
         changed = subprocess.run(["git", "diff", "--name-only", base], cwd=REPO, capture_output=True, text=True).stdout.split()
-        protected = re.compile(r"page-hydratacni-navleky-molosoc|page-moisture-lock|landing-b|thank-you-gift|front-page|page-foot-covers|inc/woocommerce-lang")
+        protected = re.compile(r"page-hydratacni-navleky-molosoc|page-moisture-lock|landing-b|thank-you-gift|front-page|page-foot-covers")
         self.assertEqual([c for c in changed if protected.search(c)], [])
-        diff = subprocess.run(["git", "diff", "-U0", base, "--", "site/theme/functions.php"], cwd=REPO, capture_output=True, text=True).stdout
-        removed = [l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")]
-        self.assertEqual(removed, [])
+        # functions.php and woocommerce-lang.php may only gain lines (Issue #269
+        # adds one CZ cart-name filter to woocommerce-lang.php).
+        for path in ("site/theme/functions.php", "site/theme/inc/woocommerce-lang.php"):
+            diff = subprocess.run(["git", "diff", "-U0", base, "--", path], cwd=REPO, capture_output=True, text=True).stdout
+            removed = [l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")]
+            self.assertEqual(removed, [], path)
 
 
 class SizeSelectorHeight258(unittest.TestCase):
@@ -154,6 +157,36 @@ class SizeSelectorHeight258(unittest.TestCase):
         css = (ROOT / "assets/css/landing-xmas.css").read_text(encoding="utf-8")
         self.assertRegex(css, r"\.lpx-pair \.lpb-size\s*\{[^}]*display:\s*flex")
         self.assertRegex(css, r"\.lpx-pair \.lpb-size__label\s*\{[^}]*flex:\s*1 1 auto")
+
+
+class PreLaunch269(unittest.TestCase):
+    """Issue #269: pre-launch fixes on both Christmas pages."""
+
+    def test_no_internal_woocommerce_wording_in_copy(self):
+        self.assertNotIn("WooCommerce", PART_CODE)
+        self.assertIn("'order_p'   => 'Bezpečná platba přes Comgate.'", PART)
+        self.assertIn("'order_p'   => 'Secure payment via Comgate.'", PART)
+
+    def test_order_by_18_december_in_hero_order_section_and_faq(self):
+        cz = "Objednejte do 18. prosince, doručíme před Vánoci."
+        en = "Order by 18 December for delivery before Christmas."
+        self.assertEqual(PART.count(cz), 2)  # deadline key + FAQ answer
+        self.assertEqual(PART.count(en), 2)
+        self.assertIn("<p class=\"lpx-deadline\"><?php echo esc_html( $t['deadline'] ); ?></p>", PART)
+        self.assertIn("$t['ship'] . '. ' . $t['deadline']", PART)
+
+    def test_no_crossed_out_reference_price(self):
+        for gone in ("běžně", "'normally'", "lpx-bundle__was", "<s ", "'regular'", "MOLOSOC_XMAS_REGULAR_PRICE"):
+            self.assertNotIn(gone, PART_CODE, gone)
+        self.assertNotIn("MOLOSOC_XMAS_REGULAR_PRICE", strip_comments(INC))
+
+    def test_cz_cart_name_covers_store_api_title(self):
+        lang = (ROOT / "inc/woocommerce-lang.php").read_text(encoding="utf-8")
+        self.assertIn("add_filter( 'woocommerce_product_title', 'molosoc_cz_store_api_product_name', 10, 2 );", lang)
+        fn = lang[lang.index("function molosoc_cz_store_api_product_name"):]
+        fn = fn[:fn.index("add_filter")]
+        self.assertIn("'cz' !== pll_current_language()", fn)
+        self.assertIn("molosoc_is_product_364_or_its_variation( $product )", fn)
 
 
 if __name__ == "__main__":

@@ -83,9 +83,6 @@ function molosoc_xmas_bundle_total( $pairs ) {
 	return $total;
 }
 
-/** Normal Woo price of one pair (display only, "běžně"/"normally"). */
-const MOLOSOC_XMAS_REGULAR_PRICE = 229;
-
 /** Parse "M,L,M" into a list of 1..3 valid size keys, or array() when invalid. */
 function molosoc_xmas_parse_sizes( $raw ) {
 	$sizes = array_map( 'trim', explode( ',', strtoupper( (string) $raw ) ) );

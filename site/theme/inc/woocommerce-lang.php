@@ -948,6 +948,16 @@ function molosoc_cz_store_api_product_name( $name, $product ) {
 add_filter( 'woocommerce_product_variation_get_name', 'molosoc_cz_store_api_product_name', 10, 2 );
 add_filter( 'woocommerce_product_variation_name', 'molosoc_cz_store_api_product_name', 10, 2 );
 add_filter( 'woocommerce_product_get_name', 'molosoc_cz_store_api_product_name', 10, 2 );
+/*
+ * Issue #269: the Store API cart item "name" is built from the product's
+ * get_title(), not get_name(). For a variation, get_title() returns the
+ * parent's stored title through `woocommerce_product_title`, so none of
+ * the get_name hooks above fire for it, and /cz/kosik/ showed
+ * "MOLOSOC Moisture Lock Foot Cover" (reproduced via
+ * GET /wp-json/wc/store/v1/cart?lang=cz on 2026-10-27). Same gate as
+ * above: CZ requests only, product 364 or its variations only.
+ */
+add_filter( 'woocommerce_product_title', 'molosoc_cz_store_api_product_name', 10, 2 );
 
 /**
  * Same swap for order line items (emails, order-received page, My
