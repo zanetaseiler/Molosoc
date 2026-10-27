@@ -258,7 +258,17 @@ get_header();
 			?>
 		<figure class="lpb-testimonial">
 			<p class="lpb-testimonial__title">Co o nás říkají zákazníci</p>
-			<p>Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená a pohodlně je nosí přibližně 30 minut.</p>
+			<?php
+			/* Issue #281: numbered 1-2-3 presentation. Only item 1 has documented republication permission. Items 2 and 3 stay hidden until Žaneta confirms anonymous publication (and the intended meaning of item 2) and enables `molosoc_landing_b_feedback_extra_enabled`. Indirect speech only: no quotation marks, names, verified-buyer or medical claims. */
+			$lpb_extra_feedback = (bool) apply_filters( 'molosoc_landing_b_feedback_extra_enabled', false );
+			?>
+			<ol class="lpb-testimonial__list">
+				<li>Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená a pohodlně je nosí přibližně 30 minut.</li>
+				<?php if ( $lpb_extra_feedback ) : ?>
+				<li>Další zákaznice popsala, že má po použití návleků chodidla hebká jako dětskou pokožku.</li>
+				<li>Jiná zákaznice nám napsala, že si návleky natolik oblíbila, že je nechce odložit.</li>
+				<?php endif; ?>
+			</ol>
 			<?php if ( '' !== $lpb_attribution ) : ?>
 			<figcaption><?php echo esc_html( $lpb_attribution ); ?></figcaption>
 			<?php endif; ?>
