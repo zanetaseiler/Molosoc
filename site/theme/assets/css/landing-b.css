@@ -650,8 +650,19 @@
 .lpb-testimonial {
   max-width: 36rem;
   margin: 1.5rem auto 0;
-  padding: 0 0.25rem;
+  padding: 1rem 1.1rem;
   text-align: center;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+}
+
+.lpb-testimonial__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lpb-muted);
 }
 
 .lpb-testimonial blockquote {
