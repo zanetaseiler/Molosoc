@@ -152,6 +152,38 @@ class EvergreenUntouched(unittest.TestCase):
             self.assertEqual(removed, [], path)
 
 
+class NumberedFeedback284(unittest.TestCase):
+    ITEM1 = "Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená a pohodlně je nosí přibližně 30 minut."
+    ITEM2 = "Další zákaznice popsala, že má po použití návleků chodidla hebká jako dětskou pokožku."
+    ITEM3 = "Jiná zákaznice nám napsala, že si návleky natolik oblíbila, že je nechce odložit."
+
+    def block(self):
+        return PART[PART.index("Issue #284"):PART.index("Issue #284") + PART[PART.index("Issue #284"):].index("<?php endif; ?>\n\n\t<section")]
+
+    def test_cz_only_numbered_list_reuses_landing_b_markup(self):
+        self.assertIn("if ( 'cz' === $lpx_lang ) :", self.block())
+        self.assertIn('<ol class="lpb-testimonial__list">', self.block())
+        self.assertIn("<li>" + self.ITEM1 + "</li>", self.block())
+
+    def test_items_2_and_3_gated_by_same_default_off_flag(self):
+        b = self.block()
+        self.assertIn("apply_filters( 'molosoc_landing_b_feedback_extra_enabled', false )", b)
+        cond = b.index("<?php if ( $lpx_extra_feedback )")
+        self.assertLess(cond, b.index(self.ITEM2))
+        self.assertLess(b.index(self.ITEM3), b.index("<?php endif; ?>", cond))
+        self.assertNotIn("molosoc_landing_b_feedback_extra_enabled", FUNCTIONS)
+
+    def test_no_quotes_names_or_claims(self):
+        b = self.block()
+        text = re.sub(r"<[^>]*>", "", b[b.index("<ol"):b.index("</ol>")])
+        for bad in ("„", "“", '"', "”", "prdel", "ověřen", "léč", "zlepš", "psoria"):
+            self.assertNotIn(bad, text)
+
+    def test_checkout_and_cta_untouched(self):
+        self.assertEqual(PART.count("$lpx_picker( "), 2)  # main + order pickers unchanged
+        self.assertNotIn("lpx-bundle", self.block())
+
+
 class SizeSelectorHeight258(unittest.TestCase):
     """Issue #258: M and L size cards must share one height on mobile, even when
     the L label wraps. Pinned statically; the rendered check is a 390px layout."""
