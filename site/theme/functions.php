@@ -2679,3 +2679,8 @@ function molosoc_cart_link_fragment( $fragments ) {
 	return $fragments;
 }
 add_filter( 'woocommerce_add_to_cart_fragments', 'molosoc_cart_link_fragment' );
+
+/* Issue #278: enable the anonymous Landing B customer-feedback summary (flag added in #271/#276) — only on the Landing B page template. Customer permission confirmed by Žaneta 2026-10-27. */
+add_filter( 'molosoc_landing_b_testimonial_enabled', function ( $enabled ) {
+	return is_page_template( 'page-hydratacni-navleky-molosoc.php' ) ? true : $enabled;
+} );
