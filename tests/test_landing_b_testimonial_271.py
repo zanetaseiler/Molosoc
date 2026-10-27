@@ -72,23 +72,21 @@ class NumberedFeedback281(unittest.TestCase):
     ITEM2 = "Další zákaznice popsala, že má po použití návleků chodidla hebká jako dětskou pokožku."
     ITEM3 = "Jiná zákaznice nám napsala, že si návleky natolik oblíbila, že je nechce odložit."
 
-    def test_numbered_list_with_item1_always_shown(self):
+    def test_numbered_list_has_all_three_items_in_order(self):
         self.assertIn('<ol class="lpb-testimonial__list">', TEMPLATE)
-        gate = TEMPLATE.index("molosoc_landing_b_feedback_extra_enabled', false")
-        self.assertLess(TEMPLATE.index("<li>" + QUOTE), TEMPLATE.index("<?php if ( $lpb_extra_feedback )"))
-        self.assertLess(TEMPLATE.index("<ol class"), gate + 1000)
+        start = TEMPLATE.index('<ol class="lpb-testimonial__list">')
+        ol = TEMPLATE[start:TEMPLATE.index("</ol>", start)]
+        self.assertEqual(ol.count("<li>"), 3)
+        self.assertLess(ol.index(QUOTE), ol.index(self.ITEM2))
+        self.assertLess(ol.index(self.ITEM2), ol.index(self.ITEM3))
 
-    def test_items_2_and_3_are_disabled_by_default_and_unenabled_in_theme(self):
-        flag = "apply_filters( 'molosoc_landing_b_feedback_extra_enabled', false )"
-        self.assertIn(flag, TEMPLATE)
-        cond = TEMPLATE.index("<?php if ( $lpb_extra_feedback )")
-        end = TEMPLATE.index("<?php endif; ?>", cond)
-        self.assertLess(cond, TEMPLATE.index(self.ITEM2))
-        self.assertLess(TEMPLATE.index(self.ITEM3), end)
+    def test_no_extra_feedback_gate_remains(self):
+        self.assertNotIn("molosoc_landing_b_feedback_extra_enabled", TEMPLATE)
         self.assertNotIn("molosoc_landing_b_feedback_extra_enabled", FUNCTIONS)
 
     def test_no_quotes_names_or_claims_in_list(self):
-        ol = TEMPLATE[TEMPLATE.index("<ol class"):TEMPLATE.index("</ol>")]
+        start = TEMPLATE.index('<ol class="lpb-testimonial__list">')
+        ol = TEMPLATE[start:TEMPLATE.index("</ol>", start)]
         text = re.sub(r"<[^>]*>", "", ol)
         for bad in ("„", "“", '"', "”", "prdel", "ověřen", "léč", "zlepš", "psoria"):
             self.assertNotIn(bad, text)
