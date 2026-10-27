@@ -252,11 +252,12 @@ get_header();
 			</figure>
 		</div>
 		<?php
-		/* Issue #271: consent-gated customer testimonial. OFF by default — nothing renders (production output unchanged) until Žaneta confirms the customer's permission for website use and the attribution. Enable ONLY via the `molosoc_landing_b_testimonial_enabled` filter (return true) after approval. Attribution defaults to none; the approved label comes from the `molosoc_landing_b_testimonial_attribution` filter. No verified-purchase label without evidence of the order. */
+		/* Issues #271/#276: consent-gated, anonymous customer testimonial. OFF by default — nothing renders (production output unchanged) until Žaneta confirms the customer's permission for website use and the attribution. Enable ONLY via the `molosoc_landing_b_testimonial_enabled` filter (return true) after approval. Attribution defaults to none; the approved label comes from the `molosoc_landing_b_testimonial_attribution` filter. No verified-purchase label without evidence of the order. */
 		if ( apply_filters( 'molosoc_landing_b_testimonial_enabled', false ) ) :
 			$lpb_attribution = trim( (string) apply_filters( 'molosoc_landing_b_testimonial_attribution', '' ) );
 			?>
 		<figure class="lpb-testimonial">
+			<p class="lpb-testimonial__title">Co o nás říkají zákazníci</p>
 			<blockquote>
 				<p>„Zkusila jsem koupit vaše návleky a maminka je s nimi nesmírně spokojená. Vydrží je mít 30 minut na nohách úplně v pohodě.“</p>
 			</blockquote>

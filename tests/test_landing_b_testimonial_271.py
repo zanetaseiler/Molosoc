@@ -33,5 +33,17 @@ class TestimonialGate(unittest.TestCase):
         self.assertIn(".lpb-testimonial", CSS)
 
 
+class AnonymousCard276(unittest.TestCase):
+    def test_card_heading_inside_gate_and_css(self):
+        gate = TEMPLATE.index("apply_filters( 'molosoc_landing_b_testimonial_enabled', false )")
+        self.assertGreater(TEMPLATE.index("Co o nás říkají zákazníci"), gate)
+        self.assertIn(".lpb-testimonial__title", CSS)
+
+    def test_no_health_or_name_claims(self):
+        block = TEMPLATE[TEMPLATE.index('class="lpb-testimonial"'):TEMPLATE.index("<?php endif; ?>\n\t\t<div class=\"lpb-section__cta\">")]
+        for banned in ("psoria", "léč", "zlepš", "ověřen"):
+            self.assertNotIn(banned, block)
+
+
 if __name__ == "__main__":
     unittest.main()
