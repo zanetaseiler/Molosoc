@@ -323,6 +323,17 @@ function molosoc_landing_b_fonts_url() {
 	return 'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600&display=swap';
 }
 
+/**
+ * Is the current page assigned a NEW-article Journal template (Issue #280)?
+ * Convention: a template file named page-journal-*.php. Such a page gets the
+ * approved article design (pillar1.css, Issues #273/#275) with no edit to
+ * the slug list in molosoc_enqueue_assets(), which still covers the existing
+ * pillars/spokes. See docs/journal-article-template.md.
+ */
+function molosoc_has_journal_article_template() {
+	return is_page() && 0 === strpos( basename( (string) get_page_template_slug() ), 'page-journal-' );
+}
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
@@ -484,6 +495,11 @@ function molosoc_enqueue_assets() {
 		// it" fade/blur/drawer slide, the model's auto-rotate, the final
 		// CTA's .molosoc-reveal fade and every hover zoom were all removed —
 		// each section renders its settled, static state with no JS.
+	} elseif ( molosoc_has_journal_article_template() ) {
+		// New CZ/EN Journal articles (Issue #280): same shared stylesheet as the
+		// slug-listed branch above, picked up via the page-journal-*.php
+		// template-name convention. No JS, same as every Journal article.
+		wp_enqueue_style( 'molosoc-pillar1', $theme_uri . '/assets/css/pillar1.css', array( 'molosoc-components' ), $theme_version );
 	} elseif ( is_page( array( 'moisture-lock-foot-cover', 'hydratacni-navlek-na-nohy' ) ) ) {
 		// 'hydratacni-navlek-na-nohy' is the Czech translation of
 		// 'moisture-lock-foot-cover' — see the 'navleky-na-nohy' branch
