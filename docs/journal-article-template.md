@@ -7,10 +7,10 @@ back-to-pillar band, §6 final CTA). It is **not duplicated** per article.
 
 ## What is automatic
 
-`molosoc_is_journal_article()` (`site/theme/functions.php`) decides which pages
-load `pillar1.css`. A page qualifies if its slug is one of the existing
-pillars/spokes (EN + CZ), **or** its assigned template file is named
-`page-journal-*.php`. The enqueue branch is non-global: no other page type is
+`molosoc_enqueue_assets()` (`site/theme/functions.php`) loads `pillar1.css` for
+the existing pillars/spokes (EN + CZ, matched by slug) **and**, via
+`molosoc_has_journal_article_template()`, for any page whose assigned template
+file is named `page-journal-*.php`. The enqueue branch is non-global: no other page type is
 affected, and no JS is enqueued.
 
 ## Steps for a new article (EN or CZ)
