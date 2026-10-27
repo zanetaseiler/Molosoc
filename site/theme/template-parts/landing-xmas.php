@@ -207,6 +207,25 @@ get_header();
 		<?php if ( $lpx_s3 ) : ?><div class="lpx-figure"><?php echo $lpx_s3; // phpcs:ignore WordPress.Security.EscapeOutput ?></div><?php endif; ?>
 	</section>
 
+	<?php
+	/* Issue #284: the numbered 1-2-3 anonymous customer feedback from Landing B (#281), CZ page only (the summaries are Czech editorial indirect speech, not translated). Only item 1 has documented republication permission. Items 2 and 3 stay hidden until Žaneta confirms anonymous publication and wording on #281 and enables `molosoc_landing_b_feedback_extra_enabled` (same flag as Landing B). No quotation marks, names, verified-buyer or medical claims. */
+	if ( 'cz' === $lpx_lang ) :
+		$lpx_extra_feedback = (bool) apply_filters( 'molosoc_landing_b_feedback_extra_enabled', false );
+		?>
+	<section class="lpb-section" aria-label="Co o nás říkají zákazníci">
+		<figure class="lpb-testimonial">
+			<p class="lpb-testimonial__title">Co o nás říkají zákazníci</p>
+			<ol class="lpb-testimonial__list">
+				<li>Jedna zákaznice nám napsala, že její maminka je s návleky MOLOSOC velmi spokojená a pohodlně je nosí přibližně 30 minut.</li>
+				<?php if ( $lpx_extra_feedback ) : ?>
+				<li>Další zákaznice popsala, že má po použití návleků chodidla hebká jako dětskou pokožku.</li>
+				<li>Jiná zákaznice nám napsala, že si návleky natolik oblíbila, že je nechce odložit.</li>
+				<?php endif; ?>
+			</ol>
+		</figure>
+	</section>
+	<?php endif; ?>
+
 	<section class="lpb-section lpb-section--cream" aria-label="<?php echo esc_attr( $t['order_h'] ); ?>">
 		<div class="lpb-section__head">
 			<h2><?php echo esc_html( $t['order_h'] ); ?></h2>
