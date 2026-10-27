@@ -323,6 +323,47 @@ function molosoc_landing_b_fonts_url() {
 	return 'https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600&display=swap';
 }
 
+/**
+ * Is the current request a Journal article (pillar/spoke), EN or CZ?
+ * (Issue #280.) Single source of truth for "this page gets the approved
+ * article design" (pillar1.css, Issues #273/#275).
+ *
+ * A page qualifies when EITHER:
+ *  - its slug is one of the existing 5 EN pillars + 6 EN spokes + Czech
+ *    siblings below (Czech slugs are listed explicitly because is_page()
+ *    only auto-matches the exact English slug), OR
+ *  - it is assigned a template file named page-journal-*.php — the
+ *    convention for every NEW article, so a new CZ/EN article needs no
+ *    change to this file. See docs/journal-article-template.md.
+ *
+ * The 'molosoc_journal_article_slugs' filter allows adding slugs without
+ * editing this list.
+ */
+function molosoc_is_journal_article() {
+	if ( ! is_page() ) {
+		return false;
+	}
+	$slugs = apply_filters( 'molosoc_journal_article_slugs', array(
+		'cracked-heels', 'popraskane-paty',
+		'ingrown-toenails', 'zarostly-nehet',
+		'hardened-skin-calluses', 'kurici-oko',
+		'dry-skin-feet',
+		'foot-cream-that-works',
+		'treatment',
+		'callus-remover', 'jak-odstranit',
+		'na-chodidle',
+		'sucha-kuze-na-chodidlech',
+		'prevent',
+		'cracked-heels-cream',
+		'cracked-heels-treatment',
+		'fix-permanently',
+	) );
+	if ( is_page( $slugs ) ) {
+		return true;
+	}
+	return 0 === strpos( basename( (string) get_page_template_slug() ), 'page-journal-' );
+}
+
 function molosoc_enqueue_assets() {
 	$theme_uri     = get_stylesheet_directory_uri();
 	$theme_version = wp_get_theme()->get( 'Version' );
@@ -444,25 +485,7 @@ function molosoc_enqueue_assets() {
 		// mask-reveal + card flight, and the final-CTA .molosoc-reveal fade
 		// were all removed). The only animation left is the hero's own
 		// pure-CSS ring spin / type-in (category.css), which needs no script.
-	} elseif ( is_page( array(
-		// Journal article pages — the 5 EN pillars + 6 EN spokes + every
-		// Czech translation/CZ-only sibling. Czech slugs are listed
-		// explicitly for the same reason as 'navleky-na-nohy' above:
-		// is_page() only auto-matches the exact English slug.
-		'cracked-heels', 'popraskane-paty',
-		'ingrown-toenails', 'zarostly-nehet',
-		'hardened-skin-calluses', 'kurici-oko',
-		'dry-skin-feet',
-		'foot-cream-that-works',
-		'treatment',
-		'callus-remover', 'jak-odstranit',
-		'na-chodidle',
-		'sucha-kuze-na-chodidlech',
-		'prevent',
-		'cracked-heels-cream',
-		'cracked-heels-treatment',
-		'fix-permanently',
-	) ) ) {
+	} elseif ( molosoc_is_journal_article() ) {
 		// One shared asset stack for every pillar/spoke template — they all
 		// reuse pillar1.css as-is (every class/selector in that file is
 		// generic, nothing cracked-heels-specific).
