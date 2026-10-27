@@ -35,9 +35,9 @@ class TestimonialGate(unittest.TestCase):
 
 
 class Enabled278(unittest.TestCase):
-    def test_flag_enabled_only_on_landing_b_template(self):
+    def test_flag_enabled_only_on_landing_b_page(self):
         self.assertIn("add_filter( 'molosoc_landing_b_testimonial_enabled'", FUNCTIONS)
-        self.assertIn("is_page_template( 'page-hydratacni-navleky-molosoc.php' ) ? true : $enabled", FUNCTIONS)
+        self.assertIn("is_page( 'hydratacni-navleky-molosoc' ) ? true : $enabled", FUNCTIONS)
 
     def test_indirect_speech_not_a_verbatim_quote(self):
         block = TEMPLATE[TEMPLATE.index('class="lpb-testimonial"'):TEMPLATE.index("<?php endif; ?>\n\t\t<div class=\"lpb-section__cta\">")]
