@@ -53,7 +53,9 @@ CONFIRM = "APPLY-LANDING-B-288"
 CZ_PAGE = {"id": 1037, "slug": "hydratacni-navleky-molosoc", "lang": "cz"}
 EN_SLUG = "hydrating-foot-covers-molosoc"
 EN_TITLE = "Hydrating Foot Covers – Landing Page B (EN)"
-EN_DOC_TITLE_MARKER = "Reusable Hydrating Foot Mask"  # inc/landing-b-en.php document title
+# Rendered by page-hydrating-foot-covers-molosoc.php on <main>; the (globally filtered) document title is
+# NOT proof that the EN Landing B template produced the body.
+EN_BODY_MARKER = 'data-lpb-en-landing="288"'
 
 EN_MENU, CZ_MENU = 67, 68
 # Landing Page A: the pages the menus currently point at (page ids from functions.php /
@@ -282,17 +284,25 @@ def apply(c, st, cz_item_id, en_item_id):
         print("translation link verified")
 
     # 3. publish + public check
+    published_now = False
     if en["status"] != "publish":
         ok(c.post(f"/wp-json/wp/v2/pages/{en['id']}", {"status": "publish"}), "publish EN page")
+        published_now = True
     en = get_page(c, en["id"])
     page = c.public(en["link"])
     body = page.text if page.status_code == 200 else ""
-    if page.status_code != 200 or EN_DOC_TITLE_MARKER not in body:
-        c.post(f"/wp-json/wp/v2/pages/{en['id']}", {"status": "draft"})
+    if page.status_code != 200 or EN_BODY_MARKER not in body:
+        # Only undo a publication made by THIS invocation; a page that was already live (and may already be
+        # linked from a menu) keeps its state on a transient failure or a wrong template.
+        if published_now:
+            c.post(f"/wp-json/wp/v2/pages/{en['id']}", {"status": "draft"})
+            outcome = "The page was set back to draft"
+        else:
+            outcome = "The page was already published before this run and was left as is"
         raise Abort(
-            f"public check of {en['link']} failed (HTTP {page.status_code}, title marker present: {EN_DOC_TITLE_MARKER in body}). "
-            "The theme with page-hydrating-foot-covers-molosoc.php is probably not deployed yet. "
-            "The page was set back to draft and NO menu was changed."
+            f"public check of {en['link']} failed (HTTP {page.status_code}, EN Landing B body marker present: {EN_BODY_MARKER in body}). "
+            "The theme with page-hydrating-foot-covers-molosoc.php is probably not deployed yet, or the page uses another template. "
+            f"{outcome} and NO menu was changed."
         )
     print(f"EN page published and verified: {en['link']}")
 

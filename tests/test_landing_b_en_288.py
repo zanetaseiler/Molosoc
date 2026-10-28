@@ -150,6 +150,7 @@ class FakeWP:
 
     def __init__(self, helper=True, theme_deployed=True, en_exists=False):
         self.helper, self.theme_deployed = helper, theme_deployed
+        self.public_status = 200
         self.calls = []
         self.pages = {1037: {"id": 1037, "slug": lbe.CZ_PAGE["slug"], "status": "publish", "link": "https://molosoc.com/cz/hydratacni-navleky-molosoc/"}}
         self.lang = {1037: "cz"}
@@ -224,7 +225,11 @@ class FakeWP:
     def public(self, url):
         if self.pages.get(2001, {}).get("status") != "publish":
             return Resp(404, text="nope")
-        return Resp(200, text="<title>Reusable Hydrating Foot Mask | Molosoc</title>" if self.theme_deployed else "<title>Hydrating Foot Covers</title>")
+        if self.public_status != 200:
+            return Resp(self.public_status, text="error")
+        title = "<title>Reusable Hydrating Foot Mask | Molosoc</title>"
+        # the document title is filtered globally; only the real EN template renders the body marker
+        return Resp(200, text=title + ('<main data-lpb-en-landing="288">' if self.theme_deployed else "<main>other template</main>"))
 
     def writes(self):
         return list(self.calls)
@@ -316,6 +321,43 @@ class Script(unittest.TestCase):
             self.run_apply(wp)
         self.assertEqual(wp.pages[2001]["status"], "draft")
         self.assertFalse([p for p, _ in wp.calls if "menu-items" in p])
+
+    def test_wrong_template_with_matching_title_is_not_verified(self):
+        # title filter fires, but the body is not the EN Landing B template -> must not pass
+        wp = FakeWP(theme_deployed=False)
+        with self.assertRaises(lbe.Abort):
+            self.run_apply(wp)
+        self.assertEqual(wp.pages[2001]["status"], "draft")
+        self.assertFalse([p for p, _ in wp.calls if "menu-items" in p])
+
+    def test_rerun_with_transient_http_failure_keeps_published_page(self):
+        wp = FakeWP()
+        self.assertEqual(self.run_apply(wp), 0)
+        self.assertEqual(wp.pages[2001]["status"], "publish")
+        n = len(wp.calls)
+        wp.public_status = 503
+        st = lbe.report(wp)
+        with self.assertRaises(lbe.Abort):
+            lbe.apply(wp, st, 905, 810)
+        self.assertEqual(wp.pages[2001]["status"], "publish")
+        later = wp.calls[n:]
+        self.assertFalse([p for p, j in later if j.get("status") == "draft"])
+        self.assertFalse([p for p, _ in later if "menu-items" in p])
+
+    def test_rerun_with_wrong_template_keeps_published_page(self):
+        wp = FakeWP()
+        self.assertEqual(self.run_apply(wp), 0)
+        n = len(wp.calls)
+        wp.theme_deployed = False
+        st = lbe.report(wp)
+        with self.assertRaises(lbe.Abort):
+            lbe.apply(wp, st, 905, 810)
+        self.assertEqual(wp.pages[2001]["status"], "publish")
+        self.assertFalse([p for p, _ in wp.calls[n:] if "menu-items" in p])
+
+    def test_template_renders_the_body_marker_the_script_checks(self):
+        tpl = (ROOT / "site/theme/page-hydrating-foot-covers-molosoc.php").read_text()
+        self.assertIn(lbe.EN_BODY_MARKER, tpl)
 
     def test_existing_en_page_of_wrong_language_is_refused(self):
         wp = FakeWP(en_exists=True)

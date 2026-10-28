@@ -37,7 +37,7 @@ $lpb_faq      = molosoc_landing_b_en_faq( $lpb_price, $lpb_shipping );
 get_header();
 ?>
 
-<main id="main" class="lpb">
+<main id="main" class="lpb" data-lpb-en-landing="288">
 
 	<!-- ============ Hero ============ -->
 	<section class="lpb-hero" aria-label="Hydrating foot covers" style="<?php echo molosoc_landing_b_hero_background_style(); ?>">
