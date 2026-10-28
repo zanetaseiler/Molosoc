@@ -377,6 +377,37 @@ class Script(unittest.TestCase):
         self.assertEqual(wp.pages[2001]["status"], "publish")
         self.assertFalse([p for p, _ in wp.calls[n:] if "menu-items" in p])
 
+    def test_rejected_rollback_is_reported_not_masked(self):
+        wp = FakeWP()
+        wp.public_status = 503
+        orig = wp.post
+
+        def post(path, json):
+            if json.get("status") == "draft" and path.endswith("/2001"):
+                wp.calls.append((path, json))
+                return Resp(503, text="unavailable")
+            return orig(path, json)
+
+        wp.post = post
+        with self.assertRaises(lbe.Abort) as cm:
+            self.run_apply(wp)
+        self.assertIn("FAILED", str(cm.exception))
+        self.assertIn("manually", str(cm.exception))
+        self.assertNotIn("was set back to draft", str(cm.exception))
+        self.assertFalse([p for p, _ in wp.calls if "menu-items" in p])
+
+    def test_cz_page_with_other_en_translation_is_refused(self):
+        wp = FakeWP()
+        wp.tr[1037] = {"cz": 1037, "en": 999}
+        self.assertEqual(self.run_apply(wp), 3)
+        self.assertEqual(wp.writes(), [])
+
+    def test_cz_page_with_other_en_translation_is_refused_when_en_page_exists(self):
+        wp = FakeWP(en_exists=True)
+        wp.tr[1037] = {"cz": 1037, "en": 999}
+        self.assertEqual(self.run_apply(wp), 3)
+        self.assertEqual(wp.writes(), [])
+
     def test_template_renders_the_body_marker_the_script_checks(self):
         tpl = (ROOT / "site/theme/page-hydrating-foot-covers-molosoc.php").read_text()
         self.assertIn(lbe.EN_BODY_MARKER, tpl)

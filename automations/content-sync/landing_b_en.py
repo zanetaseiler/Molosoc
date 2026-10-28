@@ -218,6 +218,10 @@ def preflight(st, cz_item_id, en_item_id):
     en = st["en_page"]
     if en and st["helper"] and st.get("en_pll") and st["en_pll"][0] != "en":
         problems.append(f"page with slug {EN_SLUG!r} (id {en['id']}) is language {st['en_pll'][0]!r}, expected 'en'")
+    if st["helper"]:
+        cz_en = (st["pll_cz"][1] or {}).get("en")
+        if cz_en and (not en or int(cz_en) != int(en["id"])):
+            problems.append(f"CZ page {CZ_PAGE['id']} already has EN translation {cz_en}, which is not the selected EN Landing B page; linking would replace it")
     if en and st.get("en_pll"):
         linked = st["en_pll"][1].get("cz")
         if linked and int(linked) != CZ_PAGE["id"]:
@@ -293,7 +297,7 @@ def apply(c, st, cz_item_id, en_item_id):
         if not published_now:
             return "The page was already published before this run and was left as is"
         try:
-            c.post(f"/wp-json/wp/v2/pages/{en_id}", {"status": "draft"})
+            ok(c.post(f"/wp-json/wp/v2/pages/{en_id}", {"status": "draft"}), "set EN page back to draft")
             return "The page was set back to draft"
         except Exception as exc:  # noqa: BLE001 - report, never mask the original failure
             return f"Setting the page back to draft FAILED ({exc}); set page {en_id} to draft manually"
