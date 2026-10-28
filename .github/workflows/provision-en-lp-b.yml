@@ -1,0 +1,64 @@
+name: Provision EN Landing B + repoint CZ/EN menu links (Issue #288)
+
+# Default is a read-only `list`: prints the CZ Landing B page, the (proposed) EN page, the Polylang
+# state and BOTH menus (CZ 68 / EN 67) with their real item ids, marking the items that currently
+# point at Landing Page A. Item ids are never assumed — read the list output first.
+#
+# `apply` mutates production (creates the EN page as a draft, links it to CZ 1037 in Polylang,
+# publishes it after a public check, repoints exactly the two named menu items). It needs the
+# confirm phrase AND both item ids, and must only be dispatched after a separate ZANETA_DECISION
+# recorded on Issue #288 AND after the theme containing page-hydrating-foot-covers-molosoc.php is
+# deployed. No redirects, no deletions, no canonical changes. See docs/landing-page-b-en-288.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "list (read-only, default) or apply (production write)"
+        type: choice
+        options:
+          - list
+          - apply
+        default: list
+      cz_menu_item:
+        description: "apply only: CZ menu (68) item id to repoint to CZ Landing B (from the list output)"
+        required: false
+        default: ""
+      en_menu_item:
+        description: "apply only: EN menu (67) item id to repoint to EN Landing B (from the list output)"
+        required: false
+        default: ""
+      confirm:
+        description: "apply only: type APPLY-LANDING-B-288 (only after a ZANETA_DECISION on Issue #288)"
+        required: false
+        default: ""
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Gate
+        if: ${{ inputs.action == 'apply' && (inputs.confirm != 'APPLY-LANDING-B-288' || inputs.cz_menu_item == '' || inputs.en_menu_item == '') }}
+        run: |
+          echo "::error::apply requires confirm=APPLY-LANDING-B-288 plus cz_menu_item and en_menu_item"
+          exit 1
+      - name: Run
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+          ACTION: ${{ inputs.action }}
+          CZ_ITEM: ${{ inputs.cz_menu_item }}
+          EN_ITEM: ${{ inputs.en_menu_item }}
+          CONFIRM_PHRASE: ${{ inputs.confirm }}
+        run: |
+          if [ "$ACTION" = "apply" ]; then
+            python3 automations/content-sync/landing_b_en.py apply --cz-menu-item "$CZ_ITEM" --en-menu-item "$EN_ITEM" --confirm "$CONFIRM_PHRASE"
+          else
+            python3 automations/content-sync/landing_b_en.py list
+          fi

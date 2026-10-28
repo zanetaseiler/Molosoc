@@ -66,8 +66,8 @@ class LandingBBuyPath(unittest.TestCase):
 
     def test_links_are_woocommerce_add_to_cart_urls_to_the_cz_checkout(self):
         for needle in ("'add-to-cart'  => MOLOSOC_PRODUCT_ID", "'variation_id' => $variation_id",
-                       "'quantity'     => 1", "'molosoc_lpb'  => 1", "get_variation_attributes()",
-                       "molosoc_landing_b_checkout_url()", "pll_get_post( $checkout_id, 'cz' )"):
+                       "'quantity'     => 1", "'molosoc_lpb'  => 'en' === $lang ? 'en' : 1", "get_variation_attributes()",
+                       "molosoc_landing_b_checkout_url( $lang )", "pll_get_post( $checkout_id, 'cz' )"):
             self.assertIn(needle, BUY, needle)
         # Never worse than before: unresolved sizes keep the CZ product-page link.
         self.assertIn("molosoc_product_url( 'cz' )", BUY)

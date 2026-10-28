@@ -142,7 +142,16 @@ class EvergreenUntouched(unittest.TestCase):
         protected = re.compile(r"page-hydratacni-navleky-molosoc|page-moisture-lock|landing-b|thank-you-gift|front-page|page-foot-covers")
         # Issue #278 deliberately enables the Landing B feedback summary in its template.
         # Issue #281 adds the numbered feedback list styles to landing-b.css.
-        allowed = {"site/theme/page-hydratacni-navleky-molosoc.php", "site/theme/assets/css/landing-b.css"}
+        # Issue #288 adds the English Landing B: a new inc file and a lang parameter
+        # (default 'cz') on the shared buy helper; the CZ template itself is untouched.
+        allowed = {
+            "site/theme/page-hydratacni-navleky-molosoc.php",
+            "site/theme/assets/css/landing-b.css",
+            "site/theme/inc/landing-b-buy.php",
+            "site/theme/inc/landing-b-en.php",
+            "docs/landing-page-b-en-288.md",
+            "tests/test_landing_b_en_288.py",
+        }
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
         # adds one CZ cart-name filter to woocommerce-lang.php).
