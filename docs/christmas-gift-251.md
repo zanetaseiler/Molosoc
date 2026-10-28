@@ -29,3 +29,18 @@ Remaining manual production tasks / not verified:
 - Removed the crossed-out "běžně 229 Kč" / "normally 229 CZK" (Žaneta's decision; EU Omnibus rule: a reference price must be the lowest of the previous 30 days, which could not be confirmed). Bundle prices 209 / 408 / 607 are unchanged.
 - CZ block cart showed "MOLOSOC Moisture Lock Foot Cover": the Store API cart item name comes from `get_title()` (`woocommerce_product_title`), which the CZ name filters did not cover. `molosoc_cz_store_api_product_name()` now also runs on that hook (CZ + product 364 only).
 - Not changed: checkout loaded halfway once in review; not reproducible, to monitor.
+
+## Size feedback for 2–3 pairs (Issue #287, 2026-10-28)
+
+Clarity, 27 Oct 2026 (~21:12, mobile, Facebook in-app browser, the only checkout attempt of the campaign so far): the visitor chose 2 páry, picked M for pair 1 only and tapped "Pokračovat k pokladně" four times. The handler blocked correctly but nothing visible happened: `landing-b.css` hides every `.lpb-buy__legend` (sr-only) at ≤560px, so the existing "Pár 1 · Velikost / Pár 2 · Velikost" legends were invisible on the phone; `.lpb-buy__error` inherited the muted body colour; the JS only focused an opacity-0 radio.
+
+What changed (theme only, both pickers, CZ + EN):
+- Every size row shows `1. pár · Velikost` / `Pair 1 · Size` on every width (`.lpx-pair__legend` undoes B's sr-only rule on the Christmas pages only). M/L cards stay compact at 390px.
+- When the pair count increases, the new rows take pair 1's size (if any, and only when that size is purchasable); each row can still be changed. Nothing is pre-selected while pair 1 has no size. The Clarity order (count first, size for pair 1 second) also fills rows that are already on screen and still empty.
+- Blocked click: every visible row without a size is outlined red (`.is-missing`), the first one is smooth-scrolled to the middle of the viewport (plain jump under `prefers-reduced-motion`), the error reads "Vyberte velikost pro 2. pár." / "Please choose a size for pair 2." in red (#b3261e, ≥6:1 on cream and white) and is re-announced through `role="alert" aria-live="assertive"`. The next size pick clears everything.
+- Unchanged: the URL contract `molosoc_xmas=1&molosoc_xmas_sizes=…`, server validation and prices in `inc/landing-xmas.php` (209 / 408 / 607 Kč, regular 229 Kč), the no-JS product-page link, payment and shipping.
+- Theme version 0.2.103 (`assets/js/landing-xmas.js` and `assets/css/landing-xmas.css` must be re-fetched; WP-Optimize rebuilds its bundle from the new version).
+
+Cookie card (WPConsent): the theme already compacts the card at ≤560px for Landing B and the Christmas pages (`landing-b.css`, `::part()` surfaces only); `landing-xmas.css` now shaves it further on the Christmas pages (6px bottom offset, 8/10px padding, 0.7rem text, 32px one-row buttons). No consent logic, button or category is touched. The error row is scrolled to the middle of the screen, so it never sits under the card. If the card still covers the buy box on a given phone, the plugin-side option is WP admin → WPConsent → Settings → Banner: switch the banner position from bottom to top (or the layout from "long" to a smaller one); re-check the Clarity consent replay (Issue #190) after any plugin-side change.
+
+After deploy: purge the WP-Optimize page cache for `/cz/vanocni-darek-molosoc/` and `/christmas-gift-molosoc/` (ad URLs carry utm/fbclid, so cached variants multiply). Verified locally in headless Chrome against a copy of the picker markup (390×844): inheritance in both orders, per-pair error, highlight cleared on fix, busy lock, URL built as before. Not verified: live pages, real WPConsent card size in the Facebook in-app browser, screen-reader announcement.

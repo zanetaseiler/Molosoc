@@ -77,3 +77,20 @@ is from the repo:
   at all widths; Landing A styles are untouched. Position/z-index stay the global ones (below the consent card).
 * Theme `Version` bumped to 0.2.99 so WP-Optimize rebuilds the bundle. Not verified in a browser here
   (no WordPress runtime / screenshot reference); check 390px and desktop on staging, incl. consent overlap.
+
+## Issue #290 — size feedback (same fix as the Christmas picker, #287 / PR #289)
+
+* On phones the "Velikost" legend was sr-only (`landing-b.css` ≤560px), the "Vyberte velikost." line inherited the muted
+  body colour and a blocked click only focused an opacity-0 radio, so nothing visible happened (the Clarity pattern of #287).
+* Now: the legend carries `lpb-buy__size-label` and stays visible on every width (the generic sr-only rule is kept for the
+  Christmas bundle legend); a blocked click outlines the size row in red (`.lpb-buy__sizes.is-missing`, transparent 2px
+  border beforehand so nothing shifts), smooth-scrolls it to the middle of the viewport (plain jump under
+  `prefers-reduced-motion`), re-announces the red (#b3261e, >6:1) error through `role="alert" aria-live="assertive"` and
+  focuses the first radio without a second scroll. Picking a size clears the mark in every group (the choice is shared).
+  The dark band variant uses #ffb4ab on black.
+* Unchanged: add-to-cart URLs, the `molosoc_lpb` checkout redirect, no preselected size, prices, gateway, shipping, the
+  no-JS product-page link. Theme `Version` 0.2.104.
+* Verified locally in headless Chrome (390px iframe, branch CSS/JS on a copy of the buy-group markup): blocked click →
+  outline + error + centred row + focus, no navigation; a pick in another group clears all; the button then opens the
+  chosen size's URL once (busy lock). Not verified: live page, real cookie-card height, screen-reader output. After deploy,
+  purge the WP-Optimize page cache for `/cz/hydratacni-navleky-molosoc/`.

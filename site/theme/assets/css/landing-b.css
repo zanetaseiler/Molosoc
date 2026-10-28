@@ -353,11 +353,54 @@
   pointer-events: none;
 }
 
+/* Issue #290 (same as the Christmas picker, #287): the size row carries a
+   transparent 2px border so the red outline of a blocked click never shifts
+   the layout; the error is red (#b3261e: 6.1:1 on cream, 6.5:1 on white) and
+   the row/legend turn red too. The dark band uses a light red on black. */
+.lpb-buy__sizes {
+  position: relative;
+  padding: 0.45rem 0.45rem 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+
+.lpb-buy__sizes.is-missing {
+  border-color: #b3261e;
+  background: rgba(179, 38, 30, 0.05);
+}
+
+.lpb-buy__sizes.is-missing .lpb-buy__legend {
+  color: #b3261e;
+}
+
+.lpb-buy__sizes.is-missing .lpb-size input:not(:checked) + .lpb-size__label {
+  border-color: #b3261e;
+}
+
 .lpb-buy__error {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
   text-align: center;
+  color: #b3261e;
+  background: rgba(179, 38, 30, 0.08);
+}
+
+.lpb-buy--dark .lpb-buy__sizes.is-missing {
+  border-color: #ffb4ab;
+  background: rgba(255, 180, 171, 0.08);
+}
+
+.lpb-buy--dark .lpb-buy__sizes.is-missing .lpb-buy__legend,
+.lpb-buy--dark .lpb-buy__error {
+  color: #ffb4ab;
+}
+
+.lpb-buy--dark .lpb-buy__error {
+  background: rgba(255, 180, 171, 0.12);
 }
 
 .lpb-section__cta {
@@ -1046,13 +1089,31 @@
     white-space: nowrap;
   }
 
+  /* Issue #290: the "Velikost" legend stays visible on phones (the generic
+     sr-only rule above is kept for the Christmas bundle legend). */
+  .lpb-buy__sizes .lpb-buy__size-label {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    margin: 0 0 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .lpb-buy__sizes {
+    padding: 0.35rem 0.35rem 0.4rem;
+    gap: 0.4rem;
+  }
+
   .lpb-size {
     min-width: 0;
   }
 
   .lpb-size__label {
-    padding: 0.55em 0.3em;
-    font-size: 0.9rem;
+    padding: 0.5em 0.25em;
+    font-size: 0.875rem;
   }
 
   .lpb .lpb-buy__btn {
@@ -1092,7 +1153,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lpb .lpb-btn {
+  .lpb .lpb-btn,
+  .lpb-buy__sizes {
     transition: none;
   }
 }

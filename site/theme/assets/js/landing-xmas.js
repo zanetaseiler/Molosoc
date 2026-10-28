@@ -6,6 +6,14 @@
   validates the sizes, adds one cart line per pair and sets the Christmas
   prices; nothing price-related is read from this URL. Without JS the button
   stays the plain product-page link. Vanilla JS: no jQuery on this page.
+
+  Issue #287 (Clarity 2026-10-27: "2 pairs, size for pair 1 only, 4 dead
+  clicks on the button"): newly revealed pair rows inherit pair 1's size
+  (never when pair 1 has none), and a blocked click now marks every pair row
+  without a size (.is-missing), smooth-scrolls the first one to the middle of
+  the screen (clear of the cookie card), names the pair in the red error and
+  re-announces it through the aria-live region. The marks clear on the next
+  size pick. The URL contract and the no-JS fallback are unchanged.
 */
 (function () {
 	"use strict";
@@ -18,9 +26,27 @@
 		return picked ? parseInt( picked.value, 10 ) : 1;
 	}
 
+	function pairRow( group, n ) {
+		return group.querySelector( '[data-lpx-pair="' + n + '"]' );
+	}
+
 	function sizeOf( group, n ) {
 		var picked = group.querySelector( '[data-lpx-pair="' + n + '"] input:checked' );
 		return picked ? picked.value : "";
+	}
+
+	/* Pre-select size `size` for pair `n` when that row has no size yet and the
+	   variation is purchasable. Returns true when something was selected. */
+	function inherit( group, n, size ) {
+		if ( ! size || sizeOf( group, n ) ) {
+			return false;
+		}
+		var radio = group.querySelector( '[data-lpx-pair="' + n + '"] input[value="' + size + '"]' );
+		if ( ! radio || radio.disabled ) {
+			return false;
+		}
+		radio.checked = true;
+		return true;
 	}
 
 	function render( group ) {
@@ -28,6 +54,53 @@
 		Array.prototype.forEach.call( group.querySelectorAll( "[data-lpx-pair]" ), function ( fs ) {
 			fs.hidden = parseInt( fs.getAttribute( "data-lpx-pair" ), 10 ) > count;
 		} );
+		group.setAttribute( "data-lpx-count", String( count ) );
+	}
+
+	function clearMissing( group ) {
+		Array.prototype.forEach.call( group.querySelectorAll( "[data-lpx-pair].is-missing" ), function ( fs ) {
+			fs.classList.remove( "is-missing" );
+		} );
+		var err = group.querySelector( ".lpb-buy__error" );
+		if ( err ) {
+			err.hidden = true;
+		}
+	}
+
+	/* Blocked click: mark every visible pair row without a size, scroll the
+	   first one into the middle of the viewport, name it in the error and make
+	   the live region re-announce (same text set again does not announce). */
+	function showMissing( group, firstMissing ) {
+		var count = pairCount( group );
+		for ( var n = 1; n <= count; n++ ) {
+			var fs = pairRow( group, n );
+			if ( fs && ! sizeOf( group, n ) ) {
+				fs.classList.add( "is-missing" );
+			}
+		}
+		var err = group.querySelector( ".lpb-buy__error" );
+		if ( err ) {
+			var tpl  = group.getAttribute( "data-lpx-err-pair" ) || "";
+			var text = tpl.indexOf( "%d" ) !== -1 ? tpl.replace( "%d", String( firstMissing ) ) : ( err.getAttribute( "data-lpx-err" ) || err.textContent );
+			err.hidden = false;
+			err.textContent = "";
+			err.textContent = text;
+		}
+		var row = pairRow( group, firstMissing );
+		if ( row ) {
+			var reduce = window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches;
+			if ( row.scrollIntoView ) {
+				row.scrollIntoView( { behavior: reduce ? "auto" : "smooth", block: "center" } );
+			}
+			var first = row.querySelector( "input:not([disabled])" );
+			if ( first ) {
+				try {
+					first.focus( { preventScroll: true } );
+				} catch ( e ) {
+					first.focus();
+				}
+			}
+		}
 	}
 
 	function sync( source ) {
@@ -50,16 +123,33 @@
 		} );
 		groups.forEach( function ( g ) {
 			render( g );
-			var err = g.querySelector( ".lpb-buy__error" );
-			if ( err ) {
-				err.hidden = true;
-			}
+			clearMissing( g );
 		} );
 	}
 
 	groups.forEach( function ( group ) {
 		render( group );
-		group.addEventListener( "change", function () {
+		group.addEventListener( "change", function ( e ) {
+			var input = e.target;
+			var name  = input && input.name ? input.name : "";
+			if ( name.indexOf( "lpx-pairs-" ) === 0 ) {
+				// More pairs: the new rows start with pair 1's size (if any).
+				var before = parseInt( group.getAttribute( "data-lpx-count" ), 10 ) || 1;
+				var after  = pairCount( group );
+				var first  = sizeOf( group, 1 );
+				for ( var n = before + 1; n <= after; n++ ) {
+					inherit( group, n, first );
+				}
+			} else if ( name.indexOf( "lpx-size-" ) === 0 ) {
+				// Pair 1 picked after the count (the Clarity order): rows already
+				// on screen that still have no size take the same size.
+				var row = input.closest ? input.closest( "[data-lpx-pair]" ) : null;
+				if ( row && row.getAttribute( "data-lpx-pair" ) === "1" ) {
+					for ( var m = 2; m <= pairCount( group ); m++ ) {
+						inherit( group, m, input.value );
+					}
+				}
+			}
 			sync( group );
 		} );
 
@@ -76,14 +166,7 @@
 			for ( var n = 1; n <= pairCount( group ); n++ ) {
 				var size = sizeOf( group, n );
 				if ( ! size ) {
-					var err = group.querySelector( ".lpb-buy__error" );
-					if ( err ) {
-						err.hidden = false;
-					}
-					var first = group.querySelector( '[data-lpx-pair="' + n + '"] input' );
-					if ( first ) {
-						first.focus();
-					}
+					showMissing( group, n );
 					return;
 				}
 				sizes.push( size );

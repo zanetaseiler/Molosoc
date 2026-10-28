@@ -11,6 +11,7 @@
      group (hero + after each section, inc/landing-b-buy.php) has an M / L
      radio pair and one button. The choice is shared by all groups, is never
      preselected, and the button refuses to go on until a size is picked.
+     (Issue #290: with a red outlined, scrolled-to row and a live error.)
      Then the button opens the WooCommerce add-to-cart URL of that size
      (quantity 1), which adds the variation once and redirects to a clean
      checkout URL. Vanilla JS: jQuery is deliberately absent on this page.
@@ -83,10 +84,39 @@
 		} );
 	}
 
+	/* Issue #290 (same as the Christmas picker, #287): a blocked click used to
+	   only unhide the error and focus an opacity-0 radio, which shows nothing on
+	   a phone. Now the size row is outlined (.is-missing), scrolled to the middle
+	   of the screen (clear of the cookie card), the live region re-announces the
+	   error and focus moves without a second scroll. A size pick clears it. */
 	function showError( group, on ) {
 		var err = group.querySelector( ".lpb-buy__error" );
+		var row = group.querySelector( ".lpb-buy__sizes" );
+		if ( row ) {
+			row.classList.toggle( "is-missing", on );
+		}
 		if ( err ) {
 			err.hidden = ! on;
+			if ( on ) {
+				var text = err.textContent;
+				err.textContent = "";
+				err.textContent = text; // same text set again would not announce
+			}
+		}
+		if ( ! on || ! row ) {
+			return;
+		}
+		var reduce = window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches;
+		if ( row.scrollIntoView ) {
+			row.scrollIntoView( { behavior: reduce ? "auto" : "smooth", block: "center" } );
+		}
+		var first = row.querySelector( 'input[type="radio"]' );
+		if ( first ) {
+			try {
+				first.focus( { preventScroll: true } );
+			} catch ( e ) {
+				first.focus();
+			}
 		}
 	}
 
@@ -112,10 +142,6 @@
 			if ( ! picked ) {
 				e.preventDefault();
 				showError( group, true );
-				var first = group.querySelector( 'input[type="radio"]' );
-				if ( first ) {
-					first.focus();
-				}
 				return;
 			}
 			var url = picked.getAttribute( "data-lpb-url" );
