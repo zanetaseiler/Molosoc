@@ -31,6 +31,8 @@ require_once get_stylesheet_directory() . '/inc/related-links.php';
 // Landing Page B JSON-LD (Issue #155). Depends on inc/woocommerce-lang.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
 require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
+// English Landing B (Issue #288): slug helper, assets, head, title/meta/JSON-LD, FAQ. Needs landing-b-schema.php above.
+require_once get_stylesheet_directory() . '/inc/landing-b-en.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
 
 // Checkout cleanup (Issue #267): CZ payment labels, CusRev checkbox text, Comgate logo size.

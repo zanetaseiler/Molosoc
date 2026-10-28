@@ -29,7 +29,22 @@ defined( 'ABSPATH' ) || exit;
  * landing page itself carries — same reasoning as molosoc_product_url( 'cz' )
  * in the template.
  */
-function molosoc_landing_b_checkout_url() {
+function molosoc_landing_b_checkout_url( $lang = 'cz' ) {
+	if ( 'en' === $lang ) {
+		// English Landing B (Issue #288): the EN checkout page, resolved from
+		// whatever language WooCommerce's stored page id resolves to.
+		if ( ! function_exists( 'wc_get_checkout_url' ) ) {
+			return home_url( '/checkout/' );
+		}
+		if ( function_exists( 'wc_get_page_id' ) && function_exists( 'pll_get_post' ) ) {
+			$checkout_id = wc_get_page_id( 'checkout' );
+			$en_id       = $checkout_id > 0 ? pll_get_post( $checkout_id, 'en' ) : 0;
+			if ( $en_id && 'publish' === get_post_status( $en_id ) ) {
+				return get_permalink( $en_id );
+			}
+		}
+		return wc_get_checkout_url();
+	}
 	if ( ! function_exists( 'wc_get_checkout_url' ) ) {
 		return home_url( '/cz/pokladna/' );
 	}
@@ -51,7 +66,9 @@ function molosoc_landing_b_checkout_url() {
 add_filter( 'woocommerce_add_to_cart_redirect', 'molosoc_landing_b_checkout_redirect' );
 function molosoc_landing_b_checkout_redirect( $url ) {
 	if ( isset( $_REQUEST['molosoc_lpb'] ) && function_exists( 'wc_get_checkout_url' ) ) { // phpcs:ignore WordPress.Security.NonceVerification
-		return molosoc_landing_b_checkout_url();
+		// molosoc_lpb=1 is the CZ page; molosoc_lpb=en the English one (Issue #288).
+		$lang = 'en' === sanitize_key( wp_unslash( $_REQUEST['molosoc_lpb'] ) ) ? 'en' : 'cz'; // phpcs:ignore WordPress.Security.NonceVerification
+		return molosoc_landing_b_checkout_url( $lang );
 	}
 	return $url;
 }
@@ -62,8 +79,8 @@ function molosoc_landing_b_checkout_redirect( $url ) {
  *
  * @return array[] size key => array( 'url' => string, 'label' => string, 'direct' => bool ).
  */
-function molosoc_landing_b_buy_links() {
-	$fallback = molosoc_product_url( 'cz' );
+function molosoc_landing_b_buy_links( $lang = 'cz' ) {
+	$fallback = molosoc_product_url( 'en' === $lang ? 'en' : 'cz' );
 	$links    = array(
 		'M' => array( 'url' => $fallback, 'label' => 'M (36–39)', 'direct' => false ),
 		'L' => array( 'url' => $fallback, 'label' => 'L (39.5–44)', 'direct' => false ),
@@ -77,7 +94,7 @@ function molosoc_landing_b_buy_links() {
 		return $links;
 	}
 
-	$checkout_url = molosoc_landing_b_checkout_url();
+	$checkout_url = molosoc_landing_b_checkout_url( $lang );
 	$wanted   = array( 'M' => 0, 'L' => 1 ); // molosoc_size_value_rank() ranks.
 
 	foreach ( $product->get_children() as $variation_id ) {
@@ -118,7 +135,7 @@ function molosoc_landing_b_buy_links() {
 						'add-to-cart'  => MOLOSOC_PRODUCT_ID,
 						'variation_id' => $variation_id,
 						'quantity'     => 1,
-						'molosoc_lpb'  => 1,
+						'molosoc_lpb'  => 'en' === $lang ? 'en' : 1,
 					),
 					array_map( 'strval', $filled )
 				),
@@ -138,28 +155,35 @@ function molosoc_landing_b_buy_links() {
  * plain product-page link.
  *
  * @param string $variant '' (default, black button) or 'dark' (outlined, for the black band).
+ * @param string $lang    'cz' (default) or 'en' — the English Landing B (Issue #288) uses
+ *                        English labels and the EN product / checkout URLs; the markup,
+ *                        classes and data attributes (so landing-b.js) are identical.
  */
-function molosoc_landing_b_buy_cta( $variant = '' ) {
-	static $links = null;
+function molosoc_landing_b_buy_cta( $variant = '', $lang = 'cz' ) {
+	static $links = array();
 	static $group = 0;
-	if ( null === $links ) {
-		$links = molosoc_landing_b_buy_links();
+	$lang = 'en' === $lang ? 'en' : 'cz';
+	if ( ! isset( $links[ $lang ] ) ) {
+		$links[ $lang ] = molosoc_landing_b_buy_links( $lang );
 	}
+	$copy = 'en' === $lang
+		? array( 'legend' => 'Size', 'button' => 'Continue to checkout', 'error' => 'Please choose a size.' )
+		: array( 'legend' => 'Velikost', 'button' => 'Pokračovat k pokladně', 'error' => 'Vyberte velikost.' );
 	++$group;
 	$class = 'lpb-buy' . ( 'dark' === $variant ? ' lpb-buy--dark' : '' );
 	?>
 	<div class="<?php echo esc_attr( $class ); ?>" data-lpb-buy>
 		<fieldset class="lpb-buy__sizes">
-			<legend class="lpb-buy__legend">Velikost</legend>
-			<?php foreach ( $links as $key => $link ) : ?>
+			<legend class="lpb-buy__legend"><?php echo esc_html( $copy['legend'] ); ?></legend>
+			<?php foreach ( $links[ $lang ] as $key => $link ) : ?>
 				<label class="lpb-size">
 					<input type="radio" name="lpb-size-<?php echo (int) $group; ?>" value="<?php echo esc_attr( $key ); ?>"<?php echo $link['direct'] ? ' data-lpb-url="' . esc_url( $link['url'] ) . '"' : ''; ?>>
 					<span class="lpb-size__label"><?php echo esc_html( $link['label'] ); ?></span>
 				</label>
 			<?php endforeach; ?>
 		</fieldset>
-		<a class="lpb-btn lpb-buy__btn<?php echo 'dark' === $variant ? ' lpb-btn--ghost' : ''; ?>" href="<?php echo esc_url( molosoc_product_url( 'cz' ) ); ?>" data-lpb-checkout rel="nofollow">Pokračovat k pokladně</a>
-		<p class="lpb-buy__error" role="alert" hidden>Vyberte velikost.</p>
+		<a class="lpb-btn lpb-buy__btn<?php echo 'dark' === $variant ? ' lpb-btn--ghost' : ''; ?>" href="<?php echo esc_url( molosoc_product_url( $lang ) ); ?>" data-lpb-checkout rel="nofollow"><?php echo esc_html( $copy['button'] ); ?></a>
+		<p class="lpb-buy__error" role="alert" hidden><?php echo esc_html( $copy['error'] ); ?></p>
 	</div>
 	<?php
 }
