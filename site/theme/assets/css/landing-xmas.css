@@ -30,3 +30,91 @@
 
 /* Issue #269: Christmas order-by line under the hero price. */
 .lpx-deadline { margin: -0.75rem 0 1.25rem; font-size: 1rem; font-weight: 600; color: var(--lpb-ink, #000); }
+
+/* Issue #287: size feedback. The Clarity session of 2026-10-27 chose 2 pairs,
+   a size for pair 1 only and tapped the button four times with no visible
+   reaction: landing-b.css hides every .lpb-buy__legend at <=560px, the error
+   inherited the muted body colour and nothing marked the empty row. */
+
+/* 1. Each size row keeps its "1. pár · Velikost" / "Pair 1 · Size" label on
+   every width (undo B's sr-only legend). The number leads, the word is muted. */
+.lpx-pair {
+  position: relative;
+  padding: 0.45rem 0.45rem 0.5rem;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+  transition: border-color 200ms ease, background-color 200ms ease;
+}
+.lpx-pair .lpx-pair__legend {
+  position: static;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--lpb-ink, #000);
+}
+.lpx-pair__num { font-weight: 700; }
+.lpx-pair__size { color: var(--lpb-body, rgba(64, 53, 42, .84)); }
+
+/* 2. Missing size after a click: red outline on the row (also the focus
+   target) and a red, high-contrast error. #b3261e on cream/white is >6:1. */
+.lpx-pair.is-missing {
+  border-color: #b3261e;
+  background: rgba(179, 38, 30, 0.05);
+}
+.lpx-pair.is-missing .lpx-pair__legend { color: #b3261e; }
+.lpx-pair.is-missing .lpb-size input:not(:checked) + .lpb-size__label { border-color: #b3261e; }
+.lpx-buy .lpb-buy__error {
+  color: #b3261e;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  background: rgba(179, 38, 30, 0.08);
+}
+
+@media (max-width: 560px) {
+  /* 3. Compact M/L at 390px: the row padding above costs 2 x 0.45rem, so the
+     cards shrink a touch; the label stays visible. */
+  .lpx-pair { padding: 0.35rem 0.35rem 0.4rem; gap: 0.4rem; }
+  .lpx-pair .lpx-pair__legend { font-size: 0.75rem; margin-bottom: 0.3rem; }
+  .lpx-pair .lpb-size__label { padding: 0.5em 0.25em; font-size: 0.875rem; }
+
+  /* 4. Cookie card (WPConsent, retheme in components.css, compacted for B in
+     landing-b.css) still covered the lower half of the buy box on a 390px
+     phone. On the Christmas pages only (landing-xmas.css is enqueued here
+     alone) shave it further: one-line buttons, smaller type, tighter padding.
+     Same ::part() surfaces as before; no consent logic or button is changed. */
+  #wpconsent-container::part(wpconsent-banner) {
+    bottom: 6px;
+    width: calc(100vw - 12px);
+    padding: 8px 10px;
+    border-radius: 12px;
+  }
+  #wpconsent-container::part(wpconsent-banner-body) {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+  #wpconsent-container::part(wpconsent-banner-footer) {
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 5px;
+  }
+  #wpconsent-container::part(wpconsent-button-accept),
+  #wpconsent-container::part(wpconsent-button-cancel),
+  #wpconsent-container::part(wpconsent-button-preferences) {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lpx-pair { transition: none; }
+}
