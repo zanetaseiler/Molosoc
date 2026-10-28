@@ -151,6 +151,7 @@ class FakeWP:
     def __init__(self, helper=True, theme_deployed=True, en_exists=False):
         self.helper, self.theme_deployed = helper, theme_deployed
         self.public_status = 200
+        self.public_raises = False
         self.calls = []
         self.pages = {1037: {"id": 1037, "slug": lbe.CZ_PAGE["slug"], "status": "publish", "link": "https://molosoc.com/cz/hydratacni-navleky-molosoc/"}}
         self.lang = {1037: "cz"}
@@ -223,6 +224,8 @@ class FakeWP:
         raise AssertionError(path)
 
     def public(self, url):
+        if self.public_raises:
+            raise ConnectionError("simulated timeout")
         if self.pages.get(2001, {}).get("status") != "publish":
             return Resp(404, text="nope")
         if self.public_status != 200:
@@ -343,6 +346,25 @@ class Script(unittest.TestCase):
         later = wp.calls[n:]
         self.assertFalse([p for p, j in later if j.get("status") == "draft"])
         self.assertFalse([p for p, _ in later if "menu-items" in p])
+
+    def test_public_request_raising_after_our_publish_reverts_to_draft(self):
+        wp = FakeWP()
+        wp.public_raises = True
+        with self.assertRaises(lbe.Abort):
+            self.run_apply(wp)
+        self.assertEqual(wp.pages[2001]["status"], "draft")
+        self.assertFalse([p for p, _ in wp.calls if "menu-items" in p])
+
+    def test_rerun_with_public_request_raising_keeps_published_page(self):
+        wp = FakeWP()
+        self.assertEqual(self.run_apply(wp), 0)
+        n = len(wp.calls)
+        wp.public_raises = True
+        st = lbe.report(wp)
+        with self.assertRaises(lbe.Abort):
+            lbe.apply(wp, st, 905, 810)
+        self.assertEqual(wp.pages[2001]["status"], "publish")
+        self.assertFalse([p for p, j in wp.calls[n:] if j.get("status") == "draft" or "menu-items" in p])
 
     def test_rerun_with_wrong_template_keeps_published_page(self):
         wp = FakeWP()

@@ -285,20 +285,31 @@ def apply(c, st, cz_item_id, en_item_id):
 
     # 3. publish + public check
     published_now = False
-    if en["status"] != "publish":
-        ok(c.post(f"/wp-json/wp/v2/pages/{en['id']}", {"status": "publish"}), "publish EN page")
-        published_now = True
-    en = get_page(c, en["id"])
-    page = c.public(en["link"])
-    body = page.text if page.status_code == 200 else ""
-    if page.status_code != 200 or EN_BODY_MARKER not in body:
+    en_id = en["id"]
+
+    def revert_if_ours():
         # Only undo a publication made by THIS invocation; a page that was already live (and may already be
         # linked from a menu) keeps its state on a transient failure or a wrong template.
-        if published_now:
-            c.post(f"/wp-json/wp/v2/pages/{en['id']}", {"status": "draft"})
-            outcome = "The page was set back to draft"
-        else:
-            outcome = "The page was already published before this run and was left as is"
+        if not published_now:
+            return "The page was already published before this run and was left as is"
+        try:
+            c.post(f"/wp-json/wp/v2/pages/{en_id}", {"status": "draft"})
+            return "The page was set back to draft"
+        except Exception as exc:  # noqa: BLE001 - report, never mask the original failure
+            return f"Setting the page back to draft FAILED ({exc}); set page {en_id} to draft manually"
+
+    try:
+        if en["status"] != "publish":
+            # marked before the request: a timed-out publish may still have taken effect server-side
+            published_now = True
+            ok(c.post(f"/wp-json/wp/v2/pages/{en_id}", {"status": "publish"}), "publish EN page")
+        en = get_page(c, en_id)
+        page = c.public(en["link"])
+    except Exception as exc:  # noqa: BLE001 - Abort plus timeouts, connection and TLS errors from requests
+        raise Abort(f"publish/public check of EN page {en_id} failed ({type(exc).__name__}: {exc}). {revert_if_ours()} and NO menu was changed.") from exc
+    body = page.text if page.status_code == 200 else ""
+    if page.status_code != 200 or EN_BODY_MARKER not in body:
+        outcome = revert_if_ours()
         raise Abort(
             f"public check of {en['link']} failed (HTTP {page.status_code}, EN Landing B body marker present: {EN_BODY_MARKER in body}). "
             "The theme with page-hydrating-foot-covers-molosoc.php is probably not deployed yet, or the page uses another template. "
