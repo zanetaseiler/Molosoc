@@ -10,7 +10,7 @@ until Žaneta dispatches the workflow with a separate `ZANETA_DECISION`.
 | EN template | `site/theme/page-hydrating-foot-covers-molosoc.php` — same sections, order, markup, classes, images and size → add-to-cart → checkout flow as CZ B (`page-hydratacni-navleky-molosoc.php`); localized copy only |
 | EN include | `site/theme/inc/landing-b-en.php` — slug helper, `landing-b.css/js` enqueue, hero/font preloads, document title, meta description, JSON-LD (`inLanguage en`), the FAQ (one source for page + JSON-LD) |
 | Buy helper | `site/theme/inc/landing-b-buy.php` gains an optional `$lang` (default `'cz'`, so the CZ page is byte-for-byte unchanged): EN labels, EN product fallback, EN checkout, marker `molosoc_lpb=en` |
-| Provisioning | `automations/content-sync/landing_b_en.py` + `.github/workflows/provision-landing-b-en.yml` (dispatch-only; `list` by default) |
+| Provisioning | `automations/content-sync/landing_b_en.py` + `.github/workflows/provision-en-lp-b.yml` (dispatch-only; `list` by default) |
 | Tests | `tests/test_landing_b_en_288.py` |
 
 `functions.php` only gains one `require_once` line. The CZ Landing B gates, title, schema, noindex/sitemap lists,

@@ -324,7 +324,7 @@ class Script(unittest.TestCase):
         self.assertEqual(wp.writes(), [])
 
     def test_workflow_is_dispatch_only_list_by_default_and_gated(self):
-        wf = (ROOT / ".github/workflows/provision-landing-b-en.yml").read_text(encoding="utf-8")
+        wf = (ROOT / ".github/workflows/provision-en-lp-b.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", wf)
         self.assertNotIn("push:", wf)
         self.assertNotIn("schedule:", wf)

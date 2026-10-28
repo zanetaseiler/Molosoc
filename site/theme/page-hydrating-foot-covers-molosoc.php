@@ -7,7 +7,7 @@
  * English slug; see inc/landing-b-en.php and docs/landing-page-b-en-288.md.
  * The page itself is provisioned (draft -> Polylang link to CZ B 1037 ->
  * publish) only by the explicitly dispatched, dry-run-by-default workflow
- * .github/workflows/provision-landing-b-en.yml; this file never publishes or
+ * .github/workflows/provision-en-lp-b.yml; this file never publishes or
  * touches anything.
  *
  * EN equivalent of page-hydratacni-navleky-molosoc.php: the same sections in
