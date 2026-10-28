@@ -8,6 +8,9 @@
  * $t array below, one entry per language. No countdown, no scarcity, no
  * free-gift-wrap claim, no medical claim. One order-by line (18 December,
  * Issue #269 decision) and no crossed-out reference price (Issue #269).
+ * Issue #287: every size row carries a visible "1. pár / Pair 1" label on
+ * every width, and the size error is a red live region (landing-xmas.js
+ * also outlines + scrolls to the first pair row without a size).
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -33,9 +36,10 @@ $copy = array(
 		'cod_label' => 'Dobírka:',
 		'cta'       => 'Pokračovat k pokladně',
 		'pairs'     => array( 1 => '1 pár', 2 => '2 páry', 3 => '3 páry' ),
-		'pair_n'    => 'Pár %d',
+		'pair_n'    => '%d. pár',
 		'size'      => 'Velikost',
 		'size_err'  => 'Vyberte velikost pro každý pár.',
+		'size_err_n' => 'Vyberte velikost pro %d. pár.',
 		'bundle_h'  => 'Vyberte dárkový set',
 		'bundle_p'  => 'Zvolte počet párů a velikost M nebo L pro každý z nich. Cena se započítá v pokladně.',
 		'sizes'     => array( 'M' => 'M (36–39)', 'L' => 'L (39.5–44)' ),
@@ -73,6 +77,7 @@ $copy = array(
 		'pair_n'    => 'Pair %d',
 		'size'      => 'Size',
 		'size_err'  => 'Please choose a size for every pair.',
+		'size_err_n' => 'Please choose a size for pair %d.',
 		'bundle_h'  => 'Choose your gift set',
 		'bundle_p'  => 'Pick how many pairs, then size M or L for each. The price is applied at checkout.',
 		'sizes'     => array( 'M' => 'M (EU 36–39)', 'L' => 'L (EU 39.5–44)' ),
@@ -114,7 +119,7 @@ $lpx_buyable  = count( $lpx_avail ) > 0;
 /** Bundle picker: a fieldset of 1/2/3 pairs, then a size fieldset per pair. */
 $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt, $lpx_url, $lpx_checkout, $lpx_buyable, $lpx_avail ) {
 	?>
-	<div class="lpb-buy lpx-buy" data-lpx-buy data-lpx-checkout-url="<?php echo esc_url( $lpx_checkout ); ?>" data-lpx-enabled="<?php echo $lpx_buyable ? '1' : '0'; ?>">
+	<div class="lpb-buy lpx-buy" data-lpx-buy data-lpx-checkout-url="<?php echo esc_url( $lpx_checkout ); ?>" data-lpx-enabled="<?php echo $lpx_buyable ? '1' : '0'; ?>" data-lpx-err-pair="<?php echo esc_attr( $t['size_err_n'] ); ?>">
 		<fieldset class="lpx-bundles">
 			<legend class="lpb-buy__legend"><?php echo esc_html( $t['bundle_h'] ); ?></legend>
 			<?php foreach ( $lpx_base as $n => $b ) : ?>
@@ -129,7 +134,7 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 		</fieldset>
 		<?php foreach ( array( 1, 2, 3 ) as $n ) : ?>
 			<fieldset class="lpb-buy__sizes lpx-pair" data-lpx-pair="<?php echo (int) $n; ?>"<?php echo $n > 1 ? ' hidden' : ''; ?>>
-				<legend class="lpb-buy__legend"><?php echo esc_html( sprintf( $t['pair_n'], $n ) . ' · ' . $t['size'] ); ?></legend>
+				<legend class="lpb-buy__legend lpx-pair__legend"><span class="lpx-pair__num"><?php echo esc_html( sprintf( $t['pair_n'], $n ) ); ?></span> <span class="lpx-pair__size"><?php echo esc_html( '· ' . $t['size'] ); ?></span></legend>
 				<?php foreach ( $lpx_sizes as $key => $label ) : ?>
 					<label class="lpb-size">
 						<input type="radio" name="lpx-size-<?php echo esc_attr( $id ); ?>-<?php echo (int) $n; ?>" value="<?php echo esc_attr( $key ); ?>"<?php echo $lpx_buyable && ! isset( $lpx_avail[ $key ] ) ? ' disabled' : ''; ?>>
@@ -139,7 +144,7 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 			</fieldset>
 		<?php endforeach; ?>
 		<a class="lpb-btn lpb-buy__btn" href="<?php echo esc_url( $lpx_url() ); ?>" data-lpx-go rel="nofollow"><?php echo esc_html( $t['cta'] ); ?></a>
-		<p class="lpb-buy__error" role="alert" hidden><?php echo esc_html( $t['size_err'] ); ?></p>
+		<p class="lpb-buy__error lpx-buy__error" role="alert" aria-live="assertive" aria-atomic="true" data-lpx-err="<?php echo esc_attr( $t['size_err'] ); ?>" hidden><?php echo esc_html( $t['size_err'] ); ?></p>
 	</div>
 	<?php
 };
