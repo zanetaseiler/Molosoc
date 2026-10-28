@@ -135,7 +135,9 @@ function molosoc_landing_b_buy_links() {
  * a size choice (no default) and one "Pokračovat k pokladně" button. All
  * groups share one choice (landing-b.js), so the same size is bought from any
  * of them. Without JS, or for a size with no checkout URL, the button is the
- * plain product-page link.
+ * plain product-page link. Issue #290 (same fix as the Christmas picker, #287):
+ * the "Velikost" legend stays visible on phones (.lpb-buy__size-label) and the
+ * error is a live region that landing-b.js pairs with a red outline on the row.
  *
  * @param string $variant '' (default, black button) or 'dark' (outlined, for the black band).
  */
@@ -150,7 +152,7 @@ function molosoc_landing_b_buy_cta( $variant = '' ) {
 	?>
 	<div class="<?php echo esc_attr( $class ); ?>" data-lpb-buy>
 		<fieldset class="lpb-buy__sizes">
-			<legend class="lpb-buy__legend">Velikost</legend>
+			<legend class="lpb-buy__legend lpb-buy__size-label">Velikost</legend>
 			<?php foreach ( $links as $key => $link ) : ?>
 				<label class="lpb-size">
 					<input type="radio" name="lpb-size-<?php echo (int) $group; ?>" value="<?php echo esc_attr( $key ); ?>"<?php echo $link['direct'] ? ' data-lpb-url="' . esc_url( $link['url'] ) . '"' : ''; ?>>
@@ -159,7 +161,7 @@ function molosoc_landing_b_buy_cta( $variant = '' ) {
 			<?php endforeach; ?>
 		</fieldset>
 		<a class="lpb-btn lpb-buy__btn<?php echo 'dark' === $variant ? ' lpb-btn--ghost' : ''; ?>" href="<?php echo esc_url( molosoc_product_url( 'cz' ) ); ?>" data-lpb-checkout rel="nofollow">Pokračovat k pokladně</a>
-		<p class="lpb-buy__error" role="alert" hidden>Vyberte velikost.</p>
+		<p class="lpb-buy__error" role="alert" aria-live="assertive" aria-atomic="true" hidden>Vyberte velikost.</p>
 	</div>
 	<?php
 }
