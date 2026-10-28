@@ -31,7 +31,7 @@ def rule(css, selector):
 
 class VisibleLabel(unittest.TestCase):
     def test_legend_has_the_visible_class_and_the_generic_rule_stays(self):
-        self.assertIn('<legend class="lpb-buy__legend lpb-buy__size-label"><?php echo esc_html( $copy['legend'] ); ?></legend>', BUY)
+        self.assertIn('<legend class="lpb-buy__legend lpb-buy__size-label"><?php echo esc_html( $copy[\'legend\'] ); ?></legend>', BUY)
         self.assertRegex(MOBILE, r"\.lpb-buy__legend\s*\{[^}]*clip:\s*rect\(0 0 0 0\)")  # Christmas bundle legend relies on it
         label = rule(MOBILE, "  .lpb-buy__sizes .lpb-buy__size-label")
         for decl in ("position: static", "width: 100%", "height: auto", "clip: auto", "overflow: visible"):
@@ -43,7 +43,7 @@ class VisibleLabel(unittest.TestCase):
 
 class MissingSizeFeedback(unittest.TestCase):
     def test_error_is_a_red_live_region(self):
-        self.assertIn('<p class="lpb-buy__error" role="alert" aria-live="assertive" aria-atomic="true" hidden><?php echo esc_html( $copy['error'] ); ?></p>', BUY)
+        self.assertIn('<p class="lpb-buy__error" role="alert" aria-live="assertive" aria-atomic="true" hidden><?php echo esc_html( $copy[\'error\'] ); ?></p>', BUY)
         err = rule(CSS_CODE, ".lpb-buy__error")
         self.assertIn("color: #b3261e", err)
         self.assertIn("font-weight: 700", err)
