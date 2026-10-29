@@ -2,8 +2,11 @@ name: Deploy MU-Plugins to Production
 
 # Syncs site/mu-plugins/ to prod /wp-content/mu-plugins/ over FTPS.
 # Tracks brevo-checkout-capture-shim.php (the TEMPORARY Brevo for
-# WooCommerce 4.0.54-4.0.58 checkout-capture regression shim) and
-# sitemap-404-status-fix.php.
+# WooCommerce 4.0.54-4.0.58 checkout-capture regression shim),
+# sitemap-404-status-fix.php and molosoc-cz-home-redirect.php (Issue #293:
+# bare `/` -> Polylang CZ home 302 for Czech/Slovak browsers; it also keeps
+# `/` out of the WP-Optimize page cache, so after deploying it purge the
+# cached `/` once, e.g. purge-home-cache.yml with page_ids=867).
 #
 # Uses its own state file, so mu-plugins already on the server that this
 # repo doesn't track — automation-by-installatron.php in particular — are
@@ -96,6 +99,7 @@ jobs:
           }
           need brevo-checkout-capture-shim.php
           need sitemap-404-status-fix.php
+          need molosoc-cz-home-redirect.php
           # Server-owned, installed by the host. This repo must never remove
           # it; asserting it is a tripwire against an accidental deletion.
           need automation-by-installatron.php
