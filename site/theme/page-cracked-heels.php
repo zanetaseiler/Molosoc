@@ -158,7 +158,7 @@ get_header();
 						<h3><?php echo esc_html( $molosoc_is_cz ? 'Co je skutečně potřeba, aby mast/krém fungovaly' : __( 'What actually needs to happen for cream to work', 'molosoc' ) ); ?></h3>
 						<p><?php echo esc_html( $molosoc_is_cz ? 'Mast potřebuje nepřerušovaný kontakt s kůží, aby fungovala — ne silnější vrstvu, jen dost času zapečetěného na kůži, aby se skutečně vstřebala.' : __( 'Cream needs uninterrupted contact with skin to work — not a bigger dose, just enough sealed time to actually absorb.', 'molosoc' ) ); ?>
 						<?php if ( $molosoc_is_cz ) : ?>
-							<a href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Jak funguje hydratační návlek na nohy na krém, který už máte</a>.
+							<a href="<?php echo esc_url( molosoc_landing_url( 'cz' ) ); ?>">Jak funguje hydratační návlek na nohy na krém, který už máte</a>.
 						<?php endif; ?></p>
 					</article>
 				</div>
@@ -272,7 +272,7 @@ get_header();
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné popraskané paty, zahojené díky pravidelné péči — ne jednorázovému nanesení.' : __( 'Real cracked heels, healed through consistent care — not a one-time application.', 'molosoc' ) ); ?></p>
-				<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 			</div>
 		</div>
 	</section>

@@ -337,7 +337,7 @@ $molosoc_home_card = molosoc_home_card_variant();
 			<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Jak Molosoc pomáhá právě teď' : __( 'How Molosoc helps right now', 'molosoc' ) ); ?></p>
 			<h2 style="margin-top: var(--space-s);"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></h2>
 			<p class="molosoc-section__lede" style="margin-left:auto; margin-right:auto;"><?php echo esc_html( $molosoc_is_cz ? 'Takhle Molosoc pomáhá už dnes.' : __( 'This is where Molosoc shows up today.', 'molosoc' ) ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
+			<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 

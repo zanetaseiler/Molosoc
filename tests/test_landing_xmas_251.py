@@ -155,6 +155,9 @@ class EvergreenUntouched(unittest.TestCase):
             "site/theme/inc/landing-b-en.php",
             "docs/landing-page-b-en-288.md",
             "tests/test_landing_b_en_288.py",
+            # Issue #303 points every Landing A button/link at Landing B (helper in inc/landing-links.php).
+            "site/theme/front-page.php",
+            "site/theme/page-foot-covers.php",
         }
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269

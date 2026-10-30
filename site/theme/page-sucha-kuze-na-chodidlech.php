@@ -91,7 +91,7 @@ get_header();
 			<h3>Mytí a osušení</h3>
 			<p>Nohy myjte vlažnou vodou a jemným mycím prostředkem a nenamáčejte je zbytečně dlouho. Pak je důkladně osušte, hlavně mezi prsty, a krém nanášejte hned, dokud je kůže mírně vlhká.</p>
 			<h3>Krém na nohy</h3>
-			<p>Používejte krém, který vám vyhovuje, a mažte pravidelně, nejlépe každý den, ideálně večer. Důležitější než množství krému je pravidelnost. Pokud tuhle rutinu držíte, ale krém se vám přesto otírá do ponožek nebo do ložního prádla dřív, než se vstřebá, pomůže ho na kůži udržet. K tomu slouží například <a href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">opakovaně použitelný hydratační návlek na nohy</a>, který se nosí přes krém, který už doma máte. Je to pomůcka pro pohodlnější rutinu, ne léčba.</p>
+			<p>Používejte krém, který vám vyhovuje, a mažte pravidelně, nejlépe každý den, ideálně večer. Důležitější než množství krému je pravidelnost. Pokud tuhle rutinu držíte, ale krém se vám přesto otírá do ponožek nebo do ložního prádla dřív, než se vstřebá, pomůže ho na kůži udržet. K tomu slouží například <a href="<?php echo esc_url( molosoc_landing_url( 'cz' ) ); ?>">opakovaně použitelný hydratační návlek na nohy</a>, který se nosí přes krém, který už doma máte. Je to pomůcka pro pohodlnější rutinu, ne léčba.</p>
 			<h3>Co kůži spíš nepomáhá</h3>
 			<p>Tvrdou suchou kůži nedrhněte ani neodřezávejte. Příliš horká voda, silné mýdlo a agresivní pilníky suchost obvykle ještě zhorší. Pokud se vám na patách tvoří praskliny, přečtěte si
 				<a href="<?php echo esc_url( home_url( '/cz/popraskane-paty/' ) ); ?>">průvodce popraskanými patami</a>.</p>
@@ -125,7 +125,7 @@ get_header();
 				<p class="molosoc-eyebrow">Podívejte se na skutečné výsledky</p>
 				<h2>Výsledky před/po, žádné filtry</h2>
 				<p>Podívejte se, jak může krém, který už doma máte, zůstat na kůži déle, když ho přikryje návlek.</p>
-				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Skutečné výsledky, žádné filtry</a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( 'cz' ) ); ?>">Skutečné výsledky, žádné filtry</a>
 			</div>
 		</div>
 	</section>

@@ -174,7 +174,7 @@ get_header();
 				<p class="molosoc-eyebrow">Podívejte se na skutečné výsledky</p>
 				<h2>Výsledky před/po, žádné filtry</h2>
 				<p>Časově doložené srovnání před/po ze ztvrdlé kůže, která změkla díky pravidelné péči.</p>
-				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) ); ?>">Skutečné výsledky, žádné filtry</a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( 'cz' ) ); ?>">Skutečné výsledky, žádné filtry</a>
 			</div>
 		</div>
 	</section>

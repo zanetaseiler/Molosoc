@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = (ROOT / "site/theme/page-cracked-heels.php").read_text(encoding="utf-8")
-PRODUCT = "/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
+PRODUCT = "molosoc_landing_url( 'cz' )"  # Issue #303: Landing B when published, else Landing A
 
 
 class CzCrackedHeels(unittest.TestCase):
@@ -14,7 +14,7 @@ class CzCrackedHeels(unittest.TestCase):
         end = SRC.index("4b. CZ ONLY")
         self.assertEqual(SRC[start:end].count(PRODUCT), 1)
         # one contextual link + the existing bottom CTA, nothing else
-        self.assertEqual(SRC.count(PRODUCT), 2)
+        self.assertEqual(SRC.count("molosoc_landing_url("), 2)  # the CTA uses the bilingual form
 
     def test_no_fragment_links(self):
         self.assertNotRegex(SRC, r"href=[^>]*#")

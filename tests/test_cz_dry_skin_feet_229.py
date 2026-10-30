@@ -9,7 +9,7 @@ TPL_FULL = (THEME / "page-sucha-kuze-na-chodidlech.php").read_text(encoding="utf
 TPL = TPL_FULL.split("*/", 1)[1]  # markup only; the docblock explains the keyword scope
 FUNCTIONS = (THEME / "functions.php").read_text(encoding="utf-8")
 RELATED = (THEME / "inc/related-links.php").read_text(encoding="utf-8")
-PRODUCT = "/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
+PRODUCT = "molosoc_landing_url( 'cz' )"  # Issue #303: Landing B when published, else Landing A
 SLUG = "sucha-kuze-na-chodidlech"
 CREATE_PAGE = (ROOT / "automations/content-sync/create_wp_page.py").read_text(encoding="utf-8")
 CREATE_WF = (ROOT / ".github/workflows/create-wp-page.yml").read_text(encoding="utf-8")
@@ -27,7 +27,8 @@ class CzDrySkinFeetPage(unittest.TestCase):
 
     def test_links_only_to_existing_cz_pages(self):
         paths = set(re.findall(r"home_url\( '(/[^']+)' \)", TPL))
-        self.assertEqual(paths, {PRODUCT, "/cz/popraskane-paty/"})
+        self.assertEqual(paths, {"/cz/popraskane-paty/"})
+        self.assertEqual(TPL.count(PRODUCT), 2)  # the landing link goes through the #303 helper, not home_url()
         self.assertNotIn("hreflang", TPL)
         self.assertNotRegex(TPL, r"href=[^>]*#")
 
@@ -76,7 +77,7 @@ class FinalCtaHalo234(unittest.TestCase):
         self.assertNotRegex(self.CSS, r"(?m)^\.molosoc-btn\b")
 
     def test_cta_text_destination_and_schema_untouched(self):
-        self.assertIn(f'home_url( \'{PRODUCT}\' ) ); ?>">Skutečné výsledky, žádné filtry</a>', TPL)
+        self.assertIn(f'{PRODUCT} ); ?>">Skutečné výsledky, žádné filtry</a>', TPL)
         self.assertIn("molosoc_cz_schema", FUNCTIONS)
 
 
