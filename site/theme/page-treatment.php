@@ -191,7 +191,7 @@ get_header();
 				<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'Time-stamped before/after results from real, consistent care.', 'molosoc' ); ?></p>
-				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( 'en' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
 			</div>
 		</div>
 	</section>

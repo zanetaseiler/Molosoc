@@ -33,6 +33,8 @@ require_once get_stylesheet_directory() . '/inc/landing-b-schema.php';
 require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
 // English Landing B (Issue #288): slug helper, assets, head, title/meta/JSON-LD, FAQ. Needs landing-b-schema.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-en.php';
+// Every landing link goes to Landing B when published (Issue #303). Needs molosoc_landing_b_en_slug() above.
+require_once get_stylesheet_directory() . '/inc/landing-links.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
 // Delayed gtag.js on the Christmas pages (Issue #301). Needs molosoc_is_xmas_landing() from landing-xmas.php above.
 require_once get_stylesheet_directory() . '/inc/delayed-third-party.php';

@@ -241,7 +241,7 @@ get_header();
 				<p class="molosoc-eyebrow"><?php echo esc_html( $molosoc_is_cz ? 'Podívejte se na skutečné výsledky' : __( 'See the real results', 'molosoc' ) ); ?></p>
 				<h2><?php echo esc_html( $molosoc_is_cz ? 'Výsledky před/po, žádné filtry' : __( 'Before/after results, no filters', 'molosoc' ) ); ?></h2>
 				<p><?php echo esc_html( $molosoc_is_cz ? 'Opakovaně použitelný návlek pomáhá udržet váš vlastní krém na okolní zdravé kůži a podporuje péči o pokožku. Zarostlý nehet neléčí.' : __( "A reusable cover helps keep your own cream on the surrounding intact skin and supports a skin-care routine. It does not treat an ingrown toenail.", 'molosoc' ) ); ?></p>
-				<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky, žádné filtry' : __( 'See real results, no filters', 'molosoc' ) ); ?></a>
 			</div>
 		</div>
 	</section>

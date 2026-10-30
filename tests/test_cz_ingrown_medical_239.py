@@ -9,8 +9,8 @@ SRC = (ROOT / "site/theme/page-ingrown-toenails.php").read_text(encoding="utf-8"
 START = SRC.index("3b. CZ ONLY")
 END = SRC.index("4. WHY CUTTING IT YOURSELF")
 BLOCK = SRC[START:END]
-PRODUCT_CZ = "/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"
-PRODUCT_EN = "/foot-covers/moisture-lock-foot-cover/"
+PRODUCT_CZ = "'cz'"  # Issue #303: molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' )
+PRODUCT_EN = "'en'"
 
 
 class IngrownMedical(unittest.TestCase):
@@ -22,8 +22,7 @@ class IngrownMedical(unittest.TestCase):
         cta = SRC[SRC.index("FINAL CTA"):]
         self.assertIn("Zarostlý nehet neléčí", cta)
         self.assertIn("does not treat an ingrown toenail", cta)
-        self.assertEqual(cta.count(PRODUCT_CZ), 1)
-        self.assertEqual(cta.count(PRODUCT_EN), 1)
+        self.assertEqual(cta.count("molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' )"), 1)
         self.assertIn("molosoc-pillar-final-cta__card", cta)
 
     def test_warning_section_cz_only_and_complete(self):

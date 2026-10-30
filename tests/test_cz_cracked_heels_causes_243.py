@@ -33,7 +33,7 @@ class CzCrackedHeelsCauses(unittest.TestCase):
     def test_en_and_existing_structure_preserved(self):
         self.assertEqual(SRC.count("<h1>"), 1)
         self.assertIn("Popraskané paty: co se skutečně děje a co pomáhá", SRC)
-        self.assertEqual(SRC.count("/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/"), 2)
+        self.assertEqual(SRC.count("molosoc_landing_url("), 2)  # Issue #303: in-text link (cz) + bilingual CTA
         self.assertEqual(len(re.findall(r"<h3>", FAQ)), 3)
         self.assertIn("molosoc_related_links( 'cracked-heels' );", SRC)
         # the block sits between the mechanism section and the 4b FAQ section

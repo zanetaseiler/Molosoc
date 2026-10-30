@@ -232,7 +232,7 @@ get_header();
 				<p class="molosoc-eyebrow"><?php esc_html_e( 'Your cream, finally working', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Your cream, finally working', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'This is exactly what Molosoc is built for — sealing the cream you already trust against your skin, in one focused session, instead of another bottle in the drawer.', 'molosoc' ); ?></p>
-				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See how it works', 'molosoc' ); ?></a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( 'en' ) ); ?>"><?php esc_html_e( 'See how it works', 'molosoc' ); ?></a>
 			</div>
 		</div>
 	</section>

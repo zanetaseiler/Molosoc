@@ -225,7 +225,7 @@ get_header();
 				<p class="molosoc-eyebrow"><?php esc_html_e( 'See the real results', 'molosoc' ); ?></p>
 				<h2><?php esc_html_e( 'Before/after results, no filters', 'molosoc' ); ?></h2>
 				<p><?php esc_html_e( 'If cream that "doesn\'t work anymore" sounds familiar, the real issue is usually the routine, not the formula.', 'molosoc' ); ?></p>
-				<a class="molosoc-btn" href="<?php echo esc_url( home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
+				<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( 'en' ) ); ?>"><?php esc_html_e( 'See real results, no filters', 'molosoc' ); ?></a>
 			</div>
 		</div>
 	</section>

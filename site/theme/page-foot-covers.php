@@ -79,7 +79,7 @@ get_header();
 				<span class="molosoc-category-hero__qualifier"><?php echo esc_html( $molosoc_is_cz ? 'které zadrží vlhkost — ne jen jednou' : __( 'that lock moisture in — not just once', 'molosoc' ) ); ?></span>
 			</h1>
 			<p class="molosoc-section__lede"><?php echo esc_html( $molosoc_is_cz ? 'Většina masek na nohy v obchodě je na jedno použití. Návlek od Molosoc vydrží alespoň 10 použití.' : __( "Most foot masks on the shelf are built for one wear. Molosoc's cover is built for at least 10.", 'molosoc' ) ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
+			<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 
@@ -209,15 +209,15 @@ get_header();
 			<div class="molosoc-who-section__scrim" aria-hidden="true"></div>
 
 			<div class="molosoc-who-cards">
-				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--1" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Už máte oblíbený krém' : __( 'Already have a cream you love', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Máte krém, kterému věříte? Molosoc vám pomůže udržet ho na kůži déle a udělat z něj pravidelnou rutinu.' : __( "If there's already a cream in your routine that you trust, this is how you make it actually work the way it was supposed to.", 'molosoc' ) ); ?></p>
 				</a>
-				<a class="molosoc-who-card molosoc-who-card--2" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--2" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Chcete prodloužit pocit po pedikúře' : __( 'Just had a pedicure and want it to last', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Používejte návlek mezi návštěvami salonu a udržujte chodidla v péči i doma.' : __( 'A fresh pedicure starts fading almost immediately. A reusable cover is how you stretch that result without booking another appointment.', 'molosoc' ) ); ?></p>
 				</a>
-				<a class="molosoc-who-card molosoc-who-card--3" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>">
+				<a class="molosoc-who-card molosoc-who-card--3" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>">
 					<h3><?php echo esc_html( $molosoc_is_cz ? 'Kupujete ho pro někoho jiného' : __( 'Buying this for someone else', 'molosoc' ) ); ?></h3>
 					<p><?php echo esc_html( $molosoc_is_cz ? 'Pro někoho, kdo je celý den na nohou nebo na péči o sebe stále zapomíná — jednoduchá rutina bez další kosmetiky.' : __( "For someone who's always on her feet, or who never quite gets around to taking care of her own — this is the easiest way to give her a routine that actually sticks.", 'molosoc' ) ); ?></p>
 				</a>
@@ -236,7 +236,7 @@ get_header();
 			<p class="molosoc-eyebrow" style="color: rgba(255,255,255,0.6);">Molosoc</p>
 			<h2><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na vlastní kůži' : __( 'See the reusable cover for yourself', 'molosoc' ) ); ?></h2>
 			<p><?php echo esc_html( $molosoc_is_cz ? 'Skutečné výsledky před/po, celý mechanismus a co přesně najdete v balení.' : __( "Real before/after results, the full mechanism, and what's actually in the box.", 'molosoc' ) ); ?></p>
-			<a class="molosoc-btn" href="<?php echo esc_url( $molosoc_is_cz ? home_url( '/cz/navleky-na-nohy/hydratacni-navlek-na-nohy/' ) : home_url( '/foot-covers/moisture-lock-foot-cover/' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
+			<a class="molosoc-btn" href="<?php echo esc_url( molosoc_landing_url( $molosoc_is_cz ? 'cz' : 'en' ) ); ?>"><?php echo esc_html( $molosoc_is_cz ? 'Poznejte návlek na nohy' : __( 'Meet the Foot Cover', 'molosoc' ) ); ?></a>
 		</div>
 	</section>
 
