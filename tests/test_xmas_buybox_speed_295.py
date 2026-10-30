@@ -101,7 +101,7 @@ class InfoBlock(unittest.TestCase):
         ],
         "en": [
             "Size: M = EU 36–39 · L = EU 39.5–44 (by shoe size)",
-            "Shipping from 69 CZK · cash on delivery available",
+            "Shipping from 69 CZK",  # Issue #297: COD is CZ/SK only, the EN page must not mention it
             "Order by 18 December for delivery before Christmas",
         ],
     }
@@ -166,6 +166,10 @@ class InfoBlock(unittest.TestCase):
         low = PART_CODE.lower()
         for banned in ("zdarma", "free shipping", "sleva", "discount", "doručíme do ", "delivered by", "next day", "do 24"):
             self.assertNotIn(banned, low, banned)
+        # Issue #297: cash on delivery exists only for CZ/SK, so the EN copy never mentions it.
+        en = PART_CODE[PART_CODE.index("'en' => array("):]
+        self.assertNotIn("cash on delivery", en.lower())
+        self.assertIn("můžete platit i dobírkou", PART_CODE)
         self.assertIn("array( 1 => 209, 2 => 199, 3 => 199 )", INC)  # prices untouched
 
 

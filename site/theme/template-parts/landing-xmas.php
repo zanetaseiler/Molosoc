@@ -93,7 +93,7 @@ $copy = array(
 		'size_hint' => 'Not sure? Ask for their shoe size.',
 		'facts'     => array(
 			array( 'size', sprintf( 'Size: M = EU %s · L = EU %s (by shoe size)', $lpx_fen['size_m'], $lpx_fen['size_l'] ) ),
-			array( 'ship', sprintf( 'Shipping from %d CZK · cash on delivery available', $lpx_fen['ship_from'] ) ),
+			array( 'ship', sprintf( 'Shipping from %d CZK', $lpx_fen['ship_from'] ) ), // Issue #297: COD is offered in CZ/SK only, so the EN page does not mention it.
 			array( 'date', sprintf( 'Order by %s for delivery before Christmas', $lpx_fen['order_by'] ) ),
 		),
 		'bundle_h'  => 'Choose your gift set',
