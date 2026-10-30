@@ -22,7 +22,8 @@ def _closure():
 
 class StickyCtaLandingB(unittest.TestCase):
     def test_filter_returns_landing_b_for_current_language(self):
-        self.assertIn("'url'   => molosoc_landing_url( $lang ),", NEW)
+        self.assertIn("$url  = molosoc_landing_url( $lang );", NEW)
+        self.assertIn("'url'   => $url,", NEW)
         self.assertIn("'label' => ( 'cz' === $lang ) ? 'Koupit nyní' : __( 'Buy now', 'molosoc' ),", NEW)
         self.assertIn("add_filter( 'molosoc_sticky_cta_data', 'molosoc_sticky_cta_landing_b', 20, 2 );", NEW)
 
@@ -51,6 +52,14 @@ class StickyCtaLandingB(unittest.TestCase):
             self.assertIn(needle, gate)
         self.assertIn("'url'   => molosoc_product_url( $lang ),", FN)  # default stays; filter overrides it
         self.assertNotIn("landing", JS.lower().replace("landing-xmas", ""))
+
+    def test_no_self_link_on_destination_page(self):
+        # Codex P2: on Landing B / EN Landing A fallback the URL is the current page
+        self.assertIn("untrailingslashit( (string) get_permalink() ) === untrailingslashit( $url )", NEW)
+        self.assertIn("$url = '#lpb-buy';", NEW)
+        self.assertIn("$url = molosoc_product_url( $lang );", NEW)
+        buy = (ROOT / "inc/landing-b-buy.php").read_text(encoding="utf-8")
+        self.assertIn("1 === $group ? ' id=\"lpb-buy\"' : ''", buy)
 
     def test_no_redirects(self):
         self.assertNotIn("wp_redirect", NEW)

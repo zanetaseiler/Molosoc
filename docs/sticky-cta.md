@@ -23,6 +23,8 @@ is printed on `wp_head`.
 | Cart / Checkout (`is_cart()` / `is_checkout()`, incl. CZ kosik / pokladna) | hidden |
 | Privacy policy, terms of service, shipping policy — EN `privacy-policies`, `terms-of-services`, `shipping-policy`; CZ `zasady-ochrany-osobnich-udaju`, `obchodni-podminky`, `zasady-dopravy` | hidden (per Žaneta, Issue #177) |
 
+On the destination page itself (Landing B, or Landing A while EN Landing B is unpublished) the pill never links to its own URL: Landing B points at its hero size picker `#lpb-buy`; Landing A keeps the product page (Codex P2, #312).
+
 Not excluded (not in the request): EN `refund-policy`, `legal-disclaimer`;
 CZ `vraceni-a-refundace`. Adding a slug to the `is_page()` array in the gate
 is the whole change if that should follow.

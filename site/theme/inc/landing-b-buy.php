@@ -174,7 +174,7 @@ function molosoc_landing_b_buy_cta( $variant = '', $lang = 'cz' ) {
 	++$group;
 	$class = 'lpb-buy' . ( 'dark' === $variant ? ' lpb-buy--dark' : '' );
 	?>
-	<div class="<?php echo esc_attr( $class ); ?>" data-lpb-buy>
+	<div class="<?php echo esc_attr( $class ); ?>" data-lpb-buy<?php echo 1 === $group ? ' id="lpb-buy"' : ''; ?>>
 		<fieldset class="lpb-buy__sizes">
 			<legend class="lpb-buy__legend lpb-buy__size-label"><?php echo esc_html( $copy['legend'] ); ?></legend>
 			<?php foreach ( $links[ $lang ] as $key => $link ) : ?>
