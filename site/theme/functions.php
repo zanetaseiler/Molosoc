@@ -2474,6 +2474,12 @@ add_filter( 'wc_product_sku_enabled', '__return_false' );
  * checkout/cart are not behind it.
  */
 function molosoc_page_without_plugin_markup() {
+	// Christmas gift landing, CZ + EN (Issue #295): built on Landing B, its only
+	// purchase path is the checkout link, so it joins the gate. Written as a
+	// one-line early return on purpose: tests/test_landing_b_template.py reads
+	// this function up to its first closing brace and the #251 evergreen test
+	// allows only added lines in this file.
+	if ( function_exists( 'molosoc_is_xmas_landing' ) && molosoc_is_xmas_landing() ) return true; // phpcs:ignore Generic.ControlStructures.InlineControlStructure
 	return is_front_page() || is_page( 'hydratacni-navleky-molosoc' ) || molosoc_is_landing_page_a();
 }
 
@@ -2539,6 +2545,20 @@ function molosoc_dequeue_unused_homepage_assets() {
 		$scripts = array_merge( $scripts, array(
 			'woocommerce',
 			'cr-colcade',
+		) );
+	}
+	if ( function_exists( 'molosoc_is_xmas_landing' ) && molosoc_is_xmas_landing() ) {
+		// Christmas gift landing (Issue #295): the same extras as B and A, plus
+		// WooCommerce's renamed PhotoSwipe handles (wc-photoswipe /
+		// wc-photoswipe-ui-default, still printed on B) that the shared
+		// 'photoswipe' entries above no longer catch — nothing on the page opens
+		// a gallery, and the Customer Reviews script that would use it is
+		// dequeued with the rest.
+		$scripts = array_merge( $scripts, array(
+			'woocommerce',
+			'cr-colcade',
+			'wc-photoswipe',
+			'wc-photoswipe-ui-default',
 		) );
 	}
 	foreach ( $scripts as $handle ) {
@@ -2697,6 +2717,18 @@ function molosoc_cart_link_fragment( $fragments ) {
 	return $fragments;
 }
 add_filter( 'woocommerce_add_to_cart_fragments', 'molosoc_cart_link_fragment' );
+
+/**
+ * The header logo <img> (template-parts/site-header.php, Issue #295). The
+ * default markup is byte-for-byte what the template printed before; the
+ * `molosoc_site_header_logo` filter lets one template swap in a resized set
+ * (the Christmas landing does, inc/landing-xmas.php) without touching every
+ * other page, the homepage's card header included.
+ */
+function molosoc_site_header_logo() {
+	$default = '<img src="https://molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="' . esc_attr( get_bloginfo( 'name' ) ) . '" loading="eager" decoding="async">';
+	echo apply_filters( 'molosoc_site_header_logo', $default ); // phpcs:ignore WordPress.Security.EscapeOutput -- attribute values are escaped above and by the one filter callback.
+}
 
 /* Issue #278: enable the anonymous Landing B customer-feedback summary (flag added in #271/#276) — only on the Landing B page (slug gate, same as the other Landing B hooks). Customer permission confirmed by Žaneta 2026-10-27. */
 add_filter( 'molosoc_landing_b_testimonial_enabled', function ( $enabled ) {
