@@ -38,6 +38,8 @@ require_once get_stylesheet_directory() . '/inc/landing-links.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
 // Delayed gtag.js on the Christmas pages (Issue #301). Needs molosoc_is_xmas_landing() from landing-xmas.php above.
 require_once get_stylesheet_directory() . '/inc/delayed-third-party.php';
+// Global sticky pill → Landing B (Issue #311). Needs landing-links.php and landing-xmas.php above.
+require_once get_stylesheet_directory() . '/inc/sticky-landing-b.php';
 
 // Checkout cleanup (Issue #267): CZ payment labels, CusRev checkbox text, Comgate logo size.
 require_once get_stylesheet_directory() . '/inc/checkout-cleanup.php';

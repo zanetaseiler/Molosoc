@@ -1,8 +1,10 @@
 # Global sticky "Buy now" pill
 
 The bottom-right pill (`assets/js/sticky-cta.js`, styled by `components.css`
-`.molosoc-sticky-cta`, Issue #73) links straight to the WooCommerce product
-page where the size is chosen — `molosoc_product_url()`:
+`.molosoc-sticky-cta`, Issue #73) links to Landing Page B of the current language (Issue #311,
+`molosoc_landing_url()`: CZ `/cz/hydratacni-navleky-molosoc/`; EN `/hydrating-foot-covers-molosoc/` once published, else Landing A
+(the existing functional page)). Before #311 it linked straight to the WooCommerce product
+page — `molosoc_product_url()`:
 EN `/product/moisture-lock-foot-cover/`, CZ `/cz/produkt/hydratacni-navlek-na-nohy/` —
 with the label "Buy now" / "Koupit nyní" from the current Polylang language.
 
@@ -20,6 +22,8 @@ is printed on `wp_head`.
 | Product page (`is_product()`) | hidden — it is the destination |
 | Cart / Checkout (`is_cart()` / `is_checkout()`, incl. CZ kosik / pokladna) | hidden |
 | Privacy policy, terms of service, shipping policy — EN `privacy-policies`, `terms-of-services`, `shipping-policy`; CZ `zasady-ochrany-osobnich-udaju`, `obchodni-podminky`, `zasady-dopravy` | hidden (per Žaneta, Issue #177) |
+
+On the destination page itself (Landing B, or Landing A while EN Landing B is unpublished) the pill never links to its own URL: Landing B points at its hero size picker `#lpb-buy`; Landing A keeps the product page (Codex P2, #312).
 
 Not excluded (not in the request): EN `refund-policy`, `legal-disclaimer`;
 CZ `vraceni-a-refundace`. Adding a slug to the `is_page()` array in the gate

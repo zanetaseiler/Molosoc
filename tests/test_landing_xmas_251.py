@@ -158,6 +158,8 @@ class EvergreenUntouched(unittest.TestCase):
             # Issue #303 points every Landing A button/link at Landing B (helper in inc/landing-links.php).
             "site/theme/front-page.php",
             "site/theme/page-foot-covers.php",
+            # Issue #311 (+ #312 self-link fix): sticky pill -> Landing B, new inc file.
+            "site/theme/inc/sticky-landing-b.php",
         }
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
