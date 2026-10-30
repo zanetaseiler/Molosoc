@@ -89,3 +89,5 @@ PageSpeed Insights (mobile, slow 4G, 30 Oct 05:15 PDT) after #295: performance 8
 
 - Size fact under the checkout button (CZ): briefly `(řiďte se podle velikosti bot)`; Issue #307 put that sentence where Žaneta meant it — the hint under `1. pár · Velikost` now reads `Řiďte se podle velikosti bot.` and the facts line is back to `(podle velikosti bot)`. Theme 0.2.112.
 - "Co o nás říkají zákaznice": all three numbered items are shown, exactly as on Landing B (Žaneta confirmed the anonymous republication and wording of items 2 and 3 — ZANETA_DECISION 2026-10-27 on Landing B, re-confirmed 2026-10-30); the `molosoc_landing_b_feedback_extra_enabled` gate from #284 is removed. CZ page only; EN unchanged. Theme 0.2.111. After deploy purge page 1065.
+
+- Issue #309: `.lpx .lpb-steps` gets the photos' width (max 1080 px, centred) — on Landing B the list sits in the half-width split column, here it was full width. Theme 0.2.113. Same PR: `.lpx .lpb-testimonial__title` margin-bottom 1.1rem (more room under "Co o nás říkají zákazníci").
