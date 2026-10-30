@@ -34,6 +34,8 @@ require_once get_stylesheet_directory() . '/inc/landing-b-buy.php';
 // English Landing B (Issue #288): slug helper, assets, head, title/meta/JSON-LD, FAQ. Needs landing-b-schema.php above.
 require_once get_stylesheet_directory() . '/inc/landing-b-en.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
+// Delayed gtag.js on the Christmas pages (Issue #301). Needs molosoc_is_xmas_landing() from landing-xmas.php above.
+require_once get_stylesheet_directory() . '/inc/delayed-third-party.php';
 
 // Checkout cleanup (Issue #267): CZ payment labels, CusRev checkbox text, Comgate logo size.
 require_once get_stylesheet_directory() . '/inc/checkout-cleanup.php';
