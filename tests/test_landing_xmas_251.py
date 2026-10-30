@@ -84,10 +84,14 @@ class Copy(unittest.TestCase):
     def test_headlines(self):
         self.assertIn("Darujte péči, která nekončí Vánocemi.", PART)
         self.assertIn("Give care that doesn\\'t end with Christmas.", PART)
-        self.assertIn("Doprava od 69 Kč", PART)
-        self.assertIn("Shipping from 69 CZK", PART)
+        # Issue #295: the shipping price is read from molosoc_xmas_facts() (69 CZK)
+        # and composed in the template, so "Doprava od 69 Kč" is no longer a literal.
+        self.assertIn("'ship_from' => 69,", INC)
+        self.assertIn("'ship'      => 'Doprava od ' . $lpx_fcz['ship_from'] . ' Kč',", PART)
+        self.assertIn("'ship'      => 'Shipping from ' . $lpx_fen['ship_from'] . ' CZK',", PART)
         self.assertNotIn("79 Kč", PART)
         self.assertNotIn("79 CZK", PART)
+        self.assertNotIn("=> 79,", INC)
 
     def test_banned_claims(self):
         low = PART_CODE.lower()
@@ -212,10 +216,17 @@ class PreLaunch269(unittest.TestCase):
         self.assertIn("'order_p'   => 'Secure payment via Comgate.'", PART)
 
     def test_order_by_18_december_in_hero_order_section_and_faq(self):
-        cz = "Objednejte do 18. prosince, doručíme před Vánoci."
-        en = "Order by 18 December for delivery before Christmas."
-        self.assertEqual(PART.count(cz), 2)  # deadline key + FAQ answer
-        self.assertEqual(PART.count(en), 2)
+        # Issue #295: the date lives once in molosoc_xmas_facts(); the deadline key
+        # and the FAQ answer are composed from it (the info block repeats it too).
+        self.assertIn("'order_by'  => $en ? '18 December' : '18. prosince',", INC)
+        cz = "Objednejte do %s, doručíme před Vánoci"
+        en = "Order by %s for delivery before Christmas"
+        self.assertEqual(PART.count(cz + ".', $lpx_fcz['order_by'] )"), 1)  # deadline key
+        self.assertIn(cz + ". Platbu a dopravu vybíráte v pokladně; ', $lpx_fcz['ship_from'], $lpx_fcz['order_by'] )", PART)  # FAQ
+        self.assertEqual(PART.count(en + ".', $lpx_fen['order_by'] )"), 1)
+        self.assertIn(en + ". Shipping and payment methods are chosen at checkout.', $lpx_fen['ship_from'], $lpx_fen['order_by'] )", PART)
+        self.assertNotIn("18. prosince", PART_CODE)  # the header comment may still name the date
+        self.assertNotIn("18 December", PART_CODE)
         self.assertIn("<p class=\"lpx-deadline\"><?php echo esc_html( $t['deadline'] ); ?></p>", PART)
         self.assertIn("$t['ship'] . '. ' . $t['deadline']", PART)
 

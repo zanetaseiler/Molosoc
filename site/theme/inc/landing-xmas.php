@@ -47,6 +47,33 @@ function molosoc_xmas_current_lang() {
 	return '';
 }
 
+/** True on either Christmas page (the no-plugin-markup gate in functions.php reads this, Issue #295). */
+function molosoc_is_xmas_landing() {
+	return '' !== molosoc_xmas_current_lang();
+}
+
+/**
+ * The facts quoted on the page (Issue #295): one source for the hero line, the
+ * size buttons, the FAQ answers, the info block under each checkout button and
+ * the size hint under the pair-1 label, so a change here changes every place
+ * at once. Numbers only; the sentences around them live in
+ * template-parts/landing-xmas.php. The shipping price is the cheapest method
+ * offered at checkout ("from"); nothing here changes a price, a shipping rate
+ * or the checkout.
+ *
+ * @param string $lang 'cz' | 'en'.
+ * @return array size_m / size_l (shoe-size ranges), ship_from (int, CZK), order_by (date as text).
+ */
+function molosoc_xmas_facts( $lang ) {
+	$en = 'en' === $lang;
+	return array(
+		'size_m'    => '36–39',
+		'size_l'    => $en ? '39.5–44' : '39,5–44',
+		'ship_from' => 69,
+		'order_by'  => $en ? '18 December' : '18. prosince',
+	);
+}
+
 /** Release flag: on by default (Issue #260, ZANETA_DECISION 2026-10-26); the filter can still switch it off. */
 function molosoc_xmas_published() {
 	return (bool) apply_filters( 'molosoc_xmas_published', true );
@@ -304,7 +331,12 @@ add_action( 'wp_head', function () {
 /**
  * The three owner-edited Christmas photos (Drive IDs in Issue #251), imported
  * as 1536x1024 WebP files into assets/images/landing-xmas/ (Issue #255).
- * Until a file exists, molosoc_xmas_image() prints nothing for it.
+ * Issue #295 adds 480/768/1080 px derivatives next to each one
+ * ("<file minus .webp>-<w>.webp"; cwebp -m 6 -sharp_yuv at q 75/70/60) so a
+ * phone no longer downloads the 1536 px file for a ~350 px slot; the 1536 px
+ * original stays the largest srcset candidate. Until the original exists,
+ * molosoc_xmas_image() prints nothing for it; a missing derivative is simply
+ * left out of the srcset.
  */
 function molosoc_xmas_images() {
 	return array(
@@ -314,23 +346,127 @@ function molosoc_xmas_images() {
 	);
 }
 
-/** <img> markup for a scene, or '' when the file has not been added yet. */
-function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
+/** Derivative widths generated for every scene (the original is 1536 px). */
+function molosoc_xmas_image_widths() {
+	return array( 480, 768, 1080 );
+}
+
+/**
+ * The `sizes` attribute per slot. Hero: one column up to 900 px (.lpx-hero has
+ * 20 px padding each side), the left half of the 1080 px grid above that
+ * ((1080 - 32 gap) / 2). The two lazy figures run the section width, max 1080.
+ */
+function molosoc_xmas_image_sizes( $key ) {
+	return 'scene-01' === $key
+		? '(max-width: 900px) calc(100vw - 40px), 524px'
+		: '(max-width: 1120px) calc(100vw - 40px), 1080px';
+}
+
+/**
+ * src / srcset / sizes / width / height of a scene, or array() when the
+ * original file is missing. One place, so the <img> (molosoc_xmas_image())
+ * and the head preload (molosoc_xmas_head()) carry byte-identical candidates
+ * and the browser fetches exactly one file.
+ */
+function molosoc_xmas_image_set( $key ) {
 	$all = molosoc_xmas_images();
 	if ( ! isset( $all[ $key ] ) ) {
-		return '';
+		return array();
 	}
-	$path = get_stylesheet_directory() . '/assets/images/landing-xmas/' . $all[ $key ]['file'];
+	$dir  = get_stylesheet_directory() . '/assets/images/landing-xmas/';
+	$uri  = get_stylesheet_directory_uri() . '/assets/images/landing-xmas/';
+	$file = $all[ $key ]['file'];
+	$path = $dir . $file;
 	if ( ! file_exists( $path ) ) {
+		return array();
+	}
+	$size   = getimagesize( $path );
+	$base   = preg_replace( '/\.webp$/', '', $file );
+	$srcset = array();
+	foreach ( molosoc_xmas_image_widths() as $w ) {
+		if ( file_exists( $dir . $base . '-' . $w . '.webp' ) ) {
+			$srcset[] = esc_url( $uri . $base . '-' . $w . '.webp' ) . ' ' . (int) $w . 'w';
+		}
+	}
+	$srcset[] = esc_url( $uri . $file ) . ' ' . ( $size ? (int) $size[0] : 1536 ) . 'w';
+	return array(
+		'src'    => esc_url( $uri . $file ),
+		'srcset' => implode( ', ', $srcset ),
+		'sizes'  => molosoc_xmas_image_sizes( $key ),
+		'width'  => $size ? (int) $size[0] : 0,
+		'height' => $size ? (int) $size[1] : 0,
+	);
+}
+
+/** <img> markup for a scene, or '' when the file has not been added yet. */
+function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
+	$set = molosoc_xmas_image_set( $key );
+	if ( ! $set ) {
 		return '';
 	}
-	$size = getimagesize( $path );
-	$wh   = $size ? sprintf( ' width="%d" height="%d"', (int) $size[0], (int) $size[1] ) : '';
+	$wh = $set['width'] ? sprintf( ' width="%d" height="%d"', $set['width'], $set['height'] ) : '';
 	return sprintf(
-		'<img src="%s" alt="%s"%s decoding="async" %s>',
-		esc_url( get_stylesheet_directory_uri() . '/assets/images/landing-xmas/' . $all[ $key ]['file'] ),
+		'<img src="%s" srcset="%s" sizes="%s" alt="%s"%s decoding="async" %s>',
+		$set['src'],
+		esc_attr( $set['srcset'] ),
+		esc_attr( $set['sizes'] ),
 		esc_attr( $alt ),
 		$wh,
 		$attrs
 	);
 }
+
+/* ---------- <head>: hero preload (Issue #295) ---------- */
+
+/**
+ * Printed raw at wp_head priority 1 — before the render-blocking stylesheets
+ * and outside WP-Optimize Minify's reach, the same pattern as
+ * molosoc_landing_b_head(): the hero candidates as a preload, so the request
+ * starts with the HTML instead of after the CSS bundle has parsed. The browser
+ * picks the same candidate as for the <img> because srcset/sizes are
+ * byte-identical (both come from molosoc_xmas_image_set()).
+ */
+function molosoc_xmas_head() {
+	if ( ! molosoc_is_xmas_landing() ) {
+		return;
+	}
+	$set = molosoc_xmas_image_set( 'scene-01' );
+	if ( ! $set ) {
+		return;
+	}
+	printf(
+		'<link rel="preload" as="image" fetchpriority="high" href="%s" imagesrcset="%s" imagesizes="%s">' . "\n",
+		esc_url( $set['src'] ),
+		esc_attr( $set['srcset'] ),
+		esc_attr( $set['sizes'] )
+	);
+}
+add_action( 'wp_head', 'molosoc_xmas_head', 1 );
+
+/* ---------- header logo (Issue #295) ---------- */
+
+/**
+ * On the two Christmas pages only, the header logo comes from two theme-hosted
+ * lossless WebP derivatives (408 and 612 px wide, ~4 and ~6.5 KB) of the
+ * 1567x230 upload; the display size is 205x30 px (164x24 below 381 px,
+ * components.css), so 612 px covers 3x screens. Every other page keeps the
+ * default markup of molosoc_site_header_logo() untouched, and so does this
+ * page when a derivative is missing.
+ */
+function molosoc_xmas_header_logo( $html ) {
+	if ( ! molosoc_is_xmas_landing() ) {
+		return $html;
+	}
+	$dir = get_stylesheet_directory() . '/assets/images/';
+	if ( ! file_exists( $dir . 'molosoc-logo-tm-408.webp' ) || ! file_exists( $dir . 'molosoc-logo-tm-612.webp' ) ) {
+		return $html;
+	}
+	$uri = get_stylesheet_directory_uri() . '/assets/images/';
+	return sprintf(
+		'<img src="%1$s" srcset="%2$s 408w, %1$s 612w" sizes="(max-width: 380px) 164px, 205px" width="612" height="90" alt="%3$s" loading="eager" decoding="async">',
+		esc_url( $uri . 'molosoc-logo-tm-612.webp' ),
+		esc_url( $uri . 'molosoc-logo-tm-408.webp' ),
+		esc_attr( get_bloginfo( 'name' ) )
+	);
+}
+add_filter( 'molosoc_site_header_logo', 'molosoc_xmas_header_logo' );

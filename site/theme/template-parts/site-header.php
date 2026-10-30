@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 ?>
 <header class="molosoc-site-header">
 	<a class="molosoc-site-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-		<img src="https://molosoc.com/wp-content/uploads/2026/06/MOLOSOC-Logo-TM.png" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" loading="eager" decoding="async">
+		<?php molosoc_site_header_logo(); // Issue #295: same markup as before everywhere; the Christmas pages filter in a resized WebP set. ?>
 	</a>
 	<button type="button" class="molosoc-nav-toggle" aria-expanded="false" aria-controls="molosoc-site-nav" aria-label="<?php esc_attr_e( 'Menu', 'molosoc' ); ?>">
 		<span></span><span></span><span></span>
