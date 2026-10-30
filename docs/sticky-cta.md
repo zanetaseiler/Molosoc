@@ -16,6 +16,7 @@ is printed on `wp_head`.
 | --- | --- |
 | Homepages, pillar + cluster pages, Journal / Magazín, Landing Page B, shop, my-account, thank-you, contact | shown |
 | Landing Page A (`page-moisture-lock-foot-cover.php`: CZ 886, EN 869) | shown at > 760px; hidden at phone widths by `product.css`, where the page's own `.molosoc-sticky-buy` bar (price + button, same product URL) is the sticky CTA |
+| Christmas gift landing (`page-vanocni-darek-molosoc.php` 1065 / `page-christmas-gift-molosoc.php` 1066) | shown, but as an **in-page link** to the bundle picker `#lpx-bundle` labelled "Vybrat dárkový set" / "Choose gift set" (Issue #299: order #1073 paid the regular 229 Kč after tapping the product-page pill). `inc/landing-xmas.php` returns url + label through the `molosoc_sticky_cta_data` filter that the `wp_head` print applies first; `landing-xmas.js` smooth-scrolls, keeps the URL and hides the pill while a buy box is on screen. |
 | Product page (`is_product()`) | hidden — it is the destination |
 | Cart / Checkout (`is_cart()` / `is_checkout()`, incl. CZ kosik / pokladna) | hidden |
 | Privacy policy, terms of service, shipping policy — EN `privacy-policies`, `terms-of-services`, `shipping-policy`; CZ `zasady-ochrany-osobnich-udaju`, `obchodni-podminky`, `zasady-dopravy` | hidden (per Žaneta, Issue #177) |

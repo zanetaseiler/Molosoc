@@ -443,6 +443,34 @@ function molosoc_xmas_head() {
 }
 add_action( 'wp_head', 'molosoc_xmas_head', 1 );
 
+/* ---------- sticky pill (Issue #299) ---------- */
+
+/**
+ * The site-wide "Koupit nyní" pill (functions.php wp_head hook → sticky-cta.js)
+ * links to the regular product page, where the Christmas price does not
+ * apply: order #1073 (30 Oct 2026) came from the Christmas ad, tapped the pill
+ * and paid 229 Kč instead of 209 Kč. On the two Christmas pages the pill is
+ * an in-page link to the picker (#lpx-bundle, the hero button's target) with
+ * its own label; landing-xmas.js smooth-scrolls it, keeps the URL and hides
+ * the pill while a buy box is on screen. Every other page keeps
+ * molosoc_product_url() and "Koupit nyní" / "Buy now".
+ *
+ * @param array  $data Override so far (empty by default).
+ * @param string $lang Polylang language of the request (unused: the page's own language decides).
+ * @return array url + label on the Christmas pages, $data elsewhere.
+ */
+function molosoc_xmas_sticky_cta( $data, $lang = '' ) {
+	$page_lang = molosoc_xmas_current_lang();
+	if ( ! $page_lang ) {
+		return $data;
+	}
+	return array(
+		'url'   => '#lpx-bundle',
+		'label' => 'en' === $page_lang ? 'Choose gift set' : 'Vybrat dárkový set',
+	);
+}
+add_filter( 'molosoc_sticky_cta_data', 'molosoc_xmas_sticky_cta', 10, 2 );
+
 /* ---------- header logo (Issue #295) ---------- */
 
 /**
