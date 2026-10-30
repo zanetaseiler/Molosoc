@@ -95,7 +95,7 @@ class OneSourceOfTruth(unittest.TestCase):
 class InfoBlock(unittest.TestCase):
     EXPECTED = {
         "cz": [
-            "Velikost: M = 36–39 · L = 39,5–44 (řiďte se podle velikosti bot)",  # wording per Issue #305
+            "Velikost: M = 36–39 · L = 39,5–44 (podle velikosti bot)",
             "Doprava od 69 Kč · můžete platit i dobírkou",
             "Objednejte do 18. prosince, doručíme před Vánoci",
         ],
@@ -143,7 +143,7 @@ class InfoBlock(unittest.TestCase):
         self.assertEqual(PART.count("$lpx_picker( "), 2)           # …which both pickers call
 
     def test_size_hint_once_under_the_pair_one_label(self):
-        self.assertIn("'size_hint' => 'Nevíte? Zeptejte se na velikost bot.',", PART)
+        self.assertIn("'size_hint' => 'Řiďte se podle velikosti bot.',", PART)  # Žaneta, Issue #307
         self.assertIn("'size_hint' => 'Not sure? Ask for their shoe size.',", PART)
         self.assertIn("<?php if ( 1 === $n ) : ?>\n\t\t\t\t\t<p class=\"lpx-pair__hint\"><?php echo esc_html( $t['size_hint'] ); ?></p>\n\t\t\t\t<?php endif; ?>", PART)
         self.assertLess(PART.index('lpx-pair__legend">'), PART.index('class="lpx-pair__hint"'))

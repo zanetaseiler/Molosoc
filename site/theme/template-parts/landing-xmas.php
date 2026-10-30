@@ -46,9 +46,9 @@ $copy = array(
 		'size'      => 'Velikost',
 		'size_err'  => 'Vyberte velikost pro každý pár.',
 		'size_err_n' => 'Vyberte velikost pro %d. pár.',
-		'size_hint' => 'Nevíte? Zeptejte se na velikost bot.',
+		'size_hint' => 'Řiďte se podle velikosti bot.', // Žaneta, Issue #307
 		'facts'     => array(
-			array( 'size', sprintf( 'Velikost: M = %s · L = %s (řiďte se podle velikosti bot)', $lpx_fcz['size_m'], $lpx_fcz['size_l'] ) ), // wording per Žaneta, Issue #305
+			array( 'size', sprintf( 'Velikost: M = %s · L = %s (podle velikosti bot)', $lpx_fcz['size_m'], $lpx_fcz['size_l'] ) ),
 			array( 'ship', sprintf( 'Doprava od %d Kč · můžete platit i dobírkou', $lpx_fcz['ship_from'] ) ),
 			array( 'date', sprintf( 'Objednejte do %s, doručíme před Vánoci', $lpx_fcz['order_by'] ) ),
 		),
