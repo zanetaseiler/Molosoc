@@ -1,8 +1,10 @@
 # Global sticky "Buy now" pill
 
 The bottom-right pill (`assets/js/sticky-cta.js`, styled by `components.css`
-`.molosoc-sticky-cta`, Issue #73) links straight to the WooCommerce product
-page where the size is chosen — `molosoc_product_url()`:
+`.molosoc-sticky-cta`, Issue #73) links to Landing Page B of the current language (Issue #311,
+`molosoc_landing_url()`: CZ `/cz/hydratacni-navleky-molosoc/`; EN `/hydrating-foot-covers-molosoc/` once published, else Landing A
+(the existing functional page)). Before #311 it linked straight to the WooCommerce product
+page — `molosoc_product_url()`:
 EN `/product/moisture-lock-foot-cover/`, CZ `/cz/produkt/hydratacni-navlek-na-nohy/` —
 with the label "Buy now" / "Koupit nyní" from the current Polylang language.
 
