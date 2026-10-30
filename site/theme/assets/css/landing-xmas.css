@@ -10,6 +10,10 @@
 @media (min-width: 901px) { .lpx-hero__inner:has(.lpx-hero__media) { grid-template-columns: 1fr 1fr; } }
 
 .lpx-figure { max-width: var(--lpb-max, 1080px); margin: 32px auto 0; }
+/* Issue #309: the "Jak to funguje" list sits directly in its section here (on
+   Landing B it lives in the half-width .lpb-split column), so give it the
+   photos' width and centring instead of the full section width. */
+.lpx .lpb-steps { max-width: var(--lpb-max, 1080px); margin-left: auto; margin-right: auto; }
 .lpx-figure img { display: block; width: 100%; height: auto; }
 
 .lpx-bundles { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
