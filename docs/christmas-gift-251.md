@@ -84,3 +84,8 @@ PageSpeed Insights (mobile, slow 4G, 30 Oct 05:15 PDT) after #295: performance 8
 - Brevo `sdk-loader.js`: printed raw in `<head>` by its plugin with `async` and an inline `window.Brevo.push(["init", …])`; already non-blocking and without a WordPress handle, so left alone. stats.wp.com (deferred), Clarity (async), Meta pixel (WPConsent-gated): untouched.
 - Theme 0.2.108. Tests: `tests/test_delayed_third_party_301.py`.
 - After deploy: purge 1065 / 1066, confirm `script[data-molosoc-delayed-src]` + the loader on both pages and the plain gtag tag on `/cz/kosik/`, `/cz/pokladna/`; re-run Lighthouse mobile. GA4 DebugView / Tag Assistant check of page_view-after-scroll and add_to_cart / begin_checkout needs GA4 access (not available from the agent session; the client-side `/g/collect?…en=page_view` request after a scroll was verified on a mirror in headless Chrome).
+
+## Copy fixes (Issue #305, 2026-10-30)
+
+- Size fact under the checkout button (CZ): `Velikost: M = 36–39 · L = 39,5–44 (řiďte se podle velikosti bot)` (Žaneta's wording).
+- "Co o nás říkají zákaznice": all three numbered items are shown, exactly as on Landing B (Žaneta confirmed the anonymous republication and wording of items 2 and 3 — ZANETA_DECISION 2026-10-27 on Landing B, re-confirmed 2026-10-30); the `molosoc_landing_b_feedback_extra_enabled` gate from #284 is removed. CZ page only; EN unchanged. Theme 0.2.111. After deploy purge page 1065.
