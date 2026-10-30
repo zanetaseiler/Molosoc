@@ -181,13 +181,19 @@ class NumberedFeedback284(unittest.TestCase):
         self.assertIn('<ol class="lpb-testimonial__list">', self.block())
         self.assertIn("<li>" + self.ITEM1 + "</li>", self.block())
 
-    def test_items_2_and_3_gated_by_same_default_off_flag(self):
+    def test_items_1_2_3_all_shown_like_landing_b(self):
+        # Issue #305 (Žaneta, 2026-10-30): the numbered list shows all three items, exactly as Landing B does since #281; the old gate is gone.
         b = self.block()
-        self.assertIn("apply_filters( 'molosoc_landing_b_feedback_extra_enabled', false )", b)
-        cond = b.index("<?php if ( $lpx_extra_feedback )")
-        self.assertLess(cond, b.index(self.ITEM2))
-        self.assertLess(b.index(self.ITEM3), b.index("<?php endif; ?>", cond))
+        ol = b[b.index('<ol class="lpb-testimonial__list">'):b.index("</ol>")]
+        self.assertEqual(ol.count("<li>"), 3)
+        self.assertLess(ol.index(self.ITEM1), ol.index(self.ITEM2))
+        self.assertLess(ol.index(self.ITEM2), ol.index(self.ITEM3))
+        self.assertNotIn("molosoc_landing_b_feedback_extra_enabled", PART_CODE)  # only the history comment may name it
         self.assertNotIn("molosoc_landing_b_feedback_extra_enabled", FUNCTIONS)
+        # Same three sentences as Landing B, byte for byte.
+        b_tpl = (ROOT / "page-hydratacni-navleky-molosoc.php").read_text(encoding="utf-8")
+        for item in (self.ITEM1, self.ITEM2, self.ITEM3):
+            self.assertIn("<li>" + item + "</li>", b_tpl)
 
     def test_no_quotes_names_or_claims(self):
         b = self.block()

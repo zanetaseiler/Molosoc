@@ -95,7 +95,7 @@ class OneSourceOfTruth(unittest.TestCase):
 class InfoBlock(unittest.TestCase):
     EXPECTED = {
         "cz": [
-            "Velikost: M = 36–39 · L = 39,5–44 (podle velikosti bot)",
+            "Velikost: M = 36–39 · L = 39,5–44 (řiďte se podle velikosti bot)",  # wording per Issue #305
             "Doprava od 69 Kč · můžete platit i dobírkou",
             "Objednejte do 18. prosince, doručíme před Vánoci",
         ],
