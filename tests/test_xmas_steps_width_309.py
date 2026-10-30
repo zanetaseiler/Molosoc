@@ -19,6 +19,10 @@ class StepsWidth(unittest.TestCase):
         self.assertIn("margin-right: auto", steps)
         self.assertNotIn(".lpb-steps", (ROOT / "assets/css/landing-b.css").read_text(encoding="utf-8").split("/* Issue")[0][:0])  # Landing B untouched (file not edited here)
 
+    def test_testimonial_title_has_more_room_below(self):
+        rule = re.search(r"\n\.lpx \.lpb-testimonial__title \{([^}]*)\}", CSS).group(1)
+        self.assertIn("margin-bottom: 1.1rem", rule)
+
     def test_version_bumped(self):
         v = re.search(r"^Version: (\d+)\.(\d+)\.(\d+)$", STYLE, re.M)
         self.assertGreaterEqual(tuple(int(x) for x in v.groups()), (0, 2, 113))

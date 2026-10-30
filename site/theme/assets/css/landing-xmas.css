@@ -14,6 +14,9 @@
    Landing B it lives in the half-width .lpb-split column), so give it the
    photos' width and centring instead of the full section width. */
 .lpx .lpb-steps { max-width: var(--lpb-max, 1080px); margin-left: auto; margin-right: auto; }
+/* Issue #309 (Žaneta): more room under the "Co o nás říkají zákazníci" title
+   before the numbered list (landing-b.css gives it 0.5rem). Christmas pages only. */
+.lpx .lpb-testimonial__title { margin-bottom: 1.1rem; }
 .lpx-figure img { display: block; width: 100%; height: auto; }
 
 .lpx-bundles { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
