@@ -65,3 +65,13 @@ Part 2, Christmas templates only:
 Measured (Lighthouse 12.8 mobile, simulated slow 4G, logged out, `?utm_source=lh`): before, live CZ page — performance 57 / 69, LCP 7.4 s / 6.4 s, FCP 3.0 s / 1.6 s, 1,273 KiB, 72 requests, LCP element = hero `<img>`. The "after" numbers are in the PR (local mirror of the change) and are to be re-measured live after deploy + purge.
 
 After deploy: purge the WP-Optimize page cache for `/cz/vanocni-darek-molosoc/` and `/christmas-gift-molosoc/` (ad URLs carry utm/fbclid, so cached variants multiply), then re-run the live checks: no `jquery`/`woocommerce.min.js`/`photoswipe` on either page, one CSS bundle, hero `srcset` + head preload present, cart badge and cookie card working, checkout URL `molosoc_xmas=1&molosoc_xmas_sizes=…` and 209 / 408 / 607 Kč unchanged. Not verified before deploy: the live WP-Optimize bundle, the real Facebook in-app browser, screen readers.
+
+## Sticky pill stays on the page (Issue #299, 2026-10-30)
+
+Order #1073 (30 Oct, 348 Kč) came from the Christmas ad, tapped the floating "Koupit nyní" pill, landed on the regular product page and paid 229 Kč instead of 209 Kč; the 27 Oct session did the same. The pill is the site-wide one (`sticky-cta.js`, data printed on `wp_head` in functions.php).
+
+- functions.php now applies `molosoc_sticky_cta_data` (additive, inside the same gated closure) before the default product-URL print; `inc/landing-xmas.php` returns `{ url: '#lpx-bundle', label: 'Vybrat dárkový set' | 'Choose gift set' }` on the two Christmas pages only. Every other page prints exactly what it printed before.
+- `landing-xmas.js`: the pill's click smooth-scrolls to the picker (plain jump under `prefers-reduced-motion`) with `preventDefault`, so the URL does not change; an IntersectionObserver on both `[data-lpx-buy]` boxes toggles `.lpx-pill-hidden` (opacity 0, visibility hidden, pointer-events none) while any buy box is on screen. `#lpx-bundle` gets `scroll-margin-top: 0.75rem` so the heading sits clear at the top (the header is not sticky).
+- Other product-page links in the page body: only the no-JS fallback `href` of "Pokračovat k pokladně" (replaced by the checkout URL when JS runs) — kept, per the Issue. Header menu unchanged.
+- Unchanged: `sticky-cta.js`, prices, the `molosoc_xmas=1&molosoc_xmas_sizes=…` contract, shipping, gateways. Theme 0.2.107. Tests: `tests/test_xmas_sticky_cta_299.py`, `tests/test_sticky_cta_gate.py` (print count pin).
+- After deploy: purge pages 1065 and 1066, then check the pill label/href on both pages and "Koupit nyní" → product URL on `/cz/molosoc-home-cestina/` and Landing B.

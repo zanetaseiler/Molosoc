@@ -150,6 +150,19 @@
   .lpx-pair__hint { font-size: 0.75rem; }
 }
 
+/* Issue #299: the sticky pill is an in-page link to the picker on these pages.
+   The picker heading lands clear of the top edge, and the pill fades out while
+   either buy box is on screen (class toggled by landing-xmas.js) so it never
+   covers "Pokračovat k pokladně" or the facts under it. */
+#lpx-bundle { scroll-margin-top: 0.75rem; }
+.molosoc-sticky-cta { transition: opacity 180ms ease, visibility 180ms ease; }
+.molosoc-sticky-cta.lpx-pill-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lpx-pair { transition: none; }
+  .molosoc-sticky-cta { transition: none; }
 }

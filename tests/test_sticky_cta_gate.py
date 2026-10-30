@@ -65,9 +65,15 @@ class StickyCtaGate(unittest.TestCase):
     def test_enqueue_and_data_print_share_the_gate(self):
         self.assertIn("if ( ! molosoc_sticky_cta_hidden() ) {\n\t\twp_enqueue_script( 'molosoc-sticky-cta'", self.fn)
         self.assertIn("\tif ( molosoc_sticky_cta_hidden() ) {\n\t\treturn;\n\t}", self.fn)
-        # Exactly one enqueue of the handle and one data print, both gated.
+        # Exactly one enqueue of the handle; the data print lives in one gated
+        # closure (Issue #299 added the filtered override print before the
+        # default one, both after the gate's early return).
         self.assertEqual(self.fn.count("wp_enqueue_script( 'molosoc-sticky-cta'"), 1)
-        self.assertEqual(self.fn.count("window.molosocStickyCta = %s;"), 1)
+        self.assertEqual(self.fn.count("window.molosocStickyCta = %s;"), 2)
+        closure = self.fn[self.fn.index("\tif ( molosoc_sticky_cta_hidden() ) {\n\t\treturn;\n\t}"):]
+        closure = closure[: closure.index("\n} );")]
+        self.assertEqual(closure.count("window.molosocStickyCta = %s;"), 2)
+        self.assertIn("apply_filters( 'molosoc_sticky_cta_data', array(), $lang )", closure)
 
     def test_pill_links_to_the_size_page_with_the_language_label(self):
         self.assertIn("'url'   => molosoc_product_url( $lang ),", self.fn)

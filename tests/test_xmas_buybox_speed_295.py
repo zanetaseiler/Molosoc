@@ -190,8 +190,9 @@ class ResponsiveImages(unittest.TestCase):
         base = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], cwd=REPO, capture_output=True, text=True).stdout.strip()
         if not base:
             self.skipTest("no origin/main")
-        changed = subprocess.run(["git", "diff", "--name-only", base, "--", "site/theme/assets/images/landing-xmas", "site/theme/assets/js/landing-xmas.js"], cwd=REPO, capture_output=True, text=True).stdout.split()
-        self.assertEqual([c for c in changed if re.search(r"Scene_0\d\.webp$|landing-xmas\.js$", c)], [])
+        # The 1536 px originals are never re-encoded (landing-xmas.js was pinned here too until Issue #299 changed it on purpose).
+        changed = subprocess.run(["git", "diff", "--name-only", base, "--", "site/theme/assets/images/landing-xmas"], cwd=REPO, capture_output=True, text=True).stdout.split()
+        self.assertEqual([c for c in changed if re.search(r"Scene_0\d\.webp$", c)], [])
 
     def test_one_candidate_list_for_the_img_and_the_preload(self):
         self.assertIn("function molosoc_xmas_image_set( $key )", INC)

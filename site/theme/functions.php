@@ -600,6 +600,15 @@ add_action( 'wp_head', function () {
 		return;
 	}
 	$lang = ( function_exists( 'pll_current_language' ) && pll_current_language() ) ? pll_current_language() : 'en';
+	// Issue #299: a template may give the pill its own target instead of the
+	// product page — the Christmas landing points it at its in-page picker
+	// (inc/landing-xmas.php, after order #1073 paid the regular price via this
+	// pill). Same gate, same print; every other page falls through unchanged.
+	$molosoc_sticky_cta_override = apply_filters( 'molosoc_sticky_cta_data', array(), $lang );
+	if ( ! empty( $molosoc_sticky_cta_override['url'] ) && ! empty( $molosoc_sticky_cta_override['label'] ) ) {
+		printf( '<script>window.molosocStickyCta = %s;</script>' . "\n", wp_json_encode( $molosoc_sticky_cta_override ) );
+		return;
+	}
 	printf(
 		'<script>window.molosocStickyCta = %s;</script>' . "\n",
 		wp_json_encode(

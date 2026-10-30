@@ -14,6 +14,15 @@
   the screen (clear of the cookie card), names the pair in the red error and
   re-announces it through the aria-live region. The marks clear on the next
   size pick. The URL contract and the no-JS fallback are unchanged.
+
+  Issue #299 (order #1073 paid the regular 229 Kč after tapping the site-wide
+  "Koupit nyní" pill, which links to the product page): on these pages
+  functions.php/inc prints the pill as an in-page link to #lpx-bundle with
+  the label "Vybrat dárkový set" / "Choose gift set". Below, its click
+  smooth-scrolls to the picker (plain jump under prefers-reduced-motion) and
+  the URL stays as it is, and an IntersectionObserver hides the pill while
+  either buy box is on screen so it never covers the button or the facts.
+  sticky-cta.js itself is untouched; without it there is no pill to wire.
 */
 (function () {
 	"use strict";
@@ -179,6 +188,49 @@
 			window.location.href = base + ( base.indexOf( "?" ) === -1 ? "?" : "&" ) + "molosoc_xmas=1&molosoc_xmas_sizes=" + encodeURIComponent( sizes.join( "," ) );
 		} );
 	} );
+
+	/* Issue #299: the sticky pill on these pages is an in-page link to the picker. */
+	function wirePill() {
+		var pill   = document.getElementById( "molosoc-sticky-cta" );
+		var target = document.getElementById( "lpx-bundle" );
+		if ( ! pill || ! target || pill.getAttribute( "data-lpx-pill" ) ) {
+			return !! pill;
+		}
+		if ( ( pill.getAttribute( "href" ) || "" ).indexOf( "#lpx-bundle" ) === -1 ) {
+			return true; // not the Christmas pill (should not happen here): leave it alone.
+		}
+		pill.setAttribute( "data-lpx-pill", "1" );
+		pill.addEventListener( "click", function ( e ) {
+			e.preventDefault(); // stay on this URL, no hash change
+			var reduce = window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches;
+			if ( target.scrollIntoView ) {
+				target.scrollIntoView( { behavior: reduce ? "auto" : "smooth", block: "start" } );
+			} else {
+				window.scrollTo( 0, target.getBoundingClientRect().top + window.pageYOffset );
+			}
+		} );
+		if ( "IntersectionObserver" in window && groups.length ) {
+			var onScreen = [];
+			var io = new IntersectionObserver( function ( entries ) {
+				entries.forEach( function ( entry ) {
+					onScreen[ groups.indexOf( entry.target ) ] = entry.isIntersecting;
+				} );
+				var any = onScreen.some( function ( v ) {
+					return v;
+				} );
+				pill.classList.toggle( "lpx-pill-hidden", any );
+				pill.setAttribute( "aria-hidden", any ? "true" : "false" );
+			}, { threshold: 0 } );
+			groups.forEach( function ( g ) {
+				io.observe( g );
+			} );
+		}
+		return true;
+	}
+	if ( ! wirePill() ) {
+		// sticky-cta.js prints after this file when every footer script is deferred: wire once the page has loaded.
+		window.addEventListener( "load", wirePill );
+	}
 
 	// Back-navigation restores the page from the bfcache with the button locked.
 	window.addEventListener( "pageshow", function ( e ) {
