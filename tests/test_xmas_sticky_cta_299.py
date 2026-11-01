@@ -73,9 +73,12 @@ class PillBehaviour(unittest.TestCase):
         self.assertIn('document.getElementById( "molosoc-sticky-cta" )', fn)
         self.assertIn('document.getElementById( "lpx-bundle" )', fn)
         self.assertIn('indexOf( "#lpx-bundle" ) === -1', fn)      # only the Christmas pill is wired
-        self.assertIn("e.preventDefault();", fn)                  # no navigation, no hash change
-        self.assertIn('behavior: reduce ? "auto" : "smooth", block: "start"', fn)
-        self.assertIn('"(prefers-reduced-motion: reduce)"', fn)
+        # Issue #314: the click handler is the goToPicker() shared with the hero / story photo links.
+        self.assertIn('pill.addEventListener( "click", goToPicker );', fn)
+        go = block(JS_CODE, "function goToPicker( e )", "function wirePill()")
+        self.assertIn("e.preventDefault();", go)                  # no navigation, no hash change
+        self.assertIn('behavior: reduce ? "auto" : "smooth", block: "start"', go)
+        self.assertIn('"(prefers-reduced-motion: reduce)"', go)
         self.assertIn('window.addEventListener( "load", wirePill );', JS_CODE)
 
     def test_pill_hides_while_a_buy_box_is_on_screen(self):

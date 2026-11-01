@@ -15,6 +15,9 @@
  * from molosoc_xmas_facts() (inc/landing-xmas.php); the hero line, the size
  * buttons, the FAQ, the 3-line info block under each checkout button and the
  * size hint under the pair-1 label all read the same values.
+ * Issue #314: the hero photo and the two story photos are links to the picker
+ * (#lpx-bundle, the hero button's and the sticky pill's target) with the pill's
+ * label as their accessible name; landing-xmas.js scrolls them like the pill.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -53,6 +56,7 @@ $copy = array(
 			array( 'date', sprintf( 'Objednejte do %s, doručíme před Vánoci', $lpx_fcz['order_by'] ) ),
 		),
 		'bundle_h'  => 'Vyberte dárkový set',
+		'pick'      => 'Vybrat dárkový set', // Issue #314: accessible name of the photo links (= the sticky pill label).
 		'bundle_p'  => 'Zvolte počet párů a velikost M nebo L pro každý z nich. Cena se započítá v pokladně.',
 		'sizes'     => array( 'M' => 'M (' . $lpx_fcz['size_m'] . ')', 'L' => 'L (' . $lpx_fcz['size_l'] . ')' ),
 		'why_h'     => 'Proč je to dobrý dárek',
@@ -97,6 +101,7 @@ $copy = array(
 			array( 'date', sprintf( 'Order by %s for delivery before Christmas', $lpx_fen['order_by'] ) ),
 		),
 		'bundle_h'  => 'Choose your gift set',
+		'pick'      => 'Choose gift set',
 		'bundle_p'  => 'Pick how many pairs, then size M or L for each. The price is applied at checkout.',
 		'sizes'     => array( 'M' => 'M (EU ' . $lpx_fen['size_m'] . ')', 'L' => 'L (EU ' . $lpx_fen['size_l'] . ')' ),
 		'why_h'     => 'Why it makes a thoughtful gift',
@@ -200,7 +205,7 @@ get_header();
 	<section class="lpx-hero" aria-label="<?php echo esc_attr( $t['label'] ); ?>">
 		<div class="lpx-hero__inner">
 			<?php if ( $lpx_hero_img ) : ?>
-				<div class="lpx-hero__media"><?php echo $lpx_hero_img; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in molosoc_xmas_image(). ?></div>
+				<div class="lpx-hero__media"><a class="lpx-hero__link" href="#lpx-bundle" aria-label="<?php echo esc_attr( $t['pick'] ); ?>" data-lpx-to-picker><?php echo $lpx_hero_img; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in molosoc_xmas_image(). ?></a></div>
 			<?php endif; ?>
 			<div class="lpx-hero__copy">
 				<p class="lpb-eyebrow"><?php echo esc_html( $t['eyebrow'] ); ?></p>
@@ -231,7 +236,7 @@ get_header();
 				<div class="lpb-card"><h3><?php echo esc_html( $card[0] ); ?></h3><p><?php echo esc_html( $card[1] ); ?></p></div>
 			<?php endforeach; ?>
 		</div>
-		<?php if ( $lpx_s2 ) : ?><div class="lpx-figure"><?php echo $lpx_s2; // phpcs:ignore WordPress.Security.EscapeOutput ?></div><?php endif; ?>
+		<?php if ( $lpx_s2 ) : ?><div class="lpx-figure"><a class="lpx-figure__link" href="#lpx-bundle" aria-label="<?php echo esc_attr( $t['pick'] ); ?>" data-lpx-to-picker><?php echo $lpx_s2; // phpcs:ignore WordPress.Security.EscapeOutput ?></a></div><?php endif; ?>
 	</section>
 
 	<section class="lpb-section lpb-section--cream" aria-label="<?php echo esc_attr( $t['how_h'] ); ?>">
@@ -248,7 +253,7 @@ get_header();
 			<h2><?php echo esc_html( $t['story_h'] ); ?></h2>
 			<p class="lpb-lede"><?php echo esc_html( $t['story'] ); ?></p>
 		</div>
-		<?php if ( $lpx_s3 ) : ?><div class="lpx-figure"><?php echo $lpx_s3; // phpcs:ignore WordPress.Security.EscapeOutput ?></div><?php endif; ?>
+		<?php if ( $lpx_s3 ) : ?><div class="lpx-figure"><a class="lpx-figure__link" href="#lpx-bundle" aria-label="<?php echo esc_attr( $t['pick'] ); ?>" data-lpx-to-picker><?php echo $lpx_s3; // phpcs:ignore WordPress.Security.EscapeOutput ?></a></div><?php endif; ?>
 	</section>
 
 	<?php

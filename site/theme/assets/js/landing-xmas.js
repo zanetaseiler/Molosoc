@@ -23,6 +23,11 @@
   the URL stays as it is, and an IntersectionObserver hides the pill while
   either buy box is on screen so it never covers the button or the facts.
   sticky-cta.js itself is untouched; without it there is no pill to wire.
+
+  Issue #314 (Clarity 30-31 Oct: dead taps on the hero photo): the hero photo
+  and the two story photos are <a data-lpx-to-picker href="#lpx-bundle"> in the
+  template; their click goes through the same goToPicker() as the pill, so the
+  URL stays as it is. Without JS they are plain in-page anchors.
 */
 (function () {
 	"use strict";
@@ -189,6 +194,28 @@
 		} );
 	} );
 
+	/* Issues #299 / #314: scroll the picker heading to the top of the screen
+	   (scroll-margin-top in landing-xmas.css keeps it clear of the edge), a plain
+	   jump under prefers-reduced-motion, and keep the URL as it is: no hash. */
+	function goToPicker( e ) {
+		var target = document.getElementById( "lpx-bundle" );
+		if ( ! target ) {
+			return; // no picker on the page: leave the plain anchor alone.
+		}
+		e.preventDefault(); // stay on this URL, no hash change
+		var reduce = window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches;
+		if ( target.scrollIntoView ) {
+			target.scrollIntoView( { behavior: reduce ? "auto" : "smooth", block: "start" } );
+		} else {
+			window.scrollTo( 0, target.getBoundingClientRect().top + window.pageYOffset );
+		}
+	}
+
+	/* Issue #314: the hero photo and the two story photos link to the picker. */
+	Array.prototype.forEach.call( document.querySelectorAll( "a[data-lpx-to-picker]" ), function ( link ) {
+		link.addEventListener( "click", goToPicker );
+	} );
+
 	/* Issue #299: the sticky pill on these pages is an in-page link to the picker. */
 	function wirePill() {
 		var pill   = document.getElementById( "molosoc-sticky-cta" );
@@ -200,15 +227,7 @@
 			return true; // not the Christmas pill (should not happen here): leave it alone.
 		}
 		pill.setAttribute( "data-lpx-pill", "1" );
-		pill.addEventListener( "click", function ( e ) {
-			e.preventDefault(); // stay on this URL, no hash change
-			var reduce = window.matchMedia && window.matchMedia( "(prefers-reduced-motion: reduce)" ).matches;
-			if ( target.scrollIntoView ) {
-				target.scrollIntoView( { behavior: reduce ? "auto" : "smooth", block: "start" } );
-			} else {
-				window.scrollTo( 0, target.getBoundingClientRect().top + window.pageYOffset );
-			}
-		} );
+		pill.addEventListener( "click", goToPicker );
 		if ( "IntersectionObserver" in window && groups.length ) {
 			var onScreen = [];
 			var io = new IntersectionObserver( function ( entries ) {
