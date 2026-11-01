@@ -41,7 +41,7 @@ get_header();
 	     adapted from nexu-io/open-design's "motion-frames" template,
 	     re-themed to this site's own tokens/copy — see category.css for
 	     the full note. -->
-	<section class="molosoc-category-hero">
+	<section class="molosoc-category-hero" style="<?php echo molosoc_landing_b_hero_background_style(); // Issue #316: same warm hero-bg-v2 pair as Landing B ?>">
 		<div class="molosoc-category-hero__media" aria-hidden="true">
 			<img src="https://molosoc.com/wp-content/uploads/2026/07/3d_turntable_01_mirror.jpg"
 				alt="" loading="eager" decoding="async">
