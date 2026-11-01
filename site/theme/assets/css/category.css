@@ -68,6 +68,11 @@
   position: absolute;
   inset: 0 0 0 50%; /* right half of the hero */
   z-index: 0;
+  /* The render sits on pure white; multiply lets the warm background show
+     through that white instead of leaving a white panel (Issue #316). It is
+     applied to this container, not the <img>: the container's z-index makes
+     it a stacking context, which would isolate a blend set on the child. */
+  mix-blend-mode: multiply;
 }
 
 .molosoc-category-hero__media img {
@@ -75,9 +80,6 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  /* The render sits on pure white; multiply lets the warm background show
-     through that white instead of leaving a white panel (Issue #316). */
-  mix-blend-mode: multiply;
 }
 
 .molosoc-category-hero__scrim {
