@@ -1,4 +1,4 @@
-/* ---------- Christmas announcement bar (Issues #317, #320) ----------
+/* ---------- Christmas announcement bar (Issues #317, #320, #324) ----------
    In-flow strip above .molosoc-site-header (template-parts/site-header.php,
    inc/xmas-bar.php). Soft ivory -> champagne surface, a fine gold hairline and
    a quiet gold glow, warm dark-brown type. The whole bar is the link (the
@@ -10,16 +10,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 3.25rem;
+  min-height: 3.75rem;
   padding: 0.65rem 3.25rem 0.65rem var(--section-padding-x);
   background: linear-gradient(90deg, #fbf5e6 0%, #f6ebd0 50%, #fbf5e6 100%);
   border-bottom: 1px solid #d9b66a;
   box-shadow: inset 0 -2px 0 rgba(217, 182, 106, 0.18);
   color: #3d2f22;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
   text-align: center;
 }
 
@@ -28,10 +28,11 @@
 }
 
 .molosoc-xmas-bar__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
   color: inherit;
   text-decoration: none;
-  text-underline-offset: 0.25em;
-  text-decoration-color: #b8923f;
 }
 
 /* Whole bar clickable. */
@@ -42,9 +43,25 @@
   z-index: 1;
 }
 
+/* Gold sparkle + arrow accents; no underline anywhere (hover shifts the arrow). */
+.molosoc-xmas-bar__spark,
+.molosoc-xmas-bar__arrow {
+  flex: none;
+  color: #9a7424;
+}
+
+.molosoc-xmas-bar__arrow {
+  transition: transform 0.2s ease;
+}
+
+.molosoc-xmas-bar:hover .molosoc-xmas-bar__arrow,
+.molosoc-xmas-bar__link:focus-visible .molosoc-xmas-bar__arrow {
+  transform: translateX(0.25em);
+}
+
 .molosoc-xmas-bar:hover .molosoc-xmas-bar__link,
 .molosoc-xmas-bar__link:focus-visible {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .molosoc-xmas-bar__link:focus-visible,
@@ -79,8 +96,8 @@
 
 @media (max-width: 560px) {
   .molosoc-xmas-bar {
-    min-height: 3.5rem;
-    font-size: 0.85rem;
+    min-height: 3.75rem;
+    font-size: 1.05rem;
     padding-left: var(--space-s);
     padding-right: 3rem;
     letter-spacing: 0.01em;
