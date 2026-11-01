@@ -205,7 +205,8 @@ class CookieBannerMobile(unittest.TestCase):
 
 class ThemeVersion(unittest.TestCase):
     def test_bumped_so_the_minified_bundles_refresh(self):
-        self.assertIn("Version: 0.2.115", STYLE)
+        v = re.search(r"^Version: (\d+)\.(\d+)\.(\d+)$", STYLE, re.M)
+        self.assertGreaterEqual(tuple(map(int, v.groups())), (0, 2, 115))
 
 
 if __name__ == "__main__":
