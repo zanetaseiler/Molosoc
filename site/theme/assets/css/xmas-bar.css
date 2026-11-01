@@ -1,0 +1,76 @@
+/* ---------- Christmas announcement bar (Issue #317) ----------
+   Slim in-flow strip above .molosoc-site-header (template-parts/site-header.php,
+   inc/xmas-bar.php). Burgundy surface, cream text, gold hairline + hover rule.
+   Not fixed/sticky: the header, hamburger and the Buy-now pill are unaffected.
+   Contrast: cream #f8f7f4 on #6b1d2a is ~11:1; gold #d9b66a on it is ~6:1. */
+.molosoc-xmas-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.35rem 2.75rem 0.35rem var(--section-padding-x);
+  background: #6b1d2a;
+  border-bottom: 1px solid #d9b66a;
+  color: #f8f7f4;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.molosoc-xmas-bar[hidden] {
+  display: none;
+}
+
+.molosoc-xmas-bar__link {
+  color: inherit;
+  text-decoration: none;
+  padding: 0.25rem 0;
+  text-underline-offset: 0.25em;
+  text-decoration-color: #d9b66a;
+}
+
+.molosoc-xmas-bar__link:hover,
+.molosoc-xmas-bar__link:focus-visible {
+  text-decoration: underline;
+}
+
+.molosoc-xmas-bar__link:focus-visible,
+.molosoc-xmas-bar__close:focus-visible {
+  outline: 2px solid #d9b66a;
+  outline-offset: 2px;
+}
+
+.molosoc-xmas-bar__close {
+  position: absolute;
+  top: 50%;
+  right: 0.25rem;
+  transform: translateY(-50%);
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #d9b66a;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.molosoc-xmas-bar__close:hover {
+  color: #f8f7f4;
+}
+
+@media (max-width: 560px) {
+  .molosoc-xmas-bar {
+    font-size: 0.78rem;
+    padding-left: var(--space-s);
+    padding-right: 2.75rem;
+    letter-spacing: 0.01em;
+  }
+}

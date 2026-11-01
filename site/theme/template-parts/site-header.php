@@ -11,6 +11,7 @@
 
 defined( 'ABSPATH' ) || exit;
 ?>
+<?php molosoc_xmas_bar(); // Issue #317: slim Christmas announcement above the nav, prints nothing when hidden. ?>
 <header class="molosoc-site-header">
 	<a class="molosoc-site-header__logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 		<?php molosoc_site_header_logo(); // Issue #295: same markup as before everywhere; the Christmas pages filter in a resized WebP set. ?>

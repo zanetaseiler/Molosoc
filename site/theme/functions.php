@@ -36,6 +36,8 @@ require_once get_stylesheet_directory() . '/inc/landing-b-en.php';
 // Every landing link goes to Landing B when published (Issue #303). Needs molosoc_landing_b_en_slug() above.
 require_once get_stylesheet_directory() . '/inc/landing-links.php';
 require_once get_stylesheet_directory() . '/inc/landing-xmas.php';
+// Christmas announcement bar above the nav (Issue #317). Needs molosoc_xmas_slugs() from landing-xmas.php above.
+require_once get_stylesheet_directory() . '/inc/xmas-bar.php';
 // Delayed gtag.js on the Christmas pages (Issue #301). Needs molosoc_is_xmas_landing() from landing-xmas.php above.
 require_once get_stylesheet_directory() . '/inc/delayed-third-party.php';
 // Global sticky pill → Landing B (Issue #311). Needs landing-links.php and landing-xmas.php above.
