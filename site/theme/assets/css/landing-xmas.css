@@ -18,6 +18,12 @@
    before the numbered list (landing-b.css gives it 0.5rem). Christmas pages only. */
 .lpx .lpb-testimonial__title { margin-bottom: 1.1rem; }
 .lpx-figure img { display: block; width: 100%; height: auto; }
+/* Issue #314 (Clarity 30-31 Oct: repeated dead taps on the hero photo): the hero
+   photo and the two story photos are links to the picker, scrolled by
+   landing-xmas.js like the sticky pill. No visual change beyond the pointer and
+   a focus ring in the page's ink. */
+.lpx-hero__link, .lpx-figure__link { display: block; cursor: pointer; }
+.lpx-hero__link:focus-visible, .lpx-figure__link:focus-visible { outline: 2px solid #000; outline-offset: 3px; }
 
 .lpx-bundles { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .lpx-bundle { cursor: pointer; }
@@ -96,29 +102,65 @@
   /* 4. Cookie card (WPConsent, retheme in components.css, compacted for B in
      landing-b.css) still covered the lower half of the buy box on a 390px
      phone. On the Christmas pages only (landing-xmas.css is enqueued here
-     alone) shave it further: one-line buttons, smaller type, tighter padding.
-     Same ::part() surfaces as before; no consent logic or button is changed. */
+     alone) keep it compact: small type, tight padding, no hover/blur cost.
+     Issue #314 (Clarity 30-31 Oct: taps on the banner text, three equal
+     32px pills): "Přijmout vše" and "Odmítnout" are two equal-width 44px
+     buttons side by side (Accept left, Reject right — `order` on the parts;
+     the plugin prints Preferences, Reject, Accept) and "Nastavení" /
+     "Preferences" is a small underlined text link on its own row below. The
+     message keeps the arrow cursor so it does not read as tappable. Same
+     ::part() surfaces as before; no consent logic, button or category is
+     changed — only presentation. The Czech wording comes from
+     inc/wpconsent-lang.php. */
   #wpconsent-container::part(wpconsent-banner) {
     bottom: 6px;
     width: calc(100vw - 12px);
-    padding: 8px 10px;
+    padding: 8px 10px 4px;
     border-radius: 12px;
   }
   #wpconsent-container::part(wpconsent-banner-body) {
-    font-size: 0.7rem;
+    margin: 0; /* the plugin's 10px 0 at <=767px */
+    font-size: 0.72rem;
     line-height: 1.3;
+    cursor: default;
   }
   #wpconsent-container::part(wpconsent-banner-footer) {
-    flex-wrap: nowrap;
-    gap: 6px;
-    margin-top: 5px;
+    flex-direction: row; /* the plugin stacks (column) at <=767px: a row that wraps puts Preferences below */
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
   }
   #wpconsent-container::part(wpconsent-button-accept),
-  #wpconsent-container::part(wpconsent-button-cancel),
+  #wpconsent-container::part(wpconsent-button-cancel) {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 44px;
+    padding: 0 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  #wpconsent-container::part(wpconsent-button-accept) { order: 1; }
+  #wpconsent-container::part(wpconsent-button-cancel) { order: 2; }
   #wpconsent-container::part(wpconsent-button-preferences) {
-    height: 32px;
-    padding: 0 10px;
-    font-size: 0.7rem;
+    order: 3;
+    flex: 0 0 100%;
+    width: 100%;
+    height: auto;
+    min-height: 28px;
+    padding: 2px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--color-ink, #0c1115);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  #wpconsent-container::part(wpconsent-button-preferences):hover {
+    background: transparent;
+    border-color: transparent;
   }
 }
 

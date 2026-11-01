@@ -43,6 +43,8 @@ require_once get_stylesheet_directory() . '/inc/sticky-landing-b.php';
 
 // Checkout cleanup (Issue #267): CZ payment labels, CusRev checkbox text, Comgate logo size.
 require_once get_stylesheet_directory() . '/inc/checkout-cleanup.php';
+// WPConsent banner wording in Czech on Polylang CZ pages (Issue #314): the plugin's own option filter, no plugin file touched.
+require_once get_stylesheet_directory() . '/inc/wpconsent-lang.php';
 
 function molosoc_setup() {
 	add_theme_support( 'title-tag' );
