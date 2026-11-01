@@ -81,11 +81,17 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  /* Opaque over the product (centre), fading to transparent at the edges so
-     the render's white backdrop melts into the warm background with no hard
-     panel edge (Issue #322). */
-  -webkit-mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
-  mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
+  /* Opaque over the product, fading to transparent only in a thin rim at the
+     edges so the render's white backdrop melts into the warm background with
+     no hard panel edge (Issue #322). Issue #326: the #322 mask was a CIRCLE
+     (closest-side) fading from 72 % of the SHORT side's radius; this box is
+     wider than it is tall, so the horizontal fade began ~240px from centre and
+     washed out the toe, which sits at the left edge of the photo half. An
+     ELLIPSE spans the full width and height, and the opaque plateau is
+     widened to 90 %, so the toe stays fully opaque and only the outermost rim
+     feathers. */
+  -webkit-mask-image: radial-gradient(ellipse closest-side, #000 90%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side, #000 90%, transparent 100%);
 }
 
 .molosoc-category-hero__scrim {

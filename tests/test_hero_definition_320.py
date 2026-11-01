@@ -30,6 +30,16 @@ class HeroScrim(unittest.TestCase):
         self.assertNotIn("mix-blend-mode", CSS[i:CSS.index("}", i)])  # Issue #322
         self.assertIn("rgba(252, 252, 252, 0.5)", CSS)
 
+    def test_toe_not_faded_by_mask_326(self):
+        """Issue #326: the feather must be an ellipse with a wide opaque plateau."""
+        i = CSS.index(".molosoc-category-hero__media img {")
+        blk = CSS[i:CSS.index("}", i)]
+        m = re.search(r"\n  mask-image: radial-gradient\((\w+) closest-side, #000 (\d+)%, transparent 100%\)", blk)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group(1), "ellipse")  # circle faded the toe on a wide box
+        self.assertGreaterEqual(int(m.group(2)), 88)
+        self.assertIn("-webkit-mask-image: radial-gradient(ellipse", blk)
+
 
 if __name__ == "__main__":
     unittest.main()
