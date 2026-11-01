@@ -12,8 +12,8 @@
  * Hidden on: the two Christmas pages themselves (already there), cart,
  * checkout and the order-received page (the on-page purchase flow stays
  * undisturbed), and while a Christmas page is not published. Dismissible:
- * a "x" button stores one flag in localStorage (try/catch, works without it)
- * and the bar stays hidden for that visitor. No JS = the bar simply shows.
+ * a "x" button stores one flag in sessionStorage (try/catch, works without it)
+ * and the bar stays hidden for the current browsing session only (Issue #324). No JS = the bar simply shows.
  * No plugin, no fixed positioning: the sticky Buy-now pill, the hamburger
  * and the menu are not touched.
  *
@@ -23,7 +23,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/** localStorage key (versioned so a future campaign can re-show the bar). */
+/** sessionStorage key (versioned so a future campaign can re-show the bar). */
 const MOLOSOC_XMAS_BAR_KEY = 'molosocXmasBar317';
 
 /** Stylesheet: its own small file, loaded wherever the bar can show (same gate as the markup). */
@@ -85,14 +85,14 @@ function molosoc_xmas_bar() {
 	$key = MOLOSOC_XMAS_BAR_KEY;
 	?>
 <div class="molosoc-xmas-bar" id="molosoc-xmas-bar" role="region" aria-label="<?php echo esc_attr( 'cz' === $d['lang'] ? 'Vánoční nabídka' : 'Christmas offer' ); ?>" lang="<?php echo esc_attr( 'cz' === $d['lang'] ? 'cs' : 'en' ); ?>">
-	<a class="molosoc-xmas-bar__link" href="<?php echo esc_url( $d['url'] ); ?>"><?php echo esc_html( $d['text'] ); ?></a>
+	<a class="molosoc-xmas-bar__link" href="<?php echo esc_url( $d['url'] ); ?>"><span class="molosoc-xmas-bar__spark" aria-hidden="true">&#10022;</span><span class="molosoc-xmas-bar__text"><?php echo esc_html( $d['text'] ); ?></span><span class="molosoc-xmas-bar__arrow" aria-hidden="true">&rarr;</span></a>
 	<button type="button" class="molosoc-xmas-bar__close" aria-label="<?php echo esc_attr( $d['close'] ); ?>"><span aria-hidden="true">&times;</span></button>
 </div>
 <script>
 (function(){var b=document.getElementById("molosoc-xmas-bar");if(!b)return;var k=<?php echo wp_json_encode( $key ); ?>;
-try{if(window.localStorage.getItem(k)==="1"){b.hidden=true;return;}}catch(e){}
+try{if(window.sessionStorage.getItem(k)==="1"){b.hidden=true;return;}}catch(e){}
 var c=b.querySelector(".molosoc-xmas-bar__close");if(!c)return;
-c.addEventListener("click",function(){b.hidden=true;try{window.localStorage.setItem(k,"1");}catch(e){}});})();
+c.addEventListener("click",function(){b.hidden=true;try{window.sessionStorage.setItem(k,"1");}catch(e){}});})();
 </script>
 	<?php
 }

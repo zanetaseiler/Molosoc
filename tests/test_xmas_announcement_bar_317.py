@@ -60,6 +60,8 @@ class Accessibility(unittest.TestCase):
 
     def test_dismiss_is_storage_safe(self):
         self.assertEqual(INC.count("try{"), 2)
+        self.assertIn("sessionStorage", INC)
+        self.assertNotIn("localStorage.", INC)
         self.assertIn("b.hidden=true", INC)
         self.assertIn("MOLOSOC_XMAS_BAR_KEY", INC)
 
@@ -88,11 +90,18 @@ class Layout(unittest.TestCase):
 
     def test_taller_and_whole_bar_clickable(self):
         bar = CSS[CSS.index(".molosoc-xmas-bar {"):]
-        self.assertIn("min-height: 3.25rem;", bar)
+        self.assertIn("min-height: 3.75rem;", bar)
         self.assertIn(".molosoc-xmas-bar__link::after", CSS)
         self.assertIn("inset: 0;", CSS[CSS.index(".molosoc-xmas-bar__link::after"):])
         close = CSS[CSS.index(".molosoc-xmas-bar__close {"):]
         self.assertIn("z-index: 2;", close)
+
+    def test_prominent_not_underlined_issue_324(self):
+        self.assertIn("font-family: var(--font-display);", CSS)
+        self.assertIn("font-size: 1.2rem;", CSS)
+        self.assertNotIn("text-decoration: underline", CSS)
+        self.assertNotIn("text-underline-offset", CSS)
+        self.assertIn("molosoc-xmas-bar__spark", INC)
 
     def test_contrast_at_least_aa(self):
         def lum(h):
@@ -108,7 +117,7 @@ class Layout(unittest.TestCase):
 class Version(unittest.TestCase):
     def test_bumped(self):
         v = re.search(r"^Version: (\d+)\.(\d+)\.(\d+)$", STYLE, re.M)
-        self.assertGreaterEqual(tuple(map(int, v.groups())), (0, 2, 116))
+        self.assertGreaterEqual(tuple(map(int, v.groups())), (0, 2, 118))
 
 
 if __name__ == "__main__":
