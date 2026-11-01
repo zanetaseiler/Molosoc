@@ -68,11 +68,12 @@
   position: absolute;
   inset: 0 0 0 50%; /* right half of the hero */
   z-index: 0;
-  /* The render sits on pure white; multiply lets the warm background show
-     through that white instead of leaving a white panel (Issue #316). It is
-     applied to this container, not the <img>: the container's z-index makes
-     it a stacking context, which would isolate a blend set on the child. */
-  mix-blend-mode: multiply;
+  /* Issue #322: no blend here. The multiply blend (Issue #316/#318)
+     multiplied the near-white foot cover with the warm background, so its
+     highlights, heel and sole took on the background colour and read as
+     translucent. The product now renders as plain opaque pixels; the white
+     render backdrop is dissolved into the warm hero by the feathered mask on
+     the <img> below instead. */
 }
 
 .molosoc-category-hero__media img {
@@ -80,6 +81,11 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  /* Opaque over the product (centre), fading to transparent at the edges so
+     the render's white backdrop melts into the warm background with no hard
+     panel edge (Issue #322). */
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, #000 72%, transparent 100%);
 }
 
 .molosoc-category-hero__scrim {
