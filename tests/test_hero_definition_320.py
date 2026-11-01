@@ -26,7 +26,8 @@ class HeroScrim(unittest.TestCase):
         self.assertEqual(a[-1], 0)
 
     def test_photo_background_and_blend_untouched(self):
-        self.assertIn("mix-blend-mode: multiply;", CSS)
+        i = CSS.index(".molosoc-category-hero__media {")
+        self.assertNotIn("mix-blend-mode", CSS[i:CSS.index("}", i)])  # Issue #322
         self.assertIn("rgba(252, 252, 252, 0.5)", CSS)
 
 
