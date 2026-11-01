@@ -54,7 +54,14 @@
   display: flex;
   align-items: center;
   padding: var(--space-2xl) var(--section-padding-x);
-  background: #ffffff;
+  /* Issue #316: same warm hero background + 50 % white overlay as Landing
+     Page B's .lpb-hero. The two WebP URLs arrive as custom properties from
+     molosoc_landing_b_hero_background_style() (page-foot-covers.php). */
+  --molosoc-hero-bg: var(--lpb-hero-bg-desktop, none);
+  background:
+    linear-gradient(rgba(252, 252, 252, 0.5), rgba(252, 252, 252, 0.5)),
+    var(--molosoc-hero-bg) center / cover no-repeat,
+    #ffffff;
 }
 
 .molosoc-category-hero__media {
@@ -68,6 +75,9 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
+  /* The render sits on pure white; multiply lets the warm background show
+     through that white instead of leaving a white panel (Issue #316). */
+  mix-blend-mode: multiply;
 }
 
 .molosoc-category-hero__scrim {
@@ -260,6 +270,7 @@
   .molosoc-category-hero {
     text-align: center;
     min-height: 36rem;
+    --molosoc-hero-bg: var(--lpb-hero-bg-mobile, var(--lpb-hero-bg-desktop, none));
   }
 
   /* Phones: back to the full-width, whole-product backdrop. */
@@ -276,7 +287,7 @@
   }
 
   .molosoc-category-hero__scrim {
-    background: rgba(255, 255, 255, 0.82);
+    background: rgba(255, 255, 255, 0.55);
   }
 
   .molosoc-category-hero__text .molosoc-btn {
