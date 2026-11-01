@@ -80,9 +80,19 @@ class Layout(unittest.TestCase):
         self.assertIn("inc/xmas-bar.php", FUNCTIONS)
         self.assertIn("'molosoc-xmas-bar', get_stylesheet_directory_uri() . '/assets/css/xmas-bar.css'", INC)
 
-    def test_palette_burgundy_cream_gold(self):
-        for c in ("#6b1d2a", "#f8f7f4", "#d9b66a"):
+    def test_palette_ivory_champagne_gold(self):
+        # Issue #320: restyled from burgundy to warm ivory/champagne + gold.
+        for c in ("#fbf5e6", "#f6ebd0", "#d9b66a", "#3d2f22"):
             self.assertIn(c, CSS)
+        self.assertNotIn("#6b1d2a", CSS)
+
+    def test_taller_and_whole_bar_clickable(self):
+        bar = CSS[CSS.index(".molosoc-xmas-bar {"):]
+        self.assertIn("min-height: 3.25rem;", bar)
+        self.assertIn(".molosoc-xmas-bar__link::after", CSS)
+        self.assertIn("inset: 0;", CSS[CSS.index(".molosoc-xmas-bar__link::after"):])
+        close = CSS[CSS.index(".molosoc-xmas-bar__close {"):]
+        self.assertIn("z-index: 2;", close)
 
     def test_contrast_at_least_aa(self):
         def lum(h):
@@ -90,14 +100,15 @@ class Layout(unittest.TestCase):
             f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
             return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
         ratio = lambda a, b: (max(lum(a), lum(b)) + 0.05) / (min(lum(a), lum(b)) + 0.05)
-        self.assertGreaterEqual(ratio("#f8f7f4", "#6b1d2a"), 7)
-        self.assertGreaterEqual(ratio("#d9b66a", "#6b1d2a"), 4.5)
+        for bg in ("#fbf5e6", "#f6ebd0"):
+            self.assertGreaterEqual(ratio("#3d2f22", bg), 7)
+            self.assertGreaterEqual(ratio("#7a5c1a", bg), 4.5)  # x button + focus ring
 
 
 class Version(unittest.TestCase):
     def test_bumped(self):
         v = re.search(r"^Version: (\d+)\.(\d+)\.(\d+)$", STYLE, re.M)
-        self.assertGreaterEqual(tuple(map(int, v.groups())), (0, 2, 115))
+        self.assertGreaterEqual(tuple(map(int, v.groups())), (0, 2, 116))
 
 
 if __name__ == "__main__":

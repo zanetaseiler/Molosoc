@@ -86,13 +86,14 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  /* Only a soft fade on the left where the text lives; the photo half is
-     left untouched so it reads at full strength. */
+  /* Only a soft fade on the left where the text lives; it is fully clear by
+     the time the photo half starts (50 %), so the product is never veiled
+     (Issue #320: the old 62 % end stop washed over the product's left edge). */
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0.85) 0%,
-    rgba(255, 255, 255, 0.45) 45%,
-    rgba(255, 255, 255, 0) 62%
+    rgba(255, 255, 255, 0.45) 30%,
+    rgba(255, 255, 255, 0) 50%
   );
 }
 
@@ -288,8 +289,16 @@
     max-width: none;
   }
 
+  /* Issue #320: a flat 55 % white over the whole-width product washed out its
+     silhouette and texture. Lighter, and clear toward the bottom where the
+     product sits, so it keeps definition while the copy stays readable. */
   .molosoc-category-hero__scrim {
-    background: rgba(255, 255, 255, 0.55);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.22) 55%,
+      rgba(255, 255, 255, 0) 100%
+    );
   }
 
   .molosoc-category-hero__text .molosoc-btn {

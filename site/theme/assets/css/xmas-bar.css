@@ -1,22 +1,25 @@
-/* ---------- Christmas announcement bar (Issue #317) ----------
-   Slim in-flow strip above .molosoc-site-header (template-parts/site-header.php,
-   inc/xmas-bar.php). Burgundy surface, cream text, gold hairline + hover rule.
+/* ---------- Christmas announcement bar (Issues #317, #320) ----------
+   In-flow strip above .molosoc-site-header (template-parts/site-header.php,
+   inc/xmas-bar.php). Soft ivory -> champagne surface, a fine gold hairline and
+   a quiet gold glow, warm dark-brown type. The whole bar is the link (the
+   anchor's ::after stretches over it); the x button sits above that overlay.
    Not fixed/sticky: the header, hamburger and the Buy-now pill are unaffected.
-   Contrast: cream #f8f7f4 on #6b1d2a is ~11:1; gold #d9b66a on it is ~6:1. */
+   Contrast: #3d2f22 on #fbf5e6 is ~12:1, on #f1e3c4 ~10:1. */
 .molosoc-xmas-bar {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.25rem;
-  padding: 0.35rem 2.75rem 0.35rem var(--section-padding-x);
-  background: #6b1d2a;
+  min-height: 3.25rem;
+  padding: 0.65rem 3.25rem 0.65rem var(--section-padding-x);
+  background: linear-gradient(90deg, #fbf5e6 0%, #f6ebd0 50%, #fbf5e6 100%);
   border-bottom: 1px solid #d9b66a;
-  color: #f8f7f4;
+  box-shadow: inset 0 -2px 0 rgba(217, 182, 106, 0.18);
+  color: #3d2f22;
   font-family: var(--font-body);
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
-  line-height: 1.35;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
   text-align: center;
 }
 
@@ -27,24 +30,32 @@
 .molosoc-xmas-bar__link {
   color: inherit;
   text-decoration: none;
-  padding: 0.25rem 0;
   text-underline-offset: 0.25em;
-  text-decoration-color: #d9b66a;
+  text-decoration-color: #b8923f;
 }
 
-.molosoc-xmas-bar__link:hover,
+/* Whole bar clickable. */
+.molosoc-xmas-bar__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.molosoc-xmas-bar:hover .molosoc-xmas-bar__link,
 .molosoc-xmas-bar__link:focus-visible {
   text-decoration: underline;
 }
 
 .molosoc-xmas-bar__link:focus-visible,
 .molosoc-xmas-bar__close:focus-visible {
-  outline: 2px solid #d9b66a;
+  outline: 2px solid #7a5c1a;
   outline-offset: 2px;
 }
 
 .molosoc-xmas-bar__close {
   position: absolute;
+  z-index: 2;
   top: 50%;
   right: 0.25rem;
   transform: translateY(-50%);
@@ -56,21 +67,22 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #d9b66a;
+  color: #7a5c1a;
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
 }
 
 .molosoc-xmas-bar__close:hover {
-  color: #f8f7f4;
+  color: #3d2f22;
 }
 
 @media (max-width: 560px) {
   .molosoc-xmas-bar {
-    font-size: 0.78rem;
+    min-height: 3.5rem;
+    font-size: 0.85rem;
     padding-left: var(--space-s);
-    padding-right: 2.75rem;
+    padding-right: 3rem;
     letter-spacing: 0.01em;
   }
 }
