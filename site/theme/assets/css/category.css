@@ -392,8 +392,21 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.6);
   z-index: 0;
+}
+
+/* Issue #328: the white "real cost" heading melts into the photo below it
+   (white at the seam, fading to the normal wash) so heading and block read
+   as one unit instead of a white strip stuck on a yellow photo. */
+.molosoc-sequential-stage--clear::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: clamp(4rem, 12vh, 7rem);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .molosoc-sequential-stage--clear .molosoc-sequential-stage__inner {
@@ -449,8 +462,11 @@
   /* 72rem content + 2 × 3.5rem max padding = 79rem floor */
   width: min(100%, max(75%, 79rem));
   margin: 0 auto;
-  background: #fdfcf9;
-  border: 1px solid rgba(12, 17, 21, 0.05);
+  /* Issue #328: pure soft-white (was #fdfcf9, indistinguishable from the
+     #f8f7f4 cream) with a slightly firmer hairline so the card clearly
+     lifts off the cream section: cream -> white card -> cream rhythm. */
+  background: var(--color-white);
+  border: 1px solid rgba(12, 17, 21, 0.08);
   border-radius: 18px;
   box-shadow:
     0 1px 2px rgba(12, 17, 21, 0.03),
