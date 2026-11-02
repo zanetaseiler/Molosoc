@@ -17,3 +17,62 @@
 		width: 100px;
 	}
 }
+
+/* CusRev review-invitation opt-in row (Issue #331). Display only: restyles the
+   plugin's existing checkbox as a tidy, separated row below the payment
+   methods. The input, its name/value, default (unchecked) state and the form
+   submission are untouched. Selectors cover the plugin's known wrapper
+   classes; the checkbox/label inside keeps the plugin's own markup. */
+.woocommerce-checkout .cr-customer-consent-checkout,
+.woocommerce-checkout #cr_customer_consent_checkout_wrap,
+.woocommerce-checkout .form-row:has(> label > input[name="cr_customer_consent"]),
+.woocommerce-checkout .form-row:has(input#cr_customer_consent) {
+	display: block;
+	box-sizing: border-box;
+	margin: 1.25rem 0 1rem;
+	padding: 0.85rem 1rem;
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	border-radius: 8px;
+	background: rgba(0, 0, 0, 0.025);
+	font-size: 0.875rem;
+	line-height: 1.5;
+	font-weight: 400;
+	text-transform: none;
+	letter-spacing: normal;
+}
+
+.woocommerce-checkout .cr-customer-consent-checkout label,
+.woocommerce-checkout #cr_customer_consent_checkout_wrap label,
+.woocommerce-checkout .form-row:has(input[name="cr_customer_consent"]) label {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.65rem;
+	margin: 0;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	cursor: pointer;
+}
+
+.woocommerce-checkout .cr-customer-consent-checkout input[type="checkbox"],
+.woocommerce-checkout #cr_customer_consent_checkout_wrap input[type="checkbox"],
+.woocommerce-checkout .form-row input[name="cr_customer_consent"] {
+	flex: 0 0 auto;
+	width: 1.15rem;
+	height: 1.15rem;
+	margin: 0.15rem 0 0;
+}
+
+.woocommerce-checkout .form-row input[name="cr_customer_consent"]:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+	.woocommerce-checkout .cr-customer-consent-checkout,
+	.woocommerce-checkout #cr_customer_consent_checkout_wrap,
+	.woocommerce-checkout .form-row:has(input[name="cr_customer_consent"]) {
+		padding: 0.75rem;
+		font-size: 0.8125rem;
+	}
+}
