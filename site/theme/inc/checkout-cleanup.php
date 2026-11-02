@@ -71,6 +71,24 @@ function molosoc_cz_cusrev_checkbox_text( $translation, $text, $domain = '' ) {
 add_filter( 'gettext', 'molosoc_cz_cusrev_checkbox_text', 10, 3 );
 
 /**
+ * Issue #335: hide the CusRev checkout opt-in row ONLY when the owner sets
+ * option `molosoc_hide_cusrev_checkbox` to '1'. Default is OFF (box shown).
+ * Set it only after CusRev invitation sending is disabled and MOLOSOC-hosted
+ * reviews are verified (docs/review-rollout-335.md). Hiding is display-only:
+ * the input stays unchecked, so no CusRev consent is ever recorded.
+ */
+function molosoc_hide_cusrev_checkbox_css() {
+	if ( '1' !== (string) get_option( 'molosoc_hide_cusrev_checkbox', '0' ) ) {
+		return;
+	}
+	if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
+		return;
+	}
+	echo '<style id="molosoc-hide-cusrev">.woocommerce-checkout .cr-customer-consent-checkout,.woocommerce-checkout #cr_customer_consent_checkout_wrap,.woocommerce-checkout .form-row:has(input[name="cr_customer_consent"]){display:none!important}</style>' . "\n";
+}
+add_action( 'wp_head', 'molosoc_hide_cusrev_checkbox_css', 99 );
+
+/**
  * Checkout-only stylesheet: shrinks the Comgate logo (the plugin ships a
  * very large PNG) to ~112px, responsive. Enqueued from here, and only on
  * is_checkout(), so no other page loads it; plugin files are not edited.
