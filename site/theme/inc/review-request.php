@@ -267,10 +267,11 @@ function molosoc_review_request_run( $order_id, $attempt = 0 ) {
 		return;
 	}
 
-	// Atomic per-order claim: add_option() is an INSERT on a unique key, so only
-	// one overlapping callback can win. Send only if the claim was acquired.
+	// Atomic per-order claim: an insert-only INSERT IGNORE on the unique
+	// option_name, so only one overlapping callback can win. Send only if the
+	// claim was acquired.
 	$claim_key = 'molosoc_rr_claim_' . (int) $order_id;
-	if ( ! add_option( $claim_key, (string) time(), '', 'no' ) ) {
+	if ( ! molosoc_review_request_insert_once( $claim_key, (string) time() ) ) {
 		return;
 	}
 	$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_SENT_META, (string) time() );
@@ -289,6 +290,28 @@ function molosoc_review_request_run( $order_id, $attempt = 0 ) {
 }
 add_action( MOLOSOC_REVIEW_REQUEST_HOOK, 'molosoc_review_request_run', 10, 2 );
 
+/**
+ * Insert-only option write. WordPress add_option() uses ON DUPLICATE KEY UPDATE,
+ * so a competing writer would also "succeed"; INSERT IGNORE rejects the
+ * duplicate (0 rows affected) and exactly one caller gets true.
+ */
+function molosoc_review_request_insert_once( $key, $value ) {
+	global $wpdb;
+	$rows = $wpdb->query(
+		$wpdb->prepare(
+			"INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')",
+			$key,
+			$value
+		)
+	);
+	if ( 1 === (int) $rows ) {
+		wp_cache_delete( $key, 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
+		return true;
+	}
+	return false;
+}
+
 /** Opt-out link handler: validates the HMAC, suppresses the address. */
 function molosoc_review_request_handle_optout() {
 	if ( ! isset( $_GET['molosoc_review_optout'], $_GET['t'] ) ) {
@@ -304,8 +327,8 @@ function molosoc_review_request_handle_optout() {
 	if ( $order ) {
 		$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_OPTOUT_META, (string) time() );
 		$order->save();
-		// add_option() is an atomic INSERT on a unique key: no read-modify-write race.
-		add_option( molosoc_review_request_suppress_key( $order->get_billing_email() ), (string) time(), '', 'no' );
+		// Insert-only on a unique key: no read-modify-write race.
+		molosoc_review_request_insert_once( molosoc_review_request_suppress_key( $order->get_billing_email() ), (string) time() );
 	}
 	wp_die( 'Hotovo, žádost o hodnocení již nebudeme posílat. / Done, we will not send you a review request.', 'MOLOSOC', array( 'response' => 200 ) );
 }

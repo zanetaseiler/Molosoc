@@ -16,7 +16,14 @@ function add_action( $t, $cb ) { $GLOBALS['hooks'][ $t ] = $cb; }
 function apply_filters( $t, $v ) { return $v; }
 function get_option( $k, $d = '' ) { return $GLOBALS['opts'][ $k ] ?? $d; }
 function update_option( $k, $v, $a = null ) { $GLOBALS['opts'][ $k ] = $v; }
-function add_option( $k, $v, $d = '', $a = 'yes' ) { if ( ! isset( $GLOBALS['opts'][ $k ] ) ) { $GLOBALS['opts'][ $k ] = $v; return true; } return false; }
+// Models WordPress add_option(): ON DUPLICATE KEY UPDATE, so it never rejects a competing writer.
+function add_option( $k, $v, $d = '', $a = 'yes' ) { $GLOBALS['opts'][ $k ] = $v; return true; }
+function wp_cache_delete( $k, $g = '' ) { return true; }
+class FakeWpdb { public $options = 'wp_options';
+	function prepare( $q, ...$a ) { return json_encode( $a ); }
+	// INSERT IGNORE: first writer gets 1 row, duplicates get 0 and change nothing.
+	function query( $q ) { list( $k, $v ) = json_decode( $q, true ); if ( array_key_exists( $k, $GLOBALS['opts'] ) ) { return 0; } $GLOBALS['opts'][ $k ] = $v; return 1; } }
+$GLOBALS['wpdb'] = new FakeWpdb();
 function delete_option( $k ) { unset( $GLOBALS['opts'][ $k ] ); return true; }
 function wp_salt( $s ) { return 'salt'; }
 function home_url( $p ) { return 'https://molosoc.test' . $p; }
