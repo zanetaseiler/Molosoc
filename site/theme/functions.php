@@ -25,6 +25,10 @@ require_once get_stylesheet_directory() . '/inc/thank-you-gift.php';
 // CZ bank-transfer unpaid-order reminder after 24h (Issue #194).
 require_once get_stylesheet_directory() . '/inc/bacs-payment-reminder.php';
 
+// MOLOSOC-hosted post-purchase review request; off by default, dry-run/live
+// gated by owner options (Issue #333).
+require_once get_stylesheet_directory() . '/inc/review-request.php';
+
 // Contextual Related-reading internal links (Issue #200).
 require_once get_stylesheet_directory() . '/inc/related-links.php';
 
