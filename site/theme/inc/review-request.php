@@ -54,6 +54,10 @@ if ( ! defined( 'MOLOSOC_REVIEW_REQUEST_DRY_META' ) ) {
 if ( ! defined( 'MOLOSOC_REVIEW_REQUEST_OPTOUT_META' ) ) {
 	define( 'MOLOSOC_REVIEW_REQUEST_OPTOUT_META', '_molosoc_review_request_optout' );
 }
+if ( ! defined( 'MOLOSOC_REVIEW_REQUEST_NOTICE_META' ) ) {
+	// Set at checkout only when the collection-time notice was actually shown with the order form.
+	define( 'MOLOSOC_REVIEW_REQUEST_NOTICE_META', '_molosoc_review_request_notice' );
+}
 if ( ! defined( 'MOLOSOC_REVIEW_REQUEST_MAX_RETRIES' ) ) {
 	define( 'MOLOSOC_REVIEW_REQUEST_MAX_RETRIES', 3 );
 }
@@ -215,6 +219,12 @@ function molosoc_review_request_blocked_reason( $order ) {
 	if ( $order->get_meta( MOLOSOC_REVIEW_REQUEST_OPTOUT_META ) ) {
 		return 'order-opted-out';
 	}
+	// Czech Act 480/2004 s.7(3): only customers who saw the collection-time
+	// notice and could refuse. Orders placed before the notice existed (or
+	// while the feature was off) are never mailed.
+	if ( ! $order->get_meta( MOLOSOC_REVIEW_REQUEST_NOTICE_META ) ) {
+		return 'no-checkout-notice';
+	}
 	$total    = (float) $order->get_total();
 	$refunded = (float) $order->get_total_refunded();
 	if ( $total > 0 && $refunded >= $total ) {
@@ -333,3 +343,60 @@ function molosoc_review_request_handle_optout() {
 	wp_die( 'Hotovo, žádost o hodnocení již nebudeme posílat. / Done, we will not send you a review request.', 'MOLOSOC', array( 'response' => 200 ) );
 }
 add_action( 'template_redirect', 'molosoc_review_request_handle_optout', 1 );
+
+
+/**
+ * Checkout collection-time disclosure + easy opt-out (Issue #337, Option B).
+ * Shown only when the mode is dry_run/live. It is an opt-OUT: the box is
+ * unchecked by default and ticking it means "do not send". Placed after the
+ * order notes (outside the AJAX-refreshed payment fragment, so the tick is
+ * not lost). The notice is stored on the order, which is what makes the
+ * order eligible later.
+ */
+function molosoc_review_request_checkout_text( $cz ) {
+	if ( $cz ) {
+		return array(
+			'Po nákupu vám pošleme jednu zprávu s prosbou o hodnocení produktu na webu MOLOSOC. Nic dalšího v této věci posílat nebudeme a odhlásit se můžete i přímo v ní.',
+			'Nechci dostat tuto jednu zprávu s prosbou o hodnocení',
+		);
+	}
+	return array(
+		'After your purchase we will send you one message asking you to review the product on MOLOSOC. We will send nothing else about it, and you can also opt out in the message itself.',
+		'I do not want to receive this one review-request message',
+	);
+}
+
+function molosoc_review_request_checkout_field() {
+	if ( 'off' === molosoc_review_request_mode() ) {
+		return;
+	}
+	$cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
+	list( $notice, $label ) = molosoc_review_request_checkout_text( $cz );
+	echo '<div class="molosoc-review-optout" style="margin:1em 0">'
+		. '<p>' . esc_html( $notice ) . '</p>'
+		. '<label><input type="checkbox" name="molosoc_review_request_refuse" value="1"> ' . esc_html( $label ) . '</label>'
+		. '<input type="hidden" name="molosoc_review_request_notice_shown" value="1">'
+		. '</div>';
+}
+add_action( 'woocommerce_after_order_notes', 'molosoc_review_request_checkout_field' );
+
+/** Record notice shown / refusal on the new order; a refusal also suppresses the address for any other order. */
+function molosoc_review_request_checkout_save( $order, $data = array() ) {
+	if ( 'off' === molosoc_review_request_mode() ) {
+		return;
+	}
+	// phpcs:ignore WordPress.Security.NonceVerification -- WooCommerce verifies the checkout nonce before this hook.
+	if ( empty( $_POST['molosoc_review_request_notice_shown'] ) ) {
+		return; // notice not rendered with this submission: order stays ineligible.
+	}
+	$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_NOTICE_META, (string) time() );
+	// phpcs:ignore WordPress.Security.NonceVerification
+	if ( ! empty( $_POST['molosoc_review_request_refuse'] ) ) {
+		$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_OPTOUT_META, (string) time() );
+		$email = isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '';
+		if ( $email ) {
+			molosoc_review_request_insert_once( molosoc_review_request_suppress_key( $email ), (string) time() );
+		}
+	}
+}
+add_action( 'woocommerce_checkout_create_order', 'molosoc_review_request_checkout_save', 20, 2 );
