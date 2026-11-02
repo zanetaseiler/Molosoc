@@ -34,7 +34,10 @@ function molosoc_product_url( $l ) { return 'https://molosoc.test/' . $l . '/pro
 function get_permalink( $id ) { return 'https://molosoc.test/p' . $id . '/'; }
 function time_now() { return $GLOBALS['T']['now']; }
 function as_schedule_single_action( $ts, $hook, $args, $g, $u ) { $GLOBALS['scheduled'][] = array( 'ts' => $ts, 'hook' => $hook, 'args' => $args ); return 1; }
-function wp_mail( $to, $s, $b ) { $GLOBALS['mails'][] = array( $to, $s, $b ); return ! $GLOBALS['T']['mail_fails']; }
+function remove_action( $t, $cb ) { unset( $GLOBALS['hooks'][ $t ] ); }
+function esc_url( $s ) { return htmlspecialchars( $s ); }
+function esc_attr( $s ) { return htmlspecialchars( $s ); }
+function wp_mail( $to, $s, $b, $h = array() ) { $alt = null; if ( isset( $GLOBALS['hooks']['phpmailer_init'] ) ) { $pm = new stdClass(); $pm->AltBody = ''; $GLOBALS['hooks']['phpmailer_init']( $pm ); $alt = $pm->AltBody; } $GLOBALS['mails'][] = array( $to, $s, $b, $h, $alt ); return ! $GLOBALS['T']['mail_fails']; }
 function esc_html( $s ) { return htmlspecialchars( $s ); }
 function sanitize_email( $e ) { return $e; }
 function wp_unslash( $v ) { return $v; }
@@ -78,7 +81,7 @@ if ( ! empty( $GLOBALS['T']['checkout'] ) ) {
 	$GLOBALS['html'] = $html;
 }
 echo json_encode( array( 'html' => $GLOBALS['html'] ?? '', 'scheduled' => $sched, 'mails' => $GLOBALS['mails'], 'notes' => $GLOBALS['notes'],
-	'final' => $GLOBALS['scheduled'], 'meta' => $GLOBALS['meta'], 'opts' => $GLOBALS['opts'], 'died' => $GLOBALS['died'] ?? '' ), JSON_UNESCAPED_UNICODE );
+	'hooks' => array_keys( $GLOBALS['hooks'] ), 'final' => $GLOBALS['scheduled'], 'meta' => $GLOBALS['meta'], 'opts' => $GLOBALS['opts'], 'died' => $GLOBALS['died'] ?? '' ), JSON_UNESCAPED_UNICODE );
 """
 
 def run(order=None, opts=None, **over):
@@ -121,7 +124,7 @@ class ReviewRequestTests(unittest.TestCase):
     def test_live_sends_once_even_if_run_repeatedly(self):
         r = run(opts=LIVE, runs=3)
         self.assertEqual(len(r["mails"]), 1)
-        subject, body = r["mails"][0][1], r["mails"][0][2]
+        subject, body = r["mails"][0][1], r["mails"][0][4]
         self.assertIn("MOLOSOC", subject)
         self.assertIn("https://molosoc.test/p7/#reviews", body)
         self.assertIn("molosoc_review_optout=1", body)
@@ -129,24 +132,56 @@ class ReviewRequestTests(unittest.TestCase):
         for bad in ("doručen", "newsletter", "CusRev"):
             self.assertNotIn(bad, body)
 
+    def test_branded_html_sender_links_and_no_token_in_visible_text(self):
+        import re
+        r = run(opts=LIVE)
+        to, subject, html, headers, alt = r["mails"][0]
+        self.assertIn("Content-Type: text/html; charset=UTF-8", headers)
+        self.assertIn("From: MOLOSOC <hello@molosoc.com>", headers)
+        self.assertIn('href="https://molosoc.test/p7/#reviews"', html)
+        self.assertIn(">Napsat hodnocení</a>", html)
+        self.assertIn(">Odhlásit se z těchto zpráv</a>", html)
+        self.assertIn("molosoc_review_optout=1", re.search(r'href="([^"]*optout[^"]*)"', html).group(1))
+        visible = re.sub(r"<[^>]+>", " ", html)
+        for bad in ("http", "molosoc_review_optout", "t="):
+            self.assertNotIn(bad, visible)
+        self.assertIn('name="viewport"', html)
+        self.assertIn("https://molosoc.test/p7/#reviews", alt)  # plain-text fallback keeps working links
+        self.assertNotIn("<", alt)
+
+    def test_html_english_cta_and_escaping(self):
+        html = run(order={"country": "DE"}, opts=LIVE)["mails"][0][2]
+        self.assertIn(">Write a review</a>", html)
+        self.assertIn(">Unsubscribe</a>", html)
+        self.assertIn('lang="en"', html)
+        # & in URLs is escaped for HTML attributes
+        self.assertIn("molosoc_review_optout=1&amp;t=", html)
+
+    def test_sender_scoped_and_altbody_cleaned_up(self):
+        r = run(opts=LIVE)
+        self.assertNotIn("phpmailer_init", r["hooks"])
+        src = MODULE.read_text()
+        self.assertNotIn("wp_mail_from", src)  # no global sender filter
+        self.assertNotIn("wp_mail_content_type", src)
+
     def test_english_for_non_cz(self):
-        body = run(order={"country": "DE"}, opts=LIVE)["mails"][0][2]
+        body = run(order={"country": "DE"}, opts=LIVE)["mails"][0][4]
         self.assertIn("not an independently verified", body)
         self.assertIn("opt out here", body)
 
     def test_language_from_saved_order_lang_not_country(self):
-        body = run(order={"country": "CZ"}, opts=LIVE, meta={"_molosoc_lang": "en"})["mails"][0][2]
+        body = run(order={"country": "CZ"}, opts=LIVE, meta={"_molosoc_lang": "en"})["mails"][0][4]
         self.assertIn("opt out here", body)
-        body = run(order={"country": "DE"}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][2]
+        body = run(order={"country": "DE"}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][4]
         self.assertIn("Nejde o nezávisle ověřenou", body)
         # delay still follows the country
         r = run(order={"country": "DE"}, opts=LIVE, meta={"_molosoc_lang": "cz"})
         self.assertEqual(r["scheduled"][0]["ts"], NOW + 14 * 86400)
 
     def test_product_364_link_uses_explicit_language_helper(self):
-        b = run(order={"pid": 364}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][2]
+        b = run(order={"pid": 364}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][4]
         self.assertIn("https://molosoc.test/cz/product/#reviews", b)
-        b = run(order={"pid": 364, "country": "DE"}, opts=LIVE)["mails"][0][2]
+        b = run(order={"pid": 364, "country": "DE"}, opts=LIVE)["mails"][0][4]
         self.assertIn("https://molosoc.test/en/product/#reviews", b)
 
     def test_blocked_cases_send_nothing(self):

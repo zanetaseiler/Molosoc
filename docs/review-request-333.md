@@ -53,3 +53,17 @@ was changed.
    legal flag on staging to preview the mail. Never run live against customers
    before step 1.
 5. Wire the marketing-unsubscribe list into the suppression filter if one exists.
+
+## Branded HTML e-mail (Issue #339)
+The review e-mail is now responsive HTML (table layout, inline styles) with a
+`multipart/alternative` plain-text part (set via a per-send `phpmailer_init`
+hook that is removed right after `wp_mail()`). Sender is `MOLOSOC
+<hello@molosoc.com>` via a per-message `From:` header only; no global
+`wp_mail_from*` / content-type filter is added, so Woo and other mail is
+untouched. Filter `molosoc_review_request_from_email` can override the address.
+CTA: "Napsat hodnocení" / "Write a review" links to the product `#reviews`
+URL; the opt-out is a short anchor ("Odhlásit se z těchto zpráv" /
+"Unsubscribe") over the existing signed token URL, so no raw URL or token is
+visible text in the HTML. Eligibility, 10/14-day delay, claim, suppression and
+opt-out logic are unchanged. Owner-only test: set `molosoc_review_request_test_emails`
+to your own address on staging; no customer mail is sent.
