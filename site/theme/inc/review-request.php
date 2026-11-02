@@ -2,7 +2,7 @@
 /**
  * MOLOSOC-hosted post-purchase review request (GitHub Issue #333).
  *
- * One short, plain-text CZ/EN e-mail asking a customer to review the product
+ * One short, branded HTML (plus plain-text alternative) CZ/EN e-mail asking a customer to review the product
  * they bought, linking to the review form on the MOLOSOC product page
  * (native WooCommerce reviews, moderated, "verified owner" label is Woo's
  * own). Reviews are hosted on MOLOSOC and are NOT independently verified;
@@ -176,7 +176,75 @@ function molosoc_review_request_products( $order, $cz ) {
 	return array_values( $out );
 }
 
-/** Subject + plain-text body (CZ or EN). */
+/** Verified shop sender for this e-mail only (header-scoped; global WP/Woo sender config is untouched). */
+function molosoc_review_request_from() {
+	return array(
+		'name'  => 'MOLOSOC',
+		'email' => (string) apply_filters( 'molosoc_review_request_from_email', 'hello@molosoc.com' ),
+	);
+}
+
+/** Copy for the e-mail (CZ or EN). */
+function molosoc_review_request_copy( $cz, $order_number ) {
+	if ( $cz ) {
+		return array(
+			'subject'  => 'Jak se vám osvědčil váš MOLOSOC?',
+			'lang'     => 'cs',
+			'hello'    => 'Dobrý den,',
+			'intro'    => 'děkujeme za objednávku č. ' . $order_number . '. Pokud už jste produkt vyzkoušeli, budeme rádi za krátké hodnocení. Zabere to chvilku a pomůže to dalším zákaznicím a zákazníkům.',
+			'cta'      => 'Napsat hodnocení',
+			'note'     => 'Hodnocení se zveřejňují přímo na webu MOLOSOC po kontrole. Nejde o nezávisle ověřenou službu recenzí.',
+			'why'      => 'Tuto jednu zprávu posíláme jako zákazníkům, kterým jsme zboží prodali; nic dalšího vám v této věci posílat nebudeme.',
+			'optout'   => 'Odhlásit se z těchto zpráv',
+			'optout_t' => 'Nechcete-li ji již dostávat, odhlásíte se zde:',
+			'bye'      => 'Děkujeme,',
+		);
+	}
+	return array(
+		'subject'  => 'How is your MOLOSOC working for you?',
+		'lang'     => 'en',
+		'hello'    => 'Hello,',
+		'intro'    => 'Thank you for your order #' . $order_number . '. If you have tried the product, we would be glad to hear how it went. It takes a minute and helps other customers.',
+		'cta'      => 'Write a review',
+		'note'     => 'Reviews are published on the MOLOSOC website after moderation. They are not an independently verified review service.',
+		'why'      => 'We send this one message to customers we sold the goods to, and nothing else about it.',
+		'optout'   => 'Unsubscribe',
+		'optout_t' => 'If you do not want to receive it, opt out here:',
+		'bye'      => 'Thank you,',
+	);
+}
+
+/** Branded, responsive, table-based HTML body. Visible text never contains a raw URL or token. */
+function molosoc_review_request_html( $c, $products, $optout ) {
+	$e   = 'esc_html';
+	$out = '<!DOCTYPE html><html lang="' . esc_attr( $c['lang'] ) . '"><head><meta charset="utf-8">'
+		. '<meta name="viewport" content="width=device-width,initial-scale=1">'
+		. '<title>' . $e( $c['subject'] ) . '</title></head>'
+		. '<body style="margin:0;padding:0;background:#f4f1ec;">'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ec;"><tr><td align="center" style="padding:16px;">'
+		. '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:8px;font-family:Arial,Helvetica,sans-serif;color:#222222;">'
+		. '<tr><td style="padding:24px 24px 8px;font-size:20px;letter-spacing:3px;font-weight:bold;">MOLOSOC</td></tr>'
+		. '<tr><td style="padding:8px 24px;font-size:16px;line-height:1.5;">'
+		. '<p style="margin:0 0 12px;">' . $e( $c['hello'] ) . '</p>'
+		. '<p style="margin:0 0 16px;">' . $e( $c['intro'] ) . '</p></td></tr>';
+	foreach ( $products as $p ) {
+		$out .= '<tr><td align="center" style="padding:8px 24px;">';
+		if ( count( $products ) > 1 ) {
+			$out .= '<p style="margin:0 0 8px;font-size:15px;font-weight:bold;">' . $e( $p[0] ) . '</p>';
+		}
+		$out .= '<a href="' . esc_url( $p[1] ) . '" style="display:inline-block;background:#222222;color:#ffffff;text-decoration:none;font-size:16px;font-weight:bold;padding:14px 28px;border-radius:6px;">' . $e( $c['cta'] ) . '</a>'
+			. '</td></tr>';
+	}
+	$out .= '<tr><td style="padding:16px 24px 8px;font-size:14px;line-height:1.5;color:#444444;">'
+		. '<p style="margin:0 0 12px;">' . $e( $c['note'] ) . '</p>'
+		. '<p style="margin:0 0 12px;">' . $e( $c['bye'] ) . '<br>MOLOSOC</p></td></tr>'
+		. '<tr><td style="padding:8px 24px 24px;font-size:12px;line-height:1.5;color:#777777;border-top:1px solid #eeeeee;">'
+		. $e( $c['why'] ) . ' <a href="' . esc_url( $optout ) . '" style="color:#777777;text-decoration:underline;">' . $e( $c['optout'] ) . '</a>'
+		. '</td></tr></table></td></tr></table></body></html>';
+	return $out;
+}
+
+/** Subject + plain-text body + HTML body (CZ or EN). Index 1 stays the plain text. */
 function molosoc_review_request_message( $order ) {
 	$cz       = molosoc_review_request_is_cz_lang( $order );
 	$products = molosoc_review_request_products( $order, $cz );
@@ -184,28 +252,36 @@ function molosoc_review_request_message( $order ) {
 		return null;
 	}
 	$optout = molosoc_review_request_optout_url( $order->get_id() );
+	$c      = molosoc_review_request_copy( $cz, $order->get_order_number() );
 	$lines  = '';
 	foreach ( $products as $p ) {
 		$lines .= $p[0] . ': ' . $p[1] . "\n";
 	}
-	if ( $cz ) {
-		$subject = 'Jak se vám osvědčil váš MOLOSOC?';
-		$body    = "Dobrý den,\n\n"
-			. "děkujeme za objednávku č. {$order->get_order_number()}. Pokud už jste produkt vyzkoušeli, budeme rádi za krátké hodnocení. Zabere to chvilku a pomůže to dalším zákaznicím a zákazníkům.\n\n"
-			. $lines . "\n"
-			. "Hodnocení se zveřejňují přímo na webu MOLOSOC po kontrole. Nejde o nezávisle ověřenou službu recenzí.\n\n"
-			. "Tuto jednu zprávu posíláme jako zákazníkům, kterým jsme zboží prodali; nic dalšího vám v této věci posílat nebudeme. Nechcete-li ji již dostávat, odhlásíte se zde:\n{$optout}\n\n"
-			. "Děkujeme,\nMOLOSOC";
-	} else {
-		$subject = 'How is your MOLOSOC working for you?';
-		$body    = "Hello,\n\n"
-			. "Thank you for your order #{$order->get_order_number()}. If you have tried the product, we would be glad to hear how it went. It takes a minute and helps other customers.\n\n"
-			. $lines . "\n"
-			. "Reviews are published on the MOLOSOC website after moderation. They are not an independently verified review service.\n\n"
-			. "We send this one message to customers we sold the goods to, and nothing else about it. If you do not want to receive it, opt out here:\n{$optout}\n\n"
-			. "Thank you,\nMOLOSOC";
+	$body = $c['hello'] . "\n\n" . $c['intro'] . "\n\n" . $lines . "\n" . $c['note'] . "\n\n"
+		. $c['why'] . ' ' . $c['optout_t'] . "\n" . $optout . "\n\n" . $c['bye'] . "\nMOLOSOC";
+	return array( $c['subject'], $body, molosoc_review_request_html( $c, $products, $optout ) );
+}
+
+/** Per-send multipart/alternative: the plain-text part of the message in flight (set only around one wp_mail call). */
+function molosoc_review_request_altbody( $phpmailer ) {
+	if ( isset( $GLOBALS['molosoc_review_request_alt'] ) && is_object( $phpmailer ) ) {
+		$phpmailer->AltBody = $GLOBALS['molosoc_review_request_alt']; // phpcs:ignore WordPress.NamingConventions.ValidVariableName
 	}
-	return array( $subject, $body );
+}
+
+/** Send the message as branded HTML from MOLOSOC <hello@molosoc.com>, with a plain-text alternative. Scoped to this one call. */
+function molosoc_review_request_send_mail( $to, $msg ) {
+	$from    = molosoc_review_request_from();
+	$headers = array(
+		'Content-Type: text/html; charset=UTF-8',
+		'From: ' . $from['name'] . ' <' . $from['email'] . '>',
+	);
+	$GLOBALS['molosoc_review_request_alt'] = $msg[1];
+	add_action( 'phpmailer_init', 'molosoc_review_request_altbody' );
+	$ok = wp_mail( $to, $msg[0], $msg[2], $headers );
+	remove_action( 'phpmailer_init', 'molosoc_review_request_altbody' );
+	unset( $GLOBALS['molosoc_review_request_alt'] );
+	return $ok;
 }
 
 /** Reason the order must not be mailed, or '' if eligible. */
@@ -286,7 +362,7 @@ function molosoc_review_request_run( $order_id, $attempt = 0 ) {
 	}
 	$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_SENT_META, (string) time() );
 	$order->save();
-	if ( wp_mail( $to, $msg[0], $msg[1] ) ) {
+	if ( molosoc_review_request_send_mail( $to, $msg ) ) {
 		$order->add_order_note( 'Odeslána žádost o hodnocení produktu.' );
 		return;
 	}
