@@ -17,9 +17,9 @@ was changed.
   delivered signal exists in the repo and none is claimed.
 - Idempotent: one unique Action Scheduler action per order, claim meta written
   before sending, failed send releases the claim with at most 3 hourly retries.
-- Suppression: per-order opt-out, hashed e-mail suppression list (opt-out link
-  in every mail), refunded/non-completed orders, invalid e-mail, and the filter
-  `molosoc_review_request_suppressed` (use it to plug in a marketing-unsubscribe
+- Suppression: per-order opt-out, hashed e-mail suppression (one atomic option per hash) (opt-out link
+  in every mail), refunded/non-completed orders, invalid e-mail, and the
+  `molosoc_review_request_suppressed` filter (use it to plug in a marketing-unsubscribe
   list, e.g. Brevo, before going live).
 - E-mail (CZ/EN, plain text) links to the product page `#reviews` in the order
   language, says reviews are moderated on MOLOSOC and **not independently

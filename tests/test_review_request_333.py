@@ -16,6 +16,7 @@ function add_action( $t, $cb ) { $GLOBALS['hooks'][ $t ] = $cb; }
 function apply_filters( $t, $v ) { return $v; }
 function get_option( $k, $d = '' ) { return $GLOBALS['opts'][ $k ] ?? $d; }
 function update_option( $k, $v, $a = null ) { $GLOBALS['opts'][ $k ] = $v; }
+function add_option( $k, $v, $d = '', $a = 'yes' ) { if ( ! isset( $GLOBALS['opts'][ $k ] ) ) { $GLOBALS['opts'][ $k ] = $v; return true; } return false; }
 function wp_salt( $s ) { return 'salt'; }
 function home_url( $p ) { return 'https://molosoc.test' . $p; }
 function add_query_arg( $a, $u ) { return $u . '?' . http_build_query( $a ); }
@@ -147,7 +148,8 @@ class ReviewRequestTests(unittest.TestCase):
     def test_optout_link_suppresses_and_bad_token_rejected(self):
         r = run(opts=LIVE, optout_url=True, runs=0)
         self.assertEqual(r["mails"], [])
-        self.assertEqual(len(r["opts"]["molosoc_review_request_suppressed"]), 1)
+        keys = [k for k in r["opts"] if k.startswith("molosoc_rr_optout_")]
+        self.assertEqual(len(keys), 1)
         self.assertNotIn("a@example.cz", json.dumps(r["opts"]))
 
     def test_failed_mail_releases_claim_and_retries(self):

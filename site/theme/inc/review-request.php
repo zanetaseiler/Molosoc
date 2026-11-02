@@ -104,8 +104,12 @@ function molosoc_review_request_email_hash( $email ) {
 }
 
 function molosoc_review_request_email_suppressed( $email ) {
-	$list = get_option( 'molosoc_review_request_suppressed', array() );
-	return is_array( $list ) && in_array( molosoc_review_request_email_hash( $email ), $list, true );
+	return false !== get_option( molosoc_review_request_suppress_key( $email ), false );
+}
+
+/** One option per hashed address, so concurrent opt-outs cannot overwrite each other. */
+function molosoc_review_request_suppress_key( $email ) {
+	return 'molosoc_rr_optout_' . substr( molosoc_review_request_email_hash( $email ), 0, 40 );
 }
 
 /** Signed opt-out URL for an order (no login, no nonce; HMAC of order id). */
@@ -293,13 +297,8 @@ function molosoc_review_request_handle_optout() {
 	if ( $order ) {
 		$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_OPTOUT_META, (string) time() );
 		$order->save();
-		$list = get_option( 'molosoc_review_request_suppressed', array() );
-		$list = is_array( $list ) ? $list : array();
-		$hash = molosoc_review_request_email_hash( $order->get_billing_email() );
-		if ( ! in_array( $hash, $list, true ) ) {
-			$list[] = $hash;
-			update_option( 'molosoc_review_request_suppressed', $list, false );
-		}
+		// add_option() is an atomic INSERT on a unique key: no read-modify-write race.
+		add_option( molosoc_review_request_suppress_key( $order->get_billing_email() ), (string) time(), '', 'no' );
 	}
 	wp_die( 'Hotovo, žádost o hodnocení již nebudeme posílat. / Done, we will not send you a review request.', 'MOLOSOC', array( 'response' => 200 ) );
 }
