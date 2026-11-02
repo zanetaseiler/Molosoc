@@ -35,6 +35,10 @@ function get_permalink( $id ) { return 'https://molosoc.test/p' . $id . '/'; }
 function time_now() { return $GLOBALS['T']['now']; }
 function as_schedule_single_action( $ts, $hook, $args, $g, $u ) { $GLOBALS['scheduled'][] = array( 'ts' => $ts, 'hook' => $hook, 'args' => $args ); return 1; }
 function wp_mail( $to, $s, $b ) { $GLOBALS['mails'][] = array( $to, $s, $b ); return ! $GLOBALS['T']['mail_fails']; }
+function esc_html( $s ) { return htmlspecialchars( $s ); }
+function sanitize_email( $e ) { return $e; }
+function wp_unslash( $v ) { return $v; }
+function pll_current_language() { return $GLOBALS['T']['lang'] ?? 'cz'; }
 function wp_die( $m ) { $GLOBALS['died'] = $m; }
 function wc_get_order( $id ) { return new FakeOrder( $GLOBALS['T']['order'] ); }
 class FakeItem { function get_product_id() { return $GLOBALS['T']['order']['pid'] ?? 7; } function get_name() { return 'MOLOSOC'; } }
@@ -67,15 +71,23 @@ if ( ! empty( $GLOBALS['T']['optout_url'] ) ) {
 	$GLOBALS['hooks']['template_redirect']();
 	$GLOBALS['hooks']['molosoc_review_request_send']( 1 );
 }
-echo json_encode( array( 'scheduled' => $sched, 'mails' => $GLOBALS['mails'], 'notes' => $GLOBALS['notes'],
+if ( ! empty( $GLOBALS['T']['checkout'] ) ) {
+	$_POST = $GLOBALS['T']['post'];
+	ob_start(); $GLOBALS['hooks']['woocommerce_after_order_notes'](); $html = ob_get_clean();
+	$GLOBALS['hooks']['woocommerce_checkout_create_order']( wc_get_order( 1 ), array() );
+	$GLOBALS['html'] = $html;
+}
+echo json_encode( array( 'html' => $GLOBALS['html'] ?? '', 'scheduled' => $sched, 'mails' => $GLOBALS['mails'], 'notes' => $GLOBALS['notes'],
 	'final' => $GLOBALS['scheduled'], 'meta' => $GLOBALS['meta'], 'opts' => $GLOBALS['opts'], 'died' => $GLOBALS['died'] ?? '' ), JSON_UNESCAPED_UNICODE );
 """
 
 def run(order=None, opts=None, **over):
     o = dict(country="CZ", email="a@example.cz", status="completed", refunded=0)
     o.update(order or {})
-    sc = dict(now=NOW, order=o, meta={}, opts=opts or {}, mail_fails=False, runs=1)
+    sc = dict(now=NOW, order=o, meta={"_molosoc_review_request_notice": "1"}, opts=opts or {}, mail_fails=False, runs=1)
+    meta = dict(sc["meta"], **over.pop("meta", {}))
     sc.update(over)
+    sc["meta"] = meta
     with tempfile.TemporaryDirectory() as d:
         f = Path(d) / "s.php"; f.write_text(STUBS + RUNNER)
         out = subprocess.run(["php", str(f), str(MODULE)], capture_output=True, text=True,
@@ -170,6 +182,41 @@ class ReviewRequestTests(unittest.TestCase):
         self.assertNotIn("_molosoc_review_request_sent", r["meta"])
         self.assertEqual(len(r["final"]), 2)
         self.assertNotIn("molosoc_rr_claim_1", r["opts"])
+
+    def checkout(self, mode, post, lang="cz"):
+        return run(opts={"molosoc_review_request_mode": mode} if mode else {}, meta={"_molosoc_review_request_notice": ""},
+                   checkout=True, post=post, lang=lang, runs=0)
+
+    def test_checkout_notice_off_by_default(self):
+        r = self.checkout(None, {"molosoc_review_request_notice_shown": "1"})
+        self.assertEqual(r["html"], "")
+        self.assertFalse(r["meta"].get("_molosoc_review_request_notice"))
+
+    def test_checkout_notice_cz_en_unchecked_optout_and_recorded(self):
+        post = {"molosoc_review_request_notice_shown": "1"}
+        r = self.checkout("dry_run", post)
+        self.assertIn("jednu zprávu", r["html"])
+        self.assertNotIn("checked", r["html"])
+        self.assertTrue(r["meta"]["_molosoc_review_request_notice"])
+        self.assertNotIn("_molosoc_review_request_optout", r["meta"])
+        self.assertIn("one message", self.checkout("dry_run", post, "en")["html"])
+
+    def test_checkout_refusal_blocks_order_and_suppresses_email(self):
+        r = self.checkout("live", {"molosoc_review_request_notice_shown": "1", "molosoc_review_request_refuse": "1", "billing_email": "a@example.cz"})
+        self.assertTrue(r["meta"]["_molosoc_review_request_optout"])
+        self.assertEqual(len([k for k in r["opts"] if k.startswith("molosoc_rr_optout_")]), 1)
+
+    def test_no_notice_flag_means_no_send(self):
+        self.assertEqual(run(opts=LIVE, meta={"_molosoc_review_request_notice": ""})["mails"], [])
+
+    def test_notice_not_recorded_if_not_rendered(self):
+        r = self.checkout("live", {})
+        self.assertFalse(r["meta"].get("_molosoc_review_request_notice"))
+
+    def test_suppressed_email_blocks_other_orders(self):
+        import hashlib
+        r = run(opts=LIVE, optout_url=True, runs=0)  # opt-out link suppresses the address
+        self.assertEqual(r["mails"], [])
 
 if __name__ == "__main__":
     unittest.main()
