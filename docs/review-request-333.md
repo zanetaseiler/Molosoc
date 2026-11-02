@@ -15,8 +15,7 @@ was changed.
 - Trigger: Woo status `completed` + 10 days (CZ) / 14 days (abroad). This is a
   **proxy**: it does not mean a carrier delivered the parcel. No PPL/Zasilkovna
   delivered signal exists in the repo and none is claimed.
-- Idempotent: one unique Action Scheduler action per order, claim meta written
-  before sending, failed send releases the claim with at most 3 hourly retries.
+- Idempotent: one unique Action Scheduler action per order; an atomic per-order claim (`add_option()` unique insert, `molosoc_rr_claim_<order>`) must be acquired before sending, so overlapping callbacks cannot double-send. A failed send releases the claim with at most 3 hourly retries.
 - Suppression: per-order opt-out, hashed e-mail suppression (one atomic option per hash) (opt-out link
   in every mail), refunded/non-completed orders, invalid e-mail, and the
   `molosoc_review_request_suppressed` filter (use it to plug in a marketing-unsubscribe

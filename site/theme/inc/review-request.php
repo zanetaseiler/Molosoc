@@ -267,15 +267,22 @@ function molosoc_review_request_run( $order_id, $attempt = 0 ) {
 		return;
 	}
 
-	// Claim before sending so a retry / duplicate run cannot send twice.
+	// Atomic per-order claim: add_option() is an INSERT on a unique key, so only
+	// one overlapping callback can win. Send only if the claim was acquired.
+	$claim_key = 'molosoc_rr_claim_' . (int) $order_id;
+	if ( ! add_option( $claim_key, (string) time(), '', 'no' ) ) {
+		return;
+	}
 	$order->update_meta_data( MOLOSOC_REVIEW_REQUEST_SENT_META, (string) time() );
 	$order->save();
 	if ( wp_mail( $to, $msg[0], $msg[1] ) ) {
 		$order->add_order_note( 'Odeslána žádost o hodnocení produktu.' );
 		return;
 	}
+	// Mail failed: release both claims so the scheduled retry can try again.
 	$order->delete_meta_data( MOLOSOC_REVIEW_REQUEST_SENT_META );
 	$order->save();
+	delete_option( $claim_key );
 	if ( $attempt < MOLOSOC_REVIEW_REQUEST_MAX_RETRIES && function_exists( 'as_schedule_single_action' ) ) {
 		as_schedule_single_action( time() + HOUR_IN_SECONDS, MOLOSOC_REVIEW_REQUEST_HOOK, array( (int) $order_id, $attempt + 1 ), 'molosoc', true );
 	}

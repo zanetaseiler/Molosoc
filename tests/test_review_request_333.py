@@ -17,6 +17,7 @@ function apply_filters( $t, $v ) { return $v; }
 function get_option( $k, $d = '' ) { return $GLOBALS['opts'][ $k ] ?? $d; }
 function update_option( $k, $v, $a = null ) { $GLOBALS['opts'][ $k ] = $v; }
 function add_option( $k, $v, $d = '', $a = 'yes' ) { if ( ! isset( $GLOBALS['opts'][ $k ] ) ) { $GLOBALS['opts'][ $k ] = $v; return true; } return false; }
+function delete_option( $k ) { unset( $GLOBALS['opts'][ $k ] ); return true; }
 function wp_salt( $s ) { return 'salt'; }
 function home_url( $p ) { return 'https://molosoc.test' . $p; }
 function add_query_arg( $a, $u ) { return $u . '?' . http_build_query( $a ); }
@@ -152,10 +153,16 @@ class ReviewRequestTests(unittest.TestCase):
         self.assertEqual(len(keys), 1)
         self.assertNotIn("a@example.cz", json.dumps(r["opts"]))
 
+    def test_existing_atomic_claim_blocks_send(self):
+        # Another overlapping callback already won the per-order claim.
+        r = run(opts=dict(LIVE, molosoc_rr_claim_1="1"))
+        self.assertEqual(r["mails"], [])
+
     def test_failed_mail_releases_claim_and_retries(self):
         r = run(opts=LIVE, mail_fails=True)
         self.assertNotIn("_molosoc_review_request_sent", r["meta"])
         self.assertEqual(len(r["final"]), 2)
+        self.assertNotIn("molosoc_rr_claim_1", r["opts"])
 
 if __name__ == "__main__":
     unittest.main()
