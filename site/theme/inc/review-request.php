@@ -70,7 +70,19 @@ function molosoc_review_request_is_live() {
 		&& '1' === (string) get_option( 'molosoc_review_request_legal_confirmed', '' );
 }
 
-/** CZ order (Czech billing/shipping country) gets the Czech e-mail. */
+/** Message language: the language the order was placed in (_molosoc_lang), falling back to the billing/shipping country. */
+function molosoc_review_request_is_cz_lang( $order ) {
+	$lang = (string) $order->get_meta( '_molosoc_lang' );
+	if ( 'cz' === $lang ) {
+		return true;
+	}
+	if ( 'en' === $lang ) {
+		return false;
+	}
+	return molosoc_review_request_is_cz( $order );
+}
+
+/** Czech billing/shipping country: drives only the delivery-delay proxy (10d vs 14d), never the language. */
 function molosoc_review_request_is_cz( $order ) {
 	$country = $order->get_billing_country();
 	if ( '' === $country ) {
@@ -131,6 +143,14 @@ function molosoc_review_request_products( $order, $cz ) {
 			continue;
 		}
 		$target = $pid;
+		if ( defined( 'MOLOSOC_PRODUCT_ID' ) && MOLOSOC_PRODUCT_ID === (int) $pid && function_exists( 'molosoc_product_url' ) ) {
+			// Product 364 is untranslatable in Polylang and its CZ permalink filter needs a CZ request; use the explicit-language helper.
+			$out[ $pid ] = array( $item->get_name(), molosoc_product_url( $cz ? 'cz' : 'en' ) . '#reviews' );
+			if ( count( $out ) >= 3 ) {
+				break;
+			}
+			continue;
+		}
 		if ( function_exists( 'pll_get_post' ) ) {
 			$tr = pll_get_post( $pid, $cz ? 'cz' : 'en' );
 			if ( $tr ) {
@@ -150,7 +170,7 @@ function molosoc_review_request_products( $order, $cz ) {
 
 /** Subject + plain-text body (CZ or EN). */
 function molosoc_review_request_message( $order ) {
-	$cz       = molosoc_review_request_is_cz( $order );
+	$cz       = molosoc_review_request_is_cz_lang( $order );
 	$products = molosoc_review_request_products( $order, $cz );
 	if ( ! $products ) {
 		return null;

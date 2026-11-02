@@ -20,13 +20,15 @@ function wp_salt( $s ) { return 'salt'; }
 function home_url( $p ) { return 'https://molosoc.test' . $p; }
 function add_query_arg( $a, $u ) { return $u . '?' . http_build_query( $a ); }
 function is_email( $e ) { return (bool) filter_var( $e, FILTER_VALIDATE_EMAIL ); }
+define( 'MOLOSOC_PRODUCT_ID', 364 );
+function molosoc_product_url( $l ) { return 'https://molosoc.test/' . $l . '/product/'; }
 function get_permalink( $id ) { return 'https://molosoc.test/p' . $id . '/'; }
 function time_now() { return $GLOBALS['T']['now']; }
 function as_schedule_single_action( $ts, $hook, $args, $g, $u ) { $GLOBALS['scheduled'][] = array( 'ts' => $ts, 'hook' => $hook, 'args' => $args ); return 1; }
 function wp_mail( $to, $s, $b ) { $GLOBALS['mails'][] = array( $to, $s, $b ); return ! $GLOBALS['T']['mail_fails']; }
 function wp_die( $m ) { $GLOBALS['died'] = $m; }
 function wc_get_order( $id ) { return new FakeOrder( $GLOBALS['T']['order'] ); }
-class FakeItem { function get_product_id() { return 7; } function get_name() { return 'MOLOSOC'; } }
+class FakeItem { function get_product_id() { return $GLOBALS['T']['order']['pid'] ?? 7; } function get_name() { return 'MOLOSOC'; } }
 class FakeOrder {
 	function __construct( $d ) { $this->d = $d; }
 	function get_id() { return 1; } function get_order_number() { return '1234'; }
@@ -110,6 +112,21 @@ class ReviewRequestTests(unittest.TestCase):
         body = run(order={"country": "DE"}, opts=LIVE)["mails"][0][2]
         self.assertIn("not an independently verified", body)
         self.assertIn("opt out here", body)
+
+    def test_language_from_saved_order_lang_not_country(self):
+        body = run(order={"country": "CZ"}, opts=LIVE, meta={"_molosoc_lang": "en"})["mails"][0][2]
+        self.assertIn("opt out here", body)
+        body = run(order={"country": "DE"}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][2]
+        self.assertIn("Nejde o nezávisle ověřenou", body)
+        # delay still follows the country
+        r = run(order={"country": "DE"}, opts=LIVE, meta={"_molosoc_lang": "cz"})
+        self.assertEqual(r["scheduled"][0]["ts"], NOW + 14 * 86400)
+
+    def test_product_364_link_uses_explicit_language_helper(self):
+        b = run(order={"pid": 364}, opts=LIVE, meta={"_molosoc_lang": "cz"})["mails"][0][2]
+        self.assertIn("https://molosoc.test/cz/product/#reviews", b)
+        b = run(order={"pid": 364, "country": "DE"}, opts=LIVE)["mails"][0][2]
+        self.assertIn("https://molosoc.test/en/product/#reviews", b)
 
     def test_blocked_cases_send_nothing(self):
         for order, opts in [
