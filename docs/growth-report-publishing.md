@@ -46,7 +46,7 @@ only. One secret is required here:
 | Repository access | **Only select repositories** → `zanetaseiler/trafficdom-growth-engine` and nothing else |
 | Repository permissions | **Actions: Read-only**. Metadata: Read-only is added automatically and is the only other permission. |
 | Everything else | Left at "No access" — no Contents, no Secrets, no Workflows, no organisation permissions |
-| Expiry | Set one. 90 days is a reasonable default; the workflow fails closed when it lapses. |
+| Expiry | **No expiration.** Expiring tokens silently break every publish workflow that reads this secret. The token is read-only on one repository, so a fixed lifetime adds little protection. GitHub still revokes a token unused for a year. |
 
 A classic PAT is not acceptable here: its narrowest useful scope (`repo`) grants
 read **and write** across every repository the account can reach. The
