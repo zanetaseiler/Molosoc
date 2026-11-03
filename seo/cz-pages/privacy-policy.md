@@ -33,6 +33,7 @@ Zpracováváme zejména:
 - Objednávkové údaje – zakoupené produkty
 - Platební údaje – zpracovává třetí strana (platební brány)
 - Marketingové údaje – přihlášení k newsletteru, čekací listina
+- Údaje k žádosti o hodnocení – e-mail a číslo objednávky, informace o případném odmítnutí zprávy
 - Technické údaje – IP adresa, cookies
 
 ## 3. Účel zpracování
@@ -43,6 +44,7 @@ Osobní údaje zpracováváme za účelem:
 - Zákaznické komunikace
 - Plnění zákonných povinností (účetnictví, daně)
 - Marketingové komunikace (na základě souhlasu)
+- Zaslání jedné zprávy s prosbou o hodnocení zakoupeného produktu (viz níže)
 - Zlepšování funkčnosti webu
 
 ## 4. Právní základ zpracování
@@ -51,6 +53,10 @@ Osobní údaje zpracováváme za účelem:
 - Plnění zákonných povinností
 - Oprávněný zájem
 - Souhlas subjektu údajů
+
+### Žádost o hodnocení po nákupu
+
+Po nákupu můžeme zákazníkovi poslat jednu zprávu s prosbou o hodnocení zakoupeného produktu na webu MOLOSOC. Je oddělená od e-mailů k objednávce, platbě a doručení i od newsletteru. Odmítnout ji lze zaškrtnutím políčka při objednávce nebo odkazem v samotné zprávě; odmítnutí neovlivňuje nákup. Souhlas s obchodními podmínkami není souhlasem se zasíláním marketingu ani newsletteru. Pro zaslání se použije e-mailová adresa získaná v souvislosti s objednávkou a uchová se záznam o odmítnutí, aby se zpráva nezasílala opakovaně.
 
 ## 5. Doba uchování údajů
 

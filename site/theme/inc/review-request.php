@@ -432,13 +432,15 @@ add_action( 'template_redirect', 'molosoc_review_request_handle_optout', 1 );
 function molosoc_review_request_checkout_text( $cz ) {
 	if ( $cz ) {
 		return array(
-			'Po nákupu vám pošleme jednu zprávu s prosbou o hodnocení produktu na webu MOLOSOC. Nic dalšího v této věci posílat nebudeme a odhlásit se můžete i přímo v ní.',
+			'E-maily k objednávce, platbě a doručení dostanete automaticky. Odděleně od nich vám po nákupu pošleme jednu zprávu s prosbou o hodnocení produktu na webu MOLOSOC. Nejde o newsletter, nic dalšího v této věci posílat nebudeme a odhlásit se můžete i přímo v ní. Souhlas s obchodními podmínkami není souhlasem s marketingem a nákupu se toto pole nijak netýká.',
 			'Nechci dostat tuto jednu zprávu s prosbou o hodnocení',
+			'Informace o zpracování osobních údajů',
 		);
 	}
 	return array(
-		'After your purchase we will send you one message asking you to review the product on MOLOSOC. We will send nothing else about it, and you can also opt out in the message itself.',
+		'You will receive the e-mails about your order, payment and delivery automatically. Separately, after your purchase we will send you one message asking you to review the product on MOLOSOC. It is not a newsletter, we will send nothing else about it, and you can also opt out in the message itself. Accepting the Terms is not marketing consent, and this option does not affect your purchase.',
 		'I do not want to receive this one review-request message',
+		'Information on personal data processing',
 	);
 }
 
@@ -447,9 +449,10 @@ function molosoc_review_request_checkout_field() {
 		return;
 	}
 	$cz = function_exists( 'pll_current_language' ) && 'cz' === pll_current_language();
-	list( $notice, $label ) = molosoc_review_request_checkout_text( $cz );
+	list( $notice, $label, $privacy ) = molosoc_review_request_checkout_text( $cz );
+	$privacy_url = home_url( $cz ? '/zasady-ochrany-osobnich-udaju/' : '/privacy-policies/' );
 	echo '<div class="molosoc-review-optout" style="margin:1em 0">'
-		. '<p>' . esc_html( $notice ) . '</p>'
+		. '<p>' . esc_html( $notice ) . ' <a href="' . esc_url( $privacy_url ) . '" target="_blank" rel="noopener">' . esc_html( $privacy ) . '</a></p>'
 		. '<label><input type="checkbox" name="molosoc_review_request_refuse" value="1"> ' . esc_html( $label ) . '</label>'
 		. '<input type="hidden" name="molosoc_review_request_notice_shown" value="1">'
 		. '</div>';
