@@ -11,7 +11,7 @@ Poslední aktualizace: 21. 1. 2025
 
 Tyto obchodní podmínky („Podmínky“) upravují používání webových stránek www.molosoc.com a nákup produktů značky MOLOSOC („prodávající“, „my“).
 
-Odesláním objednávky souhlasíte s těmito Podmínkami.
+Odesláním objednávky souhlasíte s těmito Podmínkami. Tento souhlas není souhlasem se zasíláním obchodních sdělení ani newsletteru.
 
 ## 1. Identifikace prodávajícího
 
@@ -37,7 +37,7 @@ Produkty nejsou zdravotnickými prostředky a nejsou určeny k diagnostice, lé�
 - Odesláním objednávky potvrzujete správnost uvedených údajů
 - Prodávající si vyhrazuje právo objednávku odmítnout nebo zrušit v případě chyby ceny, nedostupnosti zboží nebo podezření na zneužití
 
-Potvrzení objednávky je zasláno e-mailem po přijetí platby.
+Potvrzení objednávky je zasláno e-mailem po přijetí platby. E-maily k objednávce, platbě a doručení jsou zasílány automaticky. Odděleně od nich může prodávající po nákupu zaslat jednu zprávu s prosbou o hodnocení zakoupeného produktu; odmítnout ji lze při objednávce nebo v samotné zprávě a nákupu se netýká. Podrobnosti viz Zásady ochrany osobních údajů.
 
 ## 4. Ceny a platby
 
