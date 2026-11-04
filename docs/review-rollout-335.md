@@ -8,6 +8,14 @@ verified or changed in production. Everything stays default-off.
 - Option `molosoc_hide_cusrev_checkbox` (default `0`): when `1`, the CusRev
   checkout opt-in row is hidden on checkout via CSS. Input stays unchecked, so
   no consent is recorded. Set it only after the checks below.
+  Issue #343: the CSS hides ONLY `p.cr-customer-consent` (and the plugin's
+  `.cr-customer-consent-checkout` / `#cr_customer_consent_checkout_wrap`
+  wrappers). It must never use `:has()` on `.form-row`: on the live checkout
+  the consent box sits inside `#payment .form-row.place-order`, and the
+  original `.form-row:has(input[name="cr_customer_consent"])` rule hid the
+  Place order button (no orders possible ≈ 2–4 Nov 2026). Regression tests:
+  `tests/test_checkout_place_order_343.py` (fixture, headless Chrome) and
+  `scripts/checkout_place_order_smoke.mjs` (live, guest cart, no order).
 
 ## Owner/ops steps (WP-admin), in order
 1. WooCommerce > Settings > Products: reviews enabled; check the Reviews tab on
