@@ -25,7 +25,12 @@ production settings.
   mobile tweak), separated from the payment methods. Markup, input name,
   default state and submission are unchanged.
 - The selectors target the plugin's known wrapper/input name
-  (`cr_customer_consent`); UNVERIFIED against the live markup.
+  (`cr_customer_consent`). Verified on the live checkout 4 Nov 2026 (Issue
+  #343): the box is `p.cr-customer-consent > label > input#cr_customer_consent`
+  rendered inside `#payment .form-row.place-order` >
+  `.woocommerce-terms-and-conditions-wrapper`, next to `#place_order`. The
+  selectors were changed to `p.cr-customer-consent`; `.form-row:has(...)` is
+  banned because it matched the place-order row.
 
 ## UNVERIFIED - owner steps (WP-admin, read-only unless stated)
 1. Plugins: confirm Customer Reviews for WooCommerce version.

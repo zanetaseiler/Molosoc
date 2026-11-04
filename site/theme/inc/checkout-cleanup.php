@@ -76,6 +76,13 @@ add_filter( 'gettext', 'molosoc_cz_cusrev_checkbox_text', 10, 3 );
  * Set it only after CusRev invitation sending is disabled and MOLOSOC-hosted
  * reviews are verified (docs/review-rollout-335.md). Hiding is display-only:
  * the input stays unchecked, so no CusRev consent is ever recorded.
+ *
+ * Issue #343 (URGENT): the selectors target ONLY the consent element itself.
+ * On the live checkout CusRev renders `p.cr-customer-consent` INSIDE
+ * `#payment .form-row.place-order` (within the terms-and-conditions wrapper),
+ * so the previous `.form-row:has(input[name="cr_customer_consent"])` matched
+ * the whole place-order row and hid the Place order button (#place_order).
+ * Never use `:has()` on a generic wrapper such as `.form-row` here.
  */
 function molosoc_hide_cusrev_checkbox_css() {
 	if ( '1' !== (string) get_option( 'molosoc_hide_cusrev_checkbox', '0' ) ) {
@@ -84,7 +91,7 @@ function molosoc_hide_cusrev_checkbox_css() {
 	if ( ! function_exists( 'is_checkout' ) || ! is_checkout() ) {
 		return;
 	}
-	echo '<style id="molosoc-hide-cusrev">.woocommerce-checkout .cr-customer-consent-checkout,.woocommerce-checkout #cr_customer_consent_checkout_wrap,.woocommerce-checkout .form-row:has(input[name="cr_customer_consent"]){display:none!important}</style>' . "\n";
+	echo '<style id="molosoc-hide-cusrev">.woocommerce-checkout .cr-customer-consent-checkout,.woocommerce-checkout #cr_customer_consent_checkout_wrap,.woocommerce-checkout p.cr-customer-consent{display:none!important}</style>' . "\n";
 }
 add_action( 'wp_head', 'molosoc_hide_cusrev_checkbox_css', 99 );
 
