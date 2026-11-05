@@ -59,6 +59,25 @@ function molosoc_ld_piece_word( int $n ): string {
 }
 
 /** Orders sizes S<M<L..., unknown sizes after the known ones, alphabetically. */
+/**
+ * Maps a raw size attribute value (incl. live slugs such as `m-medium` /
+ * `l-large`, Issue #220) to its canonical label; unknown values are only
+ * uppercased so they still fail closed downstream.
+ */
+function molosoc_ld_normalize_size( string $raw ): string {
+	$v = strtolower( trim( $raw ) );
+	if ( '' === $v ) {
+		return '';
+	}
+	$aliases = array(
+		'm-medium' => 'M',
+		'medium'   => 'M',
+		'l-large'  => 'L',
+		'large'    => 'L',
+	);
+	return $aliases[ $v ] ?? strtoupper( $v );
+}
+
 function molosoc_ld_sort_sizes( array $sizes ): array {
 	uksort(
 		$sizes,
@@ -286,11 +305,27 @@ function molosoc_ld_on_processing( $order_id ): void {
 				if ( add_option( $lock_key, time(), '', 'no' ) ) {
 					return true;
 				}
-				if ( time() - (int) get_option( $lock_key, 0 ) > MOLOSOC_LD_LOCK_TTL ) {
-					delete_option( $lock_key );
-					return (bool) add_option( $lock_key, time(), '', 'no' );
+				global $wpdb;
+				wp_cache_delete( $lock_key, 'options' );
+				wp_cache_delete( 'notoptions', 'options' );
+				wp_cache_delete( 'alloptions', 'options' );
+				$observed = get_option( $lock_key, false );
+				if ( false === $observed || time() - (int) $observed <= MOLOSOC_LD_LOCK_TTL ) {
+					return false;
 				}
-				return false;
+				// Atomic compare-and-swap on the observed value: a contender that
+				// lost the race matches 0 rows and can never remove a fresh lock.
+				$swapped = $wpdb->update(
+					$wpdb->options,
+					array( 'option_value' => (string) time() ),
+					array(
+						'option_name'  => $lock_key,
+						'option_value' => (string) $observed,
+					)
+				);
+				wp_cache_delete( $lock_key, 'options' );
+				wp_cache_delete( 'alloptions', 'options' );
+				return 1 === (int) $swapped;
 			},
 			'unlock'    => static function () use ( $lock_key ) {
 				delete_option( $lock_key );

@@ -80,6 +80,22 @@ class Subject(unittest.TestCase):
         self.assertEqual(subject("PPL", {"M": 3, "L": 2}), "PPL | 5 kusů | 3x M, 2x L")
         self.assertEqual(subject("PPL", {"XL": 1, "S": 7}), "PPL | 8 kusů | 7x S, 1x XL")
 
+    def test_live_size_slugs_normalize(self):
+        def n(v):
+            return json.loads(php("echo json_encode(molosoc_ld_normalize_size(%s));" % json.dumps(v)))
+        self.assertEqual(n("m-medium"), "M")
+        self.assertEqual(n(" L-Large "), "L")
+        self.assertEqual(n("xl"), "XL")
+        self.assertEqual(n(""), "")
+        self.assertEqual(subject("PPL", {n("l-large"): 1, n("m-medium"): 1}), "PPL | 2 kusy | 1x M, 1x L")
+
+    def test_expired_lock_reclaim_is_compare_and_swap(self):
+        i = SRC.index("'lock'      =>")
+        block = SRC[i:SRC.index("'unlock'", i)]
+        self.assertIn("$wpdb->update", block)
+        self.assertIn("'option_value' => (string) $observed", block)
+        self.assertNotIn("delete_option", block)
+
     def test_bad_input_returns_null(self):
         self.assertIsNone(subject("DHL", {"M": 1}))
         self.assertIsNone(subject("PPL", {}))
