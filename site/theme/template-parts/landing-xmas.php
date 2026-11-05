@@ -280,6 +280,8 @@ get_header();
 		<div class="lpb-section__cta"><?php $lpx_picker( 'order' ); ?></div>
 	</section>
 
+	<?php echo molosoc_real_reviews_html( 'cz' === $lpx_lang ? 'cz' : 'en' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+
 	<section class="lpb-section" aria-label="FAQ">
 		<div class="lpb-section__head"><h2><?php echo esc_html( $t['faq_h'] ); ?></h2></div>
 		<div class="lpb-faq">

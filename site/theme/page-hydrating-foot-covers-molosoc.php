@@ -280,6 +280,8 @@ get_header();
 	</section>
 
 	<!-- ============ Order ============ -->
+	<?php echo molosoc_real_reviews_html( 'en' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+
 	<section class="lpb-section" aria-label="Order">
 		<div class="lpb-section__head">
 			<p class="lpb-eyebrow">Order</p>

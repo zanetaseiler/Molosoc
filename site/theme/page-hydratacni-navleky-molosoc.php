@@ -275,6 +275,8 @@ get_header();
 	</section>
 
 	<!-- ============ 10. Podívejte se (page 580 section 10: YouTube embed dXVivzbZBfc, vertical) ============ -->
+	<?php echo molosoc_real_reviews_html( 'cz' ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
+
 	<section class="lpb-section lpb-section--cream" aria-label="Jak to vše začalo">
 		<div class="lpb-section__head">
 			<p class="lpb-eyebrow">Podívejte se</p>
