@@ -96,6 +96,14 @@ class Subject(unittest.TestCase):
         self.assertIn("'option_value' => (string) $observed", block)
         self.assertNotIn("delete_option", block)
 
+    def test_audit_is_append_only_not_read_modify_write(self):
+        i = SRC.index("'audit'     =>")
+        block = SRC[i:SRC.index("'mark_done'", i)]
+        self.assertIn("add_meta_data( MOLOSOC_LD_AUDIT_META", block)
+        self.assertIn(", false )", block)
+        self.assertNotIn("get_meta", block)
+        self.assertNotIn("update_meta_data", block)
+
     def test_bad_input_returns_null(self):
         self.assertIsNone(subject("DHL", {"M": 1}))
         self.assertIsNone(subject("PPL", {}))

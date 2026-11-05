@@ -331,11 +331,12 @@ function molosoc_ld_on_processing( $order_id ): void {
 				delete_option( $lock_key );
 			},
 			'audit'     => static function ( array $row ) use ( $order_id ) {
+				// Append-only: every audit row is its own meta row (an INSERT), never a
+				// read-modify-write of a shared blob, so overlapping callbacks - including
+				// ones that lost the lock - cannot overwrite each other's rows.
 				$order = wc_get_order( $order_id );
 				if ( $order ) {
-					$log   = (array) json_decode( (string) $order->get_meta( MOLOSOC_LD_AUDIT_META ), true );
-					$log[] = array_merge( array( 'ts' => gmdate( 'c' ) ), $row );
-					$order->update_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_slice( $log, -20 ) ) );
+					$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_merge( array( 'ts' => gmdate( 'c' ) ), $row ) ), false );
 					$order->save_meta_data();
 				}
 			},
