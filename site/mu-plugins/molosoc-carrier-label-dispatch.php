@@ -139,6 +139,28 @@ function molosoc_ld_detect_carrier( array $method_ids ): ?string {
 }
 
 /**
+ * Phase 2: authoritative Comgate "paid" decision from plain facts:
+ *   transaction_id, confirm_key (configured order-meta key), confirm_value
+ *   (configured expected value), confirm_actual (the order's value for that key).
+ * Status `processing` alone is NOT proof (a plugin or an admin can set it).
+ * Paid only if a transaction id exists AND the configured confirmation key
+ * holds exactly the configured value. Nothing configured -> false (fail
+ * closed). The key/value must come from the Comgate plugin's real behaviour,
+ * confirmed read-only by Žaneta (docs/carrier-label-staging-352.md), never guessed.
+ */
+function molosoc_ld_comgate_paid( array $f ): bool {
+	$key = trim( (string) ( $f['confirm_key'] ?? '' ) );
+	$val = trim( (string) ( $f['confirm_value'] ?? '' ) );
+	if ( '' === $key || '' === $val ) {
+		return false;
+	}
+	if ( '' === trim( (string) ( $f['transaction_id'] ?? '' ) ) ) {
+		return false;
+	}
+	return hash_equals( $val, trim( (string) ( $f['confirm_actual'] ?? '' ) ) );
+}
+
+/**
  * Pure eligibility decision from a plain snapshot:
  *   status, payment_method, comgate_confirmed (bool), carrier (?string),
  *   created_ts, since_ts (cut-off: orders created before it are skipped),
@@ -221,6 +243,11 @@ function molosoc_ld_process( int $order_id, array $io ): string {
 			return 'recheck_' . $reason;
 		}
 		$res = $io['adapter']( (string) $snap['carrier'] );
+		if ( ! empty( $res['live'] ) ) {
+			// Phase 2: no live adapter may run through this pipeline.
+			$io['audit']( array( 'order' => $order_id, 'result' => 'error', 'reason' => 'live_adapter_refused' ) );
+			return 'live_adapter_refused';
+		}
 		if ( empty( $res['ok'] ) ) {
 			$io['audit']( array( 'order' => $order_id, 'result' => 'error', 'reason' => 'adapter_failed' ) );
 			return 'adapter_failed';
@@ -233,6 +260,7 @@ function molosoc_ld_process( int $order_id, array $io ): string {
 				'subject' => molosoc_ld_subject( (string) $snap['carrier'], (array) $snap['sizes'] ),
 				'to'      => MOLOSOC_LD_RECIPIENT,
 				'live'    => false,
+				'mock_ref' => isset( $res['mock_ref'] ) ? (string) $res['mock_ref'] : null,
 			)
 		);
 		$io['mark_done']();
@@ -261,12 +289,13 @@ function molosoc_ld_snapshot( int $order_id ): array {
 	foreach ( $order->get_items() as $item ) {
 		$size = '';
 		foreach ( MOLOSOC_LD_SIZE_META_KEYS as $key ) {
-			$size = strtoupper( trim( (string) $item->get_meta( $key ) ) );
+			$size = molosoc_ld_normalize_size( (string) $item->get_meta( $key ) );
 			if ( '' !== $size ) {
 				break;
 			}
 		}
-		if ( '' === $size ) {
+		// Only canonical sizes count; m-medium -> M above, anything else fails closed.
+		if ( '' === $size || ! in_array( $size, MOLOSOC_LD_SIZE_ORDER, true ) ) {
 			return array_merge( array( 'sizes' => array() ), molosoc_ld_base( $order, $methods ) ); // Unknown size: fail closed.
 		}
 		$sizes[ $size ] = ( $sizes[ $size ] ?? 0 ) + (int) $item->get_quantity();
@@ -276,13 +305,27 @@ function molosoc_ld_snapshot( int $order_id ): array {
 	return $base;
 }
 
+/** Reads the configured (never guessed) Comgate confirmation facts from an order. */
+function molosoc_ld_comgate_from_order( $order ): bool {
+	$key = defined( 'MOLOSOC_LD_COMGATE_CONFIRM_KEY' ) ? (string) MOLOSOC_LD_COMGATE_CONFIRM_KEY : '';
+	$val = defined( 'MOLOSOC_LD_COMGATE_CONFIRM_VALUE' ) ? (string) MOLOSOC_LD_COMGATE_CONFIRM_VALUE : '';
+	return molosoc_ld_comgate_paid(
+		array(
+			'transaction_id' => (string) $order->get_transaction_id(),
+			'confirm_key'    => $key,
+			'confirm_value'  => $val,
+			'confirm_actual' => '' !== $key ? (string) $order->get_meta( $key ) : '',
+		)
+	);
+}
+
 function molosoc_ld_base( $order, array $methods ): array {
 	$pm = (string) $order->get_payment_method();
 	return array(
 		'status'            => $order->get_status(),
 		'payment_method'    => $pm,
 		'comgate_confirmed' => 'wf_woo_comgate' === $pm
-			? (bool) apply_filters( 'molosoc_label_dispatch_comgate_confirmed', false, $order )
+			? (bool) apply_filters( 'molosoc_label_dispatch_comgate_confirmed', molosoc_ld_comgate_from_order( $order ), $order )
 			: false,
 		'carrier'           => molosoc_ld_detect_carrier( $methods ),
 		'created_ts'        => $order->get_date_created() ? $order->get_date_created()->getTimestamp() : 0,
@@ -348,7 +391,8 @@ function molosoc_ld_on_processing( $order_id ): void {
 				}
 			},
 			'adapter'   => static function ( $carrier ) use ( $order_id ) {
-				return molosoc_ld_adapter_generate_label( $carrier, $order_id );
+				$custom = apply_filters( 'molosoc_label_dispatch_adapter', null, $carrier, $order_id );
+				return is_array( $custom ) ? $custom : molosoc_ld_adapter_generate_label( $carrier, $order_id );
 			},
 		)
 	);
