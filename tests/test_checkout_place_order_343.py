@@ -61,9 +61,9 @@ CHECKOUT_FIXTURE = """<!doctype html><html><head><meta charset="utf-8">
 <form name="checkout" method="post" class="checkout woocommerce-checkout">
 <div id="payment" class="woocommerce-checkout-payment">
 <ul class="wc_payment_methods payment_methods methods">
-<li class="wc_payment_method payment_method_wf_woo_comgate"><input id="payment_method_wf_woo_comgate" type="radio" class="input-radio" name="payment_method" value="wf_woo_comgate" checked><label for="payment_method_wf_woo_comgate">Kartou, Apple Pay nebo Google Pay (bez příplatku)</label></li>
-<li class="wc_payment_method payment_method_cod"><input id="payment_method_cod" type="radio" class="input-radio" name="payment_method" value="cod"><label for="payment_method_cod">Dobírka</label></li>
-<li class="wc_payment_method payment_method_bacs"><input id="payment_method_bacs" type="radio" class="input-radio" name="payment_method" value="bacs"><label for="payment_method_bacs">Bankovní převod (platba předem)</label></li>
+<li class="wc_payment_method payment_method_wf_woo_comgate"><input id="payment_method_wf_woo_comgate" type="radio" class="input-radio" name="payment_method" value="wf_woo_comgate" checked><label for="payment_method_wf_woo_comgate">{card}</label></li>
+<li class="wc_payment_method payment_method_cod"><input id="payment_method_cod" type="radio" class="input-radio" name="payment_method" value="cod"><label for="payment_method_cod">{cod}</label></li>
+<li class="wc_payment_method payment_method_bacs"><input id="payment_method_bacs" type="radio" class="input-radio" name="payment_method" value="bacs"><label for="payment_method_bacs">{bacs}</label></li>
 </ul>
 <div class="form-row place-order">
 <noscript>JavaScript</noscript>
@@ -71,7 +71,7 @@ CHECKOUT_FIXTURE = """<!doctype html><html><head><meta charset="utf-8">
 <p class="form-row validate-required"><label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox"><input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" id="terms"> <span class="woocommerce-terms-and-conditions-checkbox-text">Přečetl(a) jsem si obchodní podmínky a souhlasím s nimi</span>&nbsp;<span class="required">*</span></label></p>
 <p class="cr-customer-consent"><label for="cr_customer_consent"><input type="checkbox" id="cr_customer_consent" name="cr_customer_consent" value="1"> Would you like to be invited to review your order?</label></p>
 </div>
-<button type="submit" class="button alt wp-element-button" name="woocommerce_checkout_place_order" id="place_order" value="Objednávka zavazující k platbě" data-value="Objednávka zavazující k platbě">Objednávka zavazující k platbě</button>
+<button type="submit" class="button alt wp-element-button" name="woocommerce_checkout_place_order" id="place_order" value="{button}" data-value="{button}">{button}</button>
 </div>
 </div>
 </form>
@@ -114,8 +114,28 @@ window.addEventListener('load', function () {{
 </script></body></html>"""
 
 
-def render_fixture():
-    doc = CHECKOUT_FIXTURE.format(checkout_css=CSS.read_text(encoding="utf-8"), hide_css=inline_hide_css())
+# Method labels and button text as the live checkouts print them (Issue #348
+# brought the EN labels in line with the CZ ones).
+LABELS = {
+    "cz": {
+        "card": "Kartou, Apple Pay nebo Google Pay (bez příplatku)",
+        "cod": "Dobírka",
+        "bacs": "Bankovní převod (platba předem)",
+        "button": "Objednávka zavazující k platbě",
+    },
+    "en": {
+        "card": "Card, Apple Pay or Google Pay (no fee)",
+        "cod": "Cash on delivery",
+        "bacs": "Bank transfer",
+        "button": "Place order",
+    },
+}
+
+
+def render_fixture(lang="cz"):
+    doc = CHECKOUT_FIXTURE.format(
+        checkout_css=CSS.read_text(encoding="utf-8"), hide_css=inline_hide_css(), **LABELS[lang]
+    )
     page = HARNESS.format(doc=html.escape(doc, quote=True), old_selector=OLD_SELECTOR)
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "checkout.html"
@@ -157,9 +177,11 @@ class StaticGuards(unittest.TestCase):
 
 @unittest.skipUnless(CHROME, "Chrome not available")
 class PlaceOrderVisible(unittest.TestCase):
+    LANG = "cz"
+
     @classmethod
     def setUpClass(cls):
-        cls.res = render_fixture()
+        cls.res = render_fixture(cls.LANG)
 
     def test_fixture_reproduces_the_bug(self):
         # The old selector would have matched the place-order row in this DOM.
@@ -181,12 +203,18 @@ class PlaceOrderVisible(unittest.TestCase):
                     self.assertGreater(r["button"]["h"], 0)
                     self.assertNotEqual(r["button"]["display"], "none")
                     self.assertEqual(r["button"]["visibility"], "visible")
-                    self.assertEqual(r["button"]["text"], "Objednávka zavazující k platbě")
+                    self.assertEqual(r["button"]["text"], LABELS[self.LANG]["button"])
                     self.assertEqual(r["consent"]["display"], "none")
                     self.assertEqual(r["consent"]["w"], 0)
                     self.assertNotEqual(r["row"]["display"], "none")
                     # the #331 restyle box must not be painted around the place-order row
                     self.assertEqual(r["row"]["border"], "0px")
+
+
+class PlaceOrderVisibleEn(PlaceOrderVisible):
+    """Same checks on the EN checkout labels (/checkout/)."""
+
+    LANG = "en"
 
 
 if __name__ == "__main__":

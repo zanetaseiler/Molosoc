@@ -116,7 +116,11 @@ class EnPaymentTextPhpTests(unittest.TestCase):
             self.assertEqual(self.run_php("en", "echo molosoc_en_shipping_payment_text(%r);" % text), expected, text)
 
     def test_en_checkout_title_and_description(self):
-        self.assertEqual(self.run_php("en", "echo molosoc_en_gateway_title('Comgate', 'wf-woo-comgate');"), EN_TITLE)
+        # Issue #348: the EN title is decided by gateway ID, not by the map.
+        self.assertEqual(
+            self.run_php("en", "echo molosoc_en_gateway_title('Comgate', 'wf-woo-comgate');"),
+            "Card, Apple Pay or Google Pay (no fee)",
+        )
         self.assertEqual(
             self.run_php("en", "echo molosoc_en_gateway_description(%r, 'wf-woo-comgate');" % CZ_DESC), EN_DESC
         )

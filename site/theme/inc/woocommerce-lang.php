@@ -354,6 +354,35 @@ function molosoc_save_order_lang( $order, $data ) {
 add_action( 'woocommerce_checkout_create_order', 'molosoc_save_order_lang', 10, 2 );
 
 /**
+ * Short payment name on the order record (Issue #348). WooCommerce copies
+ * the gateway's checkout title onto the order when checkout creates it, and
+ * that copy is what the customer email, the admin email and the order
+ * screen print. The checkout title for Comgate is a selling line ("… (bez
+ * příplatku)" / "… (no fee)"), so for a Comgate order the stored copy is
+ * replaced with a plain name in the order's language.
+ *
+ * Runs at priority 20, after molosoc_save_order_lang() (10) has stamped
+ * `_molosoc_lang`; anything other than 'cz' gets the English name, matching
+ * that function's own 'en' default. Only the order being created is
+ * touched: other gateways keep the title WooCommerce stored, existing
+ * orders are never read or rewritten, and the checkout keeps its long label.
+ */
+function molosoc_order_short_payment_title( $order, $data = array() ) {
+	if ( ! is_object( $order ) || ! method_exists( $order, 'get_payment_method' ) || ! method_exists( $order, 'set_payment_method_title' ) ) {
+		return;
+	}
+	if ( false === strpos( strtolower( (string) $order->get_payment_method() ), 'comgate' ) ) {
+		return;
+	}
+	$lang = method_exists( $order, 'get_meta' ) ? (string) $order->get_meta( '_molosoc_lang' ) : '';
+	if ( '' === $lang && function_exists( 'pll_current_language' ) ) {
+		$lang = (string) pll_current_language();
+	}
+	$order->set_payment_method_title( 'cz' === $lang ? 'Platba kartou / Apple Pay / Google Pay' : 'Card / Apple Pay / Google Pay' );
+}
+add_action( 'woocommerce_checkout_create_order', 'molosoc_order_short_payment_title', 20, 2 );
+
+/**
  * Send a CZ order's "thank you" redirect to the Czech checkout twin's own
  * order-received endpoint instead of the EN one — reconstructed the same
  * way WC_Order::get_checkout_order_received_url() itself builds the URL
@@ -1059,6 +1088,9 @@ function molosoc_en_shipping_payment_text( $text ) {
 		'Bezpečná online platba kartou' => 'Card payment (Comgate)',
 		'Comgate'                     => 'Card payment (Comgate)',
 		'Bankovní převod'             => 'Bank transfer',
+		// Issue #348: a Czech cash-on-delivery description on the EN checkout.
+		// (The COD title is set by gateway ID in molosoc_en_gateway_title().)
+		'Zaplatíte při převzetí zásilky' => 'Pay when you collect the parcel.',
 	);
 	foreach ( $map as $cz_substring => $en_label ) {
 		if ( false !== stripos( (string) $text, $cz_substring ) ) {
@@ -1086,16 +1118,27 @@ add_filter( 'woocommerce_shipping_rate_label', 'molosoc_en_shipping_rate_label',
 /**
  * EN payment-gateway title/description — same falsy-language guard as
  * shipping above.
+ *
+ * Issue #348: titles are decided by gateway ID first. Comgate is matched on
+ * the substring 'comgate' (the live ID is `wf-woo-comgate`, same match as
+ * molosoc_cz_gateway_title()) and names what the shopper can pay with, like
+ * the CZ checkout; COD (live ID `cod`) reads "Cash on delivery" instead of
+ * the stored Czech title. An unknown gateway still falls back to the text
+ * map.
  */
 function molosoc_en_gateway_title( $title, $gateway_id = '' ) {
 	if ( ! function_exists( 'pll_current_language' ) || 'en' !== pll_current_language() ) {
 		return $title;
 	}
-	if ( 'comgate' === strtolower( (string) $gateway_id ) ) {
-		return 'Card payment (Comgate)';
+	$id = strtolower( (string) $gateway_id );
+	if ( false !== strpos( $id, 'comgate' ) ) {
+		return 'Card, Apple Pay or Google Pay (no fee)';
 	}
-	if ( 'bacs' === strtolower( (string) $gateway_id ) ) {
+	if ( 'bacs' === $id ) {
 		return 'Bank transfer';
+	}
+	if ( 'cod' === $id ) {
+		return 'Cash on delivery';
 	}
 	return molosoc_en_shipping_payment_text( $title );
 }
@@ -1108,6 +1151,54 @@ function molosoc_en_gateway_description( $description, $gateway_id = '' ) {
 	return molosoc_en_shipping_payment_text( $description );
 }
 add_filter( 'woocommerce_gateway_description', 'molosoc_en_gateway_description', 10, 2 );
+
+/**
+ * EN name for the cash-on-delivery fee line in the order totals (Issue
+ * #348). The fee is added by a plugin, not by this theme; on the live EN
+ * checkout its name is "COD fee" and on the CZ checkout "Příplatek za
+ * dobírku". Both spellings map to "Cash on delivery fee" so the line
+ * matches the "Cash on delivery" method title; any other fee name is
+ * returned exactly as it came in.
+ */
+function molosoc_en_cod_fee_name( $name ) {
+	$trimmed = trim( (string) $name );
+	if ( 0 === strcasecmp( $trimmed, 'COD fee' ) || 'Příplatek za dobírku' === $trimmed ) {
+		return 'Cash on delivery fee';
+	}
+	return $name;
+}
+
+/**
+ * Applies molosoc_en_cod_fee_name() to the cart's fees once every plugin
+ * has added its own (last priority on woocommerce_cart_calculate_fees).
+ * Explicit 'en' only, same guard as the gateway filters above, so the CZ
+ * checkout and any unresolved-language context keep the plugin's name.
+ * Only the display name is changed: the amount, tax settings and fee ID
+ * are left alone, and no fee is added or removed. The renamed line is also
+ * what an EN order stores, so EN emails show the same name.
+ */
+function molosoc_en_cod_fee_rename( $cart = null ) {
+	if ( ! function_exists( 'pll_current_language' ) || 'en' !== pll_current_language() ) {
+		return;
+	}
+	if ( ! is_object( $cart ) || ! method_exists( $cart, 'get_fees' ) ) {
+		return;
+	}
+	$fees = $cart->get_fees();
+	if ( ! is_array( $fees ) ) {
+		return;
+	}
+	foreach ( $fees as $fee ) {
+		if ( ! is_object( $fee ) || ! isset( $fee->name ) ) {
+			continue;
+		}
+		$renamed = molosoc_en_cod_fee_name( $fee->name );
+		if ( $renamed !== $fee->name ) {
+			$fee->name = $renamed;
+		}
+	}
+}
+add_action( 'woocommerce_cart_calculate_fees', 'molosoc_en_cod_fee_rename', PHP_INT_MAX, 1 );
 
 /**
  * Checkout billing_phone field label, per language. Only overridden when
