@@ -41,7 +41,7 @@ Follow-up to #345 / PR #351. **Nothing here is live.** No real label, no carrier
   - new filter `molosoc_label_dispatch_adapter`; the pipeline **refuses** any adapter result with `live=true` (`live_adapter_refused`);
   - audit row records `mock_ref` (null in Phase 1 dry-run).
   - Still no mail function, no live constant, still needs `MOLOSOC_LABEL_DISPATCH_DRY_RUN`.
-- `site/mu-plugins/molosoc-carrier-label-staging.php` (new): mock adapters for PPL and Packeta. Active only if `wp_get_environment_type()` is `staging` or `local` **and** `MOLOSOC_LABEL_DISPATCH_STAGING === true`. Mocks return `MOCK-…` refs, are idempotent per order, and the Packeta mock fails with `packet_not_submitted` until a packet exists, mirroring the real path.
+- `site/mu-plugins/molosoc-carrier-label-staging.php` (new): mock adapters for PPL and Packeta. Active only if `wp_get_environment_type()` is `staging` or `local` **and** `MOLOSOC_LABEL_DISPATCH_STAGING === true`. Mocks return `MOCK-…` refs, are idempotent per order, and the Packeta mock fails with `packet_not_submitted` until a packet exists, mirroring the real path The submitted state is explicit per-order mock state (option `molosoc_ls_mock_submitted`, default false; set via `molosoc_ls_mock_submit_packet($order_id)`), so a fresh Packeta order fails until simulated submission.
 - `tests/test_carrier_label_staging_352.py`: both carriers; Comgate confirmed/unconfirmed; COD; transfer/on-hold; duplicates/retries/failed-then-retry; live-adapter refusal; environment gate; subject `{carrier} | {N} kus/kusy/kusů | {sizes}` with live slugs; static checks that no live call exists.
 
 ## Exact blockers

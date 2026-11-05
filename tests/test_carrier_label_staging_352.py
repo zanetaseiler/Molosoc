@@ -19,7 +19,9 @@ BASE = dict(status="processing", payment_method="cod", comgate_confirmed=False,
 def php(code):
     # The staging file calls wp_get_environment_type()/add_filter at load; stub them (production).
     pre = ("define('ABSPATH','/x/'); function wp_get_environment_type(){return 'production';} "
-           "function add_filter(){ $GLOBALS['hooked']=true; } require %s; require %s;"
+           "function add_filter(){ $GLOBALS['hooked']=true; } "
+           "function get_option($k,$d=false){ return $GLOBALS['opt'][$k] ?? $d; } "
+           "function update_option($k,$v){ $GLOBALS['opt'][$k]=$v; return true; } require %s; require %s;"
            % (json.dumps(str(CORE)), json.dumps(str(STAGE))))
     return subprocess.run(["php", "-r", pre + code], capture_output=True, text=True, check=True).stdout
 
@@ -150,6 +152,23 @@ class Mock(unittest.TestCase):
         r = process([dict(BASE, carrier="Zásilkovna")],
                     "[$r,$s]=molosoc_ls_mock_adapter($c,['order_id'=>7,'submitted'=>false,'store'=>[]]); return $r;")
         self.assertEqual((r["res"], r["done"]), ("adapter_failed", 0))
+
+    def test_packeta_registered_callback_fails_then_succeeds_after_submit(self):
+        # Exercise the real registered filter callback with explicit per-order mock state.
+        cb = "$c = molosoc_ls_adapter_filter(null, 'Zásilkovna', 7);"
+        r = j(cb + "echo json_encode([$c['ok'], $c['reason'] ?? null]);")
+        self.assertEqual(r, [False, "packet_not_submitted"])
+        # Via the pipeline: fresh order fails, is not marked done, and retry after submit succeeds.
+        adapter = "return molosoc_ls_adapter_filter(null, $c, 7);"
+        r = process([dict(BASE, carrier="Zásilkovna")], adapter)
+        self.assertEqual((r["res"], r["done"]), ("adapter_failed", 0))
+        r = j("molosoc_ls_mock_submit_packet(7); $c = molosoc_ls_adapter_filter(null, 'Zásilkovna', 7);"
+              "echo json_encode([$c['ok'], $c['live'], strpos($c['mock_ref'], 'MOCK-')]);")
+        self.assertEqual(r, [True, False, 0])
+        # Other orders stay unsubmitted; PPL never needs a submit.
+        r = j("molosoc_ls_mock_submit_packet(7); $a = molosoc_ls_adapter_filter(null, 'Zásilkovna', 8);"
+              "$b = molosoc_ls_adapter_filter(null, 'PPL', 9); echo json_encode([$a['ok'], $b['ok']]);")
+        self.assertEqual(r, [False, True])
 
     def test_live_adapter_is_refused(self):
         r = process([BASE], "return ['ok'=>true,'live'=>true];")

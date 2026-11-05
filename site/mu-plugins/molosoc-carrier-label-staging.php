@@ -59,24 +59,39 @@ function molosoc_ls_mock_adapter( string $carrier, array $facts ): array {
 	);
 }
 
+/**
+ * Explicit per-order mock state: has a sandbox packet been "submitted" for this
+ * order? Stored in option molosoc_ls_mock_submitted (order_id => true). Defaults
+ * to false, so a fresh Packeta order fails with packet_not_submitted.
+ */
+function molosoc_ls_packet_submitted( int $order_id ): bool {
+	$submitted = (array) get_option( 'molosoc_ls_mock_submitted', array() );
+	return ! empty( $submitted[ $order_id ] );
+}
+
+/** Mark a mock packet as submitted for an order (staging simulation only, no API call). */
+function molosoc_ls_mock_submit_packet( int $order_id ): void {
+	$submitted              = (array) get_option( 'molosoc_ls_mock_submitted', array() );
+	$submitted[ $order_id ] = true;
+	update_option( 'molosoc_ls_mock_submitted', $submitted, false );
+}
+
+/** The callback registered on molosoc_label_dispatch_adapter. */
+function molosoc_ls_adapter_filter( $unused, $carrier, $order_id ) {
+	$store = (array) get_option( 'molosoc_ls_mock_store', array() );
+	[ $res, $store ] = molosoc_ls_mock_adapter(
+		(string) $carrier,
+		array(
+			'order_id'  => (int) $order_id,
+			'submitted' => molosoc_ls_packet_submitted( (int) $order_id ),
+			'store'     => $store,
+		)
+	);
+	update_option( 'molosoc_ls_mock_store', $store, false );
+	return $res;
+}
+
 if ( function_exists( 'wp_get_environment_type' )
 	&& molosoc_ls_enabled( wp_get_environment_type(), defined( 'MOLOSOC_LABEL_DISPATCH_STAGING' ) ? MOLOSOC_LABEL_DISPATCH_STAGING : null ) ) {
-	add_filter(
-		'molosoc_label_dispatch_adapter',
-		static function ( $unused, $carrier, $order_id ) {
-			$store = (array) get_option( 'molosoc_ls_mock_store', array() );
-			[ $res, $store ] = molosoc_ls_mock_adapter(
-				(string) $carrier,
-				array(
-					'order_id'  => (int) $order_id,
-					'submitted' => true, // Staging assumes a sandbox packet exists; real Packeta needs a live submit.
-					'store'     => $store,
-				)
-			);
-			update_option( 'molosoc_ls_mock_store', $store, false );
-			return $res;
-		},
-		10,
-		3
-	);
+	add_filter( 'molosoc_label_dispatch_adapter', 'molosoc_ls_adapter_filter', 10, 3 );
 }
