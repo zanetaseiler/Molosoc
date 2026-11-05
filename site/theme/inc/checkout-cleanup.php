@@ -30,6 +30,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * with (card, Apple Pay, Google Pay — all enabled in the gateway) and that
  * it carries no surcharge, unlike Dobírka. The stored gateway title stays
  * "Comgate" on purpose: molosoc_en_gateway_title() maps that to English.
+ * This long label is checkout display only — the order record gets a short
+ * name from molosoc_order_short_payment_title() (Issue #348).
  */
 function molosoc_cz_gateway_title( $title, $gateway_id = '' ) {
 	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {

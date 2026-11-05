@@ -164,9 +164,22 @@ class EvergreenUntouched(unittest.TestCase):
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
         # adds one CZ cart-name filter to woocommerce-lang.php).
+        # Issue #348 deliberately rewrites the gateway-ID checks in
+        # molosoc_en_gateway_title() (EN card + cash-on-delivery titles).
+        allowed_removed = {
+            "site/theme/inc/woocommerce-lang.php": {
+                "-\tif ( 'comgate' === strtolower( (string) $gateway_id ) ) {",
+                "-\t\treturn 'Card payment (Comgate)';",
+                "-\tif ( 'bacs' === strtolower( (string) $gateway_id ) ) {",
+            },
+        }
         for path in ("site/theme/functions.php", "site/theme/inc/woocommerce-lang.php"):
             diff = subprocess.run(["git", "diff", "-U0", base, "--", path], cwd=REPO, capture_output=True, text=True).stdout
-            removed = [l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")]
+            removed = [
+                l
+                for l in diff.splitlines()
+                if l.startswith("-") and not l.startswith("---") and l not in allowed_removed.get(path, ())
+            ]
             self.assertEqual(removed, [], path)
 
 
