@@ -50,8 +50,8 @@ class CheckoutCleanupPhpTests(unittest.TestCase):
         return run_php(lang, checkout, "echo molosoc_cz_cusrev_checkbox_text(%r, %r, %r);" % (text, text, domain))
 
     def test_cz_titles_distinct(self):
-        self.assertEqual(self.title("cz", "comgate"), "Platba kartou (Comgate)")
-        self.assertEqual(self.title("cz", "wf_woo_comgate"), "Platba kartou (Comgate)")
+        self.assertEqual(self.title("cz", "comgate"), "Kartou, Apple Pay nebo Google Pay (bez příplatku)")
+        self.assertEqual(self.title("cz", "wf_woo_comgate"), "Kartou, Apple Pay nebo Google Pay (bez příplatku)")
         self.assertEqual(self.title("cz", "bacs"), "Bankovní převod (platba předem)")
 
     def test_cod_and_unknown_untouched(self):
