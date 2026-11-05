@@ -25,6 +25,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * JUDGMENT CALL: the live Comgate gateway ID is not verifiable from this
  * repo, so it is matched on the substring 'comgate' (the plugin is
  * `wf-woo-comgate`); an unmatched gateway keeps the title it was built with.
+ *
+ * Issue #346: the Comgate title names what the shopper can actually pay
+ * with (card, Apple Pay, Google Pay — all enabled in the gateway) and that
+ * it carries no surcharge, unlike Dobírka. The stored gateway title stays
+ * "Comgate" on purpose: molosoc_en_gateway_title() maps that to English.
  */
 function molosoc_cz_gateway_title( $title, $gateway_id = '' ) {
 	if ( ! function_exists( 'pll_current_language' ) || 'cz' !== pll_current_language() ) {
@@ -32,7 +37,7 @@ function molosoc_cz_gateway_title( $title, $gateway_id = '' ) {
 	}
 	$id = strtolower( (string) $gateway_id );
 	if ( false !== strpos( $id, 'comgate' ) ) {
-		return 'Platba kartou (Comgate)';
+		return 'Kartou, Apple Pay nebo Google Pay (bez příplatku)';
 	}
 	if ( 'bacs' === $id ) {
 		return 'Bankovní převod (platba předem)';

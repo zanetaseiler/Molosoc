@@ -61,7 +61,7 @@ CHECKOUT_FIXTURE = """<!doctype html><html><head><meta charset="utf-8">
 <form name="checkout" method="post" class="checkout woocommerce-checkout">
 <div id="payment" class="woocommerce-checkout-payment">
 <ul class="wc_payment_methods payment_methods methods">
-<li class="wc_payment_method payment_method_wf_woo_comgate"><input id="payment_method_wf_woo_comgate" type="radio" class="input-radio" name="payment_method" value="wf_woo_comgate" checked><label for="payment_method_wf_woo_comgate">Platba kartou (Comgate)</label></li>
+<li class="wc_payment_method payment_method_wf_woo_comgate"><input id="payment_method_wf_woo_comgate" type="radio" class="input-radio" name="payment_method" value="wf_woo_comgate" checked><label for="payment_method_wf_woo_comgate">Kartou, Apple Pay nebo Google Pay (bez příplatku)</label></li>
 <li class="wc_payment_method payment_method_cod"><input id="payment_method_cod" type="radio" class="input-radio" name="payment_method" value="cod"><label for="payment_method_cod">Dobírka</label></li>
 <li class="wc_payment_method payment_method_bacs"><input id="payment_method_bacs" type="radio" class="input-radio" name="payment_method" value="bacs"><label for="payment_method_bacs">Bankovní převod (platba předem)</label></li>
 </ul>

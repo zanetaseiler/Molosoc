@@ -1051,6 +1051,11 @@ function molosoc_en_shipping_payment_text( $text ) {
 		'Zásilkovna - výdejní místa'  => 'Zásilkovna pickup point',
 		'Evropa 1 - Smart Europe'     => 'Europe 1 – Smart Europe',
 		'Evropa 1 – Smart Europe'     => 'Europe 1 – Smart Europe',
+		// Issue #346: the Comgate description set in WP admin. It contains the
+		// word "Comgate", so it MUST stay above the bare 'Comgate' entry (first
+		// match wins). Both dash spellings: the stored text may hold either.
+		'Rychlá a bezpečná platba přes platební bránu Comgate. Bez příplatku – objednávku odesíláme hned po zaplacení.' => 'Fast, secure payment via the Comgate gateway. No fee – we ship as soon as payment is received.',
+		'Rychlá a bezpečná platba přes platební bránu Comgate. Bez příplatku - objednávku odesíláme hned po zaplacení.' => 'Fast, secure payment via the Comgate gateway. No fee – we ship as soon as payment is received.',
 		'Bezpečná online platba kartou' => 'Card payment (Comgate)',
 		'Comgate'                     => 'Card payment (Comgate)',
 		'Bankovní převod'             => 'Bank transfer',
