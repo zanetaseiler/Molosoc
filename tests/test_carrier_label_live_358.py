@@ -214,6 +214,11 @@ class Retry(unittest.TestCase):
                 "molosoc_ll_exhausted('provider_failed',2),molosoc_ll_exhausted('mailed',3),molosoc_ll_exhausted('ref_changed',3)]);")
         self.assertEqual(r, [True, True, False, False, False])
 
+    def test_pdf_size_failures_are_retryable_then_exhausted(self):
+        r = php("echo json_encode([molosoc_ll_should_retry('pdf_too_small',1),molosoc_ll_should_retry('pdf_too_large',1),"
+                "molosoc_ll_exhausted('pdf_too_small',3),molosoc_ll_exhausted('pdf_too_large',3),molosoc_ll_should_retry('pdf_too_large',3)]);")
+        self.assertEqual(r, [True, True, True, True, False])
+
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Comgate(unittest.TestCase):

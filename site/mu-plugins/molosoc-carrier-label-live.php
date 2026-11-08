@@ -139,7 +139,7 @@ function molosoc_ll_provider( string $carrier, string $stored_ref, array $d ): a
 
 /** Outcomes that count as a failed, retryable attempt. */
 function molosoc_ll_is_retryable_result( string $result ): bool {
-	return in_array( $result, array( 'provider_failed', 'mailer_failed', 'pdf_empty', 'pdf_truncated', 'pdf_bad_header', 'pdf_no_page' ), true );
+	return in_array( $result, array( 'provider_failed', 'mailer_failed', 'pdf_empty', 'pdf_truncated', 'pdf_bad_header', 'pdf_no_page', 'pdf_too_small', 'pdf_too_large' ), true );
 }
 
 /** Retry decision: schedule one more attempt only for retryable outcomes under the tries limit. */
