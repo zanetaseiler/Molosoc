@@ -363,7 +363,15 @@ function molosoc_ld3_run( $order_id ): string {
 }
 
 if ( function_exists( 'wp_get_environment_type' )
-	&& molosoc_ld3_enabled( wp_get_environment_type(), defined( 'MOLOSOC_LABEL_DELIVERY_ENABLED' ) ? MOLOSOC_LABEL_DELIVERY_ENABLED : null )
-	&& function_exists( 'molosoc_ld_decide' ) ) {
-	add_action( 'woocommerce_order_status_processing', 'molosoc_ld3_run', 30, 1 );
+	&& molosoc_ld3_enabled( wp_get_environment_type(), defined( 'MOLOSOC_LABEL_DELIVERY_ENABLED' ) ? MOLOSOC_LABEL_DELIVERY_ENABLED : null ) ) {
+	// MU plugins load alphabetically, so the dispatch core (molosoc_ld_decide) is not
+	// defined yet when this file runs. Defer the dependency check until all have loaded.
+	add_action(
+		'muplugins_loaded',
+		static function () {
+			if ( function_exists( 'molosoc_ld_decide' ) ) {
+				add_action( 'woocommerce_order_status_processing', 'molosoc_ld3_run', 30, 1 );
+			}
+		}
+	);
 }

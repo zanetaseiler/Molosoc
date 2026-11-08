@@ -232,6 +232,19 @@ class Gate(unittest.TestCase):
     def test_loading_in_production_registers_nothing(self):
         self.assertEqual(php("echo isset($GLOBALS['hooked']) ? 'hooked' : 'inert';"), "inert")
 
+    def test_alphabetical_load_order_registers_after_muplugins_loaded(self):
+        # delivery loads BEFORE dispatch (alphabetical); registration must still happen.
+        code = ("define('ABSPATH','/x/'); define('MOLOSOC_LABEL_DELIVERY_ENABLED', true); "
+                "function wp_get_environment_type(){return 'staging';} "
+                "$GLOBALS['h']=[]; function add_action($n,$cb){ $GLOBALS['h'][]=[$n,$cb]; } "
+                "require %s; require %s; "
+                "$early=count(array_filter($GLOBALS['h'],fn($x)=>$x[0]==='woocommerce_order_status_processing')); "
+                "foreach($GLOBALS['h'] as $x){ if($x[0]==='muplugins_loaded'){ ($x[1])(); } } "
+                "$late=count(array_filter($GLOBALS['h'],fn($x)=>$x[0]==='woocommerce_order_status_processing')); "
+                "echo json_encode([$early,$late]);" % (json.dumps(str(DELIV)), json.dumps(str(CORE))))
+        out = subprocess.run(["php", "-r", code], capture_output=True, text=True, check=True).stdout
+        self.assertEqual(json.loads(out), [0, 1])
+
 
 class Static(unittest.TestCase):
     def code(self):
