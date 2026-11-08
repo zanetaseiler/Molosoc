@@ -69,9 +69,14 @@ class Static(unittest.TestCase):
         for banned in ("wp_mail(", "wp_remote_", "LABEL_DISPATCH_LIVE", "update_status("):
             self.assertNotIn(banned, code)
 
-    def test_comgate_config_has_no_default_value(self):
+    def test_comgate_uses_transaction_id_not_tmp_or_config(self):
         src = CORE.read_text(encoding="utf-8")
-        self.assertNotIn("define( 'MOLOSOC_LD_COMGATE_CONFIRM_KEY'", src)
+        code = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+        self.assertNotIn("COMGATE_CONFIRM", code)
+        self.assertIn("get_transaction_id()", code)
+        self.assertIn("is_paid()", code)
+        # The tmp id is only ever compared against, never accepted as a signal.
+        self.assertEqual(code.count("wf_gateway_tmp_transaction_id"), 1)
 
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
@@ -95,20 +100,65 @@ class Gate(unittest.TestCase):
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Comgate(unittest.TestCase):
     def paid(self, **kw):
-        f = dict(transaction_id="T1", confirm_key="_k", confirm_value="PAID", confirm_actual="PAID")
+        f = dict(status="processing", payment_method="wf-woo-comgate", transaction_id="T1",
+                 tmp_transaction_id="", is_paid=True)
         f.update(kw)
         return j("echo json_encode(molosoc_ld_comgate_paid(json_decode(%s,true)));" % json.dumps(json.dumps(f)))
 
     def test_confirmed(self):
         self.assertTrue(self.paid())
+        self.assertTrue(self.paid(payment_method="wf_woo_comgate"))
+        self.assertTrue(self.paid(tmp_transaction_id="TMP-9"))  # differing placeholder is fine
 
     def test_unconfirmed_variants_fail_closed(self):
-        self.assertFalse(self.paid(confirm_key=""))
-        self.assertFalse(self.paid(confirm_value=""))
         self.assertFalse(self.paid(transaction_id=""))
-        self.assertFalse(self.paid(confirm_actual=""))
-        self.assertFalse(self.paid(confirm_actual="PENDING"))
-        self.assertFalse(self.paid(confirm_actual="paid"))
+        self.assertFalse(self.paid(transaction_id="  "))
+        self.assertFalse(self.paid(is_paid=False))
+        self.assertFalse(self.paid(is_paid="yes"))
+        self.assertFalse(self.paid(status="cancelled"))
+        self.assertFalse(self.paid(status="on-hold"))
+        self.assertFalse(self.paid(status="completed"))
+        self.assertFalse(self.paid(payment_method="cod"))
+        self.assertFalse(self.paid(payment_method="bacs"))
+        # tmp id alone / equal to the transaction id is an unpaid order's placeholder.
+        self.assertFalse(self.paid(transaction_id="TMP-1", tmp_transaction_id="TMP-1"))
+        self.assertFalse(self.paid(transaction_id="", tmp_transaction_id="TMP-1"))
+
+    def test_decide_accepts_both_gateway_ids(self):
+        for pm in ("wf-woo-comgate", "wf_woo_comgate"):
+            r = process([dict(BASE, payment_method=pm, comgate_confirmed=True)], MOCK)
+            self.assertEqual(r["res"], "dry_run_would_send")
+            r = process([dict(BASE, payment_method=pm)], "throw new Exception('no');")
+            self.assertEqual(r["log"][-1]["result"], "skipped")
+
+
+@unittest.skipUnless(HAVE_PHP, "php not installed")
+class ItemSize(unittest.TestCase):
+    def size(self, meta, var):
+        return j("echo json_encode(molosoc_ld_item_size(json_decode(%s,true), %d));"
+                 % (json.dumps(json.dumps(meta)), var))
+
+    def test_meta_new_and_old_keys(self):
+        self.assertEqual(self.size({"pa_size": "l-large"}, 0), "L")
+        self.assertEqual(self.size({"pa_velikost": "m-medium"}, 0), "M")
+        self.assertEqual(self.size({"pa_size": "m-medium", "pa_velikost": "l-large"}, 0), "M")
+
+    def test_variation_fallback(self):
+        self.assertEqual(self.size({}, 424), "L")
+        self.assertEqual(self.size({"pa_size": ""}, 425), "M")
+        self.assertEqual(self.size({"pa_size": "m-medium"}, 425), "M")
+
+    def test_fail_closed(self):
+        self.assertEqual(self.size({}, 0), "")
+        self.assertEqual(self.size({}, 999), "")
+        self.assertEqual(self.size({"pa_size": "xl-huge-x"}, 424), "")
+        self.assertEqual(self.size({"pa_size": "m-medium"}, 424), "")  # meta vs variation conflict
+        self.assertEqual(self.size({"pa_size": "weird"}, 0), "")
+
+    def test_summed_quantities_in_subject(self):
+        # e.g. paid pair + zero-price gift pair of same size summed across lines (#1100 style).
+        r = process([dict(BASE, sizes={"M": 3, "L": 1})], MOCK)
+        self.assertEqual(r["log"][-1]["subject"], "PPL | 4 kusy | 3x M, 1x L")
 
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")

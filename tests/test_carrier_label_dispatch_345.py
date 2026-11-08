@@ -68,8 +68,8 @@ class StaticContract(unittest.TestCase):
         self.assertIn("'jarka01@atlas.cz'", SRC)
 
     def test_comgate_default_fails_closed(self):
-        # Phase 2: default comes from molosoc_ld_comgate_from_order(), which is false unless
-        # both MOLOSOC_LD_COMGATE_CONFIRM_KEY/VALUE are configured (see test_carrier_label_staging_352).
+        # Default comes from molosoc_ld_comgate_from_order() (status, gateway, transaction id,
+        # is_paid; see test_carrier_label_staging_352).
         self.assertIn("'molosoc_label_dispatch_comgate_confirmed', molosoc_ld_comgate_from_order( $order )", SRC)
 
 
