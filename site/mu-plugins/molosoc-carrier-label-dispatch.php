@@ -28,15 +28,18 @@
  *   needs a staging test with credentials. That is a later phase and needs
  *   Žaneta's approval.
  *
- * COMGATE CONFIRMATION FAILS CLOSED
+ * COMGATE PAID DETECTION (ZANETA_DECISION 2026-11-08, Issue #352)
  *
- *   The gateway id is wf_woo_comgate, but that plugin's source could not be
- *   retrieved, so how it records a confirmed payment is unverified. Card
- *   orders are eligible only if the `molosoc_label_dispatch_comgate_confirmed`
- *   filter returns true. By default it returns false: a card order is
- *   recorded as "not eligible: comgate_unverified". Žaneta must name the
- *   real signal (order meta key / transaction id behaviour) before it is
- *   wired in.
+ *   WisdomFactory Comgate plugin 1.1.40 (gateway id `wf-woo-comgate`; the
+ *   legacy spelling `wf_woo_comgate` is also accepted) calls
+ *   $order->payment_complete($transId) only on a Comgate PAID callback.
+ *   A card order is therefore paid only if ALL of: status exactly
+ *   `processing`; payment method is the Comgate gateway; a non-empty
+ *   $order->get_transaction_id(); $order->is_paid(); and the transaction id
+ *   is not merely the placeholder in `wf_gateway_tmp_transaction_id` (that
+ *   meta is set even for unpaid orders and is NEVER used as a signal).
+ *   `date_paid` or `processing` alone are unsafe (order #775 was cancelled
+ *   after processing). No configurable meta key exists any more.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -48,7 +51,9 @@ const MOLOSOC_LD_AUDIT_META     = '_molosoc_label_dispatch_audit';
 const MOLOSOC_LD_STATE_META     = '_molosoc_label_dispatch_state';
 const MOLOSOC_LD_LOCK_TTL       = 300;
 const MOLOSOC_LD_SIZE_ORDER     = array( 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL' );
-const MOLOSOC_LD_SIZE_META_KEYS = array( 'pa_size', 'size', 'pa_velikost', 'velikost' );
+const MOLOSOC_LD_SIZE_META_KEYS = array( 'pa_size', 'pa_velikost' ); // new orders / older orders.
+const MOLOSOC_LD_VARIATION_SIZES = array( 424 => 'L', 425 => 'M' );   // product 364 variations.
+const MOLOSOC_LD_COMGATE_IDS     = array( 'wf-woo-comgate', 'wf_woo_comgate' );
 
 /** Czech "kus" form for a count: 1 kus, 2-4 kusy, 5+ kusů (0 -> kusů). */
 function molosoc_ld_piece_word( int $n ): string {
@@ -139,25 +144,53 @@ function molosoc_ld_detect_carrier( array $method_ids ): ?string {
 }
 
 /**
- * Phase 2: authoritative Comgate "paid" decision from plain facts:
- *   transaction_id, confirm_key (configured order-meta key), confirm_value
- *   (configured expected value), confirm_actual (the order's value for that key).
- * Status `processing` alone is NOT proof (a plugin or an admin can set it).
- * Paid only if a transaction id exists AND the configured confirmation key
- * holds exactly the configured value. Nothing configured -> false (fail
- * closed). The key/value must come from the Comgate plugin's real behaviour,
- * confirmed read-only by Žaneta (docs/carrier-label-staging-352.md), never guessed.
+ * Authoritative Comgate "paid" decision from plain facts: status,
+ * payment_method, transaction_id, tmp_transaction_id, is_paid (bool).
+ * Fail closed on any missing/mismatching fact.
  */
 function molosoc_ld_comgate_paid( array $f ): bool {
-	$key = trim( (string) ( $f['confirm_key'] ?? '' ) );
-	$val = trim( (string) ( $f['confirm_value'] ?? '' ) );
-	if ( '' === $key || '' === $val ) {
+	if ( 'processing' !== ( $f['status'] ?? '' ) ) {
 		return false;
 	}
-	if ( '' === trim( (string) ( $f['transaction_id'] ?? '' ) ) ) {
+	if ( ! in_array( (string) ( $f['payment_method'] ?? '' ), MOLOSOC_LD_COMGATE_IDS, true ) ) {
 		return false;
 	}
-	return hash_equals( $val, trim( (string) ( $f['confirm_actual'] ?? '' ) ) );
+	$tx = trim( (string) ( $f['transaction_id'] ?? '' ) );
+	if ( '' === $tx ) {
+		return false;
+	}
+	$tmp = trim( (string) ( $f['tmp_transaction_id'] ?? '' ) );
+	if ( '' !== $tmp && hash_equals( $tmp, $tx ) ) {
+		return false; // Placeholder id of an unpaid order.
+	}
+	return true === ( $f['is_paid'] ?? false );
+}
+
+/**
+ * Size of one order line: canonical size from item meta (pa_size, then older
+ * pa_velikost) with the variation id as authoritative fallback. Returns ''
+ * (fail closed) for unknown values or when meta and variation disagree.
+ */
+function molosoc_ld_item_size( array $meta_values, int $variation_id ): string {
+	$from_meta = '';
+	foreach ( MOLOSOC_LD_SIZE_META_KEYS as $key ) {
+		$n = molosoc_ld_normalize_size( (string) ( $meta_values[ $key ] ?? '' ) );
+		if ( '' !== $n ) {
+			$from_meta = $n;
+			break;
+		}
+	}
+	$from_var = MOLOSOC_LD_VARIATION_SIZES[ $variation_id ] ?? '';
+	if ( '' !== $from_meta ) {
+		if ( ! in_array( $from_meta, MOLOSOC_LD_SIZE_ORDER, true ) ) {
+			return '';
+		}
+		if ( '' !== $from_var && $from_var !== $from_meta ) {
+			return '';
+		}
+		return $from_meta;
+	}
+	return $from_var;
 }
 
 /**
@@ -177,7 +210,7 @@ function molosoc_ld_decide( array $o ): array {
 	$pm = (string) ( $o['payment_method'] ?? '' );
 	if ( 'cod' === $pm ) {
 		$paid_ok = true;
-	} elseif ( 'wf_woo_comgate' === $pm ) {
+	} elseif ( in_array( $pm, MOLOSOC_LD_COMGATE_IDS, true ) ) {
 		if ( empty( $o['comgate_confirmed'] ) ) {
 			return array( false, 'comgate_unverified' );
 		}
@@ -287,15 +320,13 @@ function molosoc_ld_snapshot( int $order_id ): array {
 	}
 	$sizes = array();
 	foreach ( $order->get_items() as $item ) {
-		$size = '';
+		$meta = array();
 		foreach ( MOLOSOC_LD_SIZE_META_KEYS as $key ) {
-			$size = molosoc_ld_normalize_size( (string) $item->get_meta( $key ) );
-			if ( '' !== $size ) {
-				break;
-			}
+			$meta[ $key ] = (string) $item->get_meta( $key );
 		}
-		// Only canonical sizes count; m-medium -> M above, anything else fails closed.
-		if ( '' === $size || ! in_array( $size, MOLOSOC_LD_SIZE_ORDER, true ) ) {
+		// Zero-price gift lines are physical pairs and count; quantities are summed.
+		$size = molosoc_ld_item_size( $meta, (int) $item->get_variation_id() );
+		if ( '' === $size ) {
 			return array_merge( array( 'sizes' => array() ), molosoc_ld_base( $order, $methods ) ); // Unknown size: fail closed.
 		}
 		$sizes[ $size ] = ( $sizes[ $size ] ?? 0 ) + (int) $item->get_quantity();
@@ -305,16 +336,15 @@ function molosoc_ld_snapshot( int $order_id ): array {
 	return $base;
 }
 
-/** Reads the configured (never guessed) Comgate confirmation facts from an order. */
+/** Reads the Comgate paid facts from a live order. */
 function molosoc_ld_comgate_from_order( $order ): bool {
-	$key = defined( 'MOLOSOC_LD_COMGATE_CONFIRM_KEY' ) ? (string) MOLOSOC_LD_COMGATE_CONFIRM_KEY : '';
-	$val = defined( 'MOLOSOC_LD_COMGATE_CONFIRM_VALUE' ) ? (string) MOLOSOC_LD_COMGATE_CONFIRM_VALUE : '';
 	return molosoc_ld_comgate_paid(
 		array(
-			'transaction_id' => (string) $order->get_transaction_id(),
-			'confirm_key'    => $key,
-			'confirm_value'  => $val,
-			'confirm_actual' => '' !== $key ? (string) $order->get_meta( $key ) : '',
+			'status'             => (string) $order->get_status(),
+			'payment_method'     => (string) $order->get_payment_method(),
+			'transaction_id'     => (string) $order->get_transaction_id(),
+			'tmp_transaction_id' => (string) $order->get_meta( 'wf_gateway_tmp_transaction_id' ),
+			'is_paid'            => (bool) $order->is_paid(),
 		)
 	);
 }
@@ -324,7 +354,7 @@ function molosoc_ld_base( $order, array $methods ): array {
 	return array(
 		'status'            => $order->get_status(),
 		'payment_method'    => $pm,
-		'comgate_confirmed' => 'wf_woo_comgate' === $pm
+		'comgate_confirmed' => in_array( $pm, MOLOSOC_LD_COMGATE_IDS, true )
 			? (bool) apply_filters( 'molosoc_label_dispatch_comgate_confirmed', molosoc_ld_comgate_from_order( $order ), $order )
 			: false,
 		'carrier'           => molosoc_ld_detect_carrier( $methods ),

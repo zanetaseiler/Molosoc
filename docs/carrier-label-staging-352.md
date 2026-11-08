@@ -24,14 +24,26 @@ Follow-up to #345 / PR #351. **Nothing here is live.** No real label, no carrier
 - Shipping method ids: `packetery_shipping_method` or `packeta_method_*`.
 - **Safest supported path:** the plugin's own order-list "Submit" + "Print labels" actions, or its documented bulk actions, run by an admin. Automated submission needs a Packeta API password and a sandbox/test packet.
 
-### Comgate — authoritative paid confirmation
-- `processing` is **not** proof of payment. Any plugin or admin can set it.
-- The plugin source is unavailable, so the real confirmation signal is **unverified**. Phase 2 therefore replaces the bare filter with `molosoc_ld_comgate_paid()`: paid only if the order has a transaction id **and** a configured order-meta key holds exactly a configured value. The key and value are read from `MOLOSOC_LD_COMGATE_CONFIRM_KEY` / `_VALUE`. Neither is defined anywhere in the repo, so the default stays fail-closed (`comgate_unverified`).
+### Comgate — authoritative paid confirmation (updated 2026-11-08, ZANETA_DECISION)
+Read-only production findings from Žaneta: WisdomFactory Comgate plugin **1.1.40**, payment method id **`wf-woo-comgate`** (the code also accepts the legacy `wf_woo_comgate`; the theme in this repo already uses the hyphen id). The plugin calls `$order->payment_complete($transId)` only on a Comgate PAID callback.
 
-### Order item size meta
-- Landing B and the Christmas bundle add the parent product (id 364) with a variation (424 = L, 425 = M). WooCommerce stores the chosen variation attribute on the order line as item meta whose key is the attribute name and whose value is the term slug. The live slugs are `m-medium` / `l-large` (Issue #220).
-- Phase 1 read this meta but only upper-cased it, so `m-medium` would have become `M-MEDIUM` in the subject. **Fixed in Phase 2:** the snapshot now uses `molosoc_ld_normalize_size()` and accepts only canonical sizes (`MOLOSOC_LD_SIZE_ORDER`); anything else fails closed (`sizes_unusable`).
-- The **exact meta key** (`pa_size`? `size`?) is still unverified; Phase 1 tries `pa_size`, `size`, `pa_velikost`, `velikost`.
+A card order is paid only if **all** hold (`molosoc_ld_comgate_paid()`):
+1. status exactly `processing`;
+2. payment method is the Comgate gateway;
+3. non-empty `$order->get_transaction_id()`;
+4. `$order->is_paid()` is true;
+5. the transaction id differs from `wf_gateway_tmp_transaction_id` (a placeholder written even for unpaid orders; it is never accepted as a signal).
+
+Live audit supporting this: 34 paid card orders have transaction ids, 8 unpaid do not. `date_paid`/`processing` alone are unsafe (order #775 was cancelled after processing). The earlier configurable meta-key approach (`MOLOSOC_LD_COMGATE_CONFIRM_KEY/_VALUE`) is removed. Plugin source is still not public, so the behaviour rests on Žaneta's live audit, not on code reading.
+
+### Order item size meta (updated)
+Product 364; variation **424 = L**, **425 = M**. New order item meta `pa_size`, older orders `pa_velikost`; values `l-large` / `m-medium`. `molosoc_ld_item_size()` reads the meta (new key first), falls back to the variation id, and **fails closed** (`sizes_unusable`) on an unknown size or variation, or when meta and variation disagree. Quantities are summed across lines (e.g. order #1100); zero-price gift lines are physical pairs and count.
+
+### Packeta native auto-submission (not activated)
+The Packeta plugin has a per-payment-method "Allow packet auto-submission" setting, currently **OFF**. The v2.3.2 source could not be re-downloaded in this sandbox, so how it triggers (status change? which status?), whether it also creates the label, and its duplicate protection are **unverified**. It is not enabled and nothing here depends on it. Preferred over a custom API once verified. Minimum approval step: Žaneta enables it for **one** staging payment method with a Packeta test/sandbox API password, places one test order, and reports (a) the status that triggers it, (b) whether a packet id appears once only after a second status save, (c) whether the label must still be fetched manually.
+
+### PPL batch flow
+Existing manual flow: orders bulk action adds to a PPL batch, the plugin submits it to PPL and returns a 4/A4 PDF. Internal endpoints live under `/wp-json/ppl-cz/v1/`; the plugin may mark delivered orders Completed, so Completed is never used as a payment signal. Unattended batch creation would call non-public internals and PPL's live API; it stays out of scope until sandbox credentials and approval exist. The mock adapters keep modelling this boundary.
 
 ## What was implemented (all inert by default)
 
@@ -46,24 +58,18 @@ Follow-up to #345 / PR #351. **Nothing here is live.** No real label, no carrier
 
 ## Exact blockers
 
-1. **Comgate paid signal**: unknown order-meta key/value. Needs the read-only check below.
-2. **Order item size meta key**: unverified (see below).
+1. **Comgate paid signal**: resolved by Žaneta's live audit (see above); only the plugin source remains unread.
+2. **Size meta**: resolved (`pa_size`/`pa_velikost` + variation fallback).
 3. **Real label generation** for both carriers needs the carriers' sandbox/test credentials and Žaneta's approval to call non-public plugin internals. Not requested here.
 4. **Staging site**: this repo has no staging environment definition; one must exist with `WP_ENVIRONMENT_TYPE=staging`.
 5. **Mail**: no sender exists by design. A mail step is a later, separately approved phase.
 
-## Read-only verification for Žaneta (WP admin, no credentials)
-
-Use a **test/past paid card order** (open it only to read):
-1. WooCommerce → Orders → open one order paid by Comgate and in `processing`. Note the **Transaction ID** field (Payment section).
-2. Screens → Custom Fields (enable in Screen Options), or the order's meta box: copy the **meta key names and values** that Comgate wrote (names only, e.g. `_comgate_state` = `PAID`). Do **not** copy tokens, emails or addresses.
-3. Repeat on one order whose card payment failed/was cancelled, to confirm the value differs.
-4. On any order, expand an order line and copy the **size meta label and value** shown (e.g. `Size: m-medium`); Custom Fields shows the raw key.
-5. Comment the key/value pairs on #352.
+## Remaining read-only checks for Žaneta
+Only the Packeta auto-submission behaviour above (staging, test API password) is still open. Do not paste tokens, emails or addresses.
 
 ## Activation prerequisites (none performed here)
 
 1. Merge approval from Žaneta; no deploy performed by this PR.
-2. Read-only findings above, then in `wp-config.php` of **staging only**: `MOLOSOC_LD_COMGATE_CONFIRM_KEY`, `MOLOSOC_LD_COMGATE_CONFIRM_VALUE`, `MOLOSOC_LABEL_DISPATCH_DRY_RUN`, `MOLOSOC_LABEL_DISPATCH_STAGING`, plus the option `molosoc_label_dispatch_since` (cut-off so no historical order is processed).
-3. Place staging test orders (mock gateway data) and read the audit meta `_molosoc_label_dispatch_audit`.
-4. A later phase, separately approved, for sandbox-credential live adapters and mail.
+2. In `wp-config.php` of **staging only**: `MOLOSOC_LABEL_DISPATCH_DRY_RUN`, `MOLOSOC_LABEL_DISPATCH_STAGING`, plus the option `molosoc_label_dispatch_since` (cut-off so no historical order is processed).
+3. Place staging test orders and read the audit meta `_molosoc_label_dispatch_audit`.
+4. A later phase, separately approved, for sandbox-credential live adapters, Packeta auto-submission and mail.
