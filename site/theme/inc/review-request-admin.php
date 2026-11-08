@@ -79,9 +79,19 @@ function molosoc_review_request_admin_save() {
 		wp_safe_redirect( add_query_arg( 'mrr_error', rawurlencode( $err ), $url ) );
 		exit;
 	}
-	update_option( 'molosoc_review_request_mode', $v['mode'] );
-	update_option( 'molosoc_review_request_test_emails', $v['emails'] );
-	update_option( 'molosoc_review_request_legal_confirmed', $v['legal'] );
+	// Write order matters: a concurrent worker must never see live mode with
+	// stale (looser) restrictions. Restrictions first, mode last when going
+	// live; mode first when stepping down so sending stops before the
+	// restrictions change.
+	if ( 'live' === $v['mode'] ) {
+		update_option( 'molosoc_review_request_test_emails', $v['emails'] );
+		update_option( 'molosoc_review_request_legal_confirmed', $v['legal'] );
+		update_option( 'molosoc_review_request_mode', $v['mode'] );
+	} else {
+		update_option( 'molosoc_review_request_mode', $v['mode'] );
+		update_option( 'molosoc_review_request_test_emails', $v['emails'] );
+		update_option( 'molosoc_review_request_legal_confirmed', $v['legal'] );
+	}
 	wp_safe_redirect( add_query_arg( 'mrr_saved', '1', $url ) );
 	exit;
 }

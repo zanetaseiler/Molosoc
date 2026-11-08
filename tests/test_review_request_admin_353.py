@@ -46,5 +46,12 @@ class AdminTests(unittest.TestCase):
         self.assertEqual(r[4][0]["emails"], "a@x.cz")
         self.assertEqual(r[5][0], {"mode": "dry_run", "emails": "", "legal": ""})
 
+    def test_live_persists_restrictions_before_mode(self):
+        src = MODULE.read_text()
+        body = src[src.index("function molosoc_review_request_admin_save"):]
+        live = body[body.index("if ( 'live' === $v['mode'] )"):body.index("} else {")]
+        self.assertLess(live.index("test_emails"), live.index("review_request_mode"))
+        self.assertLess(live.index("legal_confirmed"), live.index("review_request_mode"))
+
 if __name__ == "__main__":
     unittest.main()
