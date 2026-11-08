@@ -236,12 +236,26 @@ function molosoc_ll_run( $order_id ): string {
 					$mail,
 					'wp_mail',
 					static function ( $name, $bytes ) {
-						$path = wp_tempnam( $name );
-						return ( $path && false !== file_put_contents( $path, $bytes ) ) ? $path : '';
+						// No wp-admin helper (wp_tempnam) needed: works on frontend/cron requests.
+						// A private unique directory keeps the validated `<carrier>-<id>.pdf` name.
+						$dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/molosoc-label-' . bin2hex( random_bytes( 8 ) );
+						if ( ! mkdir( $dir, 0700 ) ) {
+							return '';
+						}
+						$path = $dir . '/' . basename( (string) $name );
+						if ( false === file_put_contents( $path, $bytes ) ) {
+							@unlink( $path );
+							@rmdir( $dir );
+							return '';
+						}
+						return $path;
 					},
 					static function ( $path ) {
-						if ( is_string( $path ) && file_exists( $path ) ) {
-							unlink( $path );
+						if ( is_string( $path ) && '' !== $path ) {
+							if ( file_exists( $path ) ) {
+								unlink( $path );
+							}
+							@rmdir( dirname( $path ) );
 						}
 					}
 				);
