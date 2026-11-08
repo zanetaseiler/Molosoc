@@ -137,10 +137,19 @@ function molosoc_ll_provider( string $carrier, string $stored_ref, array $d ): a
 	return array( 'ok' => true, 'live' => true, 'ref' => $packet, 'pdf' => $pdf );
 }
 
+/** Outcomes that count as a failed, retryable attempt. */
+function molosoc_ll_is_retryable_result( string $result ): bool {
+	return in_array( $result, array( 'provider_failed', 'mailer_failed', 'pdf_empty', 'pdf_truncated', 'pdf_bad_header', 'pdf_no_page' ), true );
+}
+
 /** Retry decision: schedule one more attempt only for retryable outcomes under the tries limit. */
 function molosoc_ll_should_retry( string $result, int $tries ): bool {
-	return in_array( $result, array( 'provider_failed', 'mailer_failed', 'pdf_empty', 'pdf_truncated', 'pdf_bad_header', 'pdf_no_page' ), true )
-		&& $tries < MOLOSOC_LD3_MAX_TRIES;
+	return molosoc_ll_is_retryable_result( $result ) && $tries < MOLOSOC_LD3_MAX_TRIES;
+}
+
+/** True when a retryable failure just used up the last allowed attempt: the order must go to `attention` now. */
+function molosoc_ll_exhausted( string $result, int $tries ): bool {
+	return molosoc_ll_is_retryable_result( $result ) && $tries >= MOLOSOC_LD3_MAX_TRIES;
 }
 
 /* ---------------------------------------------------------------- WP glue */
@@ -263,6 +272,16 @@ function molosoc_ll_run( $order_id ): string {
 		)
 	);
 	$tries = (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_TRY_META );
+	if ( molosoc_ll_exhausted( $result, $tries ) ) {
+		// Last allowed attempt failed: persist the terminal state now instead of waiting for a run that never comes.
+		molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_STATE_META, 'attention' );
+		$order = wc_get_order( $order_id );
+		if ( $order ) {
+			$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array( 'ts' => gmdate( 'c' ), 'stage' => 'live', 'order' => $order_id, 'result' => 'attention', 'reason' => 'max_tries' ) ), false );
+			$order->save_meta_data();
+		}
+		return 'max_tries';
+	}
 	if ( molosoc_ll_should_retry( $result, $tries ) && function_exists( 'wp_schedule_single_event' )
 		&& ! wp_next_scheduled( MOLOSOC_LL_RETRY_HOOK, array( $order_id ) ) ) {
 		wp_schedule_single_event( time() + MOLOSOC_LL_RETRY_DELAY, MOLOSOC_LL_RETRY_HOOK, array( $order_id ) );

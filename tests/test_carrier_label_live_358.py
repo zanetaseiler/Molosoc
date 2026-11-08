@@ -209,6 +209,11 @@ class Retry(unittest.TestCase):
                 "molosoc_ll_should_retry('mail_state_unknown',0),molosoc_ll_should_retry('mailed',0),molosoc_ll_should_retry('ref_changed',0)]);")
         self.assertEqual(r, [True, False, False, False, False])
 
+    def test_exhausted_decision(self):
+        r = php("echo json_encode([molosoc_ll_exhausted('provider_failed',3),molosoc_ll_exhausted('mailer_failed',3),"
+                "molosoc_ll_exhausted('provider_failed',2),molosoc_ll_exhausted('mailed',3),molosoc_ll_exhausted('ref_changed',3)]);")
+        self.assertEqual(r, [True, True, False, False, False])
+
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Comgate(unittest.TestCase):
