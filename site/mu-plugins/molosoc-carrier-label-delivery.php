@@ -95,7 +95,7 @@ function molosoc_ld3_filename( string $carrier, int $order_id ): string {
  *   lock() / unlock()          per-order lock; lock() false = held
  *   audit($row)                append-only audit
  *   provider($carrier, $ref)   array( ok, live, pdf, ref, reason )
- *   mailer($mail)              array( ok, live, reason ); $mail = to, subject, filename, pdf
+ *   mailer($mail)              array( ok, live, reason ); $mail = to, cc, subject, filename, pdf
  * Eligibility reuses molosoc_ld_decide() (Comgate-confirmed card or COD,
  * processing, after cut-off, known carrier and sizes). Re-checked after the
  * lock. Any exception is audited; terminal states are never re-run.
@@ -208,6 +208,7 @@ function molosoc_ld3_process( int $order_id, array $io ): string {
 		$io['set_state']( 'mailing' );
 		$mail = array(
 			'to'       => MOLOSOC_LD_RECIPIENT,
+			'cc'       => MOLOSOC_LD_CC,
 			'subject'  => $subject,
 			'filename' => $file,
 			'pdf'      => $res['pdf'],
@@ -227,7 +228,7 @@ function molosoc_ld3_process( int $order_id, array $io ): string {
 		}
 		$io['set_state']( 'mailed' );
 		$live = $allow_live && ! empty( $sent['live'] );
-		$io['audit']( array( 'order' => $order_id, 'result' => $live ? 'mailed' : 'mocked_mailed', 'carrier' => $carrier, 'subject' => $subject, 'to' => MOLOSOC_LD_RECIPIENT, 'live' => $live ) );
+		$io['audit']( array( 'order' => $order_id, 'result' => $live ? 'mailed' : 'mocked_mailed', 'carrier' => $carrier, 'subject' => $subject, 'to' => MOLOSOC_LD_RECIPIENT, 'cc' => MOLOSOC_LD_CC, 'live' => $live ) );
 		return $live ? 'mailed' : 'mocked_mailed';
 	} catch ( \Throwable $e ) {
 		// A throw after `mailing` was written leaves that state; the next run goes to attention.
@@ -267,6 +268,9 @@ function molosoc_ld3_mock_mailer( array $mail, array $outbox ): array {
 	if ( MOLOSOC_LD_RECIPIENT !== ( $mail['to'] ?? '' ) ) {
 		return array( array( 'ok' => false, 'live' => false, 'reason' => 'recipient_mismatch' ), $outbox );
 	}
+	if ( MOLOSOC_LD_CC !== ( $mail['cc'] ?? '' ) ) {
+		return array( array( 'ok' => false, 'live' => false, 'reason' => 'cc_mismatch' ), $outbox );
+	}
 	if ( 1 !== preg_match( '/^(PPL|Zásilkovna) \| \d+ (kus|kusy|kusů) \| /u', (string) ( $mail['subject'] ?? '' ) ) ) {
 		return array( array( 'ok' => false, 'live' => false, 'reason' => 'subject_mismatch' ), $outbox );
 	}
@@ -279,6 +283,7 @@ function molosoc_ld3_mock_mailer( array $mail, array $outbox ): array {
 	}
 	$outbox[] = array(
 		'to'       => $mail['to'],
+		'cc'       => $mail['cc'],
 		'subject'  => $mail['subject'],
 		'filename' => $mail['filename'],
 		'sha256'   => hash( 'sha256', $mail['pdf'] ),
