@@ -160,7 +160,11 @@ function molosoc_ld_comgate_paid( array $f ): bool {
 		return false;
 	}
 	$tmp = trim( (string) ( $f['tmp_transaction_id'] ?? '' ) );
-	if ( '' !== $tmp && hash_equals( $tmp, $tx ) ) {
+	// Default `strict`: a transaction id equal to the temporary placeholder id means unpaid.
+	// `paid_status` (operator-selected after the staging check, Issue #358) drops only that
+	// comparison, for the case where the real plugin keeps the same value after payment.
+	// Everything else (processing, Comgate gateway, non-empty id, is_paid) still applies.
+	if ( 'paid_status' !== ( $f['tmp_rule'] ?? 'strict' ) && '' !== $tmp && hash_equals( $tmp, $tx ) ) {
 		return false; // Placeholder id of an unpaid order.
 	}
 	return true === ( $f['is_paid'] ?? false );
@@ -345,6 +349,7 @@ function molosoc_ld_comgate_from_order( $order ): bool {
 			'transaction_id'     => (string) $order->get_transaction_id(),
 			'tmp_transaction_id' => (string) $order->get_meta( 'wf_gateway_tmp_transaction_id' ),
 			'is_paid'            => (bool) $order->is_paid(),
+			'tmp_rule'           => ( defined( 'MOLOSOC_LABEL_COMGATE_TMPID_RULE' ) && 'paid_status' === MOLOSOC_LABEL_COMGATE_TMPID_RULE ) ? 'paid_status' : 'strict',
 		)
 	);
 }

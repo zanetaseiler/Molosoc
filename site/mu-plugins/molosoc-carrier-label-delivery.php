@@ -99,6 +99,9 @@ function molosoc_ld3_filename( string $carrier, int $order_id ): string {
  * Eligibility reuses molosoc_ld_decide() (Comgate-confirmed card or COD,
  * processing, after cut-off, known carrier and sizes). Re-checked after the
  * lock. Any exception is audited; terminal states are never re-run.
+ * `$io['allow_live']` (bool, default false) is set only by the separately gated
+ * live plugin (Issue #358); without it a live=true result is refused as before.
+ * A provider result with `permanent=true` goes straight to `attention`.
  */
 function molosoc_ld3_process( int $order_id, array $io ): string {
 	$state = (string) $io['state']();
@@ -154,10 +157,16 @@ function molosoc_ld3_process( int $order_id, array $io ): string {
 		}
 
 		// Stage 1: label PDF. Always asked with the stored ref so a real provider fetches, not creates.
-		$res = $io['provider']( $carrier, (string) $io['ref']() );
-		if ( ! empty( $res['live'] ) ) {
+		$allow_live = ! empty( $io['allow_live'] );
+		$res        = $io['provider']( $carrier, (string) $io['ref']() );
+		if ( ! empty( $res['live'] ) && ! $allow_live ) {
 			$io['audit']( array( 'order' => $order_id, 'result' => 'error', 'reason' => 'live_provider_refused' ) );
 			return 'live_provider_refused';
+		}
+		if ( empty( $res['ok'] ) && ! empty( $res['permanent'] ) ) {
+			$io['set_state']( 'attention' );
+			$io['audit']( array( 'order' => $order_id, 'result' => 'attention', 'reason' => 'provider_permanent', 'detail' => (string) ( $res['reason'] ?? '' ) ) );
+			return 'provider_permanent';
 		}
 		if ( empty( $res['ok'] ) ) {
 			$io['set_tries']( (int) $io['tries']() + 1 );
@@ -204,7 +213,7 @@ function molosoc_ld3_process( int $order_id, array $io ): string {
 			'pdf'      => $res['pdf'],
 		);
 		$sent = $io['mailer']( $mail );
-		if ( ! empty( $sent['live'] ) ) {
+		if ( ! empty( $sent['live'] ) && ! $allow_live ) {
 			$io['set_state']( 'attention' );
 			$io['audit']( array( 'order' => $order_id, 'result' => 'error', 'reason' => 'live_mailer_refused' ) );
 			return 'live_mailer_refused';
@@ -217,8 +226,9 @@ function molosoc_ld3_process( int $order_id, array $io ): string {
 			return 'mailer_failed';
 		}
 		$io['set_state']( 'mailed' );
-		$io['audit']( array( 'order' => $order_id, 'result' => 'mocked_mailed', 'carrier' => $carrier, 'subject' => $subject, 'to' => MOLOSOC_LD_RECIPIENT, 'live' => false ) );
-		return 'mocked_mailed';
+		$live = $allow_live && ! empty( $sent['live'] );
+		$io['audit']( array( 'order' => $order_id, 'result' => $live ? 'mailed' : 'mocked_mailed', 'carrier' => $carrier, 'subject' => $subject, 'to' => MOLOSOC_LD_RECIPIENT, 'live' => $live ) );
+		return $live ? 'mailed' : 'mocked_mailed';
 	} catch ( \Throwable $e ) {
 		// A throw after `mailing` was written leaves that state; the next run goes to attention.
 		$io['audit']( array( 'order' => $order_id, 'result' => 'error', 'reason' => 'exception', 'class' => get_class( $e ) ) );
