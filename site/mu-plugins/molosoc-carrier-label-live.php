@@ -76,6 +76,10 @@ function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $
 	if ( MOLOSOC_LD_RECIPIENT !== ( $mail['to'] ?? '' ) ) {
 		return array( 'ok' => false, 'live' => true, 'reason' => 'recipient_mismatch' );
 	}
+	// Only the fixed constant may ever reach a header: exact match, no user data, no CR/LF.
+	if ( MOLOSOC_LD_CC !== ( $mail['cc'] ?? '' ) ) {
+		return array( 'ok' => false, 'live' => true, 'reason' => 'cc_mismatch' );
+	}
 	if ( 1 !== preg_match( '/^(PPL|Zásilkovna) \| \d+ (kus|kusy|kusů) \| /u', (string) ( $mail['subject'] ?? '' ) ) ) {
 		return array( 'ok' => false, 'live' => true, 'reason' => 'subject_mismatch' );
 	}
@@ -95,7 +99,7 @@ function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $
 			$mail['to'],
 			$mail['subject'],
 			'Štítek k odeslání v příloze.',
-			array( 'Content-Type: text/plain; charset=UTF-8' ),
+			array( 'Content-Type: text/plain; charset=UTF-8', 'Cc: ' . MOLOSOC_LD_CC ),
 			array( $path )
 		);
 	} finally {

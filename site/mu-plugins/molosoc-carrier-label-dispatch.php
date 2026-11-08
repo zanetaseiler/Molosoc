@@ -47,6 +47,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 const MOLOSOC_LD_RECIPIENT      = 'jarka01@atlas.cz';
+const MOLOSOC_LD_CC             = 'hello@molosoc.com'; // Issue #361: one copy of every dispatch mail, same message.
 const MOLOSOC_LD_AUDIT_META     = '_molosoc_label_dispatch_audit';
 const MOLOSOC_LD_STATE_META     = '_molosoc_label_dispatch_state';
 const MOLOSOC_LD_LOCK_TTL       = 300;

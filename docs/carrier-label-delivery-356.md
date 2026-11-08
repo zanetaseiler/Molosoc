@@ -31,7 +31,7 @@ Follow-up to #345, #352 (PRs #351, #354, #355). **Nothing here is live.** No car
 - Provider and mailer are injected (`molosoc_label_delivery_provider`, `molosoc_label_delivery_mailer`). Any result with `live=true` is refused. Shipped implementations are mocks (per-order options outbox `molosoc_ld3_mock_outbox_<order id>`, no `wp_mail`).
 - Idempotency: `mailed` is terminal; per-order lock; eligibility and state re-read after the lock. The provider is called with the stored ref (a real one must fetch, not create); a different ref returned → `attention` (possible duplicate shipment).
 - Mail is **at-most-once**: `mailing` is written before the mailer call; if a run dies after it, the next run goes to `attention` and does not resend. A definite mailer failure returns to `label_ready` and retries (max 3 tries, then `attention`).
-- Subject `{PPL|Zásilkovna} | {N} kus/kusy/kusů | {qty}x {size}, ...` to `jarka01@atlas.cz`, attachment `ppl-<id>.pdf` / `zasilkovna-<id>.pdf`.
+- Subject `{PPL|Zásilkovna} | {N} kus/kusy/kusů | {qty}x {size}, ...` to `jarka01@atlas.cz` (CC `hello@molosoc.com`, same message, Issue #361), attachment `ppl-<id>.pdf` / `zasilkovna-<id>.pdf`.
 
 Tests: `tests/test_carrier_label_delivery_356.py` (real PHP) cover happy paths, Comgate/COD/bank transfer/on-hold/cut-off, duplicates, lock, provider/mailer failure and retry, invalid PDF, ref change, crash-after-mailing, exception, max tries, live refusal, recheck after lock, gate, and static bans on any live call.
 

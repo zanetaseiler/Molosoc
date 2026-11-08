@@ -82,6 +82,7 @@ class Delivery(unittest.TestCase):
         self.assertEqual(len(S["mails"]), 1)
         m = S["mails"][0]
         self.assertEqual(m["to"], "jarka01@atlas.cz")
+        self.assertEqual(m["cc"], "hello@molosoc.com")
         self.assertEqual(m["subject"], "PPL | 3 kusy | 1x M, 2x L")
         self.assertEqual(m["filename"], "ppl-7.pdf")
         self.assertEqual(S["unlocked"], 1)
@@ -197,8 +198,8 @@ echo json_encode(molosoc_ld3_process(7,$io));""" % json.dumps(json.dumps(SNAP))
         self.assertEqual(j(code), "recheck_status_not_processing")
 
     def test_mock_mailer_rejects_bad_messages(self):
-        base = "['to'=>'jarka01@atlas.cz','subject'=>'PPL | 1 kus | 1x M','filename'=>'ppl-7.pdf','pdf'=>molosoc_ld3_mock_pdf('PPL','R')]"
-        for mut, why in (("['to'=>'x@y.cz']", "recipient_mismatch"), ("['subject'=>'hello']", "subject_mismatch"),
+        base = "['to'=>'jarka01@atlas.cz','cc'=>'hello@molosoc.com','subject'=>'PPL | 1 kus | 1x M','filename'=>'ppl-7.pdf','pdf'=>molosoc_ld3_mock_pdf('PPL','R')]"
+        for mut, why in (("['to'=>'x@y.cz']", "recipient_mismatch"), ("['cc'=>'x@y.cz']", "cc_mismatch"), ("['cc'=>'']", "cc_mismatch"), ("['subject'=>'hello']", "subject_mismatch"),
                          ("['filename'=>'../a.pdf']", "filename_mismatch"), ("['pdf'=>'nope']", "pdf_too_small")):
             out = j("[$r,$o]=molosoc_ld3_mock_mailer(array_merge(%s,%s),[]); echo json_encode([$r,$o]);" % (base, mut))
             self.assertEqual(out[0]["reason"], why)

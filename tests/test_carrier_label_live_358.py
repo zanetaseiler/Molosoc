@@ -76,6 +76,12 @@ class Gate(unittest.TestCase):
     def test_entry_point_inert_without_constants(self):
         self.assertEqual(php("echo json_encode(molosoc_ll_run(7));"), "live_disabled")
 
+    def test_disabled_sends_no_mail(self):
+        # wp_mail stub counts calls; the disabled entry point must never reach it.
+        out = php("function wp_mail(){$GLOBALS['mails']=($GLOBALS['mails']??0)+1;return true;} "
+                  "$r=molosoc_ll_run(7); echo json_encode([$r,$GLOBALS['mails']??0]);")
+        self.assertEqual(out, ["live_disabled", 0])
+
     def test_hook_not_registered_without_opt_in(self):
         src = LIVE.read_text()
         self.assertIn("true === MOLOSOC_LABEL_LIVE_ENABLED", src)
@@ -86,24 +92,43 @@ class Gate(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Mailer(unittest.TestCase):
-    def m(self, to="jarka01@atlas.cz", subj="Zásilkovna | 3 kusy | 1x M, 2x L", fn="zasilkovna-7.pdf", pdf=PDF, send="return true;"):
+    def m(self, to="jarka01@atlas.cz", cc="hello@molosoc.com", subj="Zásilkovna | 3 kusy | 1x M, 2x L", fn="zasilkovna-7.pdf", pdf=PDF, send="return true;"):
         return php("""$log=['rm'=>0,'att'=>null];
-$r=molosoc_ll_mail(['to'=>%s,'subject'=>%s,'filename'=>%s,'pdf'=>%s],
+$r=molosoc_ll_mail(['to'=>%s,'cc'=>%s,'subject'=>%s,'filename'=>%s,'pdf'=>%s],
  function($to,$s,$b,$h,$a) use (&$log){ $log['att']=$a; %s },
  function(){return '/tmp/lbl.pdf';}, function() use (&$log){$log['rm']++;});
-echo json_encode([$r,$log]);""" % (q(to), q(subj), q(fn), pdf, send))
+echo json_encode([$r,$log]);""" % (q(to), q(cc), q(subj), q(fn), pdf, send))
 
     def test_success_removes_temp_file(self):
         r, log = self.m()
         self.assertEqual(r, {"ok": True, "live": True})
         self.assertEqual(log, {"rm": 1, "att": ["/tmp/lbl.pdf"]})
 
+    def test_single_message_to_and_cc_with_attachment(self):
+        # One wp_mail call: To jarka01, Cc hello@molosoc.com header, same PDF attachment, existing subject.
+        r = php("""$c=[];
+$r=molosoc_ll_mail(['to'=>'jarka01@atlas.cz','cc'=>'hello@molosoc.com','subject'=>'Zásilkovna | 3 kusy | 1x M, 2x L','filename'=>'zasilkovna-7.pdf','pdf'=>%s],
+ function($to,$s,$b,$h,$a) use (&$c){ $c[]=[$to,$s,$h,$a]; return true; }, function(){return '/tmp/lbl.pdf';}, function(){});
+echo json_encode([$r,$c]);""" % PDF)
+        self.assertTrue(r[0]["ok"])
+        self.assertEqual(len(r[1]), 1)
+        to, subj, hdr, att = r[1][0]
+        self.assertEqual((to, subj, att), ("jarka01@atlas.cz", "Zásilkovna | 3 kusy | 1x M, 2x L", ["/tmp/lbl.pdf"]))
+        self.assertIn("Cc: hello@molosoc.com", hdr)
+        self.assertEqual([h for h in hdr if h.lower().startswith(("bcc", "to:"))], [])
+
+    def test_cc_must_be_exact_constant_no_header_injection(self):
+        for bad in ("", "x@example.com", "hello@molosoc.com\r\nBcc: evil@example.com", "hello@molosoc.com,evil@example.com"):
+            r, log = self.m(cc=bad, send="$GLOBALS['sent']=1; return true;")
+            self.assertEqual(r["reason"], "cc_mismatch")
+            self.assertIsNone(log["att"])
+
     def test_wp_mail_false_is_definite_failure_and_cleans_up(self):
         r, log = self.m(send="return false;")
         self.assertEqual((r["ok"], r["reason"], log["rm"]), (False, "wp_mail_false", 1))
 
     def test_wp_mail_throw_cleans_up(self):
-        res = php("""$rm=0; try{ molosoc_ll_mail(['to'=>'jarka01@atlas.cz','subject'=>'PPL | 1 kus | 1x M','filename'=>'ppl-1.pdf','pdf'=>molosoc_ld3_mock_pdf('PPL','R')],
+        res = php("""$rm=0; try{ molosoc_ll_mail(['to'=>'jarka01@atlas.cz','cc'=>'hello@molosoc.com','subject'=>'PPL | 1 kus | 1x M','filename'=>'ppl-1.pdf','pdf'=>molosoc_ld3_mock_pdf('PPL','R')],
  function(){throw new Exception('x');}, function(){return '/tmp/a';}, function() use (&$rm){$rm++;}); }catch(Throwable $e){}
 echo json_encode($rm);""")
         self.assertEqual(res, 1)
@@ -156,6 +181,7 @@ class Pipeline(unittest.TestCase):
         self.assertEqual((o["S"]["sent"], o["S"]["state"], o["S"]["ref"], o["S"]["prov"]), (1, "mailed", "Z1234567", 1))
         self.assertTrue(any(r.get("result") == "mailed" and r.get("live") is True for r in o["S"]["log"]))
         self.assertNotIn("pdf", json.dumps(o["S"]["log"]))
+        self.assertTrue(any(r.get("cc") == "hello@molosoc.com" for r in o["S"]["log"]))
 
     def test_without_allow_live_flag_live_is_still_refused(self):
         code = "$S=0; $io=['snapshot'=>function(){return %s;},'state'=>function(){return '';},'set_state'=>function(){},'ref'=>function(){return '';},'set_ref'=>function(){},'tries'=>function(){return 0;},'set_tries'=>function(){},'lock'=>function(){return true;},'unlock'=>function(){},'audit'=>function(){},'provider'=>function($c,$r){ return ['ok'=>true,'live'=>true,'ref'=>'Z1','pdf'=>%s]; },'mailer'=>function() use (&$S){ $S++; return ['ok'=>true,'live'=>false]; }]; echo json_encode([molosoc_ld3_process(7,$io),$S]);" % (q(SNAP), PDF)
