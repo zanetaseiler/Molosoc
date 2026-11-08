@@ -13,7 +13,7 @@
  *     function (no wp_mail). A "provider" returns label PDF bytes and a
  *     "mailer" delivers them; both are injected through filters. A result
  *     with live=true from either is REFUSED. The only implementations that
- *     ship are in-memory mocks that write to an options outbox.
+ *     ship are in-memory mocks that write to a per-order options outbox (molosoc_ld3_mock_outbox_<order id>).
  *   - Order status is never changed; customers are never e-mailed; historical
  *     orders are never processed (the Phase 1 cut-off option is required).
  *   - The audit holds ids, carrier, subject, PDF sha256/size and outcome only.
@@ -348,14 +348,17 @@ function molosoc_ld3_run( $order_id ): string {
 				$submitted = ! empty( ( (array) get_option( 'molosoc_ls_mock_submitted', array() ) )[ $order_id ] );
 				return molosoc_ld3_mock_provider( (string) $carrier, $order_id, (string) $ref, $submitted );
 			},
-			'mailer'    => static function ( $mail ) {
+			'mailer'    => static function ( $mail ) use ( $order_id ) {
 				$custom = apply_filters( 'molosoc_label_delivery_mailer', null, $mail );
 				if ( is_array( $custom ) ) {
 					return $custom;
 				}
-				$outbox = (array) get_option( 'molosoc_ld3_mock_outbox', array() );
+				// One option per order: the per-order lock serializes writes to it, so
+				// concurrent deliveries of different orders never share a read-modify-write.
+				$outbox_key = 'molosoc_ld3_mock_outbox_' . $order_id;
+				$outbox     = (array) get_option( $outbox_key, array() );
 				[ $res, $outbox ] = molosoc_ld3_mock_mailer( $mail, $outbox );
-				update_option( 'molosoc_ld3_mock_outbox', $outbox, false );
+				update_option( $outbox_key, $outbox, false );
 				return $res;
 			},
 		)

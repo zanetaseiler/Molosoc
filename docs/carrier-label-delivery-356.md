@@ -28,7 +28,7 @@ Follow-up to #345, #352 (PRs #351, #354, #355). **Nothing here is live.** No car
 - Eligibility reuses Phase 1 `molosoc_ld_decide()` (processing; Comgate-confirmed card or COD; never bank transfer; after the `molosoc_label_dispatch_since` cut-off; known carrier; sizes incl. zero-price gift pairs and multiple lines).
 - Stages `label_ready` → `mailing` → `mailed` (+ `attention`), persisted in order meta `_molosoc_label_delivery_state`, carrier ref in `_molosoc_label_delivery_ref`, tries in `_molosoc_label_delivery_tries`. Audit rows (append-only, `stage: delivery`) in `_molosoc_label_dispatch_audit`: ids, subject, sha256 and size only.
 - PDF validation (`%PDF-` header, `%%EOF`, page object, 200 B–5 MB); an HTML error page or truncated file is never mailed.
-- Provider and mailer are injected (`molosoc_label_delivery_provider`, `molosoc_label_delivery_mailer`). Any result with `live=true` is refused. Shipped implementations are mocks (options outbox, no `wp_mail`).
+- Provider and mailer are injected (`molosoc_label_delivery_provider`, `molosoc_label_delivery_mailer`). Any result with `live=true` is refused. Shipped implementations are mocks (per-order options outbox `molosoc_ld3_mock_outbox_<order id>`, no `wp_mail`).
 - Idempotency: `mailed` is terminal; per-order lock; eligibility and state re-read after the lock. The provider is called with the stored ref (a real one must fetch, not create); a different ref returned → `attention` (possible duplicate shipment).
 - Mail is **at-most-once**: `mailing` is written before the mailer call; if a run dies after it, the next run goes to `attention` and does not resend. A definite mailer failure returns to `label_ready` and retries (max 3 tries, then `attention`).
 - Subject `{PPL|Zásilkovna} | {N} kus/kusy/kusů | {qty}x {size}, ...` to `jarka01@atlas.cz`, attachment `ppl-<id>.pdf` / `zasilkovna-<id>.pdf`.
@@ -37,7 +37,7 @@ Tests: `tests/test_carrier_label_delivery_356.py` (real PHP) cover happy paths, 
 
 ## Operator instructions (staging only; nothing performed by this PR)
 1. Stage only: `WP_ENVIRONMENT_TYPE=staging`; in `wp-config.php` add `MOLOSOC_LABEL_DISPATCH_DRY_RUN`, `MOLOSOC_LABEL_DISPATCH_STAGING`, `MOLOSOC_LABEL_DELIVERY_ENABLED` (all `true`) and set option `molosoc_label_dispatch_since` to "now".
-2. Place one test order; read order meta `_molosoc_label_delivery_state` and the audit rows; read option `molosoc_ld3_mock_outbox` for the (mock) message.
+2. Place one test order; read order meta `_molosoc_label_delivery_state` and the audit rows; read option `molosoc_ld3_mock_outbox_<order id>` for the (mock) message.
 3. State `attention`: investigate from the audit (`mail_state_unknown` = check the real mailbox before anything else; `ref_changed` = check the carrier for a duplicate shipment). Clear by deleting `_molosoc_label_delivery_state` (and the tries meta) only after that check; a stuck `molosoc_ld3_lock_<id>` option older than a few minutes may be deleted.
 4. Retry: `molosoc_ld3_run( <order_id> )` (e.g. `wp eval`) on staging.
 

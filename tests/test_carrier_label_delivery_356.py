@@ -265,6 +265,11 @@ class Static(unittest.TestCase):
         self.assertIn("molosoc_ld3_enabled( wp_get_environment_type()", src)
         self.assertIn("molosoc_ld_decide( $snap )", src)  # cut-off + payment rules reused
 
+    def test_mock_outbox_is_per_order_not_shared(self):
+        code = self.code()
+        self.assertNotIn("'molosoc_ld3_mock_outbox'", code)  # no shared read-modify-write option
+        self.assertIn("'molosoc_ld3_mock_outbox_' . $order_id", code)
+
     def test_mailing_state_written_before_mailer_call(self):
         code = self.code()
         self.assertLess(code.index("set_state']( 'mailing' )"), code.index("$io['mailer']( $mail )"))
