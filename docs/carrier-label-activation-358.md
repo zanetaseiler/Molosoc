@@ -28,6 +28,9 @@ Plugin source is not public, so whether a paid order's transaction id differs fr
 ### PPL
 PPL CZ 1.1.3 has no hook or headless label path; only an admin-authenticated REST batch flow. Not automated: PPL orders go to `attention` (`ppl_manual_label_required`), nothing is mailed. The one-order test therefore uses a **Zásilkovna** order. PPL automation needs separate approval + sandbox credentials.
 
+### Sender (Issue #363)
+Optional `MOLOSOC_LL_MAIL_FROM_EXPLICIT === true` adds a fixed `From: MOLOSOC <hello@molosoc.com>`. It is OFF by default, and the default headers are unchanged. See `docs/carrier-label-brevo-readiness-363.md` for the Brevo checks to run first.
+
 ### Honest limits
 Packeta SOAP label call and `wp_mail` deliverability (SPF/DKIM, host mail config) are untested here (no network/credentials in CI). Tests cover all logic with injected I/O (`tests/test_carrier_label_live_358.py`).
 
