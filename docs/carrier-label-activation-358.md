@@ -1,5 +1,7 @@
 # Carrier label activation gate — Issue #358 (OFF by default)
 
+> **Superseded step (Issue #369):** the live gate now also requires `MOLOSOC_LABEL_LIVE_APPROVED_PACKET`, and the order must first pass the read-only preview. See `docs/carrier-label-live-order-369.md` for the current activation plan.
+
 Builds on #345/#352/#356 (PRs #351, #354, #355, #357). **Merging this PR activates nothing.** No carrier call, packet, e-mail, order change or production configuration happens until Žaneta adds the wp-config constants below, in a separate approved step.
 
 ## What this adds

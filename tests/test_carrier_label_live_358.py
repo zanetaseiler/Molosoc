@@ -53,8 +53,8 @@ GOOD_MAIL = ("$r=molosoc_ll_mail($m,function(){$GLOBALS['n']=($GLOBALS['n']??0)+
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Gate(unittest.TestCase):
-    def g(self, enabled="true", ids="[7]", mock="false", oid=7):
-        return php("echo json_encode(molosoc_ll_gate(%s,%s,%s,%d));" % (enabled, ids, mock, oid))
+    def g(self, enabled="true", ids="[7]", mock="false", oid=7, approved="'Z1234567'"):
+        return php("echo json_encode(molosoc_ll_gate(%s,%s,%s,%d,%s));" % (enabled, ids, mock, oid, approved))
 
     def test_allowed(self):
         self.assertEqual(self.g(), [True, "allowed"])
