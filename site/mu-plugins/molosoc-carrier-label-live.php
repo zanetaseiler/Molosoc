@@ -289,6 +289,84 @@ function molosoc_ll_provider_now( int $order_id, string $carrier, string $ref ):
 	);
 }
 
+/**
+ * Live I/O for molosoc_ld3_process(): order-meta state/ref/tries, an append-only audit
+ * tagged with `$stage`, the given provider, and the fixed-recipient wp_mail mailer.
+ * Shared by the single-order live path and the automatic path (Issue #369). `$lock`
+ * takes the per-order lock option `$lock_key`; unlock deletes it.
+ */
+function molosoc_ll_io( int $order_id, string $stage, string $lock_key, callable $lock, callable $provider ): array {
+	return array(
+		'allow_live' => true,
+		'snapshot'   => static function () use ( $order_id ) {
+			return molosoc_ld3_snapshot( $order_id );
+		},
+		'state'      => static function () use ( $order_id ) {
+			return molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_STATE_META );
+		},
+		'set_state'  => static function ( $s ) use ( $order_id ) {
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_STATE_META, (string) $s );
+		},
+		'ref'        => static function () use ( $order_id ) {
+			return molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_REF_META );
+		},
+		'set_ref'    => static function ( $r ) use ( $order_id ) {
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_REF_META, (string) $r );
+		},
+		'tries'      => static function () use ( $order_id ) {
+			return (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_TRY_META );
+		},
+		'set_tries'  => static function ( $n ) use ( $order_id ) {
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_TRY_META, (string) (int) $n );
+		},
+		'lock'       => $lock,
+		'unlock'     => static function () use ( $lock_key ) {
+			delete_option( $lock_key );
+		},
+		'audit'      => static function ( array $row ) use ( $order_id, $stage ) {
+			$order = wc_get_order( $order_id );
+			if ( $order ) {
+				$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_merge( array( 'ts' => gmdate( 'c' ), 'stage' => $stage ), $row ) ), false );
+				$order->save_meta_data();
+			}
+		},
+		'provider'   => $provider,
+		'mailer'     => 'molosoc_ll_mail_now',
+	);
+}
+
+/** The real mailer: wp_mail with the PDF in a private temp file that is always removed. */
+function molosoc_ll_mail_now( array $mail ): array {
+	return molosoc_ll_mail(
+		$mail,
+		'wp_mail',
+		static function ( $name, $bytes ) {
+			// No wp-admin helper (wp_tempnam) needed: works on frontend/cron requests.
+			// A private unique directory keeps the validated `<carrier>-<id>.pdf` name.
+			$dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/molosoc-label-' . bin2hex( random_bytes( 8 ) );
+			if ( ! mkdir( $dir, 0700 ) ) {
+				return '';
+			}
+			$path = $dir . '/' . basename( (string) $name );
+			if ( false === file_put_contents( $path, $bytes ) ) {
+				@unlink( $path );
+				@rmdir( $dir );
+				return '';
+			}
+			return $path;
+		},
+		static function ( $path ) {
+			if ( is_string( $path ) && '' !== $path ) {
+				if ( file_exists( $path ) ) {
+					unlink( $path );
+				}
+				@rmdir( dirname( $path ) );
+			}
+		},
+		defined( 'MOLOSOC_LL_MAIL_FROM_EXPLICIT' ) && true === MOLOSOC_LL_MAIL_FROM_EXPLICIT
+	);
+}
+
 /** Entry point for the hook and for operator retries. Only the allowlisted order proceeds. */
 function molosoc_ll_run( $order_id ): string {
 	$order_id = (int) $order_id;
@@ -299,78 +377,19 @@ function molosoc_ll_run( $order_id ): string {
 	$lock_key = 'molosoc_ll_lock_' . $order_id;
 	$result   = molosoc_ld3_process(
 		$order_id,
-		array(
-			'allow_live' => true,
-			'snapshot'   => static function () use ( $order_id ) {
-				return molosoc_ld3_snapshot( $order_id );
-			},
-			'state'      => static function () use ( $order_id ) {
-				return molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_STATE_META );
-			},
-			'set_state'  => static function ( $s ) use ( $order_id ) {
-				molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_STATE_META, (string) $s );
-			},
-			'ref'        => static function () use ( $order_id ) {
-				return molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_REF_META );
-			},
-			'set_ref'    => static function ( $r ) use ( $order_id ) {
-				molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_REF_META, (string) $r );
-			},
-			'tries'      => static function () use ( $order_id ) {
-				return (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_TRY_META );
-			},
-			'set_tries'  => static function ( $n ) use ( $order_id ) {
-				molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_TRY_META, (string) (int) $n );
-			},
-			'lock'       => static function () use ( $lock_key ) {
+		molosoc_ll_io(
+			$order_id,
+			'live',
+			$lock_key,
+			static function () use ( $lock_key ) {
 				return (bool) add_option( $lock_key, time(), '', 'no' );
 			},
-			'unlock'     => static function () use ( $lock_key ) {
-				delete_option( $lock_key );
-			},
-			'audit'      => static function ( array $row ) use ( $order_id ) {
-				$order = wc_get_order( $order_id );
-				if ( $order ) {
-					$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_merge( array( 'ts' => gmdate( 'c' ), 'stage' => 'live' ), $row ) ), false );
-					$order->save_meta_data();
-				}
-			},
-			'provider'   => static function ( $carrier, $ref ) use ( $order_id ) {
+			static function ( $carrier, $ref ) use ( $order_id ) {
 				return molosoc_ll_require_approved(
 					molosoc_ll_provider_now( $order_id, (string) $carrier, (string) $ref ),
 					(string) MOLOSOC_LABEL_LIVE_APPROVED_PACKET // Defined: checked by the gate.
 				);
-			},
-			'mailer'     => static function ( $mail ) {
-				return molosoc_ll_mail(
-					$mail,
-					'wp_mail',
-					static function ( $name, $bytes ) {
-						// No wp-admin helper (wp_tempnam) needed: works on frontend/cron requests.
-						// A private unique directory keeps the validated `<carrier>-<id>.pdf` name.
-						$dir = rtrim( sys_get_temp_dir(), '/\\' ) . '/molosoc-label-' . bin2hex( random_bytes( 8 ) );
-						if ( ! mkdir( $dir, 0700 ) ) {
-							return '';
-						}
-						$path = $dir . '/' . basename( (string) $name );
-						if ( false === file_put_contents( $path, $bytes ) ) {
-							@unlink( $path );
-							@rmdir( $dir );
-							return '';
-						}
-						return $path;
-					},
-					static function ( $path ) {
-						if ( is_string( $path ) && '' !== $path ) {
-							if ( file_exists( $path ) ) {
-								unlink( $path );
-							}
-							@rmdir( dirname( $path ) );
-						}
-					},
-					defined( 'MOLOSOC_LL_MAIL_FROM_EXPLICIT' ) && true === MOLOSOC_LL_MAIL_FROM_EXPLICIT
-				);
-			},
+			}
 		)
 	);
 	$tries = (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_TRY_META );
