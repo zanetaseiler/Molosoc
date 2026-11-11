@@ -204,6 +204,8 @@ function mk_io(array $cfg, array &$L) {
   'attention' => function($r) use (&$L, &$st) { $L['attention'][]=$r; $st='attention'; },
   'alert' => function($r) use (&$L) { $L['alerts'][]=$r; },
   'audit' => function($row) use (&$L) { $L['audit'][]=$row; },
+  'alert_sent' => function() use ($cfg) { return $cfg['alert_sent'] ?? true; },
+  'attention_reason' => function() use ($cfg) { return $cfg['attention_reason'] ?? 'needs_attention'; },
  ];
 }
 """
@@ -225,6 +227,24 @@ class Step(unittest.TestCase):
         for st, want in (("mailed", "already_mailed"), ("attention", "needs_attention")):
             (res, delay), L = self.step(state=st, row=ROW_OK)
             self.assertEqual((res, delay, L["calls"], L["audit"], L["seen_set"]), (want, 0, [], [], None))
+
+    # Codex #372 finding 5: an `attention` order whose alert was never recorded gets exactly one.
+    def test_attention_without_alert_marker_alerts_once_with_stored_reason(self):
+        (res, delay), L = self.step(state="attention", alert_sent=False, attention_reason="packet_wait_timeout")
+        self.assertEqual((res, delay, L["alerts"], L["calls"], L["attention"]), ("needs_attention", 0, ["packet_wait_timeout"], [], []))
+        (res, delay), L = self.step(state="attention", alert_sent=True)
+        self.assertEqual((res, delay, L["alerts"]), ("needs_attention", 0, []))
+        (res, delay), L = self.step(state="mailing", resolve="recheck_attention", state_after_resolve="attention",
+                                    alert_sent=False, attention_reason="ref_changed")
+        self.assertEqual((res, L["alerts"]), ("needs_attention", ["ref_changed"]))
+
+    def test_attention_reason_from_audit(self):
+        rows = [{"result": "waiting", "reason": "packet_not_submitted"},
+                {"result": "attention", "reason": "provider_permanent", "detail": "packet_cancelled"},
+                {"result": "skipped", "reason": "needs_attention"}]
+        code = "echo json_encode([molosoc_la_attention_reason(%s), molosoc_la_attention_reason(%s), molosoc_la_attention_reason([]), molosoc_la_attention_reason([null,'x'])]);" % (
+            q(rows), q([{"result": "attention", "reason": "mail_state_unknown"}]))
+        self.assertEqual(php(code), ["packet_cancelled", "mail_state_unknown", "needs_attention", "needs_attention"])
 
     # Codex #372 finding 4: `mailing` is settled under the lock BEFORE any eligibility check.
     def test_mailing_state_is_resolved_before_any_decision_or_delivery(self):
@@ -327,6 +347,8 @@ function e2e(array $snap, $row, array &$M, array &$mails, $fetch_ok = true) {
   'deliver'=>function() use ($io, &$M){ $r = molosoc_ld3_process(77, $io); return [$r, 'provider_permanent'===$r ? $M['detail'] : '']; },
   'tries'=>$io['tries'], 'attention'=>function($r) use (&$M){ $M['state']='attention'; $M['audit'][]=['result'=>'attention','reason'=>$r]; },
   'alert'=>function($r) use (&$M){ $M['alerts'][]=$r; }, 'audit'=>$io['audit'],
+  'alert_sent'=>function() use (&$M){ return !empty($M['alerts']); },
+  'attention_reason'=>function() use (&$M){ return molosoc_la_attention_reason($M['audit'] ?? []); },
  ];
  return molosoc_la_step(77, $step);
 }
@@ -388,6 +410,13 @@ class EndToEnd(unittest.TestCase):
             self.assertEqual(out, [["mail_state_unknown", 0], ["needs_attention", 0]], status)
             self.assertEqual((mails, M["state"], M["alerts"]), ([], "attention", ["mail_state_unknown"]), status)
             self.assertEqual([a["reason"] for a in M["audit"] if a.get("result") == "attention"], ["mail_state_unknown"])
+
+    def test_crash_between_attention_and_alert_recovers_one_alert(self):
+        # Codex #372 finding 5: `attention` + audit persisted, the run died before alerting.
+        pre = {"state": "attention", "audit": [{"result": "attention", "reason": "mail_state_unknown"}]}
+        out, M, mails = self.run_e2e(snap(status="completed"), ROW_OK, runs=3, pre=pre)
+        self.assertEqual(out, [["needs_attention", 0]] * 3)
+        self.assertEqual((mails, M["alerts"]), ([], ["mail_state_unknown"]))
 
     def test_resolver_respects_the_delivery_lock(self):
         code = ("$M=['state'=>'mailing']; $io=['lock'=>function(){ return false; }, 'unlock'=>function(){},"
@@ -516,7 +545,7 @@ FAKE_WP = r"""
 define('MOLOSOC_LABEL_AUTO_ENABLED', true); define('MOLOSOC_LABEL_DISPATCH_SINCE', 1794355200);
 $GLOBALS['O']=[]; $GLOBALS['opts']=[]; $GLOBALS['pending']=[]; $GLOBALS['queued']=[]; $GLOBALS['queries']=[];
 class FakeOrder { public $id; function __construct($id){ $this->id=$id; }
- function get_meta($k){ return $GLOBALS['O'][$this->id][$k] ?? ''; }
+ function get_meta($k,$single=true){ if(!$single){ return array_map(function($v){ return (object)['value'=>$v]; }, $GLOBALS['O'][$this->id]['audit'] ?? []); } return $GLOBALS['O'][$this->id][$k] ?? ''; }
  function update_meta_data($k,$v){ $GLOBALS['O'][$this->id][$k]=$v; }
  function add_meta_data($k,$v,$u){ $GLOBALS['O'][$this->id]['audit'][]=$v; }
  function delete_meta_data($k){ unset($GLOBALS['O'][$this->id][$k]); }
@@ -553,7 +582,7 @@ class SweepRecovery(unittest.TestCase):
             ("mailing", now - 3600, "", False, True, False),       # a live worker holds the lock
             ("mailing", now - 3600, "123", False, False, False),   # automation finished it
             ("mailed", now - 3600, "", False, False, False),
-            ("attention", now - 3600, "", False, False, False),
+            ("attention", now - 3600, "", False, False, True),     # alert never recorded
             ("", 0, "", False, False, False),                      # never seen: pass 1's job
         ]
         code = "echo json_encode([%s]);" % ",".join(
@@ -561,6 +590,12 @@ class SweepRecovery(unittest.TestCase):
                                                           "true" if pend else "false", "true" if lock else "false", now)
             for st, seen, done, pend, lock, _ in cases)
         self.assertEqual(php(code), [c[-1] for c in cases])
+        # With the alert marker present, `attention` is finished; other states ignore it.
+        code = ("echo json_encode([molosoc_la_recoverable('attention',%d,'',false,false,%d,'max_tries'),"
+                "molosoc_la_recoverable('attention',%d,'',true,false,%d,''),"
+                "molosoc_la_recoverable('mailed',%d,'',false,false,%d,''),"
+                "molosoc_la_recoverable('mailing',%d,'',false,false,%d,'x')]);") % ((now - 3600, now) * 4)
+        self.assertEqual(php(code), [False, False, False, True])
 
     def sweep(self, orders, pending=(), opts=None):
         code = ("$GLOBALS['O']=%s; $GLOBALS['pending']=%s; $GLOBALS['opts']=%s; $n=molosoc_la_sweep();"
@@ -583,10 +618,13 @@ class SweepRecovery(unittest.TestCase):
             8: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailed"},
             9: {"status": "processing", "_molosoc_label_auto_seen": str(int(time.time()))},  # first run in flight
             10: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailing"},
+            11: {"status": "completed", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "attention",
+                 "_molosoc_label_auto_alert": "max_tries"},                                  # alert already recorded
         }
         n, queued, queries = self.sweep(orders, pending=[5], opts={"molosoc_la_lock_10": int(time.time())})
-        self.assertEqual(sorted(i for i, _ in queued), [1, 2, 3, 4])
-        self.assertEqual(n, 4)
+        # 7: `attention` with no alert marker (run died before alerting) is recovered too.
+        self.assertEqual(sorted(i for i, _ in queued), [1, 2, 3, 4, 7])
+        self.assertEqual(n, 5)
         self.assertTrue(all(d == 0 for _, d in queued))
         self.assertEqual(queries[0]["status"], ["processing"])
         self.assertEqual(queries[-1]["status"], "any")
@@ -634,6 +672,24 @@ class SweepRecovery(unittest.TestCase):
         self.assertIsNotNone(done)
         self.assertEqual(mail, [["hello@molosoc.com", []]])
         self.assertEqual((queued, lock_left), ([], False))
+
+    def test_worker_sends_lost_alert_for_attention_order_once(self):
+        # Codex #372 finding 5: `attention` + audit were persisted, the run died before alerting.
+        code = ("$GLOBALS['O']=[4=>['status'=>'completed','_molosoc_label_delivery_state'=>'attention',"
+                "'_molosoc_label_auto_seen'=>(string)(time()-7200),"
+                "'audit'=>[json_encode(['result'=>'attention','reason'=>'mail_state_unknown'])]]];"
+                "$r=molosoc_la_worker(4); $r2=molosoc_la_worker(4);"
+                "echo json_encode([$r, $r2, $GLOBALS['O'][4]['_molosoc_label_auto_alert'] ?? null,"
+                "$GLOBALS['O'][4]['_molosoc_label_auto_done'] ?? null, $GLOBALS['mail'], $GLOBALS['queued']]);")
+        pre = FAKE_WP + "$GLOBALS['mail']=[]; function wp_mail($to,$s,$b,$h=[],$a=[]){ $GLOBALS['mail'][]=[$to,$s,$a]; return true; }"
+        try:
+            r, r2, marker, done, mail, queued = php(code, pre_extra=pre)
+        except subprocess.CalledProcessError as e:  # pragma: no cover - diagnostic
+            self.fail(e.stderr + e.stdout)
+        self.assertEqual((r, r2, marker), ("needs_attention", "needs_attention", "mail_state_unknown"))
+        self.assertIsNotNone(done)
+        self.assertEqual(mail, [["hello@molosoc.com", "MOLOSOC štítek: objednávka #4 vyžaduje ruční kontrolu (mail_state_unknown)", []]])
+        self.assertEqual(queued, [])
 
 
 if __name__ == "__main__":

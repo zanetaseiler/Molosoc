@@ -31,7 +31,9 @@ worker: gate -> lock -> plan
                  transient failure: retry in 10 min, at most 3 tries, then attention + alert
 sweep (every 15 min): queues processing orders after the cut-off that the automation has never seen
                  + recovery: seen orders after the cut-off that never finished (no done marker), are not
-                   mailed/attention, have no pending run and no live lock -> queued again; a run lost
+                   mailed, are not attention unless their alert was never recorded, have no pending
+                   run and no live lock -> queued again; an attention order without an alert marker
+                   then gets its one alert (reason from the latest attention audit row); a run lost
                    mid-mail then ends in attention (mail_state_unknown) + one alert, never a resend;
                    an uncertain `mailing` is settled under the delivery lock BEFORE any eligibility
                    check, so this holds even if the order is meanwhile completed or cancelled

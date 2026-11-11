@@ -196,6 +196,7 @@ function molosoc_la_hint( string $reason ): string {
 		'max_tries'                       => 'Stažení štítku nebo odeslání e-mailu opakovaně selhalo.',
 		'exception'                       => 'Automat opakovaně narazil na chybu (výjimku). Štítek nebyl odeslán, zkontrolujte log molosoc-carrier-label-auto.',
 		'unknown_carrier'                 => 'Neznámý dopravce.',
+		'needs_attention'                 => 'Objednávka vyžaduje ruční kontrolu, důvod najdete v auditu objednávky.',
 	);
 	return $hints[ $reason ] ?? 'Zkontrolujte audit objednávky.';
 }
@@ -243,6 +244,34 @@ function molosoc_la_alert( int $order_id, string $reason, callable $get, callabl
 }
 
 /**
+ * Pure: the reason of the latest `attention` audit row (its `detail` when present), so an
+ * alert recovered after a crash still carries the real reason (Codex #372). `$rows` are
+ * decoded audit rows, oldest first. Falls back to `needs_attention`.
+ */
+function molosoc_la_attention_reason( array $rows ): string {
+	for ( $i = count( $rows ) - 1; $i >= 0; $i-- ) {
+		$row = $rows[ $i ];
+		if ( is_array( $row ) && 'attention' === ( $row['result'] ?? '' ) ) {
+			$why = (string) ( '' !== (string) ( $row['detail'] ?? '' ) ? $row['detail'] : ( $row['reason'] ?? '' ) );
+			return '' !== $why ? $why : 'needs_attention';
+		}
+	}
+	return 'needs_attention';
+}
+
+/**
+ * An order already in `attention`: sends its alert only if none was ever recorded (a run
+ * died after persisting `attention` but before alerting, Codex #372). The alert marker is
+ * still written before the send, so this never produces a second alert.
+ */
+function molosoc_la_attention_existing( array $io ): array {
+	if ( ! $io['alert_sent']() ) {
+		$io['alert']( (string) $io['attention_reason']() );
+	}
+	return array( 'needs_attention', 0 );
+}
+
+/**
  * Settles an uncertain `mailing` state under the shared delivery lock, BEFORE any
  * eligibility check (Codex #372): if the order is still `mailing` once the lock is held, the
  * mail may or may not have left, so it goes to `attention` (`mail_state_unknown`) and is
@@ -275,6 +304,8 @@ function molosoc_la_resolve_mailing( int $order_id, array $io ): string {
  *   resolve_mailing() -> string            (molosoc_la_resolve_mailing under the delivery lock)
  *   tries(), attention($reason)            (sets state `attention` + audit row)
  *   alert($reason), audit($row)
+ *   alert_sent() -> bool                   (the alert marker is set)
+ *   attention_reason() -> string           (reason of the latest `attention` audit row)
  */
 function molosoc_la_step( int $order_id, array $io ): array {
 	$state = (string) $io['state']();
@@ -282,7 +313,7 @@ function molosoc_la_step( int $order_id, array $io ): array {
 		return array( 'already_mailed', 0 );
 	}
 	if ( 'attention' === $state ) {
-		return array( 'needs_attention', 0 );
+		return molosoc_la_attention_existing( $io );
 	}
 	$now  = (int) $io['now']();
 	$seen = (int) $io['seen']();
@@ -309,7 +340,7 @@ function molosoc_la_step( int $order_id, array $io ): array {
 			return array( 'already_mailed', 0 );
 		}
 		if ( 'attention' === $state ) {
-			return array( 'needs_attention', 0 );
+			return molosoc_la_attention_existing( $io );
 		}
 		if ( 'mailing' === $state ) {
 			return array( 'locked', MOLOSOC_LA_RETRY_DELAY ); // Defensive: never deliver from `mailing`.
@@ -397,13 +428,16 @@ function molosoc_la_lock_stale( $observed, int $now ): bool {
  * was lost (e.g. the request died after `set_seen()`, mid-mail or while waiting) is queued
  * again so the state machine can resume it or turn an uncertain `mailing` into `attention`
  * with one alert (never a resend). Only when automation never finished it (no done marker),
- * it is not `mailed`/`attention`, no run is pending, no live worker holds its lock, and it was
- * first seen longer ago than the lock TTL (so a first run in flight is not raced).
+ * it is not `mailed`, it is not `attention` unless its alert was never recorded (`$alert`
+ * empty: the run died between persisting `attention` and alerting), no run is pending, no
+ * live worker holds its lock, and it was first seen longer ago than the lock TTL (so a first
+ * run in flight is not raced).
  */
-function molosoc_la_recoverable( string $state, int $seen, string $done, bool $pending, bool $locked, int $now ): bool {
+function molosoc_la_recoverable( string $state, int $seen, string $done, bool $pending, bool $locked, int $now, string $alert = '' ): bool {
 	return $seen > 0
 		&& '' === $done
-		&& ! in_array( $state, array( 'mailed', 'attention' ), true )
+		&& 'mailed' !== $state
+		&& ( 'attention' !== $state || '' === $alert )
 		&& ! $pending
 		&& ! $locked
 		&& $now - $seen > MOLOSOC_LA_LOCK_TTL;
@@ -641,6 +675,18 @@ function molosoc_la_worker( $order_id ): string {
 					molosoc_la_log( 'alert_sent' === $r ? 'warning' : 'error', sprintf( 'order %d: %s (%s)', $order_id, $r, (string) $why ) );
 				},
 				'audit'       => $audit,
+				'alert_sent'  => static function () use ( $meta_get ): bool {
+					return '' !== $meta_get( MOLOSOC_LA_ALERT_META );
+				},
+				'attention_reason' => static function () use ( $order_id ): string {
+					$order = wc_get_order( $order_id );
+					$rows  = array();
+					foreach ( $order ? (array) $order->get_meta( MOLOSOC_LD_AUDIT_META, false ) : array() as $m ) {
+						$v      = is_object( $m ) ? ( method_exists( $m, 'get_data' ) ? ( $m->get_data()['value'] ?? null ) : ( $m->value ?? null ) ) : $m;
+						$rows[] = is_string( $v ) ? json_decode( $v, true ) : null;
+					}
+					return molosoc_la_attention_reason( $rows );
+				},
 			)
 		);
 	} catch ( \Throwable $e ) {
@@ -767,7 +813,8 @@ function molosoc_la_sweep(): int {
 				molosoc_ld3_meta_get( $id, MOLOSOC_LA_DONE_META ),
 				molosoc_la_pending( $id ),
 				molosoc_la_lock_held( 'molosoc_la_lock_' . $id ),
-				time()
+				time(),
+				molosoc_ld3_meta_get( $id, MOLOSOC_LA_ALERT_META )
 			);
 		},
 		$queue,
