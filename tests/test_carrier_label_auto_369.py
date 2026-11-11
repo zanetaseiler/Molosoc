@@ -269,6 +269,25 @@ class Step(unittest.TestCase):
         (res, _), L = self.step(row=ROW_OK, deliver=["ref_changed", ""], state_after="attention")
         self.assertEqual(L["alerts"], ["ref_changed"])
 
+    # Codex #372 finding 1: an `exception` RESULT from the state machine must never strand the order.
+    def test_exception_result_after_mailing_goes_to_attention_without_resend(self):
+        (res, delay), L = self.step(row=ROW_OK, deliver=["exception", ""], state_after="mailing")
+        self.assertEqual((res, delay), ("mail_state_unknown", 0))
+        self.assertEqual((L["attention"], L["alerts"]), (["mail_state_unknown"], ["mail_state_unknown"]))
+        self.assertEqual(L["calls"].count("deliver"), 1)
+
+    def test_exception_result_before_mailing_retries_inside_window_then_alerts(self):
+        (res, delay), L = self.step(row=ROW_OK, deliver=["exception", ""], state_after="label_ready", now=5000, seen=1000)
+        self.assertEqual((res, delay, L["attention"], L["alerts"]), ("exception", 600, [], []))
+        (res, delay), L = self.step(row=ROW_OK, deliver=["exception", ""], state_after="label_ready",
+                                    now=1000 + 259200, seen=1000)
+        self.assertEqual((res, delay), ("exception", 0))
+        self.assertEqual((L["attention"], L["alerts"]), (["exception"], ["exception"]))
+
+    def test_exception_result_when_already_attention_alerts_once(self):
+        (res, delay), L = self.step(row=ROW_OK, deliver=["exception", ""], state_after="attention")
+        self.assertEqual((res, delay, L["attention"], L["alerts"]), ("exception", 0, [], ["exception"]))
+
 
 # End to end through the REAL Phase 3 state machine (molosoc_ld3_process) with in-memory meta.
 E2E = r"""
@@ -331,6 +350,15 @@ class EndToEnd(unittest.TestCase):
         out, M, mails = self.run_e2e(snap(), ROW_OK, runs=4, fetch_ok=False)
         self.assertEqual(out, [["provider_failed", 600], ["provider_failed", 600], ["max_tries", 0], ["needs_attention", 0]])
         self.assertEqual((mails, M["alerts"], M["state"]), ([], ["max_tries"], "attention"))
+
+    def test_mailer_throw_through_real_state_machine_never_strands_or_resends(self):
+        code = (E2E.replace("PDFB64", base64.b64encode(PDF.encode()).decode())
+                .replace("$mails[]=[$to,$s,$h,basename($a[0])]; return true;", "$mails[]=[$to]; throw new RuntimeException('smtp');") +
+                "$M=[]; $mails=[]; $out=[]; for($i=0;$i<2;$i++){ $out[]=e2e(%s,%s,$M,$mails); } echo json_encode([$out,$M,$mails]);" % (
+                    q(snap()), q(ROW_OK)))
+        out, M, mails = php(code)
+        self.assertEqual(out, [["mail_state_unknown", 0], ["needs_attention", 0]])
+        self.assertEqual((len(mails), M["state"], M["alerts"]), (1, "attention", ["mail_state_unknown"]))
 
     def test_crash_after_mailing_never_resends(self):
         out, M, mails = self.run_e2e(snap(), ROW_OK, pre={"state": "mailing", "ref": "4123456789"})
@@ -410,6 +438,37 @@ class SafetyContract(unittest.TestCase):
                   "add_meta_data", "save"):
             self.assertNotIn(w, body, w)
         self.assertIn("current_user_can( MOLOSOC_LA_CAP )", body)
+
+
+@unittest.skipUnless(HAVE_PHP, "php not installed")
+class SweepCollect(unittest.TestCase):
+    """Codex #372 finding 2: handled orders must never hide a newer missed order."""
+
+    def collect(self, pages, handled):
+        code = ("$P=%s; $H=%s; $read=[]; $q=[];"
+                "$n=molosoc_la_sweep_collect(function($p) use ($P,&$read){ $read[]=$p; return $P[$p-1] ?? []; },"
+                "function($id) use ($H){ return !in_array($id,$H,true); }, function($id) use (&$q){ $q[]=$id; });"
+                "echo json_encode([$n,$q,$read]);") % (q(pages), q(handled))
+        return php(code)
+
+    def test_pages_past_handled_orders(self):
+        pages = [list(range(1, 101)), list(range(101, 201)), [201, 202]]
+        n, queued, read = self.collect(pages, list(range(1, 201)))
+        self.assertEqual((n, queued, read), (2, [201, 202], [1, 2, 3]))
+
+    def test_queue_bound_and_page_bound(self):
+        pages = [list(range(1, 101)), list(range(101, 201))]
+        n, queued, read = self.collect(pages, [])
+        self.assertEqual((n, len(queued), read), (100, 100, [1]))
+        full = [list(range(i * 100 + 1, i * 100 + 101)) for i in range(30)]
+        n, queued, read = self.collect(full, list(range(1, 3001)))
+        self.assertEqual((n, read), (0, list(range(1, 21))))
+
+    def test_sweep_query_skips_seen_orders_and_pages(self):
+        src = AUTO.read_text(encoding="utf-8")
+        body = re.search(r"function molosoc_la_sweep\(\).*?\n}\n", src, re.S).group(0)
+        for w in ("'key'     => MOLOSOC_LA_SEEN_META", "'compare' => 'NOT EXISTS'", "'paged'        => $p", "molosoc_la_sweep_collect("):
+            self.assertIn(w, body, w)
 
 
 if __name__ == "__main__":

@@ -45,7 +45,8 @@ const MOLOSOC_LA_WAIT_INTERVAL  = 900;    // Re-check for a packet every 15 min 
 const MOLOSOC_LA_WAIT_MAX       = 259200; // ... for up to 72 h after the order was first seen.
 const MOLOSOC_LA_RETRY_DELAY    = 600;    // Retry after a transient fetch/mail failure.
 const MOLOSOC_LA_SWEEP_INTERVAL = 900;
-const MOLOSOC_LA_SWEEP_LIMIT    = 100;
+const MOLOSOC_LA_SWEEP_LIMIT    = 100;    // Orders queued per sweep run (also the page size) ...
+const MOLOSOC_LA_SWEEP_MAX_PAGES = 20;     // ... and pages scanned per run, so handled orders never hide newer ones.
 const MOLOSOC_LA_LOCK_TTL       = 900;    // A lock older than this is stale (request died).
 const MOLOSOC_LA_SEEN_META      = '_molosoc_label_auto_seen';
 const MOLOSOC_LA_ALERT_META     = '_molosoc_label_auto_alert';
@@ -192,6 +193,7 @@ function molosoc_la_hint( string $reason ): string {
 		'mail_state_unknown'              => 'E-mail možná odešel. Nejdřív zkontrolujte schránku a log Brevo, nic znovu neposílejte.',
 		'ref_changed'                     => 'Číslo zásilky se změnilo. Zkontrolujte v Packetě, zda nevznikla duplicitní zásilka.',
 		'max_tries'                       => 'Stažení štítku nebo odeslání e-mailu opakovaně selhalo.',
+		'exception'                       => 'Automat opakovaně narazil na chybu (výjimku). Štítek nebyl odeslán, zkontrolujte log molosoc-carrier-label-auto.',
 		'unknown_carrier'                 => 'Neznámý dopravce.',
 	);
 	return $hints[ $reason ] ?? 'Zkontrolujte audit objednávky.';
@@ -302,6 +304,24 @@ function molosoc_la_step( int $order_id, array $io ): array {
 
 	[ $result, $detail ] = $io['deliver']();
 	$result = (string) $result;
+	if ( 'exception' === $result ) {
+		// The state machine caught a throw and returned it as a result (Codex #372).
+		$after = (string) $io['state']();
+		if ( 'mailing' === $after ) {
+			// The throw came after `mailing` was written: the mail may have gone. Never resend.
+			$io['attention']( 'mail_state_unknown' );
+			$io['alert']( 'mail_state_unknown' );
+			return array( 'mail_state_unknown', 0 );
+		}
+		if ( 'attention' !== $after && molosoc_la_exception_retry( $seen, $now ) ) {
+			return array( 'exception', MOLOSOC_LA_RETRY_DELAY ); // Bounded by the wait window from first sight.
+		}
+		if ( 'attention' !== $after ) {
+			$io['attention']( 'exception' );
+		}
+		$io['alert']( 'exception' );
+		return array( 'exception', 0 );
+	}
 	$tries  = (int) $io['tries']();
 	if ( molosoc_ll_exhausted( $result, $tries ) ) {
 		$io['attention']( 'max_tries' );
@@ -552,9 +572,36 @@ function molosoc_la_worker( $order_id ): string {
 }
 
 /**
+ * Pure sweep loop. `$page($n)` returns the ids of page `$n` (page size MOLOSOC_LA_SWEEP_LIMIT),
+ * `$eligible($id)` says whether the order still needs queueing, `$queue($id)` queues it.
+ * Pages past already-handled orders, so they can never hide a newer missed order (Codex #372),
+ * while queueing at most MOLOSOC_LA_SWEEP_LIMIT orders and reading at most
+ * MOLOSOC_LA_SWEEP_MAX_PAGES pages per run.
+ */
+function molosoc_la_sweep_collect( callable $page, callable $eligible, callable $queue ): int {
+	$n = 0;
+	for ( $p = 1; $p <= MOLOSOC_LA_SWEEP_MAX_PAGES; $p++ ) {
+		$ids = array_values( (array) $page( $p ) );
+		foreach ( $ids as $id ) {
+			$id = (int) $id;
+			if ( $id > 0 && $eligible( $id ) ) {
+				$queue( $id );
+				if ( ++$n >= MOLOSOC_LA_SWEEP_LIMIT ) {
+					return $n;
+				}
+			}
+		}
+		if ( count( $ids ) < MOLOSOC_LA_SWEEP_LIMIT ) {
+			break;
+		}
+	}
+	return $n;
+}
+
+/**
  * Safety net: queues recent `processing` orders created after the cut-off that this
- * automation has never seen (e.g. a lost queue entry). Reads only; queues at most
- * MOLOSOC_LA_SWEEP_LIMIT orders per run.
+ * automation has never seen (e.g. a lost queue entry). Reads only; the query itself skips
+ * orders that already carry the seen marker, and the pure loop above pages past any others.
  */
 function molosoc_la_sweep(): int {
 	[ $ok ] = molosoc_la_gate_now();
@@ -562,25 +609,35 @@ function molosoc_la_sweep(): int {
 		return 0;
 	}
 	$since = molosoc_ld_since_ts( true, MOLOSOC_LABEL_DISPATCH_SINCE, null );
-	$ids   = wc_get_orders(
-		array(
-			'status'       => array( 'processing' ),
-			'date_created' => '>=' . $since,
-			'limit'        => MOLOSOC_LA_SWEEP_LIMIT,
-			'orderby'      => 'date',
-			'order'        => 'ASC',
-			'return'       => 'ids',
-		)
-	);
-	$n = 0;
-	foreach ( (array) $ids as $id ) {
-		$id = (int) $id;
-		if ( '' === molosoc_ld3_meta_get( $id, MOLOSOC_LA_SEEN_META ) && '' === molosoc_ld3_meta_get( $id, MOLOSOC_LD3_STATE_META ) && ! molosoc_la_pending( $id ) ) {
+	return molosoc_la_sweep_collect(
+		static function ( int $p ) use ( $since ) {
+			return wc_get_orders(
+				array(
+					'status'       => array( 'processing' ),
+					'date_created' => '>=' . $since,
+					'meta_query'   => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						array(
+							'key'     => MOLOSOC_LA_SEEN_META,
+							'compare' => 'NOT EXISTS',
+						),
+					),
+					'limit'        => MOLOSOC_LA_SWEEP_LIMIT,
+					'paged'        => $p,
+					'orderby'      => 'date',
+					'order'        => 'ASC',
+					'return'       => 'ids',
+				)
+			);
+		},
+		static function ( int $id ): bool {
+			return '' === molosoc_ld3_meta_get( $id, MOLOSOC_LA_SEEN_META )
+				&& '' === molosoc_ld3_meta_get( $id, MOLOSOC_LD3_STATE_META )
+				&& ! molosoc_la_pending( $id );
+		},
+		static function ( int $id ) {
 			molosoc_la_schedule( $id, 0 );
-			++$n;
 		}
-	}
-	return $n;
+	);
 }
 
 function molosoc_la_ensure_sweep(): void {
