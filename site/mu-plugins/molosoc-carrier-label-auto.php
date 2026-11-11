@@ -448,6 +448,35 @@ function molosoc_la_exception_retry( int $seen, int $now ): bool {
 	return $seen > 0 && $now - $seen < MOLOSOC_LA_WAIT_MAX;
 }
 
+/**
+ * An exception that escaped molosoc_la_step() (snapshot, Packeta lookup, audit, ...), seen
+ * by the worker's outer catch. Returns array( result, delay ) like the step (Codex #372):
+ *   - inside the wait window from first sight: retry later;
+ *   - exhausted: never finish silently. `mailed` stays as it is; `attention` sends its alert
+ *     only if none was recorded; an uncertain `mailing` becomes `attention`
+ *     (`mail_state_unknown`, never resent); anything else becomes `attention` (`exception`).
+ *     Every path alerts at most once (marker written before the send).
+ * Uses the step's I/O keys now(), seen(), state(), attention($why), alert($why),
+ * alert_sent(), attention_reason().
+ */
+function molosoc_la_outer_exception( int $order_id, array $io ): array {
+	if ( molosoc_la_exception_retry( (int) $io['seen'](), (int) $io['now']() ) ) {
+		return array( 'exception', MOLOSOC_LA_RETRY_DELAY );
+	}
+	$state = (string) $io['state']();
+	if ( 'mailed' === $state ) {
+		return array( 'exception', 0 );
+	}
+	if ( 'attention' === $state ) {
+		molosoc_la_attention_existing( $io );
+		return array( 'exception', 0 );
+	}
+	$why = 'mailing' === $state ? 'mail_state_unknown' : 'exception';
+	$io['attention']( $why );
+	$io['alert']( $why );
+	return array( 'exception', 0 );
+}
+
 /* ---------------------------------------------------------------- WP glue */
 
 function molosoc_la_gate_now(): array {
@@ -566,142 +595,147 @@ function molosoc_la_worker( $order_id ): string {
 	if ( ! $ok || $order_id <= 0 ) {
 		return $ok ? 'invalid_order' : $reason; // Disabled: pending runs do nothing.
 	}
+	$meta_get = static function ( string $key ) use ( $order_id ): string {
+		return molosoc_ld3_meta_get( $order_id, $key );
+	};
+	$audit    = static function ( array $row ) use ( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( $order ) {
+			$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_merge( array( 'ts' => gmdate( 'c' ), 'stage' => 'auto' ), $row ) ), false );
+			$order->save_meta_data();
+		}
+	};
+	$detail   = '';
+	$io       = array(
+		'now'         => 'time',
+		'state'       => static function () use ( $meta_get ) {
+			return $meta_get( MOLOSOC_LD3_STATE_META );
+		},
+		'seen'        => static function () use ( $meta_get ) {
+			return (int) $meta_get( MOLOSOC_LA_SEEN_META );
+		},
+		'set_seen'    => static function ( $ts ) use ( $order_id ) {
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_SEEN_META, (string) (int) $ts );
+		},
+		'snapshot'    => static function () use ( $order_id ) {
+			return molosoc_ld3_snapshot( $order_id );
+		},
+		'packeta_row' => static function () use ( $order_id ) {
+			return molosoc_la_packeta_row( $order_id );
+		},
+		'configured'  => static function () {
+			return '' !== molosoc_ll_packeta_password_now();
+		},
+		'resolve_mailing' => static function () use ( $order_id ) {
+			// Same inner lock key as the state machine, so the two never race.
+			$inner = 'molosoc_ll_lock_' . $order_id;
+			return molosoc_la_resolve_mailing(
+				$order_id,
+				molosoc_ll_io(
+					$order_id,
+					'auto',
+					$inner,
+					static function () use ( $inner ) {
+						return molosoc_la_lock( $inner );
+					},
+					static function () {
+						return array( 'ok' => false, 'live' => false, 'reason' => 'not_used' ); // Never fetches.
+					}
+				)
+			);
+		},
+		'deliver'     => static function () use ( $order_id, &$detail ) {
+			// Same inner lock key as the single-order live path, with stale takeover.
+			$inner = 'molosoc_ll_lock_' . $order_id;
+			$res   = molosoc_ld3_process(
+				$order_id,
+				molosoc_ll_io(
+					$order_id,
+					'auto',
+					$inner,
+					static function () use ( $inner ) {
+						return molosoc_la_lock( $inner );
+					},
+					static function ( $carrier, $ref ) use ( $order_id, &$detail ) {
+						$r = molosoc_la_provider(
+							(string) $carrier,
+							(string) $ref,
+							array(
+								'row'          => molosoc_la_packeta_row( $order_id ),
+								'api_password' => molosoc_ll_packeta_password_now(),
+								'fetch'        => 'molosoc_ll_packeta_fetch',
+							)
+						);
+						$detail = (string) ( $r['reason'] ?? '' );
+						return $r;
+					}
+				)
+			);
+			return array( $res, 'provider_permanent' === $res ? $detail : '' );
+		},
+		'tries'       => static function () use ( $meta_get ) {
+			return (int) $meta_get( MOLOSOC_LD3_TRY_META );
+		},
+		'attention'   => static function ( $why ) use ( $order_id, $audit ) {
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_STATE_META, 'attention' );
+			$audit( array( 'order' => $order_id, 'result' => 'attention', 'reason' => (string) $why ) );
+		},
+		'alert'       => static function ( $why ) use ( $order_id, $meta_get, $audit ) {
+			$r = molosoc_la_alert(
+				$order_id,
+				(string) $why,
+				static function () use ( $meta_get ) {
+					return $meta_get( MOLOSOC_LA_ALERT_META );
+				},
+				static function ( $v ) use ( $order_id ) {
+					molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_ALERT_META, (string) $v );
+				},
+				'wp_mail'
+			);
+			$audit( array( 'order' => $order_id, 'result' => $r, 'reason' => (string) $why ) );
+			molosoc_la_log( 'alert_sent' === $r ? 'warning' : 'error', sprintf( 'order %d: %s (%s)', $order_id, $r, (string) $why ) );
+		},
+		'audit'       => $audit,
+		'alert_sent'  => static function () use ( $meta_get ): bool {
+			return '' !== $meta_get( MOLOSOC_LA_ALERT_META );
+		},
+		'attention_reason' => static function () use ( $order_id ): string {
+			$order = wc_get_order( $order_id );
+			$rows  = array();
+			foreach ( $order ? (array) $order->get_meta( MOLOSOC_LD_AUDIT_META, false ) : array() as $m ) {
+				$v      = is_object( $m ) ? ( method_exists( $m, 'get_data' ) ? ( $m->get_data()['value'] ?? null ) : ( $m->value ?? null ) ) : $m;
+				$rows[] = is_string( $v ) ? json_decode( $v, true ) : null;
+			}
+			return molosoc_la_attention_reason( $rows );
+		},
+	);
 	$outer = 'molosoc_la_lock_' . $order_id;
 	if ( ! molosoc_la_lock( $outer ) ) {
 		molosoc_la_schedule( $order_id, MOLOSOC_LA_RETRY_DELAY );
 		return 'locked';
 	}
+	$unsettled = false; // True when even the exception handling failed: leave it to the sweep.
 	try {
-		$meta_get = static function ( string $key ) use ( $order_id ): string {
-			return molosoc_ld3_meta_get( $order_id, $key );
-		};
-		$audit    = static function ( array $row ) use ( $order_id ) {
-			$order = wc_get_order( $order_id );
-			if ( $order ) {
-				$order->add_meta_data( MOLOSOC_LD_AUDIT_META, wp_json_encode( array_merge( array( 'ts' => gmdate( 'c' ), 'stage' => 'auto' ), $row ) ), false );
-				$order->save_meta_data();
-			}
-		};
-		$detail   = '';
-		[ $result, $delay ] = molosoc_la_step(
-			$order_id,
-			array(
-				'now'         => 'time',
-				'state'       => static function () use ( $meta_get ) {
-					return $meta_get( MOLOSOC_LD3_STATE_META );
-				},
-				'seen'        => static function () use ( $meta_get ) {
-					return (int) $meta_get( MOLOSOC_LA_SEEN_META );
-				},
-				'set_seen'    => static function ( $ts ) use ( $order_id ) {
-					molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_SEEN_META, (string) (int) $ts );
-				},
-				'snapshot'    => static function () use ( $order_id ) {
-					return molosoc_ld3_snapshot( $order_id );
-				},
-				'packeta_row' => static function () use ( $order_id ) {
-					return molosoc_la_packeta_row( $order_id );
-				},
-				'configured'  => static function () {
-					return '' !== molosoc_ll_packeta_password_now();
-				},
-				'resolve_mailing' => static function () use ( $order_id ) {
-					// Same inner lock key as the state machine, so the two never race.
-					$inner = 'molosoc_ll_lock_' . $order_id;
-					return molosoc_la_resolve_mailing(
-						$order_id,
-						molosoc_ll_io(
-							$order_id,
-							'auto',
-							$inner,
-							static function () use ( $inner ) {
-								return molosoc_la_lock( $inner );
-							},
-							static function () {
-								return array( 'ok' => false, 'live' => false, 'reason' => 'not_used' ); // Never fetches.
-							}
-						)
-					);
-				},
-				'deliver'     => static function () use ( $order_id, &$detail ) {
-					// Same inner lock key as the single-order live path, with stale takeover.
-					$inner = 'molosoc_ll_lock_' . $order_id;
-					$res   = molosoc_ld3_process(
-						$order_id,
-						molosoc_ll_io(
-							$order_id,
-							'auto',
-							$inner,
-							static function () use ( $inner ) {
-								return molosoc_la_lock( $inner );
-							},
-							static function ( $carrier, $ref ) use ( $order_id, &$detail ) {
-								$r = molosoc_la_provider(
-									(string) $carrier,
-									(string) $ref,
-									array(
-										'row'          => molosoc_la_packeta_row( $order_id ),
-										'api_password' => molosoc_ll_packeta_password_now(),
-										'fetch'        => 'molosoc_ll_packeta_fetch',
-									)
-								);
-								$detail = (string) ( $r['reason'] ?? '' );
-								return $r;
-							}
-						)
-					);
-					return array( $res, 'provider_permanent' === $res ? $detail : '' );
-				},
-				'tries'       => static function () use ( $meta_get ) {
-					return (int) $meta_get( MOLOSOC_LD3_TRY_META );
-				},
-				'attention'   => static function ( $why ) use ( $order_id, $audit ) {
-					molosoc_ld3_meta_set( $order_id, MOLOSOC_LD3_STATE_META, 'attention' );
-					$audit( array( 'order' => $order_id, 'result' => 'attention', 'reason' => (string) $why ) );
-				},
-				'alert'       => static function ( $why ) use ( $order_id, $meta_get, $audit ) {
-					$r = molosoc_la_alert(
-						$order_id,
-						(string) $why,
-						static function () use ( $meta_get ) {
-							return $meta_get( MOLOSOC_LA_ALERT_META );
-						},
-						static function ( $v ) use ( $order_id ) {
-							molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_ALERT_META, (string) $v );
-						},
-						'wp_mail'
-					);
-					$audit( array( 'order' => $order_id, 'result' => $r, 'reason' => (string) $why ) );
-					molosoc_la_log( 'alert_sent' === $r ? 'warning' : 'error', sprintf( 'order %d: %s (%s)', $order_id, $r, (string) $why ) );
-				},
-				'audit'       => $audit,
-				'alert_sent'  => static function () use ( $meta_get ): bool {
-					return '' !== $meta_get( MOLOSOC_LA_ALERT_META );
-				},
-				'attention_reason' => static function () use ( $order_id ): string {
-					$order = wc_get_order( $order_id );
-					$rows  = array();
-					foreach ( $order ? (array) $order->get_meta( MOLOSOC_LD_AUDIT_META, false ) : array() as $m ) {
-						$v      = is_object( $m ) ? ( method_exists( $m, 'get_data' ) ? ( $m->get_data()['value'] ?? null ) : ( $m->value ?? null ) ) : $m;
-						$rows[] = is_string( $v ) ? json_decode( $v, true ) : null;
-					}
-					return molosoc_la_attention_reason( $rows );
-				},
-			)
-		);
+		[ $result, $delay ] = molosoc_la_step( $order_id, $io );
 	} catch ( \Throwable $e ) {
 		molosoc_la_log( 'error', sprintf( 'order %d: exception %s', $order_id, get_class( $e ) ) );
 		$result = 'exception';
-		// Retry, but never beyond the wait window: a persistent error must not loop forever.
-		$seen  = (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LA_SEEN_META );
-		$delay = molosoc_la_exception_retry( $seen, time() ) ? MOLOSOC_LA_RETRY_DELAY : 0;
+		$delay  = 0;
+		try {
+			// Retry inside the wait window; once exhausted, `attention` + one alert, never a
+			// silent done marker (Codex #372).
+			[ $result, $delay ] = molosoc_la_outer_exception( $order_id, $io );
+		} catch ( \Throwable $e2 ) {
+			molosoc_la_log( 'error', sprintf( 'order %d: exception while settling %s', $order_id, get_class( $e2 ) ) );
+			$unsettled = true;
+		}
 	} finally {
 		delete_option( $outer );
 	}
 	molosoc_la_log( 'info', sprintf( 'order %d: %s', $order_id, $result ) );
 	if ( $delay > 0 ) {
 		molosoc_la_schedule( $order_id, $delay );
-	} else {
+	} elseif ( ! $unsettled ) {
 		// No follow-up: the sweep's recovery pass must not pick this order up again.
 		molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_DONE_META, (string) time() );
 	}

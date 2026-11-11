@@ -549,7 +549,8 @@ class FakeOrder { public $id; function __construct($id){ $this->id=$id; }
  function update_meta_data($k,$v){ $GLOBALS['O'][$this->id][$k]=$v; }
  function add_meta_data($k,$v,$u){ $GLOBALS['O'][$this->id]['audit'][]=$v; }
  function delete_meta_data($k){ unset($GLOBALS['O'][$this->id][$k]); }
- function save_meta_data(){} function save(){} }
+ function save_meta_data(){ if(!empty($GLOBALS['throw_save'])) throw new RuntimeException('db'); } function save(){}
+ function get_shipping_methods(){ if(!empty($GLOBALS['throw_snapshot'])) throw new RuntimeException('db'); return []; } }
 function wc_get_order($id){ return isset($GLOBALS['O'][$id]) ? new FakeOrder($id) : false; }
 function wc_get_orders($a){ $GLOBALS['queries'][]=$a; $ids=[];
  foreach($GLOBALS['O'] as $id=>$m){
@@ -691,6 +692,78 @@ class SweepRecovery(unittest.TestCase):
         self.assertEqual(mail, [["hello@molosoc.com", "MOLOSOC štítek: objednávka #4 vyžaduje ruční kontrolu (mail_state_unknown)", []]])
         self.assertEqual(queued, [])
 
+    def test_outer_exception_helper(self):
+        # Codex #372 finding 6: an exception that escaped the step, decided per state.
+        import time
+        now = int(time.time())
+        code = r"""
+$mk=function($state,$seen,$alert='') use (&$log){ return [
+ 'now'=>function(){ return %d; }, 'seen'=>function() use ($seen){ return $seen; },
+ 'state'=>function() use ($state){ return $state; },
+ 'attention'=>function($w) use (&$log){ $log[]='attention:'.$w; },
+ 'alert'=>function($w) use (&$log){ $log[]='alert:'.$w; },
+ 'alert_sent'=>function() use ($alert){ return ''!==$alert; },
+ 'attention_reason'=>function(){ return 'max_tries'; } ]; };
+$out=[];
+foreach ([['label_ready',%d,''],['label_ready',%d,''],['mailing',%d,''],['mailed',%d,''],
+          ['attention',%d,''],['attention',%d,'x'],['',0,'']] as $c){
+ $log=[]; $r=molosoc_la_outer_exception(7,$mk($c[0],$c[1],$c[2])); $out[]=[$r,$log]; }
+echo json_encode($out);
+""" % (now, now - 3600, now - 259200, now - 259200, now - 259200, now - 259200, now - 259200)
+        self.assertEqual(php(code), [
+            [["exception", 600], []],                                            # inside the window: retry
+            [["exception", 0], ["attention:exception", "alert:exception"]],      # exhausted
+            [["exception", 0], ["attention:mail_state_unknown", "alert:mail_state_unknown"]],
+            [["exception", 0], []],                                              # mailed: nothing to do
+            [["exception", 0], ["alert:max_tries"]],                             # lost alert recovered
+            [["exception", 0], []],                                              # alert already recorded
+            [["exception", 0], ["attention:exception", "alert:exception"]],      # never seen: no loop
+        ])
+
+    def _throwing_worker(self, seen_ago, extra_pre=""):
+        code = ("$GLOBALS['O']=[8=>['status'=>'processing','_molosoc_label_delivery_state'=>'label_ready',"
+                "'_molosoc_label_auto_seen'=>(string)(time()-%d)]];"
+                "$r=molosoc_la_worker(8); $r2=molosoc_la_worker(8);"
+                "echo json_encode([$r, $r2, $GLOBALS['O'][8]['_molosoc_label_delivery_state'],"
+                "$GLOBALS['O'][8]['_molosoc_label_auto_alert'] ?? null,"
+                "$GLOBALS['O'][8]['_molosoc_label_auto_done'] ?? null, $GLOBALS['mail'], $GLOBALS['queued'],"
+                "isset($GLOBALS['opts']['molosoc_la_lock_8'])]);") % seen_ago
+        # A throwing snapshot: the exception escapes molosoc_la_step() to the worker's catch.
+        pre = (FAKE_WP + "$GLOBALS['mail']=[]; function wp_mail($to,$s,$b,$h=[],$a=[]){ $GLOBALS['mail'][]=[$to,$s,$a]; return true; }"
+               "$GLOBALS['throw_snapshot']=true; " + extra_pre)
+        try:
+            return php(code, pre_extra=pre)
+        except subprocess.CalledProcessError as e:  # pragma: no cover - diagnostic
+            self.fail(e.stderr + e.stdout)
+
+    def test_worker_exhausted_outer_exception_alerts_once(self):
+        r, r2, state, alert, done, mail, queued, lock_left = self._throwing_worker(259200 + 60)
+        self.assertEqual((r, r2, state, alert), ("exception", "needs_attention", "attention", "exception"))
+        self.assertIsNotNone(done)
+        self.assertEqual(mail, [["hello@molosoc.com", "MOLOSOC štítek: objednávka #8 vyžaduje ruční kontrolu (exception)", []]])
+        self.assertEqual((queued, lock_left), ([], False))
+
+    def test_worker_outer_exception_inside_window_retries_without_alert(self):
+        r, r2, state, alert, done, mail, queued, lock_left = self._throwing_worker(3600)
+        self.assertEqual((r, state, alert, done, mail), ("exception", "label_ready", None, None, []))
+        self.assertEqual(queued, [[8, 600]])  # one pending run; the 2nd worker call re-queues nothing new
+        self.assertFalse(lock_left)
+
+    def test_worker_failure_while_settling_leaves_order_to_the_sweep(self):
+        # Even the attention write throws: no done marker, so the recovery sweep retries later.
+        code = ("$GLOBALS['O']=[8=>['status'=>'processing','_molosoc_label_delivery_state'=>'label_ready',"
+                "'_molosoc_label_auto_seen'=>(string)(time()-300000)]];"
+                "$r=molosoc_la_worker(8);"
+                "echo json_encode([$r, $GLOBALS['O'][8]['_molosoc_label_auto_done'] ?? null, $GLOBALS['queued'],"
+                "isset($GLOBALS['opts']['molosoc_la_lock_8']), molosoc_la_recoverable('label_ready', time()-300000,"
+                "'', false, false, time())]);")
+        pre = (FAKE_WP + "$GLOBALS['mail']=[]; function wp_mail(){ $GLOBALS['mail'][]=1; return true; }"
+               "$GLOBALS['throw_snapshot']=true; $GLOBALS['throw_save']=true; ")
+        try:
+            r, done, queued, lock_left, recoverable = php(code, pre_extra=pre)
+        except subprocess.CalledProcessError as e:  # pragma: no cover - diagnostic
+            self.fail(e.stderr + e.stdout)
+        self.assertEqual((r, done, queued, lock_left, recoverable), ("exception", None, [], False, True))
 
 if __name__ == "__main__":
     unittest.main()
