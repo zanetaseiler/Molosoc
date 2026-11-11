@@ -2,6 +2,8 @@
 
 Builds on #345/#352/#356/#358/#361/#363/#366 (PRs #351, #354, #355, #357, #359, #362, #365).
 
+> **Scope changed on 2026-11-11** (`ZANETA_DECISION — APPROVED CHANGE OF SCOPE` on #369): the goal is now hands-off processing of all eligible new orders. See **`docs/carrier-label-automation-369.md`**. The single-order path below stays as it is and must not be enabled together with the automation.
+
 **Status: repository-only.** This cloud session cannot reach molosoc.com or wp-admin (the proxy returns `403`, and there are no admin credentials). So **no** real order was identified, and no plugin, Comgate or Packeta fact was checked live. Nothing has been sent, activated or changed in production.
 
 > Deploy note: a merge to `main` that touches `site/mu-plugins/**` runs `deploy-mu-plugins.yml` and syncs these files to production. Both files are **inert** there until the wp-config constants below are set. Merging still needs Žaneta's approval.
