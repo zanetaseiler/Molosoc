@@ -40,6 +40,22 @@
  *   meta is set even for unpaid orders and is NEVER used as a signal).
  *   `date_paid` or `processing` alone are unsafe (order #775 was cancelled
  *   after processing). No configurable meta key exists any more.
+ *
+ *   Issue #369 (ZANETA_DECISION 2026-11-11): live data showed all 34 paid
+ *   Comgate orders keep `_transaction_id` EQUAL to
+ *   `wf_gateway_tmp_transaction_id`, and unpaid ones have an empty
+ *   `_transaction_id`. The documented rule is therefore `paid_status`:
+ *   processing + Comgate gateway + non-empty transaction id + is_paid().
+ *   The placeholder comparison (`strict`) now runs only when wp-config sets
+ *   MOLOSOC_LABEL_COMGATE_TMPID_RULE to exactly 'strict'.
+ *
+ * CUT-OFF (Issue #369)
+ *
+ *   Orders created before the cut-off are never processed. The cut-off is the
+ *   wp-config constant MOLOSOC_LABEL_DISPATCH_SINCE when defined (a Unix
+ *   timestamp or an ISO 8601 date-time with offset, not before
+ *   MOLOSOC_LD_SINCE_FLOOR), otherwise the `molosoc_label_dispatch_since`
+ *   option. A defined but invalid constant fails closed (no fallback).
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -55,6 +71,8 @@ const MOLOSOC_LD_SIZE_ORDER     = array( 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'
 const MOLOSOC_LD_SIZE_META_KEYS = array( 'pa_size', 'pa_velikost' ); // new orders / older orders.
 const MOLOSOC_LD_VARIATION_SIZES = array( 424 => 'L', 425 => 'M' );   // product 364 variations.
 const MOLOSOC_LD_COMGATE_IDS     = array( 'wf-woo-comgate', 'wf_woo_comgate' );
+// Issue #369: earliest cut-off a wp-config constant may set (2026-11-11T00:00:00Z, the decision date).
+const MOLOSOC_LD_SINCE_FLOOR     = 1794355200;
 
 /** Czech "kus" form for a count: 1 kus, 2-4 kusy, 5+ kusů (0 -> kusů). */
 function molosoc_ld_piece_word( int $n ): string {
@@ -161,14 +179,44 @@ function molosoc_ld_comgate_paid( array $f ): bool {
 		return false;
 	}
 	$tmp = trim( (string) ( $f['tmp_transaction_id'] ?? '' ) );
-	// Default `strict`: a transaction id equal to the temporary placeholder id means unpaid.
-	// `paid_status` (operator-selected after the staging check, Issue #358) drops only that
-	// comparison, for the case where the real plugin keeps the same value after payment.
-	// Everything else (processing, Comgate gateway, non-empty id, is_paid) still applies.
-	if ( 'paid_status' !== ( $f['tmp_rule'] ?? 'strict' ) && '' !== $tmp && hash_equals( $tmp, $tx ) ) {
-		return false; // Placeholder id of an unpaid order.
+	// Default `paid_status` (Issue #369, verified on live Comgate 1.1.40 data): the plugin keeps
+	// the transaction id equal to the temporary id after payment, so that equality says nothing.
+	// Only an explicit `strict` rule still treats an equal id as an unpaid placeholder.
+	// Everything else (processing, Comgate gateway, non-empty id, is_paid) always applies.
+	if ( 'strict' === ( $f['tmp_rule'] ?? 'paid_status' ) && '' !== $tmp && hash_equals( $tmp, $tx ) ) {
+		return false; // Placeholder id of an unpaid order (strict rule only).
 	}
 	return true === ( $f['is_paid'] ?? false );
+}
+
+/** Issue #369: Comgate rule from the wp-config value. Only exactly 'strict' opts back into the placeholder check. */
+function molosoc_ld_comgate_tmp_rule( $configured ): string {
+	return 'strict' === $configured ? 'strict' : 'paid_status';
+}
+
+/**
+ * Issue #369: cut-off timestamp. A defined constant (`$const_defined`) wins over the option and
+ * must be a positive int / digit string Unix timestamp or an ISO 8601 date-time with an explicit
+ * offset (e.g. `2026-11-12T00:00:00+01:00`), not before MOLOSOC_LD_SINCE_FLOOR. Anything else
+ * returns 0, which molosoc_ld_decide() treats as `before_cutoff_no_retroactive` (fail closed).
+ * Without the constant, the `molosoc_label_dispatch_since` option value is used as before.
+ */
+function molosoc_ld_since_ts( bool $const_defined, $const, $option ): int {
+	if ( ! $const_defined ) {
+		return max( 0, (int) $option );
+	}
+	$ts = 0;
+	if ( is_int( $const ) ) {
+		$ts = $const;
+	} elseif ( is_string( $const ) && 1 === preg_match( '/^\d{1,12}$/', $const ) ) {
+		$ts = (int) $const;
+	} elseif ( is_string( $const ) && 1 === preg_match( '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/', $const ) ) {
+		$dt = DateTimeImmutable::createFromFormat( '!Y-m-d\TH:i:sP', $const );
+		$err = DateTimeImmutable::getLastErrors(); // false on PHP >= 8.2 when clean.
+		$ok  = $dt instanceof DateTimeImmutable && ( false === $err || 0 === $err['warning_count'] + $err['error_count'] );
+		$ts = $ok ? $dt->getTimestamp() : 0;
+	}
+	return $ts >= MOLOSOC_LD_SINCE_FLOOR ? $ts : 0;
 }
 
 /**
@@ -350,7 +398,7 @@ function molosoc_ld_comgate_from_order( $order ): bool {
 			'transaction_id'     => (string) $order->get_transaction_id(),
 			'tmp_transaction_id' => (string) $order->get_meta( 'wf_gateway_tmp_transaction_id' ),
 			'is_paid'            => (bool) $order->is_paid(),
-			'tmp_rule'           => ( defined( 'MOLOSOC_LABEL_COMGATE_TMPID_RULE' ) && 'paid_status' === MOLOSOC_LABEL_COMGATE_TMPID_RULE ) ? 'paid_status' : 'strict',
+			'tmp_rule'           => molosoc_ld_comgate_tmp_rule( defined( 'MOLOSOC_LABEL_COMGATE_TMPID_RULE' ) ? MOLOSOC_LABEL_COMGATE_TMPID_RULE : null ),
 		)
 	);
 }
@@ -365,7 +413,11 @@ function molosoc_ld_base( $order, array $methods ): array {
 			: false,
 		'carrier'           => molosoc_ld_detect_carrier( $methods ),
 		'created_ts'        => $order->get_date_created() ? $order->get_date_created()->getTimestamp() : 0,
-		'since_ts'          => (int) get_option( 'molosoc_label_dispatch_since', 0 ),
+		'since_ts'          => molosoc_ld_since_ts(
+			defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' ),
+			defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' ) ? MOLOSOC_LABEL_DISPATCH_SINCE : null,
+			defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' ) ? 0 : get_option( 'molosoc_label_dispatch_since', 0 )
+		),
 		'done'              => (bool) $order->get_meta( MOLOSOC_LD_STATE_META ),
 	);
 }

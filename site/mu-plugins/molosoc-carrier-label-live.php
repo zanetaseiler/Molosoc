@@ -25,9 +25,13 @@
  *
  * UNVERIFIED PLUGIN FACTS (not guessed; supplied by the operator)
  *
- *   - Packeta: the order meta key holding the packet id and the API password are
- *     NOT hard-coded. Operator defines MOLOSOC_LL_PACKETA_PACKET_META and
- *     MOLOSOC_LL_PACKETA_API_PASSWORD. Without them the provider fails closed.
+ *   - Packeta (Issue #369, checked on production): Packeta 2.3.2 keeps the packet
+ *     id in its own table `{prefix}packetery_order.packet_id` (keyed by order id),
+ *     not in order meta. It is read there with one prepared, read-only SELECT.
+ *     The API password is MOLOSOC_LL_PACKETA_API_PASSWORD when defined, otherwise
+ *     the `api_password` Packeta already stores in its own `packetery` option, so
+ *     no secret has to be copied anywhere. It is never logged, audited or shown.
+ *     Without a password the provider fails closed (`packeta_unconfigured`).
  *     The label call uses Packeta's own documented API (SOAP `packetLabelPdf`),
  *     not plugin internals, and is verified only by the controlled one-order test.
  *   - PPL: no headless path exists in PPL CZ 1.1.3; labels stay manual. The
@@ -153,10 +157,41 @@ function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $
 }
 
 /**
+ * Issue #369: Packeta API password. The wp-config constant wins when it is a non-empty
+ * string; otherwise the password Packeta stores in its own `packetery` option is used.
+ * Returns '' (fail closed) when neither is a usable single-line string. Never log it.
+ */
+function molosoc_ll_packeta_password( $constant, $packetery_option ): string {
+	foreach ( array( $constant, is_array( $packetery_option ) ? ( $packetery_option['api_password'] ?? null ) : null ) as $pw ) {
+		if ( is_string( $pw ) && '' !== trim( $pw ) && 1 !== preg_match( '/[\x00-\x1F\x7F]/', $pw ) ) {
+			return trim( $pw );
+		}
+	}
+	return '';
+}
+
+/**
+ * Issue #369: read-only lookup of the packet id Packeta 2.3.2 stored for this order in
+ * `{prefix}packetery_order` (column `packet_id`, row `id` = order id). Returns '' when the
+ * table or row is missing or the value is NULL; the caller validates the shape.
+ */
+function molosoc_ll_packeta_packet_id( int $order_id ): string {
+	global $wpdb;
+	if ( $order_id <= 0 || ! isset( $wpdb ) || ! is_object( $wpdb ) ) {
+		return '';
+	}
+	$table = $wpdb->prefix . 'packetery_order';
+	if ( $table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ) ) {
+		return '';
+	}
+	$val = $wpdb->get_var( $wpdb->prepare( 'SELECT `packet_id` FROM `' . $table . '` WHERE `id` = %d LIMIT 1', $order_id ) );
+	return is_string( $val ) ? trim( $val ) : '';
+}
+
+/**
  * Provider. `$d` holds injected I/O:
- *   packet_meta_key   operator-defined order meta key of the Packeta packet id ('' = unconfigured)
- *   packet_id         value of that meta on this order ('' = not submitted yet)
- *   api_password      operator-defined Packeta API password ('' = unconfigured)
+ *   packet_id         Packeta packet id of this order from Packeta's own table ('' = not submitted yet)
+ *   api_password      Packeta API password, constant or Packeta's stored setting ('' = unconfigured)
  *   fetch( id, pw )   returns PDF bytes (string) or false on failure
  * It never creates a packet. A stored ref that differs from the current packet id is
  * returned as-is so the state machine flags `ref_changed` (possible duplicate).
@@ -168,7 +203,7 @@ function molosoc_ll_provider( string $carrier, string $stored_ref, array $d ): a
 	if ( 'Zásilkovna' !== $carrier ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'unknown_carrier' );
 	}
-	if ( '' === (string) ( $d['packet_meta_key'] ?? '' ) || '' === (string) ( $d['api_password'] ?? '' ) ) {
+	if ( '' === (string) ( $d['api_password'] ?? '' ) ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'packeta_unconfigured' );
 	}
 	$packet = trim( (string) ( $d['packet_id'] ?? '' ) );
@@ -230,17 +265,26 @@ function molosoc_ll_packeta_fetch( string $packet, string $password ) {
 	return ( is_string( $dec ) && 0 === strpos( $dec, '%PDF-' ) ) ? $dec : false;
 }
 
-/** Real provider for one order from the operator constants (fetch only, never creates a packet). */
+/** Packeta API password from wp-config or Packeta's own stored setting (Issue #369). */
+function molosoc_ll_packeta_password_now(): string {
+	return molosoc_ll_packeta_password(
+		defined( 'MOLOSOC_LL_PACKETA_API_PASSWORD' ) ? MOLOSOC_LL_PACKETA_API_PASSWORD : null,
+		get_option( 'packetery', null )
+	);
+}
+
+/** Real provider for one order (fetch only, never creates a packet). */
 function molosoc_ll_provider_now( int $order_id, string $carrier, string $ref ): array {
-	$key = defined( 'MOLOSOC_LL_PACKETA_PACKET_META' ) ? (string) MOLOSOC_LL_PACKETA_PACKET_META : '';
+	if ( 'Zásilkovna' !== $carrier ) {
+		return molosoc_ll_provider( $carrier, $ref, array() ); // PPL/unknown: no DB or password read.
+	}
 	return molosoc_ll_provider(
 		$carrier,
 		$ref,
 		array(
-			'packet_meta_key' => $key,
-			'packet_id'       => '' === $key ? '' : molosoc_ld3_meta_get( $order_id, $key ),
-			'api_password'    => defined( 'MOLOSOC_LL_PACKETA_API_PASSWORD' ) ? (string) MOLOSOC_LL_PACKETA_API_PASSWORD : '',
-			'fetch'           => 'molosoc_ll_packeta_fetch',
+			'packet_id'    => molosoc_ll_packeta_packet_id( $order_id ),
+			'api_password' => molosoc_ll_packeta_password_now(),
+			'fetch'        => 'molosoc_ll_packeta_fetch',
 		)
 	);
 }

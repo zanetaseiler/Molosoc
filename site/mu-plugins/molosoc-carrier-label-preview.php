@@ -56,8 +56,9 @@ function molosoc_lp_gate( $preview, $live_enabled, $ids, bool $mock_enabled ): a
 
 /**
  * Pure read-only report for the allowlisted order. `$snap` is the delivery-stage snapshot,
- * `$state` the stored delivery state, `$packet_id` the value of the operator packet meta,
- * `$configured` whether the packet meta key and API password are both defined.
+ * `$state` the stored delivery state, `$packet_id` the order's packet id from Packeta's own
+ * `packetery_order` table, `$configured` whether a Packeta API password is available
+ * (wp-config constant or Packeta's stored setting; the password itself is never passed here).
  * Contains no customer data (ids, carrier, subject, fixed addresses only).
  */
 function molosoc_lp_report( int $order_id, array $snap, string $state, string $packet_id, bool $configured ): array {
@@ -124,18 +125,17 @@ function molosoc_lp_gate_now(): array {
 }
 
 function molosoc_lp_deps_loaded(): bool {
-	return function_exists( 'molosoc_ld_decide' ) && function_exists( 'molosoc_ld3_snapshot' ) && function_exists( 'molosoc_ll_provider_now' );
+	return function_exists( 'molosoc_ld_decide' ) && function_exists( 'molosoc_ld3_snapshot' ) && function_exists( 'molosoc_ll_provider_now' )
+		&& function_exists( 'molosoc_ll_packeta_packet_id' ) && function_exists( 'molosoc_ll_packeta_password_now' );
 }
 
 function molosoc_lp_report_now( int $order_id ): array {
-	$key = defined( 'MOLOSOC_LL_PACKETA_PACKET_META' ) ? (string) MOLOSOC_LL_PACKETA_PACKET_META : '';
-	$pw  = defined( 'MOLOSOC_LL_PACKETA_API_PASSWORD' ) ? (string) MOLOSOC_LL_PACKETA_API_PASSWORD : '';
 	return molosoc_lp_report(
 		$order_id,
 		molosoc_ld3_snapshot( $order_id ),
 		molosoc_ld3_meta_get( $order_id, MOLOSOC_LD3_STATE_META ),
-		'' === $key ? '' : molosoc_ld3_meta_get( $order_id, $key ),
-		'' !== $key && '' !== $pw
+		molosoc_ll_packeta_packet_id( $order_id ), // Issue #369: Packeta's own table, read-only.
+		'' !== molosoc_ll_packeta_password_now()
 	);
 }
 
