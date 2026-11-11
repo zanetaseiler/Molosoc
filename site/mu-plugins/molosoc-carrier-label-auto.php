@@ -243,10 +243,36 @@ function molosoc_la_alert( int $order_id, string $reason, callable $get, callabl
 }
 
 /**
+ * Settles an uncertain `mailing` state under the shared delivery lock, BEFORE any
+ * eligibility check (Codex #372): if the order is still `mailing` once the lock is held, the
+ * mail may or may not have left, so it goes to `attention` (`mail_state_unknown`) and is
+ * never resent, whatever the order's WooCommerce status is now. Uses the Phase 3 I/O keys
+ * lock(), unlock(), state(), set_state($s), audit($row). Returns `locked`,
+ * `mail_state_unknown`, or `recheck_<state>` when another run already moved the order on.
+ */
+function molosoc_la_resolve_mailing( int $order_id, array $io ): string {
+	if ( ! $io['lock']() ) {
+		return 'locked';
+	}
+	try {
+		$state = (string) $io['state']();
+		if ( 'mailing' !== $state ) {
+			return 'recheck_' . ( '' === $state ? 'none' : $state );
+		}
+		$io['set_state']( 'attention' );
+		$io['audit']( array( 'order' => $order_id, 'result' => 'attention', 'reason' => 'mail_state_unknown' ) );
+		return 'mail_state_unknown';
+	} finally {
+		$io['unlock']();
+	}
+}
+
+/**
  * One queued run for one order. Returns array( string result, int retry_delay ) where a
  * delay > 0 means "run again later". Injected I/O:
  *   now(), state(), seen() / set_seen($ts), snapshot(), packeta_row(), configured(),
  *   deliver() -> array( result, detail )   (molosoc_ld3_process with the live provider/mailer)
+ *   resolve_mailing() -> string            (molosoc_la_resolve_mailing under the delivery lock)
  *   tries(), attention($reason)            (sets state `attention` + audit row)
  *   alert($reason), audit($row)
  */
@@ -266,18 +292,38 @@ function molosoc_la_step( int $order_id, array $io ): array {
 	}
 
 	if ( 'mailing' === $state ) {
-		$action = 'send'; // The state machine decides under its lock (resume or `mail_state_unknown`).
-		$reason = 'resume_mailing';
-	} else {
-		$snap    = $io['snapshot']();
-		$is_zas  = 'Zásilkovna' === ( $snap['carrier'] ?? '' );
-		[ $action, $reason ] = molosoc_la_plan(
-			$snap,
-			$state,
-			$is_zas ? $io['packeta_row']() : null,
-			$is_zas ? (bool) $io['configured']() : false
-		);
+		// Codex #372: settle the uncertain mail state under the delivery lock BEFORE any
+		// eligibility check, so an order whose status has since changed (completed,
+		// cancelled) still reaches `attention` + one alert. Never resends.
+		$resolved = (string) $io['resolve_mailing']();
+		if ( 'mail_state_unknown' === $resolved ) {
+			$io['alert']( 'mail_state_unknown' );
+			return array( 'mail_state_unknown', 0 );
+		}
+		if ( 'locked' === $resolved ) {
+			return array( 'locked', MOLOSOC_LA_RETRY_DELAY ); // Stale locks are taken over after the TTL.
+		}
+		// Another run changed the state while we waited for the lock: re-read and go on.
+		$state = (string) $io['state']();
+		if ( 'mailed' === $state ) {
+			return array( 'already_mailed', 0 );
+		}
+		if ( 'attention' === $state ) {
+			return array( 'needs_attention', 0 );
+		}
+		if ( 'mailing' === $state ) {
+			return array( 'locked', MOLOSOC_LA_RETRY_DELAY ); // Defensive: never deliver from `mailing`.
+		}
 	}
+
+	$snap   = $io['snapshot']();
+	$is_zas = 'Zásilkovna' === ( $snap['carrier'] ?? '' );
+	[ $action, $reason ] = molosoc_la_plan(
+		$snap,
+		$state,
+		$is_zas ? $io['packeta_row']() : null,
+		$is_zas ? (bool) $io['configured']() : false
+	);
 
 	if ( 'skip' === $action ) {
 		$io['audit']( array( 'order' => $order_id, 'result' => 'skipped', 'reason' => $reason ) );
@@ -524,6 +570,24 @@ function molosoc_la_worker( $order_id ): string {
 				},
 				'configured'  => static function () {
 					return '' !== molosoc_ll_packeta_password_now();
+				},
+				'resolve_mailing' => static function () use ( $order_id ) {
+					// Same inner lock key as the state machine, so the two never race.
+					$inner = 'molosoc_ll_lock_' . $order_id;
+					return molosoc_la_resolve_mailing(
+						$order_id,
+						molosoc_ll_io(
+							$order_id,
+							'auto',
+							$inner,
+							static function () use ( $inner ) {
+								return molosoc_la_lock( $inner );
+							},
+							static function () {
+								return array( 'ok' => false, 'live' => false, 'reason' => 'not_used' ); // Never fetches.
+							}
+						)
+					);
 				},
 				'deliver'     => static function () use ( $order_id, &$detail ) {
 					// Same inner lock key as the single-order live path, with stale takeover.

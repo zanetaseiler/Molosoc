@@ -197,6 +197,8 @@ function mk_io(array $cfg, array &$L) {
   'snapshot' => function() use ($cfg, &$L) { $L['calls'][]='snapshot'; return $cfg['snap']; },
   'packeta_row' => function() use ($cfg, &$L) { $L['calls'][]='row'; return $cfg['row'] ?? null; },
   'configured' => function() use ($cfg) { return $cfg['configured'] ?? true; },
+  'resolve_mailing' => function() use ($cfg, &$L, &$st) { $L['calls'][]='resolve'; $r = $cfg['resolve'] ?? 'mail_state_unknown';
+     if ($r === 'mail_state_unknown') { $st='attention'; } elseif (isset($cfg['state_after_resolve'])) { $st=$cfg['state_after_resolve']; } return $r; },
   'deliver' => function() use ($cfg, &$L, &$st) { $L['calls'][]='deliver'; if (isset($cfg['state_after'])) { $st=$cfg['state_after']; } return $cfg['deliver'] ?? ['mailed','']; },
   'tries' => function() use ($cfg) { return $cfg['tries'] ?? 0; },
   'attention' => function($r) use (&$L, &$st) { $L['attention'][]=$r; $st='attention'; },
@@ -224,10 +226,24 @@ class Step(unittest.TestCase):
             (res, delay), L = self.step(state=st, row=ROW_OK)
             self.assertEqual((res, delay, L["calls"], L["audit"], L["seen_set"]), (want, 0, [], [], None))
 
-    def test_mailing_state_goes_to_state_machine_without_new_decision(self):
-        (res, _), L = self.step(state="mailing", deliver=["mail_state_unknown", ""], state_after="attention")
-        self.assertEqual(L["calls"], ["deliver"])
+    # Codex #372 finding 4: `mailing` is settled under the lock BEFORE any eligibility check.
+    def test_mailing_state_is_resolved_before_any_decision_or_delivery(self):
+        (res, delay), L = self.step(state="mailing", snap=snap(status="completed"))
+        self.assertEqual((res, delay), ("mail_state_unknown", 0))
+        self.assertEqual(L["calls"], ["resolve"])  # No snapshot, no eligibility, no deliver.
         self.assertEqual(L["alerts"], ["mail_state_unknown"])
+
+    def test_mailing_state_lock_held_retries_without_alert(self):
+        (res, delay), L = self.step(state="mailing", resolve="locked")
+        self.assertEqual((res, delay, L["calls"], L["alerts"]), ("locked", 600, ["resolve"], []))
+
+    def test_mailing_state_moved_on_by_another_run(self):
+        (res, delay), L = self.step(state="mailing", resolve="recheck_mailed", state_after_resolve="mailed")
+        self.assertEqual((res, delay, L["calls"], L["alerts"]), ("already_mailed", 0, ["resolve"], []))
+        (res, delay), L = self.step(state="mailing", resolve="recheck_attention", state_after_resolve="attention")
+        self.assertEqual((res, delay, L["alerts"]), ("needs_attention", 0, []))
+        (res, delay), L = self.step(state="mailing", resolve="recheck_label_ready", state_after_resolve="label_ready", row=ROW_OK)
+        self.assertEqual((res, L["calls"]), ("mailed", ["resolve", "snapshot", "row", "deliver"]))
 
     def test_skip_audits_once_no_retry_no_alert(self):
         (res, delay), L = self.step(snap=snap(payment_method="bacs"))
@@ -307,6 +323,7 @@ function e2e(array $snap, $row, array &$M, array &$mails, $fetch_ok = true) {
   'now'=>function(){ return 2000; }, 'state'=>$io['state'], 'seen'=>function() use (&$M){ return $M['seen'] ?? 0; },
   'set_seen'=>function($t) use (&$M){ $M['seen']=$t; }, 'snapshot'=>$io['snapshot'],
   'packeta_row'=>function() use ($row){ return $row; }, 'configured'=>function(){ return true; },
+  'resolve_mailing'=>function() use ($io){ return molosoc_la_resolve_mailing(77, $io); },
   'deliver'=>function() use ($io, &$M){ $r = molosoc_ld3_process(77, $io); return [$r, 'provider_permanent'===$r ? $M['detail'] : '']; },
   'tries'=>$io['tries'], 'attention'=>function($r) use (&$M){ $M['state']='attention'; $M['audit'][]=['result'=>'attention','reason'=>$r]; },
   'alert'=>function($r) use (&$M){ $M['alerts'][]=$r; }, 'audit'=>$io['audit'],
@@ -363,6 +380,22 @@ class EndToEnd(unittest.TestCase):
     def test_crash_after_mailing_never_resends(self):
         out, M, mails = self.run_e2e(snap(), ROW_OK, pre={"state": "mailing", "ref": "4123456789"})
         self.assertEqual((out, mails, M["alerts"]), ([["mail_state_unknown", 0]], [], ["mail_state_unknown"]))
+
+    def test_mailing_after_status_change_reaches_attention_without_resend(self):
+        # Codex #372 finding 4: through the REAL resolver + state machine, for any later status.
+        for status in ("completed", "cancelled", "on-hold"):
+            out, M, mails = self.run_e2e(snap(status=status), ROW_OK, runs=2, pre={"state": "mailing", "ref": "4123456789"})
+            self.assertEqual(out, [["mail_state_unknown", 0], ["needs_attention", 0]], status)
+            self.assertEqual((mails, M["state"], M["alerts"]), ([], "attention", ["mail_state_unknown"]), status)
+            self.assertEqual([a["reason"] for a in M["audit"] if a.get("result") == "attention"], ["mail_state_unknown"])
+
+    def test_resolver_respects_the_delivery_lock(self):
+        code = ("$M=['state'=>'mailing']; $io=['lock'=>function(){ return false; }, 'unlock'=>function(){},"
+                "'state'=>function() use (&$M){ return $M['state']; }, 'set_state'=>function($s) use (&$M){ $M['state']=$s; },"
+                "'audit'=>function($r){}];"
+                "$a=molosoc_la_resolve_mailing(77,$io); $io['lock']=function(){ return true; }; $M['state']='mailed';"
+                "$b=molosoc_la_resolve_mailing(77,$io); echo json_encode([$a,$b,$M['state']]);")
+        self.assertEqual(php(code), ["locked", "recheck_mailed", "mailed"])
 
     def test_bacs_and_pre_cutoff_never_mail(self):
         for s in (snap(payment_method="bacs"), snap(created_ts=FLOOR - 5), snap(payment_method="wf-woo-comgate")):
@@ -582,6 +615,25 @@ class SweepRecovery(unittest.TestCase):
         self.assertIsNotNone(done5)
         self.assertIsNone(done6)
         self.assertEqual(queued, [[6, 600]])
+
+    def test_worker_settles_mailing_order_whose_status_changed(self):
+        # Codex #372 finding 4: a recovered `mailing` order that is now `completed` gets
+        # `attention` + one alert (to hello@ only), no label mail, then the done marker.
+        code = ("$GLOBALS['O']=[3=>['status'=>'completed','_molosoc_label_delivery_state'=>'mailing',"
+                "'_molosoc_label_auto_seen'=>(string)(time()-7200)]];"
+                "$r=molosoc_la_worker(3); $r2=molosoc_la_worker(3);"
+                "echo json_encode([$r, $r2, $GLOBALS['O'][3]['_molosoc_label_delivery_state'],"
+                "$GLOBALS['O'][3]['_molosoc_label_auto_done'] ?? null, $GLOBALS['mail'], $GLOBALS['queued'],"
+                "isset($GLOBALS['opts']['molosoc_ll_lock_3'])]);")
+        pre = FAKE_WP + "$GLOBALS['mail']=[]; function wp_mail($to,$s,$b,$h=[],$a=[]){ $GLOBALS['mail'][]=[$to,$a]; return true; }"
+        try:
+            r, r2, state, done, mail, queued, lock_left = php(code, pre_extra=pre)
+        except subprocess.CalledProcessError as e:  # pragma: no cover - diagnostic
+            self.fail(e.stderr + e.stdout)
+        self.assertEqual((r, r2, state), ("mail_state_unknown", "needs_attention", "attention"))
+        self.assertIsNotNone(done)
+        self.assertEqual(mail, [["hello@molosoc.com", []]])
+        self.assertEqual((queued, lock_left), ([], False))
 
 
 if __name__ == "__main__":

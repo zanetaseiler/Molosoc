@@ -32,7 +32,9 @@ worker: gate -> lock -> plan
 sweep (every 15 min): queues processing orders after the cut-off that the automation has never seen
                  + recovery: seen orders after the cut-off that never finished (no done marker), are not
                    mailed/attention, have no pending run and no live lock -> queued again; a run lost
-                   mid-mail then ends in attention (mail_state_unknown) + one alert, never a resend
+                   mid-mail then ends in attention (mail_state_unknown) + one alert, never a resend;
+                   an uncertain `mailing` is settled under the delivery lock BEFORE any eligibility
+                   check, so this holds even if the order is meanwhile completed or cancelled
                  both passes share one budget of 100 queued orders per run
 ```
 
@@ -98,6 +100,6 @@ Then check the first real Zásilkovna order end to end: exactly one mail to `jar
 - the plan for COD, Comgate, bank transfer, pre-cut-off, PPL, unconfigured, waiting, and terminal states;
 - the provider: re-check at fetch time, fetch only the stored packet, PPL never fetches;
 - alerts: fixed recipient, header-injection-safe reason, at most once, marker written before the send;
-- the worker step: wait and timeout, retry and exhaustion, lock, permanent failures, resuming `mailing`;
+- the worker step: wait and timeout, retry and exhaustion, lock, permanent failures, settling `mailing` under the delivery lock before any eligibility check;
 - end to end through the real Phase 3 state machine: exactly one mail across repeated runs, zero mails for PPL, bank transfer, pre-cut-off, a cancelled packet, a changed packet ref or a crash after `mailing`;
 - the source contract: no packet or shipment creation, no order-status change, no customer getters, the only `$wpdb->update` is the lock CAS, the status page is read-only, and no hooks without the opt-in.
