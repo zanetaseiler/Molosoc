@@ -45,7 +45,7 @@ echo json_encode(['res'=>$res,'S'=>$S]);
     return php(code)
 
 
-GOOD_PROV = ("return molosoc_ll_provider($c,$ref,['packet_meta_key'=>'k','packet_id'=>'Z1234567','api_password'=>'pw',"
+GOOD_PROV = ("return molosoc_ll_provider($c,$ref,['packet_id'=>'Z1234567','api_password'=>'pw',"
              "'fetch'=>function(){return " + PDF + ";}]);")
 GOOD_MAIL = ("$r=molosoc_ll_mail($m,function(){$GLOBALS['n']=($GLOBALS['n']??0)+1;return true;},"
              "function($n,$b){return '/tmp/x';},function(){}); if($r['ok']){$S['sent']++;} return $r;")
@@ -144,7 +144,7 @@ echo json_encode($rm);""")
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Provider(unittest.TestCase):
     def p(self, carrier="Zásilkovna", ref="", **d):
-        base = dict(packet_meta_key="k", packet_id="Z1234567", api_password="pw")
+        base = dict(packet_id="Z1234567", api_password="pw")
         base.update(d)
         code = "$d=%s; $d['fetch']=function() use (&$f){ $GLOBALS['fetches']=($GLOBALS['fetches']??0)+1; return %s; }; $r=molosoc_ll_provider(%s,%s,$d); unset($r['pdf']); echo json_encode([$r,$GLOBALS['fetches']??0]);" % (
             q(base), PDF, q(carrier), q(ref))
@@ -159,9 +159,8 @@ class Provider(unittest.TestCase):
         self.assertEqual((r["ok"], r["permanent"], r["reason"], n), (False, True, "ppl_manual_label_required", 0))
 
     def test_unconfigured_is_permanent_no_fetch(self):
-        for k in ("packet_meta_key", "api_password"):
-            r, n = self.p(**{k: ""})
-            self.assertEqual((r["reason"], n), ("packeta_unconfigured", 0))
+        r, n = self.p(api_password="")
+        self.assertEqual((r["reason"], n), ("packeta_unconfigured", 0))
 
     def test_not_submitted_is_retryable_and_never_creates(self):
         r, n = self.p(packet_id="")
@@ -188,7 +187,7 @@ class Pipeline(unittest.TestCase):
         self.assertEqual(php(code), ["live_provider_refused", 0])
 
     def test_packet_not_submitted_retries_without_mail_then_succeeds(self):
-        prov = "$id = $S['prov']>=2 ? 'Z1234567' : ''; return molosoc_ll_provider($c,$ref,['packet_meta_key'=>'k','packet_id'=>$id,'api_password'=>'pw','fetch'=>function(){return %s;}]);" % PDF
+        prov = "$id = $S['prov']>=2 ? 'Z1234567' : ''; return molosoc_ll_provider($c,$ref,['packet_id'=>$id,'api_password'=>'pw','fetch'=>function(){return %s;}]);" % PDF
         o = pipeline(prov, GOOD_MAIL, runs=3)
         self.assertEqual(o["res"], ["provider_failed", "mailed", "already_mailed"])
         self.assertEqual(o["S"]["sent"], 1)
@@ -253,11 +252,12 @@ class Comgate(unittest.TestCase):
     def paid(self, **ch):
         return php("echo json_encode(molosoc_ld_comgate_paid(%s));" % q(dict(self.F, **ch)))
 
-    def test_strict_default_rejects_equal_ids(self):
-        self.assertFalse(self.paid())
+    def test_explicit_strict_rule_rejects_equal_ids(self):
+        self.assertFalse(self.paid(tmp_rule="strict"))
 
     def test_paid_status_rule_accepts_legit_paid_order(self):
         self.assertTrue(self.paid(tmp_rule="paid_status"))
+        self.assertTrue(self.paid())  # Issue #369: paid_status is the default.
 
     def test_paid_status_rule_still_fail_closed(self):
         for ch in (dict(status="on-hold"), dict(transaction_id=""), dict(is_paid=False), dict(payment_method="bacs")):

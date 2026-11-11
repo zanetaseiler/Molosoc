@@ -120,8 +120,9 @@ class Comgate(unittest.TestCase):
         self.assertFalse(self.paid(status="completed"))
         self.assertFalse(self.paid(payment_method="cod"))
         self.assertFalse(self.paid(payment_method="bacs"))
-        # tmp id alone / equal to the transaction id is an unpaid order's placeholder.
-        self.assertFalse(self.paid(transaction_id="TMP-1", tmp_transaction_id="TMP-1"))
+        # tmp id alone is never a signal; equal ids are rejected only under the explicit
+        # `strict` rule (Issue #369 made `paid_status` the default, see live tests).
+        self.assertFalse(self.paid(transaction_id="TMP-1", tmp_transaction_id="TMP-1", tmp_rule="strict"))
         self.assertFalse(self.paid(transaction_id="", tmp_transaction_id="TMP-1"))
 
     def test_decide_accepts_both_gateway_ids(self):
