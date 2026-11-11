@@ -30,6 +30,10 @@ worker: gate -> lock -> plan
    send       Phase 3 state machine: fetch the existing label -> validate PDF -> wp_mail to the dispatcher (Cc hello@)
                  transient failure: retry in 10 min, at most 3 tries, then attention + alert
 sweep (every 15 min): queues processing orders after the cut-off that the automation has never seen
+                 + recovery: seen orders after the cut-off that never finished (no done marker), are not
+                   mailed/attention, have no pending run and no live lock -> queued again; a run lost
+                   mid-mail then ends in attention (mail_state_unknown) + one alert, never a resend
+                 both passes share one budget of 100 queued orders per run
 ```
 
 | Requirement | How |

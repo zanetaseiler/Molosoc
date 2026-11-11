@@ -50,6 +50,7 @@ const MOLOSOC_LA_SWEEP_MAX_PAGES = 20;     // ... and pages scanned per run, so 
 const MOLOSOC_LA_LOCK_TTL       = 900;    // A lock older than this is stale (request died).
 const MOLOSOC_LA_SEEN_META      = '_molosoc_label_auto_seen';
 const MOLOSOC_LA_ALERT_META     = '_molosoc_label_auto_alert';
+const MOLOSOC_LA_DONE_META      = '_molosoc_label_auto_done'; // Set when a run ends with no follow-up queued.
 const MOLOSOC_LA_PAGE           = 'molosoc-label-auto';
 const MOLOSOC_LA_CAP            = 'manage_woocommerce';
 const MOLOSOC_LA_LOG_SOURCE     = 'molosoc-carrier-label';
@@ -345,6 +346,23 @@ function molosoc_la_lock_stale( $observed, int $now ): bool {
 	return false !== $observed && null !== $observed && $now - (int) $observed > MOLOSOC_LA_LOCK_TTL;
 }
 
+/**
+ * Pure recovery decision for the sweep (Codex #372): a previously seen order whose run chain
+ * was lost (e.g. the request died after `set_seen()`, mid-mail or while waiting) is queued
+ * again so the state machine can resume it or turn an uncertain `mailing` into `attention`
+ * with one alert (never a resend). Only when automation never finished it (no done marker),
+ * it is not `mailed`/`attention`, no run is pending, no live worker holds its lock, and it was
+ * first seen longer ago than the lock TTL (so a first run in flight is not raced).
+ */
+function molosoc_la_recoverable( string $state, int $seen, string $done, bool $pending, bool $locked, int $now ): bool {
+	return $seen > 0
+		&& '' === $done
+		&& ! in_array( $state, array( 'mailed', 'attention' ), true )
+		&& ! $pending
+		&& ! $locked
+		&& $now - $seen > MOLOSOC_LA_LOCK_TTL;
+}
+
 /** Pure: retry after an exception only inside the wait window counted from first sight. */
 function molosoc_la_exception_retry( int $seen, int $now ): bool {
 	return $seen > 0 && $now - $seen < MOLOSOC_LA_WAIT_MAX;
@@ -410,6 +428,12 @@ function molosoc_la_lock( string $key ): bool {
 	wp_cache_delete( $key, 'options' );
 	wp_cache_delete( 'alloptions', 'options' );
 	return 1 === (int) $swapped;
+}
+
+/** True while a live (not stale) worker lock exists. Read-only. */
+function molosoc_la_lock_held( string $key ): bool {
+	$observed = get_option( $key, false );
+	return false !== $observed && ! molosoc_la_lock_stale( $observed, time() );
 }
 
 function molosoc_la_log( string $level, string $msg ): void {
@@ -567,6 +591,9 @@ function molosoc_la_worker( $order_id ): string {
 	molosoc_la_log( 'info', sprintf( 'order %d: %s', $order_id, $result ) );
 	if ( $delay > 0 ) {
 		molosoc_la_schedule( $order_id, $delay );
+	} else {
+		// No follow-up: the sweep's recovery pass must not pick this order up again.
+		molosoc_ld3_meta_set( $order_id, MOLOSOC_LA_DONE_META, (string) time() );
 	}
 	return $result;
 }
@@ -578,15 +605,18 @@ function molosoc_la_worker( $order_id ): string {
  * while queueing at most MOLOSOC_LA_SWEEP_LIMIT orders and reading at most
  * MOLOSOC_LA_SWEEP_MAX_PAGES pages per run.
  */
-function molosoc_la_sweep_collect( callable $page, callable $eligible, callable $queue ): int {
+function molosoc_la_sweep_collect( callable $page, callable $eligible, callable $queue, int $limit = MOLOSOC_LA_SWEEP_LIMIT ): int {
 	$n = 0;
+	if ( $limit <= 0 ) {
+		return 0;
+	}
 	for ( $p = 1; $p <= MOLOSOC_LA_SWEEP_MAX_PAGES; $p++ ) {
 		$ids = array_values( (array) $page( $p ) );
 		foreach ( $ids as $id ) {
 			$id = (int) $id;
 			if ( $id > 0 && $eligible( $id ) ) {
 				$queue( $id );
-				if ( ++$n >= MOLOSOC_LA_SWEEP_LIMIT ) {
+				if ( ++$n >= $limit ) {
 					return $n;
 				}
 			}
@@ -599,9 +629,12 @@ function molosoc_la_sweep_collect( callable $page, callable $eligible, callable 
 }
 
 /**
- * Safety net: queues recent `processing` orders created after the cut-off that this
- * automation has never seen (e.g. a lost queue entry). Reads only; the query itself skips
- * orders that already carry the seen marker, and the pure loop above pages past any others.
+ * Safety net, two passes sharing one budget of MOLOSOC_LA_SWEEP_LIMIT queued orders:
+ *   1. recent `processing` orders created after the cut-off that this automation has never
+ *      seen (e.g. a lost queue entry); the query skips orders carrying the seen marker;
+ *   2. recovery (Codex #372): orders created after the cut-off that were seen but never
+ *      finished (no done marker) and lost their pending run, see molosoc_la_recoverable().
+ * Reads only, apart from queueing; the pure loop above pages past already-handled orders.
  */
 function molosoc_la_sweep(): int {
 	[ $ok ] = molosoc_la_gate_now();
@@ -609,34 +642,72 @@ function molosoc_la_sweep(): int {
 		return 0;
 	}
 	$since = molosoc_ld_since_ts( true, MOLOSOC_LABEL_DISPATCH_SINCE, null );
-	return molosoc_la_sweep_collect(
-		static function ( int $p ) use ( $since ) {
+	$query = static function ( array $extra, array $meta_query ) use ( $since ): callable {
+		return static function ( int $p ) use ( $since, $extra, $meta_query ) {
 			return wc_get_orders(
-				array(
-					'status'       => array( 'processing' ),
-					'date_created' => '>=' . $since,
-					'meta_query'   => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-						array(
-							'key'     => MOLOSOC_LA_SEEN_META,
-							'compare' => 'NOT EXISTS',
-						),
+				array_merge(
+					array(
+						'date_created' => '>=' . $since,
+						'meta_query'   => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						'limit'        => MOLOSOC_LA_SWEEP_LIMIT,
+						'paged'        => $p,
+						'orderby'      => 'date',
+						'order'        => 'ASC',
+						'return'       => 'ids',
 					),
-					'limit'        => MOLOSOC_LA_SWEEP_LIMIT,
-					'paged'        => $p,
-					'orderby'      => 'date',
-					'order'        => 'ASC',
-					'return'       => 'ids',
+					$extra
 				)
 			);
-		},
+		};
+	};
+	$queue = static function ( int $id ) {
+		molosoc_la_schedule( $id, 0 );
+	};
+	$n = molosoc_la_sweep_collect(
+		$query(
+			array( 'status' => array( 'processing' ) ),
+			array(
+				array(
+					'key'     => MOLOSOC_LA_SEEN_META,
+					'compare' => 'NOT EXISTS',
+				),
+			)
+		),
 		static function ( int $id ): bool {
 			return '' === molosoc_ld3_meta_get( $id, MOLOSOC_LA_SEEN_META )
 				&& '' === molosoc_ld3_meta_get( $id, MOLOSOC_LD3_STATE_META )
 				&& ! molosoc_la_pending( $id );
 		},
-		static function ( int $id ) {
-			molosoc_la_schedule( $id, 0 );
-		}
+		$queue
+	);
+	// Any status: a run lost mid-mail must still reach `attention` + alert after a status change.
+	return $n + molosoc_la_sweep_collect(
+		$query(
+			array( 'status' => 'any' ),
+			array(
+				'relation' => 'AND',
+				array(
+					'key'     => MOLOSOC_LA_SEEN_META,
+					'compare' => 'EXISTS',
+				),
+				array(
+					'key'     => MOLOSOC_LA_DONE_META,
+					'compare' => 'NOT EXISTS',
+				),
+			)
+		),
+		static function ( int $id ): bool {
+			return molosoc_la_recoverable(
+				molosoc_ld3_meta_get( $id, MOLOSOC_LD3_STATE_META ),
+				(int) molosoc_ld3_meta_get( $id, MOLOSOC_LA_SEEN_META ),
+				molosoc_ld3_meta_get( $id, MOLOSOC_LA_DONE_META ),
+				molosoc_la_pending( $id ),
+				molosoc_la_lock_held( 'molosoc_la_lock_' . $id ),
+				time()
+			);
+		},
+		$queue,
+		MOLOSOC_LA_SWEEP_LIMIT - $n
 	);
 }
 

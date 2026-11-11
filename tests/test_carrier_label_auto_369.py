@@ -470,6 +470,119 @@ class SweepCollect(unittest.TestCase):
         for w in ("'key'     => MOLOSOC_LA_SEEN_META", "'compare' => 'NOT EXISTS'", "'paged'        => $p", "molosoc_la_sweep_collect("):
             self.assertIn(w, body, w)
 
+    def test_explicit_limit_is_honoured(self):
+        code = ("$q=[]; $n=[];"
+                "foreach([0,3] as $lim){ $n[]=molosoc_la_sweep_collect(function($p){ return $p===1 ? [1,2,3,4,5] : []; },"
+                "function($id){ return true; }, function($id) use (&$q){ $q[]=$id; }, $lim); }"
+                "echo json_encode([$n,$q]);")
+        self.assertEqual(php(code), [[0, 3], [1, 2, 3]])
+
+
+# Fake WP/WC for the real molosoc_la_sweep() and molosoc_la_worker() (Codex #372 finding 3).
+FAKE_WP = r"""
+define('MOLOSOC_LABEL_AUTO_ENABLED', true); define('MOLOSOC_LABEL_DISPATCH_SINCE', 1794355200);
+$GLOBALS['O']=[]; $GLOBALS['opts']=[]; $GLOBALS['pending']=[]; $GLOBALS['queued']=[]; $GLOBALS['queries']=[];
+class FakeOrder { public $id; function __construct($id){ $this->id=$id; }
+ function get_meta($k){ return $GLOBALS['O'][$this->id][$k] ?? ''; }
+ function update_meta_data($k,$v){ $GLOBALS['O'][$this->id][$k]=$v; }
+ function add_meta_data($k,$v,$u){ $GLOBALS['O'][$this->id]['audit'][]=$v; }
+ function delete_meta_data($k){ unset($GLOBALS['O'][$this->id][$k]); }
+ function save_meta_data(){} function save(){} }
+function wc_get_order($id){ return isset($GLOBALS['O'][$id]) ? new FakeOrder($id) : false; }
+function wc_get_orders($a){ $GLOBALS['queries'][]=$a; $ids=[];
+ foreach($GLOBALS['O'] as $id=>$m){
+  if(($a['status'] ?? null)===['processing'] && ($m['status'] ?? '')!=='processing') continue;
+  $ok=true; foreach($a['meta_query'] as $k=>$c){ if($k==='relation') continue;
+   $has=isset($m[$c['key']]) && ''!==$m[$c['key']]; if(($c['compare']==='EXISTS')!==$has) $ok=false; }
+  if($ok) $ids[]=$id; }
+ return array_slice($ids, ($a['paged']-1)*$a['limit'], $a['limit']); }
+function get_option($k,$d=false){ return $GLOBALS['opts'][$k] ?? $d; }
+function add_option($k,$v){ if(isset($GLOBALS['opts'][$k])) return false; $GLOBALS['opts'][$k]=$v; return true; }
+function delete_option($k){ unset($GLOBALS['opts'][$k]); return true; }
+function wp_cache_delete(){} function wp_json_encode($x){ return json_encode($x); }
+function as_get_scheduled_actions($a){ return in_array($a['args'][0], $GLOBALS['pending'], true) ? [1] : []; }
+function as_schedule_single_action($t,$h,$a){ $GLOBALS['pending'][]=$a[0]; $GLOBALS['queued'][]=[$a[0], $t-time()]; }
+"""
+
+
+@unittest.skipUnless(HAVE_PHP, "php not installed")
+class SweepRecovery(unittest.TestCase):
+    """Codex #372 finding 3: a seen order that lost its pending run must be recovered."""
+
+    def test_recoverable_truth_table(self):
+        now = 100000
+        cases = [
+            ("mailing", now - 901, "", False, False, True),        # died mid-mail
+            ("", now - 3600, "", False, False, True),              # waiting, retry lost
+            ("label_ready", now - 3600, "", False, False, True),
+            ("mailing", now - 900, "", False, False, False),       # too fresh: first run may be in flight
+            ("mailing", now - 3600, "", True, False, False),       # a run is pending
+            ("mailing", now - 3600, "", False, True, False),       # a live worker holds the lock
+            ("mailing", now - 3600, "123", False, False, False),   # automation finished it
+            ("mailed", now - 3600, "", False, False, False),
+            ("attention", now - 3600, "", False, False, False),
+            ("", 0, "", False, False, False),                      # never seen: pass 1's job
+        ]
+        code = "echo json_encode([%s]);" % ",".join(
+            "molosoc_la_recoverable(%s,%d,%s,%s,%s,%d)" % (json.dumps(st), seen, json.dumps(done),
+                                                          "true" if pend else "false", "true" if lock else "false", now)
+            for st, seen, done, pend, lock, _ in cases)
+        self.assertEqual(php(code), [c[-1] for c in cases])
+
+    def sweep(self, orders, pending=(), opts=None):
+        code = ("$GLOBALS['O']=%s; $GLOBALS['pending']=%s; $GLOBALS['opts']=%s; $n=molosoc_la_sweep();"
+                "echo json_encode([$n,$GLOBALS['queued'],$GLOBALS['queries']]);") % (
+                    "json_decode('%s',true)" % json.dumps({str(k): v for k, v in orders.items()}),
+                    q(list(pending)) if pending else "[]", q(opts) if opts else "[]")
+        return php(code, pre_extra=FAKE_WP)
+
+    def test_sweep_recovers_seen_orders_that_lost_their_run(self):
+        import time
+        old = int(time.time()) - 7200
+        orders = {
+            1: {"status": "processing"},                                                     # never seen
+            2: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailing"},
+            3: {"status": "completed", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailing"},
+            4: {"status": "processing", "_molosoc_label_auto_seen": str(old)},               # waiting, retry lost
+            5: {"status": "processing", "_molosoc_label_auto_seen": str(old)},               # waiting, retry pending
+            6: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_auto_done": "1"},
+            7: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "attention"},
+            8: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailed"},
+            9: {"status": "processing", "_molosoc_label_auto_seen": str(int(time.time()))},  # first run in flight
+            10: {"status": "processing", "_molosoc_label_auto_seen": str(old), "_molosoc_label_delivery_state": "mailing"},
+        }
+        n, queued, queries = self.sweep(orders, pending=[5], opts={"molosoc_la_lock_10": int(time.time())})
+        self.assertEqual(sorted(i for i, _ in queued), [1, 2, 3, 4])
+        self.assertEqual(n, 4)
+        self.assertTrue(all(d == 0 for _, d in queued))
+        self.assertEqual(queries[0]["status"], ["processing"])
+        self.assertEqual(queries[-1]["status"], "any")
+
+    def test_shared_budget_bounds_both_passes(self):
+        import time
+        old = int(time.time()) - 7200
+        orders = {i: {"status": "processing"} for i in range(1, 81)}
+        orders.update({i: {"status": "processing", "_molosoc_label_auto_seen": str(old)} for i in range(81, 201)})
+        n, queued, _ = self.sweep(orders)
+        self.assertEqual((n, len(queued)), (100, 100))
+        self.assertEqual([i for i, _ in queued][:80], list(range(1, 81)))
+
+    def test_worker_marks_done_only_without_follow_up(self):
+        # The gate passes; order 5 is already `mailed` -> no follow-up -> done marker set.
+        # Order 6: a live outer lock -> `locked`, re-queued, no done marker.
+        code = ("$GLOBALS['O']=[5=>['status'=>'processing','_molosoc_label_delivery_state'=>'mailed'],6=>['status'=>'processing']];"
+                "$GLOBALS['opts']['molosoc_la_lock_6']=time();"
+                "$r5=molosoc_la_worker(5); $r6=molosoc_la_worker(6);"
+                "echo json_encode([$r6, $GLOBALS['O'][5]['_molosoc_label_auto_done'] ?? null, $GLOBALS['O'][6]['_molosoc_label_auto_done'] ?? null, $GLOBALS['queued']]);")
+        try:
+            r6, done5, done6, queued = php(code, pre_extra=FAKE_WP)
+        except subprocess.CalledProcessError as e:  # pragma: no cover - diagnostic
+            self.fail(e.stderr + e.stdout)
+        self.assertEqual(r6, "locked")
+        self.assertIsNotNone(done5)
+        self.assertIsNone(done6)
+        self.assertEqual(queued, [[6, 600]])
+
 
 if __name__ == "__main__":
     unittest.main()
