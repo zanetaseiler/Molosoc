@@ -42,6 +42,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 const MOLOSOC_LL_RETRY_HOOK  = 'molosoc_ll_retry';
 const MOLOSOC_LL_RETRY_DELAY = 300;
+// Issue #363: fixed sender used only when MOLOSOC_LL_MAIL_FROM_EXPLICIT === true (OFF by default).
+const MOLOSOC_LL_FROM_EMAIL = 'hello@molosoc.com';
+const MOLOSOC_LL_FROM_NAME  = 'MOLOSOC';
+
+/**
+ * Pure header builder. Default (`$explicit_from` not exactly true) is byte-identical to
+ * the pre-#363 headers: no From header, so WordPress / the active mail plugin (e.g.
+ * Brevo) decides the sender. Opt-in adds one fixed `From:` built only from constants.
+ * Note: a `wp_mail_from` filter (SMTP/Brevo plugins) can still override it; verify with
+ * the operator checks in docs/carrier-label-brevo-readiness-363.md.
+ */
+function molosoc_ll_headers( $explicit_from ): array {
+	$h = array( 'Content-Type: text/plain; charset=UTF-8', 'Cc: ' . MOLOSOC_LD_CC );
+	if ( true === $explicit_from ) {
+		$h[] = 'From: ' . MOLOSOC_LL_FROM_NAME . ' <' . MOLOSOC_LL_FROM_EMAIL . '>';
+	}
+	return $h;
+}
 
 /**
  * Pure gate. Returns array( bool allowed, string reason ).
@@ -72,7 +90,7 @@ function molosoc_ll_gate( $enabled, $ids, bool $mock_enabled, int $order_id ): a
  * filename, bytes )` returns a temp file path or '' and `$rm( path )` removes it.
  * Success means wp_mail accepted the message for sending (it cannot confirm delivery).
  */
-function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $rm ): array {
+function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $rm, $explicit_from = false ): array {
 	if ( MOLOSOC_LD_RECIPIENT !== ( $mail['to'] ?? '' ) ) {
 		return array( 'ok' => false, 'live' => true, 'reason' => 'recipient_mismatch' );
 	}
@@ -99,7 +117,7 @@ function molosoc_ll_mail( array $mail, callable $send, callable $tmp, callable $
 			$mail['to'],
 			$mail['subject'],
 			'Štítek k odeslání v příloze.',
-			array( 'Content-Type: text/plain; charset=UTF-8', 'Cc: ' . MOLOSOC_LD_CC ),
+			molosoc_ll_headers( $explicit_from ),
 			array( $path )
 		);
 	} finally {
@@ -270,7 +288,8 @@ function molosoc_ll_run( $order_id ): string {
 							}
 							@rmdir( dirname( $path ) );
 						}
-					}
+					},
+					defined( 'MOLOSOC_LL_MAIL_FROM_EXPLICIT' ) && true === MOLOSOC_LL_MAIL_FROM_EXPLICIT
 				);
 			},
 		)

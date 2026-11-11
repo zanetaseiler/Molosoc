@@ -264,5 +264,47 @@ class Comgate(unittest.TestCase):
             self.assertFalse(self.paid(tmp_rule="paid_status", **ch))
 
 
+@unittest.skipUnless(HAVE_PHP, "php not installed")
+class FromHeader363(unittest.TestCase):
+    """Issue #363: optional explicit From hello@molosoc.com, OFF by default."""
+
+    def send(self, explicit):
+        arg = "" if explicit is None else ", " + explicit
+        return php("""$c=[];
+$r=molosoc_ll_mail(['to'=>'jarka01@atlas.cz','cc'=>'hello@molosoc.com','subject'=>'Zásilkovna | 3 kusy | 1x M, 2x L','filename'=>'zasilkovna-7.pdf','pdf'=>%s],
+ function($to,$s,$b,$h,$a) use (&$c){ $c[]=[$to,$h,$a]; return true; }, function(){return '/tmp/lbl.pdf';}, function(){}%s);
+echo json_encode([$r,$c]);""" % (PDF, arg))
+
+    def test_default_headers_unchanged_no_from(self):
+        r, calls = self.send(None)
+        self.assertTrue(r["ok"])
+        self.assertEqual(calls[0][1], ["Content-Type: text/plain; charset=UTF-8", "Cc: hello@molosoc.com"])
+
+    def test_truthy_values_do_not_enable(self):
+        for v in ("false", "1", "'1'", "'true'", "null"):
+            r, calls = self.send(v)
+            self.assertFalse([h for h in calls[0][1] if h.lower().startswith("from:")], v)
+
+    def test_opt_in_adds_single_fixed_from_keeping_to_cc_attachment(self):
+        r, calls = self.send("true")
+        self.assertTrue(r["ok"])
+        self.assertEqual(len(calls), 1)
+        to, hdr, att = calls[0]
+        self.assertEqual((to, att), ("jarka01@atlas.cz", ["/tmp/lbl.pdf"]))
+        self.assertEqual([h for h in hdr if h.lower().startswith("from:")], ["From: MOLOSOC <hello@molosoc.com>"])
+        self.assertIn("Cc: hello@molosoc.com", hdr)
+        self.assertEqual([h for h in hdr if h.lower().startswith(("bcc", "to:", "reply-to"))], [])
+        self.assertFalse(any("\r" in h or "\n" in h for h in hdr))
+
+    def test_opt_in_does_not_bypass_validation(self):
+        r = php("""$n=0; $r=molosoc_ll_mail(['to'=>'x@example.com','cc'=>'hello@molosoc.com','subject'=>'PPL | 1 kus | 1x M','filename'=>'ppl-1.pdf','pdf'=>molosoc_ld3_mock_pdf('PPL','R')],
+ function() use (&$n){$n++; return true;}, function(){return '/tmp/a';}, function(){}, true); echo json_encode([$r,$n]);""")
+        self.assertEqual((r[0]["reason"], r[1]), ("recipient_mismatch", 0))
+
+    def test_glue_reads_strict_constant(self):
+        src = LIVE.read_text(encoding="utf-8")
+        self.assertIn("defined( 'MOLOSOC_LL_MAIL_FROM_EXPLICIT' ) && true === MOLOSOC_LL_MAIL_FROM_EXPLICIT", src)
+
+
 if __name__ == "__main__":
     unittest.main()
