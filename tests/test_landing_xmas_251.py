@@ -26,7 +26,7 @@ JS_CODE = strip_comments(JS)
 
 class Pricing(unittest.TestCase):
     def test_approved_schedule_209_199_199(self):
-        self.assertIn("array( 1 => 209, 2 => 199, 3 => 199 )", INC)  # 209 / 408 / 607
+        self.assertIn("$default = array( 1 => 209 );", INC)  # Issue #364: 209, then 199 per pair up to max (totals in test_landing_xmas_multi_364)
 
     def test_price_comes_from_slot_tag_not_request(self):
         fn = INC[INC.index("function molosoc_xmas_apply_prices"):INC.index("release gate")]
@@ -56,7 +56,7 @@ class Pricing(unittest.TestCase):
 
     def test_sizes_are_validated(self):
         self.assertIn("'M' !== $size && 'L' !== $size", INC)
-        self.assertIn("count( $sizes ) > 3", INC)
+        self.assertIn("count( $sizes ) > molosoc_xmas_max_pairs()", INC)  # Issue #364: 1..10
 
     def test_js_sends_only_sizes(self):
         self.assertIn("molosoc_xmas_sizes=", JS)

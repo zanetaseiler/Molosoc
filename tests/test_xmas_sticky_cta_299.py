@@ -95,7 +95,7 @@ class PillBehaviour(unittest.TestCase):
     def test_checkout_contract_and_fallback_unchanged(self):
         self.assertIn('"molosoc_xmas=1&molosoc_xmas_sizes=" + encodeURIComponent( sizes.join( "," ) )', JS_CODE)
         self.assertNotRegex(JS_CODE, r"price|209|199|607|408")
-        self.assertIn("array( 1 => 209, 2 => 199, 3 => 199 )", INC)
+        self.assertIn("$default = array( 1 => 209 );", INC)  # Issue #364: 209, then 199 per pair up to max (totals in test_landing_xmas_multi_364)
         # The only product-page link left in the template is the no-JS fallback of the checkout button.
         self.assertEqual(PART_CODE.count("$lpx_url()"), 1)
         self.assertIn('href="<?php echo esc_url( $lpx_url() ); ?>" data-lpx-go', PART_CODE)

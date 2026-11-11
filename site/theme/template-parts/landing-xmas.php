@@ -18,6 +18,12 @@
  * Issue #314: the hero photo and the two story photos are links to the picker
  * (#lpx-bundle, the hero button's and the sticky pill's target) with the pill's
  * label as their accessible name; landing-xmas.js scrolls them like the pill.
+ * Issue #364: a 4th card "4 a více párů / 4 or more pairs" swaps the per-pair
+ * size rows for two counters (M, L; total 4..molosoc_xmas_max_pairs()) with a
+ * live "5 párů · 1 005 Kč" line. The counters expand to the same
+ * molosoc_xmas_sizes list, so the server path is shared with 1–3 pairs. A
+ * refused bundle (not enough stock) comes back here with lpx_stock/lpx_left
+ * and the message is shown in the picker's error line.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -45,6 +51,13 @@ $copy = array(
 		'cod_label' => 'Dobírka:',
 		'cta'       => 'Pokračovat k pokladně',
 		'pairs'     => array( 1 => '1 pár', 2 => '2 páry', 3 => '3 páry' ),
+		'multi'     => '4 a více párů', // Issue #364
+		'from'      => 'od %s',
+		'teaser'    => 'Kupujete pro víc lidí? Vyberte 4 a více párů – každý další pár jen za %s.',
+		'multi_h'   => 'Počet párů podle velikosti',
+		'less'      => 'Ubrat pár velikosti %s',
+		'more'      => 'Přidat pár velikosti %s',
+		'min_err'   => 'Vyberte alespoň %d páry.',
 		'pair_n'    => '%d. pár',
 		'size'      => 'Velikost',
 		'size_err'  => 'Vyberte velikost pro každý pár.',
@@ -90,6 +103,13 @@ $copy = array(
 		'cod_label' => '',
 		'cta'       => 'Continue to checkout',
 		'pairs'     => array( 1 => '1 pair', 2 => '2 pairs', 3 => '3 pairs' ),
+		'multi'     => '4 or more pairs', // Issue #364
+		'from'      => 'from %s',
+		'teaser'    => 'Buying for several people? Choose 4 or more pairs – every extra pair just %s.',
+		'multi_h'   => 'Pairs per size',
+		'less'      => 'Remove a pair of size %s',
+		'more'      => 'Add a pair of size %s',
+		'min_err'   => 'Choose at least %d pairs.',
 		'pair_n'    => 'Pair %d',
 		'size'      => 'Size',
 		'size_err'  => 'Please choose a size for every pair.',
@@ -139,6 +159,24 @@ $lpx_checkout = molosoc_xmas_checkout_url( $lpx_lang );
 $lpx_avail    = molosoc_xmas_variations(); // sizes with a purchasable variation right now.
 $lpx_buyable  = count( $lpx_avail ) > 0;
 
+/* Issue #364: the "4 a více párů" card, its counters and live total line. */
+$lpx_max   = molosoc_xmas_max_pairs();
+$lpx_min   = molosoc_xmas_multi_min();
+$lpx_multi = $lpx_max >= $lpx_min;
+/** "5 párů" / "5 pairs" (Czech plural: 1 pár, 2–4 páry, 5+ párů). */
+$lpx_pairs_text = static function ( $n ) use ( $lpx_lang ) {
+	$n = (int) $n;
+	if ( 'en' === $lpx_lang ) {
+		return 1 === $n ? '1 pair' : $n . ' pairs';
+	}
+	return 1 === $n ? '1 pár' : ( $n <= 4 ? $n . ' páry' : $n . ' párů' );
+};
+$lpx_totals = array(); // n => "5 párů · 1 005 Kč", read by landing-xmas.js for the live line.
+for ( $n = $lpx_min; $n <= $lpx_max; $n++ ) {
+	$lpx_totals[ $n ] = $lpx_pairs_text( $n ) . ' · ' . $lpx_fmt( molosoc_xmas_bundle_total( $n ) );
+}
+$lpx_notice = molosoc_xmas_stock_notice( $lpx_lang ); // refused bundle: localized stock message, or ''.
+
 /** Issue #295: the three 16 px line icons of the info block (stroke = text colour). */
 $lpx_icon = static function ( $name ) {
 	$paths = array(
@@ -152,10 +190,10 @@ $lpx_icon = static function ( $name ) {
 	return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $paths[ $name ] . '</svg>';
 };
 
-/** Bundle picker: a fieldset of 1/2/3 pairs, then a size fieldset per pair, the button, then the 3 facts (Issue #295). */
-$lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt, $lpx_url, $lpx_checkout, $lpx_buyable, $lpx_avail, $lpx_icon ) {
+/** Bundle picker: a fieldset of 1/2/3 pairs (+ "4 a více", Issue #364), then a size fieldset per pair or the M/L counters, the button, then the 3 facts (Issue #295). */
+$lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt, $lpx_url, $lpx_checkout, $lpx_buyable, $lpx_avail, $lpx_prices, $lpx_max, $lpx_min, $lpx_multi, $lpx_totals, $lpx_notice, $lpx_icon ) {
 	?>
-	<div class="lpb-buy lpx-buy" data-lpx-buy data-lpx-checkout-url="<?php echo esc_url( $lpx_checkout ); ?>" data-lpx-enabled="<?php echo $lpx_buyable ? '1' : '0'; ?>" data-lpx-err-pair="<?php echo esc_attr( $t['size_err_n'] ); ?>">
+	<div class="lpb-buy lpx-buy" data-lpx-buy data-lpx-checkout-url="<?php echo esc_url( $lpx_checkout ); ?>" data-lpx-enabled="<?php echo $lpx_buyable ? '1' : '0'; ?>" data-lpx-err-pair="<?php echo esc_attr( $t['size_err_n'] ); ?>" data-lpx-max="<?php echo (int) $lpx_max; ?>" data-lpx-min="<?php echo (int) $lpx_min; ?>" data-lpx-err-min="<?php echo esc_attr( sprintf( $t['min_err'], $lpx_min ) ); ?>" data-lpx-totals="<?php echo esc_attr( wp_json_encode( $lpx_totals ) ); ?>">
 		<fieldset class="lpx-bundles">
 			<legend class="lpb-buy__legend"><?php echo esc_html( $t['bundle_h'] ); ?></legend>
 			<?php foreach ( $lpx_base as $n => $b ) : ?>
@@ -167,6 +205,16 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 					</span>
 				</label>
 			<?php endforeach; ?>
+			<?php if ( $lpx_multi ) : ?>
+				<label class="lpx-bundle lpx-bundle--multi">
+					<input type="radio" name="lpx-pairs-<?php echo esc_attr( $id ); ?>" value="multi">
+					<span class="lpx-bundle__body">
+						<span class="lpx-bundle__name"><?php echo esc_html( $t['multi'] ); ?></span>
+						<span class="lpx-bundle__price" translate="no"><?php echo esc_html( sprintf( $t['from'], $lpx_fmt( molosoc_xmas_bundle_total( $lpx_min ) ) ) ); ?></span>
+					</span>
+				</label>
+				<p class="lpx-bundles__teaser"><?php echo esc_html( sprintf( $t['teaser'], $lpx_fmt( $lpx_prices[2] ) ) ); ?></p>
+			<?php endif; ?>
 		</fieldset>
 		<?php foreach ( array( 1, 2, 3 ) as $n ) : ?>
 			<fieldset class="lpb-buy__sizes lpx-pair" data-lpx-pair="<?php echo (int) $n; ?>"<?php echo $n > 1 ? ' hidden' : ''; ?>>
@@ -182,8 +230,24 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 				<?php endforeach; ?>
 			</fieldset>
 		<?php endforeach; ?>
+		<?php if ( $lpx_multi ) : ?>
+			<fieldset class="lpb-buy__sizes lpx-pair lpx-multi" data-lpx-multi hidden>
+				<legend class="lpb-buy__legend lpx-pair__legend"><span class="lpx-pair__num"><?php echo esc_html( $t['multi_h'] ); ?></span></legend>
+				<p class="lpx-pair__hint"><?php echo esc_html( $t['size_hint'] ); ?></p>
+				<?php foreach ( $lpx_sizes as $key => $label ) : ?>
+					<?php $lpx_off = $lpx_buyable && ! isset( $lpx_avail[ $key ] ); ?>
+					<div class="lpx-counter<?php echo $lpx_off ? ' is-off' : ''; ?>" role="group" aria-labelledby="lpx-cnt-<?php echo esc_attr( $id . '-' . $key ); ?>" data-lpx-counter="<?php echo esc_attr( $key ); ?>"<?php echo $lpx_off ? ' data-lpx-off="1"' : ''; ?>>
+						<span class="lpx-counter__label" id="lpx-cnt-<?php echo esc_attr( $id . '-' . $key ); ?>"><?php echo esc_html( $label ); ?></span>
+						<button type="button" class="lpx-counter__btn" data-lpx-step="-1" aria-label="<?php echo esc_attr( sprintf( $t['less'], $key ) ); ?>"<?php echo $lpx_off ? ' disabled' : ''; ?>>−</button>
+						<span class="lpx-counter__qty" data-lpx-qty="0" translate="no">0</span>
+						<button type="button" class="lpx-counter__btn" data-lpx-step="1" aria-label="<?php echo esc_attr( sprintf( $t['more'], $key ) ); ?>"<?php echo $lpx_off ? ' disabled' : ''; ?>>+</button>
+					</div>
+				<?php endforeach; ?>
+				<p class="lpx-multi__total" data-lpx-multi-total aria-live="polite" aria-atomic="true" translate="no"></p>
+			</fieldset>
+		<?php endif; ?>
 		<a class="lpb-btn lpb-buy__btn" href="<?php echo esc_url( $lpx_url() ); ?>" data-lpx-go rel="nofollow"><?php echo esc_html( $t['cta'] ); ?></a>
-		<p class="lpb-buy__error lpx-buy__error" role="alert" aria-live="assertive" aria-atomic="true" data-lpx-err="<?php echo esc_attr( $t['size_err'] ); ?>" hidden><?php echo esc_html( $t['size_err'] ); ?></p>
+		<p class="lpb-buy__error lpx-buy__error" role="alert" aria-live="assertive" aria-atomic="true" data-lpx-err="<?php echo esc_attr( $t['size_err'] ); ?>"<?php echo $lpx_notice ? '' : ' hidden'; ?>><?php echo esc_html( $lpx_notice ? $lpx_notice : $t['size_err'] ); ?></p>
 		<ul class="lpx-facts">
 			<?php foreach ( $t['facts'] as $fact ) : ?>
 				<li><?php echo $lpx_icon( $fact[0] ); // phpcs:ignore WordPress.Security.EscapeOutput -- static inline SVG built above. ?><span><?php echo esc_html( $fact[1] ); ?></span></li>

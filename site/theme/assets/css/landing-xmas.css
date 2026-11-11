@@ -92,12 +92,68 @@
   background: rgba(179, 38, 30, 0.08);
 }
 
+/* Issue #364: "4 a více párů / 4 or more pairs" card + M/L counters.
+   The teaser runs under the four cards; the counters replace the per-pair
+   rows (.lpx-multi shares the .lpx-pair row frame). Buttons are 44x44 px tap
+   targets; a row is label | − qty + and fits a 390 px screen. */
+.lpx-bundles__teaser {
+  flex: 0 0 100%;
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--lpb-body, rgba(64, 53, 42, .84));
+}
+.lpx-multi { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+.lpx-counter {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 24rem;
+  margin: 0 auto;
+}
+.lpx-counter__label { flex: 1 1 auto; min-width: 0; text-align: left; font-weight: 600; }
+.lpx-counter__btn {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border: 1px solid var(--lpb-ink, #000);
+  border-radius: 0.4rem;
+  background: #fff;
+  color: var(--lpb-ink, #000);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.lpx-counter__btn:focus-visible { outline: 3px solid currentColor; outline-offset: 2px; }
+.lpx-counter__btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.lpx-counter__qty { flex: 0 0 2.2rem; text-align: center; font-size: 1.15rem; font-weight: 700; }
+.lpx-counter.is-off .lpx-counter__label { opacity: 0.45; text-decoration: line-through; }
+.lpx-multi__total {
+  margin: 0.35rem 0 0;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--lpb-line, rgba(12, 17, 21, .12));
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--lpb-ink, #000);
+}
+.lpx-multi.is-missing .lpx-multi__total { color: #b3261e; }
+
 @media (max-width: 560px) {
   /* 3. Compact M/L at 390px: the row padding above costs 2 x 0.45rem, so the
      cards shrink a touch; the label stays visible. */
   .lpx-pair { padding: 0.35rem 0.35rem 0.4rem; gap: 0.4rem; }
   .lpx-pair .lpx-pair__legend { font-size: 0.75rem; margin-bottom: 0.3rem; }
   .lpx-pair .lpb-size__label { padding: 0.5em 0.25em; font-size: 0.875rem; }
+  /* Issue #364: teaser + counters at 390px (buttons stay 44px). */
+  .lpx-bundles__teaser { font-size: 0.85rem; }
+  .lpx-counter { gap: 0.35rem; }
+  .lpx-counter__label { font-size: 0.875rem; }
 
   /* 4. Cookie card (WPConsent, retheme in components.css, compacted for B in
      landing-b.css) still covered the lower half of the buy box on a 390px
