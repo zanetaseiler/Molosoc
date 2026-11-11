@@ -61,11 +61,33 @@ function molosoc_ll_headers( $explicit_from ): array {
 	return $h;
 }
 
+/** Packeta packet id shape (digits, optional `Z` barcode prefix). Non-strings are invalid. */
+function molosoc_ll_packet_id_valid( $id ): bool {
+	return is_string( $id ) && 1 === preg_match( '/^Z?\d{5,20}$/', $id );
+}
+
+/**
+ * Issue #369: a provider success is accepted only for the approved packet. Any other
+ * packet id is a permanent failure (`attention`), so a re-exported or duplicate packet
+ * is never mailed. Failures pass through unchanged.
+ */
+function molosoc_ll_require_approved( array $res, string $approved ): array {
+	if ( empty( $res['ok'] ) ) {
+		return $res;
+	}
+	if ( ! molosoc_ll_packet_id_valid( $approved ) || ! hash_equals( $approved, (string) ( $res['ref'] ?? '' ) ) ) {
+		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'packet_not_approved' );
+	}
+	return $res;
+}
+
 /**
  * Pure gate. Returns array( bool allowed, string reason ).
- * `$enabled` must be exactly true; `$ids` must be an array of exactly one positive int.
+ * `$enabled` must be exactly true; `$ids` must be an array of exactly one positive int;
+ * `$approved_packet` (Issue #369) must be the well-formed Packeta packet id approved
+ * after the read-only preview.
  */
-function molosoc_ll_gate( $enabled, $ids, bool $mock_enabled, int $order_id ): array {
+function molosoc_ll_gate( $enabled, $ids, bool $mock_enabled, int $order_id, $approved_packet = null ): array {
 	if ( true !== $enabled ) {
 		return array( false, 'live_disabled' );
 	}
@@ -75,6 +97,10 @@ function molosoc_ll_gate( $enabled, $ids, bool $mock_enabled, int $order_id ): a
 	$only = reset( $ids );
 	if ( ! is_int( $only ) || $only <= 0 ) {
 		return array( false, 'allowlist_invalid_id' );
+	}
+	// Issue #369: the live send is pinned to the one packet Žaneta approved after the read-only preview.
+	if ( ! molosoc_ll_packet_id_valid( $approved_packet ) ) {
+		return array( false, 'approved_packet_missing' );
 	}
 	if ( $mock_enabled ) {
 		return array( false, 'mock_delivery_also_enabled' );
@@ -149,7 +175,7 @@ function molosoc_ll_provider( string $carrier, string $stored_ref, array $d ): a
 	if ( '' === $packet ) {
 		return array( 'ok' => false, 'live' => true, 'reason' => 'packet_not_submitted' ); // Retryable: native submission may not have run yet.
 	}
-	if ( 1 !== preg_match( '/^Z?\d{5,20}$/', $packet ) ) {
+	if ( ! molosoc_ll_packet_id_valid( $packet ) ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'packet_id_malformed' );
 	}
 	$pdf = $d['fetch']( $packet, (string) $d['api_password'] );
@@ -181,7 +207,8 @@ function molosoc_ll_gate_now( int $order_id ): array {
 		defined( 'MOLOSOC_LABEL_LIVE_ENABLED' ) ? MOLOSOC_LABEL_LIVE_ENABLED : null,
 		defined( 'MOLOSOC_LABEL_LIVE_ORDER_IDS' ) ? MOLOSOC_LABEL_LIVE_ORDER_IDS : null,
 		defined( 'MOLOSOC_LABEL_DELIVERY_ENABLED' ) && true === MOLOSOC_LABEL_DELIVERY_ENABLED,
-		$order_id
+		$order_id,
+		defined( 'MOLOSOC_LABEL_LIVE_APPROVED_PACKET' ) ? MOLOSOC_LABEL_LIVE_APPROVED_PACKET : null
 	);
 }
 
@@ -201,6 +228,21 @@ function molosoc_ll_packeta_fetch( string $packet, string $password ) {
 	}
 	$dec = is_string( $res ) ? base64_decode( $res, true ) : false;
 	return ( is_string( $dec ) && 0 === strpos( $dec, '%PDF-' ) ) ? $dec : false;
+}
+
+/** Real provider for one order from the operator constants (fetch only, never creates a packet). */
+function molosoc_ll_provider_now( int $order_id, string $carrier, string $ref ): array {
+	$key = defined( 'MOLOSOC_LL_PACKETA_PACKET_META' ) ? (string) MOLOSOC_LL_PACKETA_PACKET_META : '';
+	return molosoc_ll_provider(
+		$carrier,
+		$ref,
+		array(
+			'packet_meta_key' => $key,
+			'packet_id'       => '' === $key ? '' : molosoc_ld3_meta_get( $order_id, $key ),
+			'api_password'    => defined( 'MOLOSOC_LL_PACKETA_API_PASSWORD' ) ? (string) MOLOSOC_LL_PACKETA_API_PASSWORD : '',
+			'fetch'           => 'molosoc_ll_packeta_fetch',
+		)
+	);
 }
 
 /** Entry point for the hook and for operator retries. Only the allowlisted order proceeds. */
@@ -250,16 +292,9 @@ function molosoc_ll_run( $order_id ): string {
 				}
 			},
 			'provider'   => static function ( $carrier, $ref ) use ( $order_id ) {
-				$key = defined( 'MOLOSOC_LL_PACKETA_PACKET_META' ) ? (string) MOLOSOC_LL_PACKETA_PACKET_META : '';
-				return molosoc_ll_provider(
-					(string) $carrier,
-					(string) $ref,
-					array(
-						'packet_meta_key' => $key,
-						'packet_id'       => '' === $key ? '' : molosoc_ld3_meta_get( $order_id, $key ),
-						'api_password'    => defined( 'MOLOSOC_LL_PACKETA_API_PASSWORD' ) ? (string) MOLOSOC_LL_PACKETA_API_PASSWORD : '',
-						'fetch'           => 'molosoc_ll_packeta_fetch',
-					)
+				return molosoc_ll_require_approved(
+					molosoc_ll_provider_now( $order_id, (string) $carrier, (string) $ref ),
+					(string) MOLOSOC_LABEL_LIVE_APPROVED_PACKET // Defined: checked by the gate.
 				);
 			},
 			'mailer'     => static function ( $mail ) {
