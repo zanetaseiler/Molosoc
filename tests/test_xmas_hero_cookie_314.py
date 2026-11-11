@@ -198,7 +198,8 @@ class CookieBannerMobile(unittest.TestCase):
         base = merge_base()
         if not base:
             self.skipTest("no origin/main")
-        watched = ["site/theme/assets/css/landing-b.css", "site/theme/assets/js/landing-b.js", "site/theme/assets/js/sticky-cta.js", "site/theme/inc/landing-xmas.php", "site/theme/inc/delayed-third-party.php"]
+        watched = ["site/theme/assets/css/landing-b.css", "site/theme/assets/js/landing-b.js", "site/theme/assets/js/sticky-cta.js", "site/theme/inc/delayed-third-party.php"]
+        # Issue #364 deliberately changes inc/landing-xmas.php (4–10 pair bundle); it is no longer watched here.
         changed = subprocess.run(["git", "diff", "--name-only", base, "--"] + watched, cwd=REPO, capture_output=True, text=True).stdout.split()
         self.assertEqual(changed, [])
 

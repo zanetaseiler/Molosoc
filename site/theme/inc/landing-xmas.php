@@ -13,15 +13,21 @@
  * sitemap once the WP pages are published. This file never creates or
  * publishes a WP page; draft pages stay non-public.
  *
- * BUNDLE PURCHASE. The visitor picks 1, 2 or 3 pairs and M/L per pair. The
- * button opens the checkout URL with `molosoc_xmas=1&molosoc_xmas_sizes=M,L,…`;
- * molosoc_xmas_add_to_cart() (wp_loaded) validates the sizes server-side,
- * resolves the real variations of Woo product 364 (inventory is theirs; no
- * extra SKU) and adds one cart line PER PAIR, each tagged
- * `molosoc_xmas_slot` 1..3, then redirects to the clean checkout URL.
+ * BUNDLE PURCHASE. The visitor picks 1, 2 or 3 pairs and M/L per pair, or
+ * (Issue #364) the "4 a více párů / 4 or more pairs" card with M/L counters
+ * (4..molosoc_xmas_max_pairs() = 10 pairs). Both end in the same URL: the
+ * button opens the checkout URL with `molosoc_xmas=1&molosoc_xmas_sizes=M,L,…`
+ * (one size per pair); molosoc_xmas_add_to_cart() (wp_loaded) validates the
+ * sizes server-side, resolves the real variations of Woo product 364
+ * (inventory is theirs; no extra SKU), checks that each variation has stock
+ * for every pair asked of it, and adds one cart line PER PAIR, each tagged
+ * `molosoc_xmas_slot` 1..n, then redirects to the clean checkout URL. Not
+ * enough stock: the cart stays as it was and the visitor goes back to the
+ * landing page with a localized message (molosoc_xmas_stock_message()).
  *
- * PRICING (approved by Žaneta 2026-10-26): pair 1 = 209 Kč, pairs 2 and 3 =
- * 199 Kč each, i.e. 209 / 408 / 607 Kč for 1 / 2 / 3 pairs. The price is
+ * PRICING (approved by Žaneta 2026-10-26, extended 2026-11-11 in Issue #364):
+ * pair 1 = 209 Kč, every further pair = 199 Kč, i.e. 209 / 408 / 607 / 806 /
+ * 1005 / … / 2000 Kč for 1 / 2 / 3 / 4 / 5 / … / 10 pairs. The price is
  * derived on the server from the slot tag only (never from the request), set
  * on the cart line's product object in woocommerce_before_calculate_totals, so
  * WooCommerce taxes, shipping and payment run on it unchanged. Rows without
@@ -80,40 +86,62 @@ function molosoc_xmas_published() {
 }
 
 /**
- * Unit price of the 1st, 2nd and 3rd pair of one Christmas bundle (CZK).
- * Approved: 209 + 199 + 199. Anything else from the filter is rejected, so a
- * bad filter can never produce a zero or negative price.
+ * Most pairs one Christmas bundle may hold (Issue #364): 10 by default. The
+ * filter is clamped to 3..10, so the 1/2/3 cards always work and a bad filter
+ * can never open the bundle wider than the approved price list.
+ */
+function molosoc_xmas_max_pairs() {
+	$max = (int) apply_filters( 'molosoc_xmas_max_pairs', 10 );
+	return max( 3, min( 10, $max ) );
+}
+
+/** Fewest pairs of the "4 a více párů / 4 or more pairs" card (Issue #364). */
+function molosoc_xmas_multi_min() {
+	return 4;
+}
+
+/**
+ * Unit price of each pair of one Christmas bundle (CZK), slot 1..max.
+ * Approved: 209 for pair 1, 199 for every further pair (Issue #364). The
+ * filter must return a positive number for EVERY slot 1..max; anything else
+ * is rejected, so a bad filter can never produce a zero or negative price.
  *
- * @return int[] slot (1-based) => price
+ * @return float[]|int[] slot (1-based) => price
  */
 function molosoc_xmas_unit_prices() {
-	$default = array( 1 => 209, 2 => 199, 3 => 199 );
-	$prices  = apply_filters( 'molosoc_xmas_unit_prices', $default );
+	$max     = molosoc_xmas_max_pairs();
+	$default = array( 1 => 209 );
+	for ( $slot = 2; $slot <= $max; $slot++ ) {
+		$default[ $slot ] = 199;
+	}
+	$prices = apply_filters( 'molosoc_xmas_unit_prices', $default );
 	if ( ! is_array( $prices ) ) {
 		return $default;
 	}
-	foreach ( array( 1, 2, 3 ) as $slot ) {
+	$out = array();
+	for ( $slot = 1; $slot <= $max; $slot++ ) {
 		if ( ! isset( $prices[ $slot ] ) || ! is_numeric( $prices[ $slot ] ) || (float) $prices[ $slot ] <= 0 ) {
 			return $default;
 		}
+		$out[ $slot ] = (float) $prices[ $slot ];
 	}
-	return array( 1 => (float) $prices[1], 2 => (float) $prices[2], 3 => (float) $prices[3] );
+	return $out;
 }
 
-/** Bundle total for $pairs (1..3). */
+/** Bundle total for $pairs (1..max). */
 function molosoc_xmas_bundle_total( $pairs ) {
 	$prices = molosoc_xmas_unit_prices();
 	$total  = 0;
-	for ( $i = 1; $i <= max( 0, min( 3, (int) $pairs ) ); $i++ ) {
+	for ( $i = 1; $i <= max( 0, min( molosoc_xmas_max_pairs(), (int) $pairs ) ); $i++ ) {
 		$total += $prices[ $i ];
 	}
 	return $total;
 }
 
-/** Parse "M,L,M" into a list of 1..3 valid size keys, or array() when invalid. */
+/** Parse "M,L,M" into a list of 1..max valid size keys, or array() when invalid. */
 function molosoc_xmas_parse_sizes( $raw ) {
 	$sizes = array_map( 'trim', explode( ',', strtoupper( (string) $raw ) ) );
-	if ( count( $sizes ) < 1 || count( $sizes ) > 3 ) {
+	if ( count( $sizes ) < 1 || count( $sizes ) > molosoc_xmas_max_pairs() ) {
 		return array();
 	}
 	foreach ( $sizes as $size ) {
@@ -170,6 +198,138 @@ function molosoc_xmas_variations() {
 	return $out;
 }
 
+/** URL of the Christmas landing page of $lang (falls back to the home page). */
+function molosoc_xmas_page_url( $lang ) {
+	$slugs = molosoc_xmas_slugs();
+	$slug  = 'en' === $lang ? $slugs['en'] : $slugs['cz'];
+	$page  = function_exists( 'get_page_by_path' ) ? get_page_by_path( $slug ) : null;
+	if ( $page && 'publish' === get_post_status( $page ) ) {
+		return get_permalink( $page );
+	}
+	return home_url( 'en' === $lang ? '/' . $slug . '/' : '/cz/' . $slug . '/' );
+}
+
+/**
+ * Stock problems of a requested size list (Issue #364), checked BEFORE the
+ * cart is touched. Pairs are counted per variation (an "Any size" variation
+ * may serve both M and L, so M=8 + L=2 asks 10 of it), and units of that
+ * variation already in the cart on other lines (not the Christmas lines,
+ * which the add replaces) are counted too, as WooCommerce itself does.
+ *
+ * @param string[] $sizes      Parsed size list.
+ * @param array    $variations molosoc_xmas_variations() output.
+ * @param object   $cart       WC_Cart (or a stand-in with get_cart()).
+ * @return array array() when fine, else array( 'size' => 'M'|'L'|'', 'left' => int ).
+ */
+function molosoc_xmas_stock_problem( array $sizes, array $variations, $cart ) {
+	$wanted = array(); // variation_id => pairs asked
+	$by_vid = array(); // variation_id => first size key using it
+	foreach ( $sizes as $size ) {
+		if ( ! isset( $variations[ $size ] ) ) {
+			return array( 'size' => $size, 'left' => 0 ); // sold out: no purchasable variation for this size.
+		}
+		$vid            = (int) $variations[ $size ]['variation_id'];
+		$wanted[ $vid ] = ( isset( $wanted[ $vid ] ) ? $wanted[ $vid ] : 0 ) + 1;
+		if ( ! isset( $by_vid[ $vid ] ) ) {
+			$by_vid[ $vid ] = $size;
+		}
+	}
+	$in_cart = array();
+	if ( is_object( $cart ) && method_exists( $cart, 'get_cart' ) ) {
+		foreach ( $cart->get_cart() as $item ) {
+			if ( isset( $item['molosoc_xmas_slot'] ) ) {
+				continue;
+			}
+			$vid = isset( $item['variation_id'] ) ? (int) $item['variation_id'] : 0;
+			if ( $vid && isset( $wanted[ $vid ] ) ) {
+				$in_cart[ $vid ] = ( isset( $in_cart[ $vid ] ) ? $in_cart[ $vid ] : 0 ) + (int) $item['quantity'];
+			}
+		}
+	}
+	foreach ( $wanted as $vid => $pairs ) {
+		$variation = function_exists( 'wc_get_product' ) ? wc_get_product( $vid ) : null;
+		$shared    = 0;
+		foreach ( $variations as $v ) {
+			$shared += (int) $v['variation_id'] === $vid ? 1 : 0;
+		}
+		$size = $shared > 1 ? '' : $by_vid[ $vid ]; // one variation for both sizes: name no size.
+		if ( ! $variation || ! $variation->is_purchasable() || ! $variation->is_in_stock() ) {
+			return array( 'size' => $size, 'left' => 0 );
+		}
+		if ( $variation->managing_stock() && ! $variation->backorders_allowed() ) {
+			$left = max( 0, (int) $variation->get_stock_quantity() - ( isset( $in_cart[ $vid ] ) ? $in_cart[ $vid ] : 0 ) );
+			if ( $pairs > $left ) {
+				return array( 'size' => $size, 'left' => $left );
+			}
+		}
+	}
+	return array();
+}
+
+/**
+ * Localized stock message shown on the landing page after a refused bundle.
+ * $size '' = a variation shared by both sizes (or unknown): no size named.
+ * $left < 0 = WooCommerce refused the add for a reason not caught above.
+ */
+function molosoc_xmas_stock_message( $lang, $size, $left ) {
+	$size = 'M' === $size || 'L' === $size ? $size : '';
+	$left = (int) $left;
+	if ( 'en' === $lang ) {
+		if ( $left < 0 ) {
+			return 'We could not add that many pairs right now. Please choose fewer pairs and try again.';
+		}
+		if ( 0 === $left ) {
+			return $size ? sprintf( 'Size %s is sold out right now. Please choose the other size.', $size ) : 'This item is sold out right now.';
+		}
+		$pairs = 1 === $left ? '1 pair' : $left . ' pairs';
+		return $size
+			? sprintf( 'Only %1$s of size %2$s left in stock. Please choose fewer pairs of size %2$s and try again.', $pairs, $size )
+			: sprintf( 'Only %s left in stock. Please choose fewer pairs and try again.', $pairs );
+	}
+	if ( $left < 0 ) {
+		return 'Tolik párů teď nemůžeme přidat do košíku. Vyberte prosím méně párů a zkuste to znovu.';
+	}
+	if ( 0 === $left ) {
+		return $size ? sprintf( 'Velikost %s je momentálně vyprodaná. Vyberte prosím druhou velikost.', $size ) : 'Zboží je momentálně vyprodané.';
+	}
+	$pairs = 1 === $left ? '1 pár' : ( $left <= 4 ? $left . ' páry' : $left . ' párů' );
+	return $size
+		? sprintf( 'Velikosti %1$s máme skladem jen %2$s. Vyberte prosím méně párů velikosti %1$s a zkuste to znovu.', $size, $pairs )
+		: sprintf( 'Skladem máme jen %s. Vyberte prosím méně párů a zkuste to znovu.', $pairs );
+}
+
+/**
+ * The stock message for the current landing request, from the redirect's
+ * query args (lpx_stock = M|L|any|add, lpx_left = 0..max), or '' when none.
+ * Only these whitelisted values are read; the text itself is built here.
+ */
+function molosoc_xmas_stock_notice( $lang ) {
+	if ( ! isset( $_GET['lpx_stock'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		return '';
+	}
+	$code = strtolower( sanitize_key( wp_unslash( $_GET['lpx_stock'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification
+	$left = isset( $_GET['lpx_left'] ) ? (int) $_GET['lpx_left'] : 0; // phpcs:ignore WordPress.Security.NonceVerification
+	$left = max( 0, min( molosoc_xmas_max_pairs(), $left ) );
+	if ( 'add' === $code ) {
+		return molosoc_xmas_stock_message( $lang, '', -1 );
+	}
+	if ( 'm' === $code || 'l' === $code ) {
+		return molosoc_xmas_stock_message( $lang, strtoupper( $code ), $left );
+	}
+	if ( 'any' === $code ) {
+		return molosoc_xmas_stock_message( $lang, '', $left );
+	}
+	return '';
+}
+
+/** Back to the landing page's picker with a stock code (never touches the cart). */
+function molosoc_xmas_stock_redirect_url( $lang, $code, $left = 0 ) {
+	return add_query_arg(
+		array( 'lpx_stock' => $code, 'lpx_left' => max( 0, (int) $left ) ),
+		molosoc_xmas_page_url( $lang )
+	) . '#lpx-bundle';
+}
+
 /** Purchase URL for a size list; '' when nothing valid. */
 function molosoc_xmas_buy_url( array $sizes, $lang ) {
 	if ( ! $sizes ) {
@@ -201,11 +361,16 @@ function molosoc_xmas_add_to_cart() {
 	}
 	$cart       = WC()->cart;
 	$variations = molosoc_xmas_variations();
-	foreach ( $sizes as $size ) {
-		if ( ! $cart || ! isset( $variations[ $size ] ) ) {
-			wp_safe_redirect( molosoc_product_url( $lang ) );
-			exit;
-		}
+	if ( ! $cart || ! $variations ) {
+		wp_safe_redirect( molosoc_product_url( $lang ) );
+		exit;
+	}
+	// Issue #364: every pair asked of each variation must be in stock before
+	// anything is removed or added; otherwise the cart stays untouched.
+	$problem = molosoc_xmas_stock_problem( $sizes, $variations, $cart );
+	if ( $problem ) {
+		wp_safe_redirect( molosoc_xmas_stock_redirect_url( $lang, '' === $problem['size'] ? 'any' : strtolower( $problem['size'] ), $problem['left'] ) );
+		exit;
 	}
 	$snapshot = $cart->get_cart_contents();
 	foreach ( $cart->get_cart() as $key => $item ) {
@@ -218,13 +383,13 @@ function molosoc_xmas_add_to_cart() {
 		// One line per pair: a unique slot tag keeps lines apart and fixes the price.
 		$added = $cart->add_to_cart( MOLOSOC_PRODUCT_ID, 1, $v['variation_id'], $v['attributes'], array( 'molosoc_xmas_slot' => $i + 1 ) );
 		if ( ! $added ) {
-			// All or nothing: put the cart back as it was (e.g. not enough stock for every pair).
+			// All or nothing: put the cart back as it was (e.g. stock held by another order).
 			$cart->set_cart_contents( $snapshot );
 			$cart->calculate_totals();
 			if ( method_exists( $cart, 'set_session' ) ) {
 				$cart->set_session();
 			}
-			wp_safe_redirect( molosoc_product_url( $lang ) );
+			wp_safe_redirect( molosoc_xmas_stock_redirect_url( $lang, 'add' ) );
 			exit;
 		}
 	}
@@ -236,7 +401,8 @@ function molosoc_xmas_add_to_cart() {
  * Reprice tagged lines. Priority 20 (the gift add-on runs at 100 and only
  * touches its own rows). Eligible lines (tagged, product 364, quantity 1) are
  * ranked by slot tag and priced by rank, so removing a line from the bundle
- * re-packs the remaining ones (1 pair 209, 2 pairs 408, 3 pairs 607). Any
+ * re-packs the remaining ones (1 pair 209, 2 pairs 408, 3 pairs 607, … 10
+ * pairs 2000). Any
  * other tagged line goes back to its remembered normal Woo price.
  */
 add_action( 'woocommerce_before_calculate_totals', 'molosoc_xmas_apply_prices', 20, 1 );
@@ -305,12 +471,12 @@ function molosoc_xmas_meta( $lang ) {
 	if ( 'en' === $lang ) {
 		return array(
 			'title' => 'Christmas gift for her: reusable foot mask | Molosoc',
-			'desc'  => 'A small, practical Christmas gift: reusable nitrile foot covers that turn an ordinary foot cream into a simple caring ritual. Pick 1, 2 or 3 pairs.',
+			'desc'  => 'A small, practical Christmas gift: reusable nitrile foot covers that turn an ordinary foot cream into a simple caring ritual. Pick 1 to 10 pairs.',
 		);
 	}
 	return array(
 		'title' => 'Vánoční dárek pro maminku: maska na nohy | Molosoc',
-		'desc'  => 'Malý praktický vánoční dárek: opakovaně použitelné nitrilové návleky, které promění obyčejný krém na nohy v pečující rituál. Vyberte 1, 2 nebo 3 páry.',
+		'desc'  => 'Malý praktický vánoční dárek: opakovaně použitelné nitrilové návleky, které promění obyčejný krém na nohy v pečující rituál. Vyberte 1 až 10 párů.',
 	);
 }
 

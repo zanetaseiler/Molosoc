@@ -170,7 +170,7 @@ class InfoBlock(unittest.TestCase):
         en = PART_CODE[PART_CODE.index("'en' => array("):]
         self.assertNotIn("cash on delivery", en.lower())
         self.assertIn("můžete platit i dobírkou", PART_CODE)
-        self.assertIn("array( 1 => 209, 2 => 199, 3 => 199 )", INC)  # prices untouched
+        self.assertIn("$default = array( 1 => 209 );", INC)  # Issue #364: 209, then 199 per pair up to max (totals in test_landing_xmas_multi_364)
 
 
 class ResponsiveImages(unittest.TestCase):
