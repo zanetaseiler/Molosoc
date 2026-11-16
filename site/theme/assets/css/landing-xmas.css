@@ -220,6 +220,45 @@
   }
 }
 
+/* Issue #373 (Clarity 9-16 Nov, mobile: 39 % left before scrolling 15 %, 3
+   taps on the checkout button in 132 visits): on a phone the set choice sits
+   directly under the headline. Nothing moves in the DOM (the picker section
+   already follows the hero); the hero is cut to what the brief keeps — photo,
+   eyebrow, headline, price line, order-by line — and the picker's section
+   loses its padding, lede and the 48 px of air above it. The hero's own
+   "Vyberte dárkový set" scroll button and the COD line are hidden here only
+   (the picker is 150 px below; "můžete platit i dobírkou" is in the facts
+   under the button). The four bundle cards become a 2 x 2 grid so 1/2/3
+   pairs + "4 a více" + the size row + "Do košíku" fit in ~320 px. Measured on
+   390 x 844: cards at ~500 px and clear of the cookie card, button at ~810 px
+   (live before: 961 / 1340).
+   Desktop (> 560 px) is unchanged. */
+@media (max-width: 560px) {
+  .lpx-hero { padding: 0.75rem 20px 0.75rem; }
+  .lpx-hero__inner { gap: 0.75rem; }
+  .lpx-hero__media img { height: 164px; object-fit: cover; }
+  .lpx-hero .lpb-eyebrow { margin: 0 0 0.25rem; }
+  .lpx-hero__title { font-size: 1.75rem; line-height: 1.1; margin: 0 0 0.5rem; }
+  .lpx-hero .lpb-price__meta { font-size: 0.9rem; margin: 0 0 0.3rem; }
+  .lpx-deadline { font-size: 0.9rem; margin: 0; }
+  .lpx-hero .lpb-cod,
+  .lpx-hero > .lpx-hero__inner > .lpx-hero__copy > .lpb-btn { display: none; }
+
+  #lpx-bundle.lpb-section { padding-top: 0.75rem; }
+  #lpx-bundle .lpb-section__head { margin: 0 auto 0.6rem; }
+  #lpx-bundle .lpb-section__head h2 { font-size: 1.25rem; margin: 0; padding-bottom: 0; }
+  #lpx-bundle .lpb-section__head h2::after { margin-top: 0.4rem; }
+  #lpx-bundle .lpb-section__head .lpb-lede { display: none; }
+
+  .lpx-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .lpx-bundle { min-width: 0; }
+  .lpx-bundle__body { min-width: 0; height: 100%; justify-content: center; padding: 0.55rem 0.5rem; }
+  .lpx-bundle__name { font-size: 0.72rem; letter-spacing: 1px; }
+  .lpx-bundle__price { font-size: 1.25rem; line-height: 1.15; }
+  .lpx-bundles__teaser { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; }
+}
+
+
 /* Issue #295: the buyers' questions answered at the buy box (Clarity, 28-30 Oct:
    visitors scrolled past the picker to open the size / shipping / care FAQ items
    and left). 1. One-line size hint under the "1. pár · Velikost" label — its own
@@ -271,3 +310,12 @@
   .lpx-pair { transition: none; }
   .molosoc-sticky-cta { transition: none; }
 }
+
+/* Issue #373: the page body is set in Nunito (--lpb-body-font) and the
+   headline in Tenor Sans, so the global --font-body face Mulish was only
+   rendered by the header, footer and announcement chrome — yet its two
+   variable-font files (57 KB, latin + latin-ext) were downloaded in the same
+   window as the hero image on every visit. On these two pages the chrome uses
+   the Nunito files the body loads anyway (same humanist sans, same weights);
+   every other page keeps Mulish. One line to revert. */
+:root { --font-body: var(--font-accent, "Nunito", -apple-system, sans-serif); }

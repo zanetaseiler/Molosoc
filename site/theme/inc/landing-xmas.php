@@ -664,3 +664,40 @@ function molosoc_xmas_header_logo( $html ) {
 	);
 }
 add_filter( 'molosoc_site_header_logo', 'molosoc_xmas_header_logo' );
+
+/* ---------- assets this page does not use (Issue #373) ---------- */
+
+/**
+ * Lighthouse mobile on the live CZ page (16 Nov 2026) still carried ~14 KB
+ * of inline WordPress block/global styles for a page without a single block
+ * (the theme's own CSS never reads the --wp--preset-* variables) and the
+ * header cart-badge mirror script, which only does anything on the block
+ * cart/checkout (it returns when wp.data is missing — the plugin stack is
+ * dequeued here by molosoc_dequeue_unused_homepage_assets()). Both go on the
+ * two Christmas pages only, after the theme's own dequeue at priority 100.
+ * Every other page keeps them. Nothing here touches the Meta pixel,
+ * Clarity, WPConsent, order attribution or the delayed gtag.js (#301).
+ *
+ * @return string[] style handles dropped on the Christmas pages.
+ */
+function molosoc_xmas_unused_style_handles() {
+	return array( 'wp-block-library', 'global-styles', 'classic-theme-styles', 'woocommerce-inline' );
+}
+
+/** @return string[] script handles dropped on the Christmas pages. */
+function molosoc_xmas_unused_script_handles() {
+	return array( 'molosoc-cart-badge-sync' );
+}
+
+function molosoc_xmas_dequeue_unused_assets() {
+	if ( ! molosoc_is_xmas_landing() ) {
+		return;
+	}
+	foreach ( molosoc_xmas_unused_style_handles() as $handle ) {
+		wp_dequeue_style( $handle );
+	}
+	foreach ( molosoc_xmas_unused_script_handles() as $handle ) {
+		wp_dequeue_script( $handle );
+	}
+}
+add_action( 'wp_enqueue_scripts', 'molosoc_xmas_dequeue_unused_assets', 110 );
