@@ -49,7 +49,7 @@ $copy = array(
 		'deadline'  => sprintf( 'Objednejte do %s, doručíme před Vánoci.', $lpx_fcz['order_by'] ),
 		'cod'       => molosoc_cod_cz_text(),
 		'cod_label' => 'Dobírka:',
-		'cta'       => 'Pokračovat k pokladně',
+		'cta'       => 'Do košíku', // Issue #373 (was 'Pokračovat k pokladně'); the flow is unchanged: add the bundle, then the checkout.
 		'pairs'     => array( 1 => '1 pár', 2 => '2 páry', 3 => '3 páry' ),
 		'multi'     => '4 a více párů', // Issue #364
 		'from'      => 'od %s',
@@ -101,7 +101,7 @@ $copy = array(
 		'deadline'  => sprintf( 'Order by %s for delivery before Christmas.', $lpx_fen['order_by'] ),
 		'cod'       => '',
 		'cod_label' => '',
-		'cta'       => 'Continue to checkout',
+		'cta'       => 'Add to cart', // Issue #373, same as the CZ page.
 		'pairs'     => array( 1 => '1 pair', 2 => '2 pairs', 3 => '3 pairs' ),
 		'multi'     => '4 or more pairs', // Issue #364
 		'from'      => 'from %s',
