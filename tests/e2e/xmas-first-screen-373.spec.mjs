@@ -43,6 +43,27 @@ async function consent( page, which ) {
 	await page.waitForTimeout( 500 );
 }
 
+test( 'Issue #375: hero photo shows its full 3:2 frame, sharp at 2x, "Do košíku" ends inside the first screen', async () => {
+	const { browser, page } = await phone();
+	try {
+		await page.goto( BASE + PATH, { waitUntil: 'networkidle' } );
+		const m = await page.evaluate( () => {
+			const img = document.querySelector( '.lpx-hero__media img' );
+			const r = img.getBoundingClientRect();
+			const cta = document.querySelector( '#lpx-bundle [data-lpx-go]' ).getBoundingClientRect();
+			return { shown: r.width / r.height, natural: img.naturalWidth / img.naturalHeight, fit: getComputedStyle( img ).objectFit, cssW: r.width, fileW: img.naturalWidth, dpr: window.devicePixelRatio, ctaBottom: cta.bottom + window.scrollY, loading: img.loading, prio: img.getAttribute( 'fetchpriority' ) };
+		} );
+		assert.ok( Math.abs( m.shown - m.natural ) < 0.02, `hero cropped: shown ${ m.shown } vs file ${ m.natural }` );
+		assert.notEqual( m.fit, 'cover' );
+		assert.ok( m.fileW >= m.cssW * Math.min( m.dpr, 2 ), `hero file ${ m.fileW }px for a ${ m.cssW }px slot at ${ m.dpr }x` );
+		assert.ok( m.ctaBottom <= VIEWPORT.height, `"Do košíku" ends at ${ m.ctaBottom }px, viewport ${ VIEWPORT.height }px` );
+		assert.equal( m.loading, 'eager' );
+		assert.equal( m.prio, 'high' );
+	} finally {
+		await browser.close();
+	}
+} );
+
 test( 'set selector + "Do košíku" are in the DOM above 1.2x the viewport height', async () => {
 	const { browser, page } = await phone();
 	try {

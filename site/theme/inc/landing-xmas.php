@@ -503,7 +503,19 @@ add_action( 'wp_head', function () {
  * original stays the largest srcset candidate. Until the original exists,
  * molosoc_xmas_image() prints nothing for it; a missing derivative is simply
  * left out of the srcset.
+ * Issue #375: every derivative re-encoded from the original at q 78
+ * (cwebp -q 78 -m 6 -sharp_yuv -resize <w> 0): the same full 3:2 frame, only
+ * scaled down; the 1080 px file a 3x phone gets was q 60 and looked soft.
  */
+
+/**
+ * Cache revision of the derivative files, appended as ?v= so Cloudflare and
+ * browsers fetch the re-encoded bytes instead of the copies cached under the
+ * same file names. Bump it whenever the derivatives are re-encoded.
+ */
+function molosoc_xmas_image_rev() {
+	return '375';
+}
 function molosoc_xmas_images() {
 	return array(
 		'scene-01' => array( 'file' => 'MOLOSOC_Christmas_Gift_Scene_01.webp', 'drive' => '1JHezsiFVICxddNfOX1_7AQfe1Nq36u9k' ),
@@ -551,7 +563,7 @@ function molosoc_xmas_image_set( $key ) {
 	$srcset = array();
 	foreach ( molosoc_xmas_image_widths() as $w ) {
 		if ( file_exists( $dir . $base . '-' . $w . '.webp' ) ) {
-			$srcset[] = esc_url( $uri . $base . '-' . $w . '.webp' ) . ' ' . (int) $w . 'w';
+			$srcset[] = esc_url( $uri . $base . '-' . $w . '.webp?v=' . molosoc_xmas_image_rev() ) . ' ' . (int) $w . 'w';
 		}
 	}
 	$srcset[] = esc_url( $uri . $file ) . ' ' . ( $size ? (int) $size[0] : 1536 ) . 'w';

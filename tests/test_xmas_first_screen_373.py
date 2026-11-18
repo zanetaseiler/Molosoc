@@ -33,7 +33,7 @@ def block373():
     compacts the hero (between the #287/#314 block and the #295 facts block,
     which older tests pin as the first / last block)."""
     code = strip_comments(CSS)
-    start = code.rindex("@media (max-width: 560px) {", 0, code.index(".lpx-hero__media img { height: 164px"))
+    start = code.rindex("@media (max-width: 560px) {", 0, code.index(".lpx-hero__title { font-size: 1.75rem"))
     depth, i = 0, start
     while i < len(code):
         if code[i] == "{":
@@ -79,13 +79,13 @@ class MobileFirstScreen(unittest.TestCase):
 
     def test_mobile_rules(self):
         m = block373()
-        self.assertIn("height: 164px", rule(m, ".lpx-hero__media img"))
-        self.assertIn("object-fit: cover", rule(m, ".lpx-hero__media img"))
+        # Issue #375: the hero photo is not cropped on phones (no fixed height / cover).
+        self.assertNotIn(".lpx-hero__media img", m)
         self.assertIn("font-size: 1.75rem", rule(m, ".lpx-hero__title"))
         self.assertIn("margin: 0", rule(m, ".lpx-deadline"))
         hidden = rule(m, ".lpx-hero .lpb-cod,\n  .lpx-hero > .lpx-hero__inner > .lpx-hero__copy > .lpb-btn")
         self.assertIn("display: none", hidden)
-        self.assertIn("padding-top: 0.75rem", rule(m, "#lpx-bundle.lpb-section"))
+        self.assertIn("padding-top: 0.5rem", rule(m, "#lpx-bundle.lpb-section"))
         self.assertIn("display: none", rule(m, "#lpx-bundle .lpb-section__head .lpb-lede"))
         cards = rule(m, ".lpx-bundles")
         self.assertIn("display: grid", cards)
@@ -156,6 +156,8 @@ class Guardrails(unittest.TestCase):
             "site/theme/assets/images/landing-xmas",
         ]
         changed = subprocess.run(["git", "diff", "--name-only", base, "--"] + watched, cwd=REPO, capture_output=True, text=True).stdout.split()
+        # Issue #375 re-encodes the scaled-down derivatives (-480/-768/-1080) on purpose; the originals stay pinned.
+        changed = [c for c in changed if not re.search(r"landing-xmas/MOLOSOC_Christmas_Gift_Scene_0\d-(480|768|1080)\.webp$", c)]
         self.assertEqual(changed, [])
         diff = subprocess.run(["git", "diff", "-U0", base, "--", "site/theme/functions.php"], cwd=REPO, capture_output=True, text=True).stdout
         self.assertEqual([l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")], [])

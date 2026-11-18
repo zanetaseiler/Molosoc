@@ -50,6 +50,12 @@ def webp_width(data):
     return struct.unpack("<H", data[i + 14:i + 16])[0] & 0x3FFF
 
 
+def webp_height(data):
+    """Pixel height of a lossy (VP8) WebP file (Issue #375)."""
+    i = data.index(b"VP8 ")
+    return struct.unpack("<H", data[i + 16:i + 18])[0] & 0x3FFF
+
+
 def facts_block(lang):
     start = PART.index("'facts'     => array(", PART.index("'%s' => array(" % lang))
     return PART[start: PART.index("),\n\t\t'bundle_h'", start)]
@@ -186,9 +192,21 @@ class ResponsiveImages(unittest.TestCase):
     def test_hero_byte_budget_for_phones(self):
         size = {w: len((self.IMG / f"MOLOSOC_Christmas_Gift_Scene_01-{w}.webp").read_bytes()) for w in (480, 768, 1080)}
         # 390 px phone: calc(100vw - 40px) = 350 CSS px → 700 px at 2x (768w), 1050 px at 3x (1080w).
-        self.assertLessEqual(size[480], 30_000)
-        self.assertLessEqual(size[768], 60_000)
-        self.assertLessEqual(size[1080], 75_000)
+        # Issue #375: re-encoded at q 78 (was 75/70/60; the 1080 px file looked soft on 3x phones).
+        self.assertLessEqual(size[480], 35_000)
+        self.assertLessEqual(size[768], 70_000)
+        self.assertLessEqual(size[1080], 100_000)
+
+    def test_derivatives_are_the_full_3_2_frame(self):
+        # Issue #375: every derivative is the original scaled down, never cropped.
+        for n in ("01", "02", "03"):
+            for w in (480, 768, 1080):
+                data = (self.IMG / f"MOLOSOC_Christmas_Gift_Scene_{n}-{w}.webp").read_bytes()
+                self.assertEqual(webp_height(data), w * 2 // 3, (n, w))
+
+    def test_derivative_urls_carry_the_cache_revision(self):
+        self.assertIn(".webp?v=' . molosoc_xmas_image_rev() )", INC)
+        self.assertIn("return '375';", INC)
 
     def test_originals_are_untouched(self):
         base = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], cwd=REPO, capture_output=True, text=True).stdout.strip()
