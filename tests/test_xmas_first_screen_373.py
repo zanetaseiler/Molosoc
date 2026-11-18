@@ -158,6 +158,17 @@ class Guardrails(unittest.TestCase):
         changed = subprocess.run(["git", "diff", "--name-only", base, "--"] + watched, cwd=REPO, capture_output=True, text=True).stdout.split()
         # Issue #375 re-encodes the scaled-down derivatives (-480/-768/-1080) on purpose; the originals stay pinned.
         changed = [c for c in changed if not re.search(r"landing-xmas/MOLOSOC_Christmas_Gift_Scene_0\d-(480|768|1080)\.webp$", c)]
+        # The #375 follow-up adds AVIF copies of the hero (new files) and changes the
+        # product-page shipping note 69 -> 79 Kč in woocommerce-lang.php (that line only).
+        changed = [c for c in changed if not re.search(r"landing-xmas/MOLOSOC_Christmas_Gift_Scene_01(-(480|768|1080))?\.avif$", c)]
+        if "site/theme/inc/woocommerce-lang.php" in changed:
+            wl = subprocess.run(["git", "diff", "-U0", base, "--", "site/theme/inc/woocommerce-lang.php"], cwd=REPO, capture_output=True, text=True).stdout
+            body = [l for l in wl.splitlines() if l[:1] in "+-" and not l.startswith(("+++", "---"))]
+            self.assertEqual(body, [
+                "-\t\tesc_html( $is_cz ? 'Doprava od 69 Kč' : 'Shipping from 69 CZK' )",
+                "+\t\tesc_html( $is_cz ? 'Doprava od 79 Kč' : 'Shipping from 79 CZK' )",
+            ])
+            changed.remove("site/theme/inc/woocommerce-lang.php")
         self.assertEqual(changed, [])
         diff = subprocess.run(["git", "diff", "-U0", base, "--", "site/theme/functions.php"], cwd=REPO, capture_output=True, text=True).stdout
         self.assertEqual([l for l in diff.splitlines() if l.startswith("-") and not l.startswith("---")], [])

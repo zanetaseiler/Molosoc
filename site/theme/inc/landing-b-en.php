@@ -117,7 +117,7 @@ function molosoc_landing_b_en_schema_description() {
  * The visible FAQ as [question, answer] pairs; the template prints exactly these.
  *
  * @param string $price    Visible price, e.g. '€10'.
- * @param string $shipping Visible shipping note, e.g. 'Shipping from 69 CZK'.
+ * @param string $shipping Visible shipping note, e.g. 'Shipping from 79 CZK'.
  */
 function molosoc_landing_b_en_faq( $price, $shipping ) {
 	return array(
@@ -195,7 +195,7 @@ function molosoc_landing_b_en_schema() {
 		$canonical,
 		html_entity_decode( wp_get_document_title(), ENT_QUOTES, 'UTF-8' ),
 		molosoc_product_url( 'en' ),
-		molosoc_landing_b_en_faq( '€10', 'Shipping from 69 CZK' )
+		molosoc_landing_b_en_faq( '€10', 'Shipping from 79 CZK' )
 	);
 	echo '<script type="application/ld+json">' . wp_json_encode( $graph, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP ) . "</script>\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- JSON with HEX_TAG/AMP.
 }

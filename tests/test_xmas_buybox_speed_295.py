@@ -62,8 +62,8 @@ def facts_block(lang):
 
 
 FACTS = {
-    "cz": {"size_m": "36–39", "size_l": "39,5–44", "ship_from": 69, "order_by": "18. prosince"},
-    "en": {"size_m": "36–39", "size_l": "39.5–44", "ship_from": 69, "order_by": "18 December"},
+    "cz": {"size_m": "36–39", "size_l": "39,5–44", "ship_from": 79, "order_by": "18. prosince"},
+    "en": {"size_m": "36–39", "size_l": "39.5–44", "ship_from": 79, "order_by": "18 December"},
 }
 
 
@@ -72,13 +72,13 @@ class OneSourceOfTruth(unittest.TestCase):
         fn = block(INC, "function molosoc_xmas_facts( $lang )", "\n}")
         self.assertIn("'size_m'    => '36–39',", fn)
         self.assertIn("'size_l'    => $en ? '39.5–44' : '39,5–44',", fn)
-        self.assertIn("'ship_from' => 69,", fn)
+        self.assertIn("'ship_from' => 79,", fn)
         self.assertIn("'order_by'  => $en ? '18 December' : '18. prosince',", fn)
         self.assertIn("$lpx_fcz   = molosoc_xmas_facts( 'cz' );", PART)
         self.assertIn("$lpx_fen   = molosoc_xmas_facts( 'en' );", PART)
 
     def test_template_has_no_literal_copy_of_a_fact(self):
-        for literal in ("36–39", "39.5", "39,5", "69 Kč", "69 CZK", "18. prosince", "18 December"):
+        for literal in ("36–39", "39.5", "39,5", "69 Kč", "69 CZK", "79 Kč", "79 CZK", "18. prosince", "18 December"):
             self.assertNotIn(literal, PART_CODE, literal)
 
     def test_hero_line_size_buttons_and_faq_read_the_facts(self):
@@ -102,12 +102,12 @@ class InfoBlock(unittest.TestCase):
     EXPECTED = {
         "cz": [
             "Velikost: M = 36–39 · L = 39,5–44 (podle velikosti bot)",
-            "Doprava od 69 Kč · můžete platit i dobírkou",
+            "Doprava od 79 Kč · můžete platit i dobírkou",
             "Objednejte do 18. prosince, doručíme před Vánoci",
         ],
         "en": [
             "Size: M = EU 36–39 · L = EU 39.5–44 (by shoe size)",
-            "Shipping from 69 CZK",  # Issue #297: COD is CZ/SK only, the EN page must not mention it
+            "Shipping from 79 CZK",  # Issue #297: COD is CZ/SK only, the EN page must not mention it
             "Order by 18 December for delivery before Christmas",
         ],
     }

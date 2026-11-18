@@ -16,7 +16,7 @@
  * choice -> add-to-cart -> checkout flow (molosoc_landing_b_buy_cta( '', 'en' )
  * with the EN product and EN checkout URLs). Only the copy is localized:
  *   - price: the EN product page's own wording, €10 "charged as 229 CZK"
- *     (molosoc_cz_product_price_html()); shipping: "Shipping from 69 CZK" as on
+ *     (molosoc_cz_product_price_html()); shipping: "Shipping from 79 CZK" as on
  *     the EN product page (molosoc_product_364_shipping_note()).
  * Deliberately NOT carried over from the CZ page (no EN wording has been
  * approved for them — owner decision, see the doc): the presale "limited
@@ -29,7 +29,7 @@ defined( 'ABSPATH' ) || exit;
 
 $lpb_price    = '€10';
 $lpb_charged  = 'charged as 229 CZK';
-$lpb_shipping = 'Shipping from 69 CZK';
+$lpb_shipping = 'Shipping from 79 CZK';
 $lpb_uploads  = 'https://molosoc.com/wp-content/uploads';
 $lpb_hero     = molosoc_landing_b_hero_image(); // LCP image set, shared with the wp_head preload.
 $lpb_faq      = molosoc_landing_b_en_faq( $lpb_price, $lpb_shipping );

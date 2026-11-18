@@ -5,6 +5,7 @@
 */
 .lpx-hero { background: var(--lpb-cream, #faf7f2); padding: 48px 20px; }
 .lpx-hero__inner { max-width: var(--lpb-max, 1080px); margin: 0 auto; display: grid; gap: 32px; align-items: center; }
+.lpx-hero__media picture { display: block; }
 .lpx-hero__media img { display: block; width: 100%; height: auto; }
 .lpx-hero__title { font-family: var(--lpb-display); font-weight: 400; font-size: clamp(32px, 6vw, 56px); line-height: 1.1; color: #000; margin: 8px 0 16px; }
 @media (min-width: 901px) { .lpx-hero__inner:has(.lpx-hero__media) { grid-template-columns: 1fr 1fr; } }
