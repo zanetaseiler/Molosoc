@@ -84,14 +84,14 @@ class Copy(unittest.TestCase):
     def test_headlines(self):
         self.assertIn("Darujte péči, která nekončí Vánocemi.", PART)
         self.assertIn("Give care that doesn\\'t end with Christmas.", PART)
-        # Issue #295: the shipping price is read from molosoc_xmas_facts() (69 CZK)
-        # and composed in the template, so "Doprava od 69 Kč" is no longer a literal.
-        self.assertIn("'ship_from' => 69,", INC)
+        # Issue #295: the shipping price is read from molosoc_xmas_facts() (79 CZK since the #375 follow-up)
+        # and composed in the template, so "Doprava od 79 Kč" is no longer a literal.
+        self.assertIn("'ship_from' => 79,", INC)
         self.assertIn("'ship'      => 'Doprava od ' . $lpx_fcz['ship_from'] . ' Kč',", PART)
         self.assertIn("'ship'      => 'Shipping from ' . $lpx_fen['ship_from'] . ' CZK',", PART)
-        self.assertNotIn("79 Kč", PART)
-        self.assertNotIn("79 CZK", PART)
-        self.assertNotIn("=> 79,", INC)
+        for stale in ("69 Kč", "69 CZK", "79 Kč", "79 CZK"):
+            self.assertNotIn(stale, PART)
+        self.assertNotIn("=> 69,", INC)
 
     def test_banned_claims(self):
         low = PART_CODE.lower()
@@ -160,6 +160,8 @@ class EvergreenUntouched(unittest.TestCase):
             "site/theme/page-foot-covers.php",
             # Issue #311 (+ #312 self-link fix): sticky pill -> Landing B, new inc file.
             "site/theme/inc/sticky-landing-b.php",
+            # Issue #375 follow-up (18 Nov 2026): shipping copy 69 -> 79 Kč in the Landing B schema FAQ.
+            "site/theme/inc/landing-b-schema.php",
         }
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
@@ -171,6 +173,8 @@ class EvergreenUntouched(unittest.TestCase):
                 "-\tif ( 'comgate' === strtolower( (string) $gateway_id ) ) {",
                 "-\t\treturn 'Card payment (Comgate)';",
                 "-\tif ( 'bacs' === strtolower( (string) $gateway_id ) ) {",
+                # Issue #375 follow-up: PPL box (69 Kč) is gone from checkout, the note says 79.
+                "-\t\tesc_html( $is_cz ? 'Doprava od 69 Kč' : 'Shipping from 69 CZK' )",
             },
         }
         for path in ("site/theme/functions.php", "site/theme/inc/woocommerce-lang.php"):

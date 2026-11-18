@@ -95,10 +95,10 @@ class TemplateContent(unittest.TestCase):
     def test_price_and_shipping_follow_the_en_product_page(self):
         self.assertIn("$lpb_price    = '€10';", TPL)
         self.assertIn("charged as 229 CZK", TPL)
-        self.assertIn("Shipping from 69 CZK", TPL)
+        self.assertIn("Shipping from 79 CZK", TPL)
         shared = (THEME / "inc/woocommerce-lang.php").read_text(encoding="utf-8")
         self.assertIn("&euro;10 &middot; charged as 229 CZK", shared)
-        self.assertIn("'Shipping from 69 CZK'", shared)
+        self.assertIn("'Shipping from 79 CZK'", shared)
 
     def test_cz_only_claims_not_carried_over(self):
         for needle in ("lpb-strip__scarcity", "lpb-cod", "lpb-testimonial", "molosoc_cod_cz_text"):
@@ -106,7 +106,7 @@ class TemplateContent(unittest.TestCase):
 
     def test_faq_single_source_matches_schema(self):
         self.assertIn("molosoc_landing_b_en_faq( $lpb_price, $lpb_shipping )", TPL)
-        self.assertIn("molosoc_landing_b_en_faq( '€10', 'Shipping from 69 CZK' )", INC)
+        self.assertIn("molosoc_landing_b_en_faq( '€10', 'Shipping from 79 CZK' )", INC)
         self.assertEqual(len(re.findall(r"array\( '[^']+', '", INC.split("function molosoc_landing_b_en_faq")[1].split("function molosoc_landing_b_en_schema_graph")[0])), 6)
 
     def test_pillar_link_is_the_en_cracked_heels_page(self):
@@ -121,7 +121,7 @@ function is_page() { return false; }
 function add_filter() {}
 function add_action() {}
 require %s;
-echo json_encode( molosoc_landing_b_en_schema_graph( 'https://molosoc.com/%s/', 'T', 'https://molosoc.com/product/moisture-lock-foot-cover/', molosoc_landing_b_en_faq( '€10', 'Shipping from 69 CZK' ) ), JSON_UNESCAPED_UNICODE );
+echo json_encode( molosoc_landing_b_en_schema_graph( 'https://molosoc.com/%s/', 'T', 'https://molosoc.com/product/moisture-lock-foot-cover/', molosoc_landing_b_en_faq( '€10', 'Shipping from 79 CZK' ) ), JSON_UNESCAPED_UNICODE );
 """ % (json.dumps(str(THEME / "inc/landing-b-en.php")), SLUG)
         out = subprocess.run(["php"], input=php, capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stderr)

@@ -50,14 +50,20 @@ def webp_width(data):
     return struct.unpack("<H", data[i + 14:i + 16])[0] & 0x3FFF
 
 
+def webp_height(data):
+    """Pixel height of a lossy (VP8) WebP file (Issue #375)."""
+    i = data.index(b"VP8 ")
+    return struct.unpack("<H", data[i + 16:i + 18])[0] & 0x3FFF
+
+
 def facts_block(lang):
     start = PART.index("'facts'     => array(", PART.index("'%s' => array(" % lang))
     return PART[start: PART.index("),\n\t\t'bundle_h'", start)]
 
 
 FACTS = {
-    "cz": {"size_m": "36–39", "size_l": "39,5–44", "ship_from": 69, "order_by": "18. prosince"},
-    "en": {"size_m": "36–39", "size_l": "39.5–44", "ship_from": 69, "order_by": "18 December"},
+    "cz": {"size_m": "36–39", "size_l": "39,5–44", "ship_from": 79, "order_by": "18. prosince"},
+    "en": {"size_m": "36–39", "size_l": "39.5–44", "ship_from": 79, "order_by": "18 December"},
 }
 
 
@@ -66,13 +72,13 @@ class OneSourceOfTruth(unittest.TestCase):
         fn = block(INC, "function molosoc_xmas_facts( $lang )", "\n}")
         self.assertIn("'size_m'    => '36–39',", fn)
         self.assertIn("'size_l'    => $en ? '39.5–44' : '39,5–44',", fn)
-        self.assertIn("'ship_from' => 69,", fn)
+        self.assertIn("'ship_from' => 79,", fn)
         self.assertIn("'order_by'  => $en ? '18 December' : '18. prosince',", fn)
         self.assertIn("$lpx_fcz   = molosoc_xmas_facts( 'cz' );", PART)
         self.assertIn("$lpx_fen   = molosoc_xmas_facts( 'en' );", PART)
 
     def test_template_has_no_literal_copy_of_a_fact(self):
-        for literal in ("36–39", "39.5", "39,5", "69 Kč", "69 CZK", "18. prosince", "18 December"):
+        for literal in ("36–39", "39.5", "39,5", "69 Kč", "69 CZK", "79 Kč", "79 CZK", "18. prosince", "18 December"):
             self.assertNotIn(literal, PART_CODE, literal)
 
     def test_hero_line_size_buttons_and_faq_read_the_facts(self):
@@ -96,12 +102,12 @@ class InfoBlock(unittest.TestCase):
     EXPECTED = {
         "cz": [
             "Velikost: M = 36–39 · L = 39,5–44 (podle velikosti bot)",
-            "Doprava od 69 Kč · můžete platit i dobírkou",
+            "Doprava od 79 Kč · můžete platit i dobírkou",
             "Objednejte do 18. prosince, doručíme před Vánoci",
         ],
         "en": [
             "Size: M = EU 36–39 · L = EU 39.5–44 (by shoe size)",
-            "Shipping from 69 CZK",  # Issue #297: COD is CZ/SK only, the EN page must not mention it
+            "Shipping from 79 CZK",  # Issue #297: COD is CZ/SK only, the EN page must not mention it
             "Order by 18 December for delivery before Christmas",
         ],
     }
@@ -186,9 +192,21 @@ class ResponsiveImages(unittest.TestCase):
     def test_hero_byte_budget_for_phones(self):
         size = {w: len((self.IMG / f"MOLOSOC_Christmas_Gift_Scene_01-{w}.webp").read_bytes()) for w in (480, 768, 1080)}
         # 390 px phone: calc(100vw - 40px) = 350 CSS px → 700 px at 2x (768w), 1050 px at 3x (1080w).
-        self.assertLessEqual(size[480], 30_000)
-        self.assertLessEqual(size[768], 60_000)
-        self.assertLessEqual(size[1080], 75_000)
+        # Issue #375: re-encoded at q 78 (was 75/70/60; the 1080 px file looked soft on 3x phones).
+        self.assertLessEqual(size[480], 35_000)
+        self.assertLessEqual(size[768], 70_000)
+        self.assertLessEqual(size[1080], 100_000)
+
+    def test_derivatives_are_the_full_3_2_frame(self):
+        # Issue #375: every derivative is the original scaled down, never cropped.
+        for n in ("01", "02", "03"):
+            for w in (480, 768, 1080):
+                data = (self.IMG / f"MOLOSOC_Christmas_Gift_Scene_{n}-{w}.webp").read_bytes()
+                self.assertEqual(webp_height(data), w * 2 // 3, (n, w))
+
+    def test_derivative_urls_carry_the_cache_revision(self):
+        self.assertIn(".webp?v=' . molosoc_xmas_image_rev() )", INC)
+        self.assertIn("return '375';", INC)
 
     def test_originals_are_untouched(self):
         base = subprocess.run(["git", "merge-base", "HEAD", "origin/main"], cwd=REPO, capture_output=True, text=True).stdout.strip()

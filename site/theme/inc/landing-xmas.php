@@ -75,7 +75,7 @@ function molosoc_xmas_facts( $lang ) {
 	return array(
 		'size_m'    => '36–39',
 		'size_l'    => $en ? '39.5–44' : '39,5–44',
-		'ship_from' => 69,
+		'ship_from' => 79,
 		'order_by'  => $en ? '18 December' : '18. prosince',
 	);
 }
@@ -503,7 +503,26 @@ add_action( 'wp_head', function () {
  * original stays the largest srcset candidate. Until the original exists,
  * molosoc_xmas_image() prints nothing for it; a missing derivative is simply
  * left out of the srcset.
+ * Issue #375: every derivative re-encoded from the original at q 78
+ * (cwebp -q 78 -m 6 -sharp_yuv -resize <w> 0): the same full 3:2 frame, only
+ * scaled down; the 1080 px file a 3x phone gets was q 60 and looked soft.
+ * Follow-up brief (18 Nov 2026, mobile LCP 2.7 s): the hero also has AVIF
+ * copies of the same full frame ("<file minus .webp>-<w>.avif" and
+ * "<file minus .webp>.avif" at 1536 px; ffmpeg libsvtav1 -crf 28 -preset 4,
+ * lanczos scale, nothing cropped). The 768 px copy a phone fetches is 42 KB
+ * instead of 63 KB at about the same SSIM. molosoc_xmas_image() serves them
+ * through <picture><source type="image/avif">, with the WebP <img> as the
+ * fallback; only a scene with every AVIF file present gets the <source>.
  */
+
+/**
+ * Cache revision of the derivative files, appended as ?v= so Cloudflare and
+ * browsers fetch the re-encoded bytes instead of the copies cached under the
+ * same file names. Bump it whenever the derivatives are re-encoded.
+ */
+function molosoc_xmas_image_rev() {
+	return '375';
+}
 function molosoc_xmas_images() {
 	return array(
 		'scene-01' => array( 'file' => 'MOLOSOC_Christmas_Gift_Scene_01.webp', 'drive' => '1JHezsiFVICxddNfOX1_7AQfe1Nq36u9k' ),
@@ -551,7 +570,7 @@ function molosoc_xmas_image_set( $key ) {
 	$srcset = array();
 	foreach ( molosoc_xmas_image_widths() as $w ) {
 		if ( file_exists( $dir . $base . '-' . $w . '.webp' ) ) {
-			$srcset[] = esc_url( $uri . $base . '-' . $w . '.webp' ) . ' ' . (int) $w . 'w';
+			$srcset[] = esc_url( $uri . $base . '-' . $w . '.webp?v=' . molosoc_xmas_image_rev() ) . ' ' . (int) $w . 'w';
 		}
 	}
 	$srcset[] = esc_url( $uri . $file ) . ' ' . ( $size ? (int) $size[0] : 1536 ) . 'w';
@@ -564,14 +583,47 @@ function molosoc_xmas_image_set( $key ) {
 	);
 }
 
-/** <img> markup for a scene, or '' when the file has not been added yet. */
+/**
+ * AVIF srcset of a scene (same widths as the WebP set plus the 1536 px
+ * "<base>.avif"), or '' unless every one of those files exists, so a
+ * half-uploaded set never mixes formats. Same ?v= revision as the WebP files.
+ */
+function molosoc_xmas_avif_srcset( $key ) {
+	$all = molosoc_xmas_images();
+	if ( ! isset( $all[ $key ] ) ) {
+		return '';
+	}
+	$dir  = get_stylesheet_directory() . '/assets/images/landing-xmas/';
+	$uri  = get_stylesheet_directory_uri() . '/assets/images/landing-xmas/';
+	$base = preg_replace( '/\.webp$/', '', $all[ $key ]['file'] );
+	$size = file_exists( $dir . $all[ $key ]['file'] ) ? getimagesize( $dir . $all[ $key ]['file'] ) : false;
+	$files = array();
+	foreach ( molosoc_xmas_image_widths() as $w ) {
+		$files[ $base . '-' . $w . '.avif' ] = (int) $w;
+	}
+	$files[ $base . '.avif' ] = $size ? (int) $size[0] : 1536;
+	$srcset = array();
+	foreach ( $files as $file => $w ) {
+		if ( ! file_exists( $dir . $file ) ) {
+			return '';
+		}
+		$srcset[] = esc_url( $uri . $file . '?v=' . molosoc_xmas_image_rev() ) . ' ' . $w . 'w';
+	}
+	return implode( ', ', $srcset );
+}
+
+/**
+ * <img> markup for a scene, or '' when the file has not been added yet. A
+ * scene with AVIF copies is wrapped in <picture> with an AVIF <source>; the
+ * <img> keeps the WebP set, alt, width/height and the caller's attributes.
+ */
 function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
 	$set = molosoc_xmas_image_set( $key );
 	if ( ! $set ) {
 		return '';
 	}
-	$wh = $set['width'] ? sprintf( ' width="%d" height="%d"', $set['width'], $set['height'] ) : '';
-	return sprintf(
+	$wh  = $set['width'] ? sprintf( ' width="%d" height="%d"', $set['width'], $set['height'] ) : '';
+	$img = sprintf(
 		'<img src="%s" srcset="%s" sizes="%s" alt="%s"%s decoding="async" %s>',
 		$set['src'],
 		esc_attr( $set['srcset'] ),
@@ -579,6 +631,16 @@ function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
 		esc_attr( $alt ),
 		$wh,
 		$attrs
+	);
+	$avif = molosoc_xmas_avif_srcset( $key );
+	if ( '' === $avif ) {
+		return $img;
+	}
+	return sprintf(
+		'<picture><source type="image/avif" srcset="%s" sizes="%s">%s</picture>',
+		esc_attr( $avif ),
+		esc_attr( $set['sizes'] ),
+		$img
 	);
 }
 
@@ -591,6 +653,9 @@ function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
  * starts with the HTML instead of after the CSS bundle has parsed. The browser
  * picks the same candidate as for the <img> because srcset/sizes are
  * byte-identical (both come from molosoc_xmas_image_set()).
+ * With AVIF copies the preload carries type="image/avif" and the AVIF
+ * candidates (the same ones as the <picture> <source>), so a browser without
+ * AVIF skips the preload instead of fetching a file it will not show.
  */
 function molosoc_xmas_head() {
 	if ( ! molosoc_is_xmas_landing() ) {
@@ -598,6 +663,15 @@ function molosoc_xmas_head() {
 	}
 	$set = molosoc_xmas_image_set( 'scene-01' );
 	if ( ! $set ) {
+		return;
+	}
+	$avif = molosoc_xmas_avif_srcset( 'scene-01' );
+	if ( '' !== $avif ) {
+		printf(
+			'<link rel="preload" as="image" type="image/avif" fetchpriority="high" imagesrcset="%s" imagesizes="%s">' . "\n",
+			esc_attr( $avif ),
+			esc_attr( $set['sizes'] )
+		);
 		return;
 	}
 	printf(

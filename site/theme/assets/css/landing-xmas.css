@@ -5,6 +5,7 @@
 */
 .lpx-hero { background: var(--lpb-cream, #faf7f2); padding: 48px 20px; }
 .lpx-hero__inner { max-width: var(--lpb-max, 1080px); margin: 0 auto; display: grid; gap: 32px; align-items: center; }
+.lpx-hero__media picture { display: block; }
 .lpx-hero__media img { display: block; width: 100%; height: auto; }
 .lpx-hero__title { font-family: var(--lpb-display); font-weight: 400; font-size: clamp(32px, 6vw, 56px); line-height: 1.1; color: #000; margin: 8px 0 16px; }
 @media (min-width: 901px) { .lpx-hero__inner:has(.lpx-hero__media) { grid-template-columns: 1fr 1fr; } }
@@ -232,30 +233,38 @@
    pairs + "4 a více" + the size row + "Do košíku" fit in ~320 px. Measured on
    390 x 844: cards at ~500 px and clear of the cookie card, button at ~810 px
    (live before: 961 / 1340).
-   Desktop (> 560 px) is unchanged. */
+   Desktop (> 560 px) is unchanged.
+   Issue #375: the hero photo is never cropped here. #373 cut it to a 164 px
+   band (object-fit: cover), which hid the top of the MOLOSOC pack and the
+   sides of the scene; it now keeps the base rule (width 100 %, height auto,
+   the photo's own 3:2 frame, 233 px tall at 390 px). The 69 px it takes back
+   come out of spacing only (hero bottom padding/gap, headline margin, section
+   head/cta margins, card and size-row padding): measured on 390 x 844 cards
+   at 521 px, "Do košíku" 800-842 px, still inside the first screen. */
 @media (max-width: 560px) {
-  .lpx-hero { padding: 0.75rem 20px 0.75rem; }
-  .lpx-hero__inner { gap: 0.75rem; }
-  .lpx-hero__media img { height: 164px; object-fit: cover; }
+  .lpx-hero { padding: 0.75rem 20px 0.25rem; }
+  .lpx-hero__inner { gap: 0.5rem; }
   .lpx-hero .lpb-eyebrow { margin: 0 0 0.25rem; }
-  .lpx-hero__title { font-size: 1.75rem; line-height: 1.1; margin: 0 0 0.5rem; }
+  .lpx-hero__title { font-size: 1.75rem; line-height: 1.1; margin: 0 0 0.25rem; }
   .lpx-hero .lpb-price__meta { font-size: 0.9rem; margin: 0 0 0.3rem; }
   .lpx-deadline { font-size: 0.9rem; margin: 0; }
   .lpx-hero .lpb-cod,
   .lpx-hero > .lpx-hero__inner > .lpx-hero__copy > .lpb-btn { display: none; }
 
-  #lpx-bundle.lpb-section { padding-top: 0.75rem; }
-  #lpx-bundle .lpb-section__head { margin: 0 auto 0.6rem; }
+  #lpx-bundle.lpb-section { padding-top: 0.5rem; }
+  #lpx-bundle .lpb-section__head { margin: 0 auto 0.4rem; }
+  #lpx-bundle .lpb-section__cta { margin-top: 0.5rem; }
   #lpx-bundle .lpb-section__head h2 { font-size: 1.25rem; margin: 0; padding-bottom: 0; }
   #lpx-bundle .lpb-section__head h2::after { margin-top: 0.4rem; }
   #lpx-bundle .lpb-section__head .lpb-lede { display: none; }
 
-  .lpx-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.6rem; }
+  .lpx-bundles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0; }
   .lpx-bundle { min-width: 0; }
-  .lpx-bundle__body { min-width: 0; height: 100%; justify-content: center; padding: 0.55rem 0.5rem; }
+  .lpx-bundle__body { min-width: 0; height: 100%; justify-content: center; padding: 0.4rem 0.5rem; }
   .lpx-bundle__name { font-size: 0.72rem; letter-spacing: 1px; }
   .lpx-bundle__price { font-size: 1.25rem; line-height: 1.15; }
   .lpx-bundles__teaser { grid-column: 1 / -1; margin: 0; font-size: 0.8rem; }
+  .lpx-pair { padding-top: 0.2rem; padding-bottom: 0.2rem; }
 }
 
 
