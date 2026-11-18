@@ -47,15 +47,27 @@ test( 'Issue #375: hero photo shows its full 3:2 frame, sharp at 2x, "Do košík
 	const { browser, page } = await phone();
 	try {
 		await page.goto( BASE + PATH, { waitUntil: 'networkidle' } );
-		const m = await page.evaluate( () => {
+		const m = await page.evaluate( async () => {
 			const img = document.querySelector( '.lpx-hero__media img' );
 			const r = img.getBoundingClientRect();
 			const cta = document.querySelector( '#lpx-bundle [data-lpx-go]' ).getBoundingClientRect();
-			return { shown: r.width / r.height, natural: img.naturalWidth / img.naturalHeight, fit: getComputedStyle( img ).objectFit, cssW: r.width, fileW: img.naturalWidth, dpr: window.devicePixelRatio, ctaBottom: cta.bottom + window.scrollY, loading: img.loading, prio: img.getAttribute( 'fetchpriority' ) };
+			// img.naturalWidth is density-corrected for a w-descriptor srcset (CSS px, ~350 here),
+			// so measure the chosen file's raw pixels: load currentSrc into a plain Image
+			// (no srcset, density 1), and read currentSrc's own w descriptor as a cross-check.
+			const raw = new Image();
+			raw.src = img.currentSrc;
+			await raw.decode();
+			const abs = ( u ) => new URL( u, document.baseURI ).href;
+			const cand = ( img.getAttribute( 'srcset' ) || '' ).split( ',' ).map( ( c ) => c.trim().split( /\s+/ ) ).find( ( [ u ] ) => u && abs( u ) === img.currentSrc );
+			const descW = cand && /^\d+w$/.test( cand[ 1 ] || '' ) ? parseInt( cand[ 1 ], 10 ) : null;
+			return { shown: r.width / r.height, natural: raw.naturalWidth / raw.naturalHeight, fit: getComputedStyle( img ).objectFit, cssW: r.width, fileW: raw.naturalWidth, descW, src: img.currentSrc, dpr: window.devicePixelRatio, ctaBottom: cta.bottom + window.scrollY, loading: img.loading, prio: img.getAttribute( 'fetchpriority' ) };
 		} );
 		assert.ok( Math.abs( m.shown - m.natural ) < 0.02, `hero cropped: shown ${ m.shown } vs file ${ m.natural }` );
 		assert.notEqual( m.fit, 'cover' );
-		assert.ok( m.fileW >= m.cssW * Math.min( m.dpr, 2 ), `hero file ${ m.fileW }px for a ${ m.cssW }px slot at ${ m.dpr }x` );
+		assert.ok( m.fileW >= m.cssW * Math.min( m.dpr, 2 ), `hero file ${ m.fileW }px (${ m.src }) for a ${ m.cssW }px slot at ${ m.dpr }x` );
+		if ( m.descW !== null ) {
+			assert.equal( m.fileW, m.descW, `${ m.src }: raw width vs its srcset w descriptor` );
+		}
 		assert.ok( m.ctaBottom <= VIEWPORT.height, `"Do košíku" ends at ${ m.ctaBottom }px, viewport ${ VIEWPORT.height }px` );
 		assert.equal( m.loading, 'eager' );
 		assert.equal( m.prio, 'high' );
