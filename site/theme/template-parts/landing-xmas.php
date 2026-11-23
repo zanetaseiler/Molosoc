@@ -24,11 +24,19 @@
  * molosoc_xmas_sizes list, so the server path is shared with 1–3 pairs. A
  * refused bundle (not enough stock) comes back here with lpx_stock/lpx_left
  * and the message is shown in the picker's error line.
+ * Issue #378: the Black Friday pages (page-black-friday-molosoc.php,
+ * page-black-friday-offer-molosoc.php) render this same file with
+ * $lpx_campaign = 'bf': copy from molosoc_bf_copy(), photos from
+ * molosoc_bf_image() (inc/landing-bf.php), no order-by line, class lpx--bf
+ * for landing-bf.css, and molosoc_lp=bf on the picker's checkout URL so a
+ * stock refusal returns there. The picker, its URL contract and the server
+ * path are the Christmas ones; without $lpx_campaign the output is unchanged.
  */
 
 defined( 'ABSPATH' ) || exit;
 
 $lpx_lang  = ( isset( $lpx_lang ) && 'en' === $lpx_lang ) ? 'en' : 'cz';
+$lpx_bf    = isset( $lpx_campaign ) && 'bf' === $lpx_campaign && function_exists( 'molosoc_bf_copy' ); // Issue #378
 $lpx_prices = molosoc_xmas_unit_prices();
 $lpx_fmt   = static function ( $n ) use ( $lpx_lang ) {
 	return 'en' === $lpx_lang ? number_format_i18n( $n ) . ' CZK' : number_format_i18n( $n ) . ' Kč';
@@ -146,6 +154,9 @@ $copy = array(
 	),
 );
 $t = $copy[ $lpx_lang ];
+if ( $lpx_bf ) {
+	$t = molosoc_bf_copy( $lpx_lang ); // Issue #378
+}
 
 $lpx_sizes = $t['sizes'];
 $lpx_base  = array();
@@ -156,6 +167,9 @@ foreach ( array( 1, 2, 3 ) as $n ) {
 	);
 }
 $lpx_checkout = molosoc_xmas_checkout_url( $lpx_lang );
+if ( $lpx_bf ) {
+	$lpx_checkout = add_query_arg( 'molosoc_lp', 'bf', $lpx_checkout ); // Issue #378: stock refusal returns to the Black Friday page.
+}
 $lpx_avail    = molosoc_xmas_variations(); // sizes with a purchasable variation right now.
 $lpx_buyable  = count( $lpx_avail ) > 0;
 
@@ -257,14 +271,18 @@ $lpx_picker = static function ( $id ) use ( $t, $lpx_sizes, $lpx_base, $lpx_fmt,
 	<?php
 };
 
+if ( $lpx_bf ) {
+	list( $lpx_hero_img, $lpx_s2, $lpx_s3 ) = molosoc_bf_page_images( $lpx_lang ); // Issue #378: hero, then the two lazy figures.
+} else {
 $lpx_hero_img = molosoc_xmas_image( 'scene-01', 'cz' === $lpx_lang ? 'Vánoční dárek MOLOSOC' : 'MOLOSOC Christmas gift', 'fetchpriority="high" loading="eager"' );
 $lpx_s2       = molosoc_xmas_image( 'scene-02', 'cz' === $lpx_lang ? 'Dárek s návleky MOLOSOC' : 'A gift with MOLOSOC foot covers', 'loading="lazy"' );
 $lpx_s3       = molosoc_xmas_image( 'scene-03', 'cz' === $lpx_lang ? 'Vánoční dárek MOLOSOC, detail' : 'MOLOSOC Christmas gift, detail', 'loading="lazy"' );
+}
 
 get_header();
 ?>
 
-<main id="main" class="lpb lpx" lang="<?php echo 'cz' === $lpx_lang ? 'cs' : 'en'; ?>">
+<main id="main" class="lpb lpx<?php echo $lpx_bf ? ' lpx--bf' : ''; ?>" lang="<?php echo 'cz' === $lpx_lang ? 'cs' : 'en'; ?>">
 
 	<section class="lpx-hero" aria-label="<?php echo esc_attr( $t['label'] ); ?>">
 		<div class="lpx-hero__inner">
@@ -276,7 +294,8 @@ get_header();
 				<h1 class="lpx-hero__title"><?php echo esc_html( $t['h1'] ); ?></h1>
 				<p class="lpb-hero__lede"><?php echo esc_html( $t['sub'] ); ?></p>
 				<p class="lpb-price__meta"><?php echo esc_html( $lpx_fmt( $lpx_prices[1] ) . ' · ' . $t['ship'] ); ?></p>
-				<p class="lpx-deadline"><?php echo esc_html( $t['deadline'] ); ?></p>
+				<?php if ( '' !== $t['deadline'] ) : ?><p class="lpx-deadline"><?php echo esc_html( $t['deadline'] ); ?></p>
+<?php endif; ?>
 				<?php if ( $t['cod'] ) : ?>
 					<p class="lpb-cod"><strong><?php echo esc_html( $t['cod_label'] ); ?></strong> <?php echo esc_html( $t['cod'] ); ?></p>
 				<?php endif; ?>
@@ -339,7 +358,7 @@ get_header();
 	<section class="lpb-section lpb-section--cream" aria-label="<?php echo esc_attr( $t['order_h'] ); ?>">
 		<div class="lpb-section__head">
 			<h2><?php echo esc_html( $t['order_h'] ); ?></h2>
-			<p class="lpb-lede"><?php echo esc_html( $t['order_p'] . ' ' . $t['ship'] . '. ' . $t['deadline'] ); ?></p>
+			<p class="lpb-lede"><?php echo esc_html( rtrim( $t['order_p'] . ' ' . $t['ship'] . '. ' . $t['deadline'] ) ); ?></p>
 		</div>
 		<div class="lpb-section__cta"><?php $lpx_picker( 'order' ); ?></div>
 	</section>
