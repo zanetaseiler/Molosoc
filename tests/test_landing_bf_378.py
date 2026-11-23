@@ -79,13 +79,15 @@ class Copy(unittest.TestCase):
             html = render(tpl, slug)
             text = main_text(html)
             self.assertIsNone(CHRISTMAS_WORDS.search(text), lang)
-            self.assertNotIn("lpx-deadline", html)
+            # Issue #382: the only date line is the offer's end date (no order-by / delivery date).
+            self.assertIn('<p class="lpx-deadline">%s</p>' % ("Offer valid until Monday 30 Nov." if lang == "en" else "Nabídka platí do pondělí 30. 11."), html)
             self.assertNotIn("%", text)  # no percentage saving
             for word in ("sleva", "ušetř", "save ", "discount", "skladem jen", "only ", "posledn", "last chance", "do půlnoci", "ends"):
                 self.assertNotIn(word, text.lower(), (lang, word))
 
-    def test_deadline_key_is_empty_on_bf(self):
-        self.assertEqual(BF.count("'deadline'   => '',"), 2)
+    def test_deadline_key_is_the_offer_end_on_bf(self):
+        # Issue #382 (was empty in #378): the end date of the offer, from one helper.
+        self.assertEqual(BF.count("'deadline'   => molosoc_bf_until_text( '"), 2)
 
     def test_prices_come_from_the_checkout_price_list(self):
         fn = BF[BF.index("function molosoc_bf_copy"):BF.index("function molosoc_bf_meta")]

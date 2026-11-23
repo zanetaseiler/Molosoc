@@ -57,6 +57,11 @@
 .lpx--bf .lpx-hero .lpb-hero__lede { color: rgba(245, 240, 230, 0.8); }
 .lpx--bf .lpx-hero .lpb-price__meta { color: var(--bf-cream); font-weight: 600; }
 .lpx--bf .lpx-hero .lpb-cod { color: rgba(245, 240, 230, 0.72); }
+/* Issue #382: landing-b.css colours the "Dobírka:" label with --lpb-ink,
+   which is charcoal on this page, so it vanished into the charcoal hero.
+   The end-date line (.lpx-deadline, ink by default) gets the gold accent. */
+.lpx--bf .lpx-hero .lpb-cod strong { color: var(--bf-cream); }
+.lpx--bf .lpx-hero .lpx-deadline { color: var(--bf-gold); }
 .lpx--bf .lpx-hero .lpb-btn {
   background: var(--bf-gold);
   border-color: var(--bf-gold);
