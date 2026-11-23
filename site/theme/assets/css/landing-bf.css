@@ -1,0 +1,95 @@
+/*
+  Black Friday 2026 landing (Issue #378), CZ + EN. Loaded only on the two
+  Black Friday pages (inc/landing-bf.php), after landing-b.css and
+  landing-xmas.css, whose layout, picker and mobile first-screen rules
+  (#373 / #375) apply unchanged. Everything here is scoped to .lpx--bf, so the
+  Christmas pages never see it. Palette: charcoal / cream / one subtle gold;
+  no Christmas colours or motifs. Contrast (WCAG AA): cream #f5f0e6 on
+  charcoal #141414 ≈ 16:1, gold #d9c08a on charcoal ≈ 10:1, deep gold #7a5f30
+  on cream ≈ 5.3:1, charcoal on gold ≈ 10:1.
+*/
+.lpx--bf {
+  --lpb-cream: #f5f0e6;
+  --lpb-ink: #141414;
+  --lpb-body: rgba(20, 20, 20, 0.8);
+  --lpb-muted: #5f5a52;
+  --lpb-line: rgba(20, 20, 20, 0.14);
+  --bf-charcoal: #141414;
+  --bf-charcoal-2: #24221f;
+  --bf-cream: #f5f0e6;
+  --bf-gold: #d9c08a;
+  --bf-gold-deep: #7a5f30;
+}
+
+/* ---------- hero: charcoal band, the product photo whole on a white card ---------- */
+.lpx--bf .lpx-hero {
+  background: radial-gradient(120% 90% at 25% 0%, var(--bf-charcoal-2) 0%, var(--bf-charcoal) 62%);
+  color: rgba(245, 240, 230, 0.8);
+}
+.lpx--bf .lpx-hero .lpb-eyebrow {
+  color: var(--bf-gold);
+  font-weight: 600;
+  letter-spacing: 0.35em;
+}
+.lpx--bf .lpx-hero__title { color: var(--bf-cream); text-wrap: balance; }
+.lpx--bf .lpx-hero .lpb-hero__lede { color: rgba(245, 240, 230, 0.8); }
+.lpx--bf .lpx-hero .lpb-price__meta { color: var(--bf-cream); font-weight: 600; }
+.lpx--bf .lpx-hero .lpb-cod { color: rgba(245, 240, 230, 0.72); }
+.lpx--bf .lpx-hero .lpb-btn {
+  background: var(--bf-gold);
+  border-color: var(--bf-gold);
+  color: var(--bf-charcoal);
+}
+.lpx--bf .lpx-hero__media {
+  justify-self: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px rgba(217, 192, 138, 0.55), 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+/* The whole product, never cropped: square file, square box, contain. */
+.lpx--bf .lpx-bf-img--hero {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+}
+.lpx--bf .lpx-hero__link:focus-visible { outline-color: var(--bf-gold); }
+
+/* ---------- picker: charcoal selection, gold accent ---------- */
+.lpx--bf .lpx-bundle__body { border-radius: 10px; }
+.lpx--bf .lpx-bundle input:checked + .lpx-bundle__body {
+  background: var(--bf-charcoal);
+  border-color: var(--bf-charcoal);
+  box-shadow: inset 0 -3px 0 var(--bf-gold);
+}
+.lpx--bf .lpx-bundle input:checked + .lpx-bundle__body .lpx-bundle__name { color: var(--bf-cream); }
+.lpx--bf .lpx-bundle input:checked + .lpx-bundle__body .lpx-bundle__price { color: var(--bf-gold); }
+.lpx--bf .lpb-buy__btn {
+  background: var(--bf-charcoal);
+  border-color: var(--bf-charcoal);
+  color: var(--bf-cream);
+  box-shadow: inset 0 -3px 0 var(--bf-gold);
+}
+
+/* ---------- section accents ---------- */
+.lpx--bf .lpb-section__head h2::after { background: var(--bf-gold-deep); opacity: 0.8; }
+.lpx--bf .lpb-steps__num { color: var(--bf-gold-deep); font-weight: 600; }
+.lpx--bf .lpb-card { border-top: 2px solid var(--bf-gold); }
+.lpx--bf .lpx-figure { max-width: 720px; }
+.lpx--bf .lpx-figure:has(.lpx-bf-img--story) { max-width: 420px; }
+.lpx--bf .lpx-figure img { border-radius: 10px; }
+
+/* ---------- phone first screen (≤ 560 px): photo, headline, then the picker ---------- */
+@media (max-width: 560px) {
+  .lpx--bf .lpx-hero { padding-top: 0.9rem; padding-bottom: 0.75rem; }
+  .lpx--bf .lpx-hero__media { max-width: 196px; padding: 6px; border-radius: 10px; }
+  .lpx--bf .lpx-hero__copy { text-align: center; }
+  .lpx--bf .lpx-hero .lpb-eyebrow { font-size: 0.72rem; }
+  .lpx--bf .lpx-hero .lpb-hero__lede { font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.35rem; }
+  .lpx--bf .lpx-hero .lpb-price__meta { margin: 0; }
+  .lpx--bf .lpx-bundle__body { border-radius: 8px; }
+}

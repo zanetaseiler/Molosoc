@@ -50,7 +50,8 @@ function molosoc_xmas_current_lang() {
 			return $lang;
 		}
 	}
-	return '';
+	// Issue #378: the Black Friday pages (inc/landing-bf.php) render this page family's template and share every gate keyed on it.
+	return function_exists( 'molosoc_bf_current_lang' ) ? molosoc_bf_current_lang() : '';
 }
 
 /** True on either Christmas page (the no-plugin-markup gate in functions.php reads this, Issue #295). */
@@ -326,7 +327,7 @@ function molosoc_xmas_stock_notice( $lang ) {
 function molosoc_xmas_stock_redirect_url( $lang, $code, $left = 0 ) {
 	return add_query_arg(
 		array( 'lpx_stock' => $code, 'lpx_left' => max( 0, (int) $left ) ),
-		molosoc_xmas_page_url( $lang )
+		apply_filters( 'molosoc_xmas_return_page_url', molosoc_xmas_page_url( $lang ), $lang ) // Issue #378: the Black Friday picker returns to its own page.
 	) . '#lpx-bundle';
 }
 
@@ -468,6 +469,9 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
 /* ---------- document title + description ---------- */
 
 function molosoc_xmas_meta( $lang ) {
+	if ( function_exists( 'molosoc_is_bf_landing' ) && molosoc_is_bf_landing() ) {
+		return molosoc_bf_meta( $lang ); // Issue #378: Black Friday title/description.
+	}
 	if ( 'en' === $lang ) {
 		return array(
 			'title' => 'Christmas gift for her: reusable foot mask | Molosoc',
@@ -660,6 +664,9 @@ function molosoc_xmas_image( $key, $alt, $attrs = '' ) {
 function molosoc_xmas_head() {
 	if ( ! molosoc_is_xmas_landing() ) {
 		return;
+	}
+	if ( function_exists( 'molosoc_is_bf_landing' ) && molosoc_is_bf_landing() ) {
+		return; // Issue #378: the Black Friday pages preload their own hero (molosoc_bf_head()).
 	}
 	$set = molosoc_xmas_image_set( 'scene-01' );
 	if ( ! $set ) {
