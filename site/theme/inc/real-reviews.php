@@ -31,9 +31,36 @@ function molosoc_real_reviews_get( $limit = 6 ) {
 	return is_array( $comments ) ? $comments : array();
 }
 
+/**
+ * Issue #382: true when a review is written in Czech. A Czech-only letter
+ * (ě š č ř ž ů ť ď ň) is the test; Spanish, English and other reviews have
+ * none, so they are left out of the Czech pages. (A Czech review typed
+ * without any diacritics is left out too — it would read the same as a
+ * foreign one to this check.)
+ */
+function molosoc_real_reviews_is_czech( $text ) {
+	return (bool) preg_match( '/[ěščřžůťďňĚŠČŘŽŮŤĎŇ]/u', (string) $text );
+}
+
 /** Section markup for $lang ('cz'|'en'); '' when there are no approved reviews. */
 function molosoc_real_reviews_html( $lang = 'cz' ) {
-	$reviews = molosoc_real_reviews_get( 6 );
+	if ( 'cz' === $lang ) {
+		// Issue #382: Czech pages show Czech reviews only (newest six of them).
+		$reviews = array_slice(
+			array_values(
+				array_filter(
+					molosoc_real_reviews_get( 30 ),
+					static function ( $c ) {
+						return molosoc_real_reviews_is_czech( $c->comment_content );
+					}
+				)
+			),
+			0,
+			6
+		);
+	} else {
+		$reviews = molosoc_real_reviews_get( 6 );
+	}
 	if ( ! $reviews ) {
 		return '';
 	}

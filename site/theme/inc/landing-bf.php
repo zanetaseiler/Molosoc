@@ -80,6 +80,86 @@ function molosoc_bf_page_url( $lang ) {
 	return home_url( 'en' === $lang ? '/' . $slug . '/' : '/cz/' . $slug . '/' );
 }
 
+/* ---------- campaign end (Issue #382) ---------- */
+
+/**
+ * Black Friday ends Mon 30 Nov 2026 23:59 Europe/Prague, i.e. the offer is
+ * over from Tue 1 Dec 2026 00:00 Prague (= 2026-11-30 23:00 UTC; DateTimeZone
+ * applies CET, so no hand-written offset). One source for: the site-wide bar
+ * (inc/xmas-bar.php, BF text until then, Christmas text from then), the 302
+ * from both Black Friday pages to the Christmas pages, and the client-side
+ * guards that make a page cached before the switch behave the same.
+ */
+function molosoc_bf_end_ts() {
+	return ( new DateTimeImmutable( '2026-12-01 00:00:00', new DateTimeZone( 'Europe/Prague' ) ) )->getTimestamp();
+}
+
+/** "Now" as a Unix timestamp; `molosoc_bf_now` lets a test or staging fake the date. */
+function molosoc_bf_now() {
+	return (int) apply_filters( 'molosoc_bf_now', time() );
+}
+
+/** True until 30 Nov 2026 23:59:59 Prague. */
+function molosoc_bf_active() {
+	return molosoc_bf_now() < molosoc_bf_end_ts();
+}
+
+/** The end-date wording: 'bar' (top bar) or 'page' (BF page hero + order block). */
+function molosoc_bf_until_text( $lang, $where = 'page' ) {
+	if ( 'en' === $lang ) {
+		return 'bar' === $where ? 'Until Monday 30 Nov' : 'Offer valid until Monday 30 Nov.';
+	}
+	return 'bar' === $where ? 'Platí do pondělí 30. 11.' : 'Nabídka platí do pondělí 30. 11.';
+}
+
+/** Where an expired Black Friday page sends visitors: the Christmas page of the same language. */
+function molosoc_bf_expired_url( $lang ) {
+	return molosoc_xmas_page_url( 'en' === $lang ? 'en' : 'cz' );
+}
+
+/**
+ * After the end, both Black Friday pages answer 302 to the Christmas page,
+ * keeping the query string (utm_*, fbclid) so old ad links stay attributed.
+ * The response is never cached (DONOTCACHEPAGE + nocache headers).
+ */
+function molosoc_bf_expired_redirect() {
+	$lang = molosoc_bf_current_lang();
+	if ( ! $lang || molosoc_bf_active() ) {
+		return;
+	}
+	if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+		define( 'DONOTCACHEPAGE', true );
+	}
+	$url = molosoc_bf_expired_url( $lang );
+	$qs  = isset( $_SERVER['QUERY_STRING'] ) ? (string) wp_unslash( $_SERVER['QUERY_STRING'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+	if ( '' !== $qs ) {
+		$url .= ( false === strpos( $url, '?' ) ? '?' : '&' ) . $qs;
+	}
+	nocache_headers();
+	wp_safe_redirect( $url, 302, 'MOLOSOC' );
+	exit;
+}
+add_action( 'template_redirect', 'molosoc_bf_expired_redirect', 1 );
+
+/**
+ * The same switch for a copy of the page that WP-Optimize cached before the
+ * end (its advanced-cache serves HTML without running PHP): the first thing
+ * in <head> compares the visitor's clock with the end time and replaces the
+ * location with the Christmas page (query string and hash kept).
+ */
+function molosoc_bf_expired_guard() {
+	$lang = molosoc_bf_current_lang();
+	if ( ! $lang ) {
+		return;
+	}
+	printf(
+		'<script>(function(){if(Date.now()>=%d){location.replace(%s+location.search+location.hash);}})();</script>' . "\n",
+		(int) molosoc_bf_end_ts() * 1000,
+		wp_json_encode( molosoc_bf_expired_url( $lang ) )
+	);
+}
+add_action( 'wp_head', 'molosoc_bf_expired_guard', 0 );
+
 /** "209 Kč" / "209 CZK". */
 function molosoc_bf_money( $n, $lang ) {
 	return 'en' === $lang ? number_format_i18n( $n ) . ' CZK' : number_format_i18n( $n ) . ' Kč';
@@ -88,8 +168,8 @@ function molosoc_bf_money( $n, $lang ) {
 /**
  * Page copy, same keys as the Christmas $copy array in
  * template-parts/landing-xmas.php. Rules (Issue #378): native Czech and
- * English, no Christmas wording, no order-by date (deadline is ''), no
- * percentage saving, no countdown, no stock pressure, no promotion that is not
+ * English, no Christmas wording, no order-by date (deadline = the offer's
+ * end date since Issue #382), no percentage saving, no countdown, no stock pressure, no promotion that is not
  * the real bundle price list. Prices and facts are read from the same
  * functions the checkout uses, so the copy can never quote another price.
  *
@@ -108,7 +188,7 @@ function molosoc_bf_copy( $lang ) {
 			'h1'         => 'More pairs, a lower price per pair.',
 			'sub'        => sprintf( 'MOLOSOC nitrile foot covers turn an ordinary foot cream into a simple caring ritual. First pair %1$s, every extra pair %2$s.', $first, $next ),
 			'ship'       => 'Shipping from ' . $f['ship_from'] . ' CZK',
-			'deadline'   => '',
+			'deadline'   => molosoc_bf_until_text( 'en' ), // Issue #382: hero line under the price + the order block lede.
 			'cod'        => '',
 			'cod_label'  => '',
 			'cta'        => 'Add to cart',
@@ -160,7 +240,7 @@ function molosoc_bf_copy( $lang ) {
 		'h1'         => 'Více párů, nižší cena za pár.',
 		'sub'        => sprintf( 'Nitrilové návleky MOLOSOC promění obyčejný krém na nohy v jednoduchý pečující rituál. První pár %1$s, každý další %2$s.', $first, $next ),
 		'ship'       => 'Doprava od ' . $f['ship_from'] . ' Kč',
-		'deadline'   => '',
+		'deadline'   => molosoc_bf_until_text( 'cz' ), // Issue #382: hero line under the price + the order block lede.
 		'cod'        => molosoc_cod_cz_text(),
 		'cod_label'  => 'Dobírka:',
 		'cta'        => 'Do košíku',
