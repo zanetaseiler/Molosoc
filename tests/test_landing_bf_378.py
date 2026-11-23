@@ -138,12 +138,12 @@ class Head(unittest.TestCase):
             self.assertIn('<meta property="og:locale" content="%s">' % ("cs_CZ" if lang == "cz" else "en_US"), head)
             url = "https://molosoc.com/cz/black-friday-molosoc/" if lang == "cz" else "https://molosoc.com/black-friday-offer-molosoc/"
             self.assertIn('<meta property="og:url" content="%s">' % url, head)
-            self.assertIn('<meta property="og:image" content="https://molosoc.com/wp-content/themes/molosoc/assets/images/landing-b/lpb-product-shot-2-960.webp">', head)
+            self.assertIn('<meta property="og:image" content="https://molosoc.com/wp-content/themes/molosoc/assets/images/black-friday/molosoc-black-friday-ad-1200.webp">', head)
             self.assertIsNone(CHRISTMAS_WORDS.search(head), lang)
 
-    def test_preloads_the_product_photo_not_the_christmas_scene(self):
+    def test_preloads_the_hero_ad_not_the_christmas_scene(self):
         head = render(*PAGES["cz"], mode="head")
-        self.assertIn('rel="preload" as="image" fetchpriority="high" href="https://molosoc.com/wp-content/themes/molosoc/assets/images/landing-b/lpb-product-shot-2-960.webp"', head)
+        self.assertIn('rel="preload" as="image" fetchpriority="high" href="https://molosoc.com/wp-content/themes/molosoc/assets/images/black-friday/molosoc-black-friday-ad-1200.webp"', head)
         self.assertNotIn("Christmas_Gift_Scene", head)
 
     def test_sticky_pill_label_and_bf_stylesheet(self):
@@ -153,16 +153,47 @@ class Head(unittest.TestCase):
 
 
 class Photo(unittest.TestCase):
-    def test_real_product_photo_shown_whole(self):
+    def test_black_friday_ad_shown_whole(self):
+        # Issue #380: the uploaded ad replaces the product-on-white hero, resized only.
         html = render(*PAGES["cz"])
         hero = html[html.index('class="lpx-hero__media"'):html.index("lpx-hero__copy")]
-        self.assertIn("lpb-product-shot-2-960.webp 960w", hero)
+        for w in (480, 800, 1200):
+            self.assertIn("black-friday/molosoc-black-friday-ad-%d.webp %dw" % (w, w), hero)
+        self.assertNotIn("lpb-product-shot-2", hero)
         self.assertIn('fetchpriority="high" loading="eager"', hero)
-        self.assertIn('width="960" height="960"', hero)
+        self.assertIn('width="1200" height="1200"', hero)
+        self.assertIn('sizes="(max-width: 560px) 264px, (max-width: 900px) 440px, 500px"', hero)
         self.assertIn("object-fit: contain;", CSS)
         self.assertIn("aspect-ratio: 1 / 1;", CSS)
-        for base in ("lpb-product-shot-2-480", "lpb-product-shot-2-960", "lpb-apply-cream-960", "lpb-opening-package-mami-800"):
-            self.assertTrue((ROOT / "assets/images/landing-b" / f"{base}.webp").exists(), base)
+        for base in ("black-friday/molosoc-black-friday-ad-480", "black-friday/molosoc-black-friday-ad-800", "black-friday/molosoc-black-friday-ad-1200", "landing-b/lpb-apply-cream-960", "landing-b/lpb-opening-package-mami-800"):
+            self.assertTrue((ROOT / "assets/images" / f"{base}.webp").exists(), base)
+        self.assertTrue((ROOT / "assets/images/molosoc_black_friday_ad.webp").exists())  # Žaneta's original stays
+
+    def test_ad_files_are_square_and_not_cropped(self):
+        for w in (480, 800, 1200):
+            data = (ROOT / "assets/images/black-friday" / f"molosoc-black-friday-ad-{w}.webp").read_bytes()
+            self.assertEqual(data[:4], b"RIFF")
+            self.assertEqual(data[8:12], b"WEBP")
+            self.assertEqual(data[12:16], b"VP8 ")  # simple lossy: frame size after the start code
+            self.assertEqual(data[23:26], b"\x9d\x01\x2a")
+            cw = int.from_bytes(data[26:28], "little") & 0x3FFF
+            ch = int.from_bytes(data[28:30], "little") & 0x3FFF
+            self.assertEqual((cw, ch), (w, w))
+
+    def test_black_friday_headline_not_duplicated_but_kept_for_screen_readers(self):
+        for lang, (tpl, slug) in PAGES.items():
+            html = render(tpl, slug)
+            self.assertIn('<p class="lpb-eyebrow">Black Friday</p>', html)
+            self.assertIn("Black Friday", re.search(r'class="lpx-bf-img lpx-bf-img--hero"[^>]*alt="([^"]*)"', html).group(1))
+        self.assertIn(".lpx--bf .lpx-hero__inner:has(.lpx-bf-img--hero) .lpb-eyebrow {\n  position: absolute;", CSS)
+        self.assertIn("clip-path: inset(50%);", CSS)
+        self.assertIn("text-transform: uppercase;", CSS)  # large fallback if the ad is missing
+
+    def test_cz_keeps_czech_html_headline_with_the_english_ad(self):
+        html = render(*PAGES["cz"])
+        self.assertIn('lang="cs"', html)
+        self.assertIn('<h1 class="lpx-hero__title">Více párů, nižší cena za pár.</h1>', html)
+        self.assertIn('alt="Black Friday MOLOSOC: bílé nitrilové návleky na nohy před balením"', html)
 
     def test_no_christmas_photo_on_bf(self):
         for tpl, slug in PAGES.values():

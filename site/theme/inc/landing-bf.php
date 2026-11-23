@@ -290,27 +290,34 @@ add_filter( 'wp_sitemaps_posts_query_args', function ( $args, $post_type ) {
 /* ---------- photos ---------- */
 
 /**
- * Real MOLOSOC photos already in the theme (assets/images/landing-b/, the
- * Landing B uploads, docs/landing-page-b-580.md) — no Christmas scene, nothing
- * generated. Hero = "Product-Shot-2": the white foot covers in front of their
- * printed MOLOSOC pack, shown whole (never cropped, css object-fit: contain).
- * To swap in a newer product photo, replace these files with the same names
- * and widths (or change 'base' / 'widths' / 'w' / 'h' here).
+ * Hero (Issue #380): Žaneta's Black Friday ad image
+ * (assets/images/molosoc_black_friday_ad.webp, 1254 x 1254, uploaded to main)
+ * resized — never cropped or retouched — to square WebP at 480 / 800 / 1200 px
+ * in assets/images/black-friday/. The artwork itself carries the big
+ * "BLACK FRIDAY" lettering, so the page does not repeat it as a second visual
+ * headline (landing-bf.css hides the small eyebrow while the ad is shown; it
+ * stays in the markup for screen readers and as a fallback). The ad's small
+ * print is English; on the CZ page the Czech headline, lede, prices and
+ * picker stay in HTML and the ad is the supporting visual (docs/black-friday-380.md).
  *
- * @return array key => base file name, widths, intrinsic width/height of the largest file.
+ * The two figures further down are real MOLOSOC photos already in the theme
+ * (assets/images/landing-b/, the Landing B uploads, docs/landing-page-b-580.md).
+ * Every photo is shown whole (css object-fit: contain on the hero).
+ *
+ * @return array key => directory under assets/images/, base file name, widths, intrinsic width/height of the largest file.
  */
 function molosoc_bf_images() {
 	return array(
-		'hero'  => array( 'base' => 'lpb-product-shot-2', 'widths' => array( 480, 960 ), 'w' => 960, 'h' => 960 ),
-		'apply' => array( 'base' => 'lpb-apply-cream', 'widths' => array( 480, 960 ), 'w' => 960, 'h' => 644 ),
-		'story' => array( 'base' => 'lpb-opening-package-mami', 'widths' => array( 400, 800 ), 'w' => 800, 'h' => 890 ),
+		'hero'  => array( 'dir' => 'black-friday', 'base' => 'molosoc-black-friday-ad', 'widths' => array( 480, 800, 1200 ), 'w' => 1200, 'h' => 1200 ),
+		'apply' => array( 'dir' => 'landing-b', 'base' => 'lpb-apply-cream', 'widths' => array( 480, 960 ), 'w' => 960, 'h' => 644 ),
+		'story' => array( 'dir' => 'landing-b', 'base' => 'lpb-opening-package-mami', 'widths' => array( 400, 800 ), 'w' => 800, 'h' => 890 ),
 	);
 }
 
 /** Alt text per photo and language. */
 function molosoc_bf_image_alt( $key, $lang ) {
 	$alts = array(
-		'hero'  => array( 'cz' => 'Návleky na nohy MOLOSOC s balením', 'en' => 'MOLOSOC foot covers with their pack' ),
+		'hero'  => array( 'cz' => 'Black Friday MOLOSOC: bílé nitrilové návleky na nohy před balením', 'en' => 'MOLOSOC Black Friday special offer: white nitrile foot covers in front of their pack' ),
 		'apply' => array( 'cz' => 'Krém na chodidlo a návleky MOLOSOC', 'en' => 'Foot cream and MOLOSOC foot covers' ),
 		'story' => array( 'cz' => 'Máma s dcerou otevírají balení MOLOSOC', 'en' => 'A mother and her daughter opening a MOLOSOC pack' ),
 	);
@@ -319,13 +326,13 @@ function molosoc_bf_image_alt( $key, $lang ) {
 }
 
 /**
- * `sizes` per slot. Hero: at most 220 px tall and square on a phone
- * (landing-bf.css), 420 px in the desktop grid. Figures: the section width,
- * capped at 720 / 420 px by landing-bf.css.
+ * `sizes` per slot. Hero: square, at most 264 px wide on a phone, 440 px
+ * up to 900 px, 500 px in the desktop grid (landing-bf.css). Figures: the
+ * section width, capped at 720 / 420 px by landing-bf.css.
  */
 function molosoc_bf_image_sizes( $key ) {
 	if ( 'hero' === $key ) {
-		return '(max-width: 560px) 220px, (max-width: 900px) 360px, 420px';
+		return '(max-width: 560px) 264px, (max-width: 900px) 440px, 500px';
 	}
 	return 'story' === $key ? '(max-width: 460px) calc(100vw - 40px), 420px' : '(max-width: 760px) calc(100vw - 40px), 720px';
 }
@@ -336,8 +343,9 @@ function molosoc_bf_image_set( $key ) {
 	if ( ! isset( $all[ $key ] ) ) {
 		return array();
 	}
-	$dir    = get_stylesheet_directory() . '/assets/images/landing-b/';
-	$uri    = get_stylesheet_directory_uri() . '/assets/images/landing-b/';
+	$sub    = '/assets/images/' . $all[ $key ]['dir'] . '/';
+	$dir    = get_stylesheet_directory() . $sub;
+	$uri    = get_stylesheet_directory_uri() . $sub;
 	$srcset = array();
 	$last   = '';
 	foreach ( $all[ $key ]['widths'] as $w ) {
