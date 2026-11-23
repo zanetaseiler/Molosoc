@@ -46,7 +46,7 @@ Both page templates render `template-parts/landing-xmas.php` with `$lpx_campaign
 - release flag `molosoc_bf_published` (default true; false = noindex + out of sitemap);
 - colours: charcoal / cream / one gold, scoped to `.lpx--bf`.
 
-**Swapping the hero photo:** the issue names Žaneta's file "Product Molosoc Foot Cover
+**Hero photo replaced in #380** by the uploaded Black Friday ad — see `docs/black-friday-380.md`. Original note: **Swapping the hero photo:** the issue names Žaneta's file "Product Molosoc Foot Cover
 With Pack PNG(4).png", which was not attached to the issue. The hero uses the theme's
 existing product-with-pack photo. To use the newer file: export it as square WebP at 480
 and 960 px and replace `assets/images/landing-b/lpb-product-shot-2-{480,960}.webp`

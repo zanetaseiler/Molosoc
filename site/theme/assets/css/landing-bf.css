@@ -21,15 +21,37 @@
   --bf-gold-deep: #7a5f30;
 }
 
-/* ---------- hero: charcoal band, the product photo whole on a white card ---------- */
+/* ---------- hero: charcoal band, the Black Friday ad image (Issue #380) ----------
+   The ad (black / gold, square) is shown whole: square file, square box,
+   object-fit contain — no crop, no distortion. Its own "BLACK FRIDAY"
+   lettering is the big campaign headline, so the small eyebrow is hidden
+   visually while the ad is on the page (still read by screen readers). If the
+   ad file were ever missing, the eyebrow comes back as a large gold
+   "BLACK FRIDAY" line instead of the tiny letter-spaced one. */
 .lpx--bf .lpx-hero {
   background: radial-gradient(120% 90% at 25% 0%, var(--bf-charcoal-2) 0%, var(--bf-charcoal) 62%);
   color: rgba(245, 240, 230, 0.8);
 }
 .lpx--bf .lpx-hero .lpb-eyebrow {
   color: var(--bf-gold);
-  font-weight: 600;
-  letter-spacing: 0.35em;
+  font-family: var(--lpb-display, inherit);
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.lpx--bf .lpx-hero__inner:has(.lpx-bf-img--hero) .lpb-eyebrow {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 .lpx--bf .lpx-hero__title { color: var(--bf-cream); text-wrap: balance; }
 .lpx--bf .lpx-hero .lpb-hero__lede { color: rgba(245, 240, 230, 0.8); }
@@ -43,13 +65,16 @@
 .lpx--bf .lpx-hero__media {
   justify-self: center;
   width: 100%;
-  max-width: 420px;
-  padding: 12px;
-  background: #fff;
+  max-width: 500px;
   border-radius: 14px;
-  box-shadow: 0 0 0 1px rgba(217, 192, 138, 0.55), 0 18px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  background: var(--bf-charcoal);
+  box-shadow: 0 0 0 1px rgba(217, 192, 138, 0.55), 0 18px 40px rgba(0, 0, 0, 0.45);
 }
-/* The whole product, never cropped: square file, square box, contain. */
+@media (min-width: 561px) and (max-width: 900px) {
+  .lpx--bf .lpx-hero__media { max-width: 440px; }
+}
+/* The whole ad, never cropped: square file, square box, contain. */
 .lpx--bf .lpx-bf-img--hero {
   display: block;
   width: 100%;
@@ -85,10 +110,13 @@
 
 /* ---------- phone first screen (≤ 560 px): photo, headline, then the picker ---------- */
 @media (max-width: 560px) {
-  .lpx--bf .lpx-hero { padding-top: 0.9rem; padding-bottom: 0.75rem; }
-  .lpx--bf .lpx-hero__media { max-width: 196px; padding: 6px; border-radius: 10px; }
+  /* Issue #380: the ad at 264 px (its BLACK FRIDAY lettering ~22 px tall,
+     larger than the headline) keeps "Do košíku" inside a 390 x 844 screen. */
+  .lpx--bf .lpx-hero { padding-top: 0.6rem; padding-bottom: 0.75rem; }
+  .lpx--bf .lpx-hero__media { max-width: 264px; border-radius: 10px; }
+  .lpx--bf .lpx-hero__title { font-size: 1.5rem; }
   .lpx--bf .lpx-hero__copy { text-align: center; }
-  .lpx--bf .lpx-hero .lpb-eyebrow { font-size: 0.72rem; }
+  .lpx--bf .lpx-hero .lpb-eyebrow { font-size: 2rem; }
   .lpx--bf .lpx-hero .lpb-hero__lede { font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.35rem; }
   .lpx--bf .lpx-hero .lpb-price__meta { margin: 0; }
   .lpx--bf .lpx-bundle__body { border-radius: 8px; }

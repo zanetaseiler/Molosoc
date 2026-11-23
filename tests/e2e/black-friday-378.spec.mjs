@@ -50,6 +50,9 @@ for ( const [ lang, p ] of Object.entries( PAGES ) ) {
 				return {
 					bf: document.querySelector( 'main.lpx--bf' ) !== null,
 					fit: getComputedStyle( img ).objectFit,
+					src: img.currentSrc,
+					imgW: Math.round( r.width ),
+					scrollW: document.documentElement.scrollWidth,
 					ratio: r.width / r.height,
 					file: img.naturalWidth / img.naturalHeight,
 					cards: top( '#lpx-bundle .lpx-bundles' ),
@@ -67,6 +70,9 @@ for ( const [ lang, p ] of Object.entries( PAGES ) ) {
 			assert.ok( m.bf );
 			assert.equal( m.fit, 'contain' );
 			assert.ok( Math.abs( m.ratio - m.file ) < 0.02, 'hero photo not cropped' );
+			assert.match( m.src, /black-friday\/molosoc-black-friday-ad-\d+\.webp$/, 'Issue #380: the Black Friday ad is the hero' );
+			assert.ok( m.imgW >= 240, `hero ad ${ m.imgW } px wide` );
+			assert.ok( m.scrollW <= VIEWPORT.width, `horizontal scroll ${ m.scrollW }` );
 			assert.equal( m.ctaText, p.cta );
 			assert.deepEqual( m.prices.slice( 0, 3 ), p.prices );
 			assert.ok( m.cards < VIEWPORT.height && m.ctaBottom <= VIEWPORT.height, JSON.stringify( m ) );

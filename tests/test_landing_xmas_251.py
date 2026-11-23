@@ -162,6 +162,10 @@ class EvergreenUntouched(unittest.TestCase):
             "site/theme/inc/sticky-landing-b.php",
             # Issue #375 follow-up (18 Nov 2026): shipping copy 69 -> 79 Kč in the Landing B schema FAQ.
             "site/theme/inc/landing-b-schema.php",
+            # Issue #380: Black Friday hero ad. "landing-bf" only matches the
+            # Landing B pattern by prefix; these are the Black Friday files.
+            "site/theme/inc/landing-bf.php",
+            "site/theme/assets/css/landing-bf.css",
         }
         self.assertEqual([c for c in changed if protected.search(c) and c not in allowed], [])
         # functions.php and woocommerce-lang.php may only gain lines (Issue #269
