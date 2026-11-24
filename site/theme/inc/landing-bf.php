@@ -80,6 +80,26 @@ function molosoc_bf_page_url( $lang ) {
 	return home_url( 'en' === $lang ? '/' . $slug . '/' : '/cz/' . $slug . '/' );
 }
 
+/**
+ * Header globe / language switcher (Issue #386). The globe is Polylang's
+ * switcher item in the primary menu. On a page with no Polylang translation,
+ * Polylang builds each link as the other language's HOMEPAGE and then passes it
+ * through `pll_the_language_link`. The two Black Friday pages are not linked as
+ * a Polylang pair on the live site (#384's link workflow was never run), so EN on
+ * /cz/black-friday-molosoc/ went to Home. On the two Black Friday pages only, map
+ * the switcher straight to the other language's Black Friday page. This is the
+ * same approach as molosoc_product_language_switcher_link() for the product. It
+ * works whether or not the pair is ever linked. Every other page, and the top
+ * bar (inc/xmas-bar.php, which never uses the switcher), is unchanged.
+ */
+function molosoc_bf_language_switcher_link( $url, $slug ) {
+	if ( ( 'cz' !== $slug && 'en' !== $slug ) || ! molosoc_is_bf_landing() ) {
+		return $url;
+	}
+	return molosoc_bf_page_url( $slug );
+}
+add_filter( 'pll_the_language_link', 'molosoc_bf_language_switcher_link', 10, 2 );
+
 /* ---------- campaign end (Issue #382) ---------- */
 
 /**
