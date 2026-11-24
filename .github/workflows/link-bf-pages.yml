@@ -1,0 +1,45 @@
+name: Link Black Friday pages in Polylang (Issue #384)
+
+# Links the existing production pages 1128 (CZ /cz/black-friday-molosoc/) and
+# 1129 (EN /black-friday-offer-molosoc/) as a Polylang translation pair, so
+# each page's language switcher points at the other one instead of the
+# homepage. Never creates, publishes or edits pages. Default is a read-only
+# dry run that prints both pages' Polylang translations and the live switcher
+# hrefs; a write needs apply=true AND the exact confirm phrase, which must only
+# be typed after a ZANETA_DECISION recorded on Issue #384.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "false = read-only dry run (default). true = link 1128<->1129."
+        type: boolean
+        default: false
+      confirm:
+        description: "Required for apply=true: type LINK-1128-1129"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install requests
+      - name: Gate
+        if: ${{ inputs.apply && inputs.confirm != 'LINK-1128-1129' }}
+        run: |
+          echo "::error::apply=true requires confirm=LINK-1128-1129"
+          exit 1
+      - name: Run
+        env:
+          WP_URL: ${{ secrets.PROD_WP_URL }}
+          WP_USER: ${{ secrets.PROD_WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.PROD_WP_APP_PASSWORD }}
+        run: python3 automations/content-sync/link_bf_pages.py ${{ inputs.apply && '--apply' || '' }}
