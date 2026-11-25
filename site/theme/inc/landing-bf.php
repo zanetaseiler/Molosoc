@@ -201,12 +201,16 @@ function molosoc_bf_copy( $lang ) {
 	$f     = molosoc_xmas_facts( 'en' === $lang ? 'en' : 'cz' );
 	$first = molosoc_bf_money( $p[1], $lang );
 	$next  = molosoc_bf_money( $p[2], $lang );
+	$three = molosoc_bf_money( molosoc_xmas_bundle_total( 3 ), $lang ); // Issue #388: hero price line.
 	if ( 'en' === $lang ) {
 		return array(
 			'label'      => 'MOLOSOC Black Friday',
 			'eyebrow'    => 'Black Friday',
-			'h1'         => 'More pairs, a lower price per pair.',
-			'sub'        => sprintf( 'MOLOSOC nitrile foot covers turn an ordinary foot cream into a simple caring ritual. First pair %1$s, every extra pair %2$s.', $first, $next ),
+			'h1'         => 'The cream stays on your feet. You can keep moving.', // Issue #388: the first screen continues the ad.
+			'sub'        => 'Reusable nitrile MOLOSOC covers – apply cream, slip them on, and after 20–30 minutes your feet feel soft. No slipping, no greasy marks.',
+			'price_line' => sprintf( 'Black Friday: first pair %1$s, each extra pair %2$s · 3 pairs %3$s', $first, $next, $three ),
+			'clip_pause' => 'Pause video',
+			'clip_play'  => 'Play video',
 			'ship'       => 'Shipping from ' . $f['ship_from'] . ' CZK',
 			'deadline'   => molosoc_bf_until_text( 'en' ), // Issue #382: hero line under the price + the order block lede.
 			'cod'        => '',
@@ -257,8 +261,11 @@ function molosoc_bf_copy( $lang ) {
 	return array(
 		'label'      => 'Black Friday MOLOSOC',
 		'eyebrow'    => 'Black Friday',
-		'h1'         => 'Více párů, nižší cena za pár.',
-		'sub'        => sprintf( 'Nitrilové návleky MOLOSOC promění obyčejný krém na nohy v jednoduchý pečující rituál. První pár %1$s, každý další %2$s.', $first, $next ),
+		'h1'         => 'Krém zůstane na noze. Vy se můžete hýbat.', // Issue #388: the first screen continues the ad.
+		'sub'        => 'Nitrilové návleky MOLOSOC na opakované použití – namažete, nasadíte a za 20–30 minut máte hebká chodidla. Bez klouzání a bez mastných stop.',
+		'price_line' => sprintf( 'Black Friday: první pár %1$s, každý další %2$s · 3 páry %3$s', $first, $next, $three ),
+		'clip_pause' => 'Pozastavit video',
+		'clip_play'  => 'Přehrát video',
 		'ship'       => 'Doprava od ' . $f['ship_from'] . ' Kč',
 		'deadline'   => molosoc_bf_until_text( 'cz' ), // Issue #382: hero line under the price + the order block lede.
 		'cod'        => molosoc_cod_cz_text(),
@@ -495,6 +502,82 @@ function molosoc_bf_page_images( $lang ) {
 		molosoc_bf_image( 'story', $lang, 'loading="lazy"' ),
 	);
 }
+
+/* ---------- hero clip (Issue #388) ---------- */
+
+/**
+ * The ad's story in the hero: a 6.3 s silent excerpt of Žaneta's own public
+ * video ("Šly jsme to prostě zkusit" / "We Just Went and Tried It") — cream,
+ * then MOLOSOC pulled over the foot. It lies over the Black Friday ad image,
+ * which stays the LCP element, the clip's poster and the fallback. The frame is
+ * the square below the burned-in Czech captions, so one file serves CZ and EN.
+ *
+ * Nothing is requested before window load: the <video> sits in an inert
+ * <template> (measured: a <video> in the initial HTML, even without src, made the
+ * hero image finish ~350 ms later on a throttled phone). The script below inserts
+ * it and sets src and poster, the poster being the ad file the browser already
+ * chose for the <img>, so it is never fetched twice.
+ * The clip is skipped for prefers-reduced-motion, data saver and 2G, and the
+ * image simply stays if playback is refused. It ignores pointer events, so a tap
+ * still follows the photo link to the picker. A pause button appears once it plays.
+ *
+ * @return string '' when the file is missing.
+ */
+function molosoc_bf_hero_clip( $t ) {
+	$rel = '/assets/video/molosoc-we-tried-it-720.mp4';
+	if ( ! file_exists( get_stylesheet_directory() . $rel ) ) {
+		return '';
+	}
+	return sprintf(
+		'<template data-bf-clip-tpl><video class="lpx-bf-clip" data-bf-clip data-src="%1$s" width="720" height="720" muted loop playsinline preload="none" disablepictureinpicture disableremoteplayback aria-hidden="true" tabindex="-1"></video></template>'
+		. '<button type="button" class="lpx-bf-clip__btn" data-bf-clip-btn data-pause="%2$s" data-play="%3$s" aria-label="%2$s" hidden></button>',
+		esc_url( get_stylesheet_directory_uri() . $rel ),
+		esc_attr( $t['clip_pause'] ),
+		esc_attr( $t['clip_play'] )
+	);
+}
+
+/** Starts the clip after window load (see molosoc_bf_hero_clip()). Inline: no extra request. */
+function molosoc_bf_hero_clip_script() {
+	if ( ! molosoc_is_bf_landing() ) {
+		return;
+	}
+	?>
+<script>
+(function () {
+	var tpl = document.querySelector('[data-bf-clip-tpl]');
+	if (!tpl || !tpl.content) { return; }
+	var v, box = tpl.parentNode, btn = box.querySelector('[data-bf-clip-btn]'), img = box.querySelector('img');
+	var c = navigator.connection, rm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+	if (rm || (c && (c.saveData || /2g/.test(c.effectiveType || '')))) { return; }
+	var userPaused = false;
+	function play() { var p = v.play(); if (p && p.catch) { p.catch(function () {}); } }
+	function start() {
+		v = tpl.content.firstElementChild.cloneNode(true);
+		box.insertBefore(v, btn);
+		v.muted = true;
+		if (img) { v.poster = img.currentSrc || img.src; }
+		v.src = v.getAttribute('data-src');
+		v.addEventListener('playing', function () { box.classList.add('is-playing'); btn.hidden = false; }, { once: true });
+		if ('IntersectionObserver' in window) {
+			new IntersectionObserver(function (e) {
+				if (!e[e.length - 1].isIntersecting) { v.pause(); } else if (!userPaused) { play(); }
+			}).observe(box);
+		} else { play(); }
+	}
+	btn.addEventListener('click', function () {
+		userPaused = !v.paused;
+		if (userPaused) { v.pause(); } else { play(); }
+		btn.classList.toggle('is-paused', userPaused);
+		btn.setAttribute('aria-label', btn.getAttribute(userPaused ? 'data-play' : 'data-pause'));
+	});
+	function ready() { if (window.requestIdleCallback) { requestIdleCallback(start, { timeout: 2000 }); } else { setTimeout(start, 500); } }
+	if (document.readyState === 'complete') { ready(); } else { window.addEventListener('load', ready); }
+})();
+</script>
+	<?php
+}
+add_action( 'wp_footer', 'molosoc_bf_hero_clip_script', 30 );
 
 /**
  * Hero preload, wp_head priority 1 like molosoc_xmas_head() (which returns

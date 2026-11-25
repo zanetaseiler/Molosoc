@@ -203,7 +203,7 @@ class PageCopy(unittest.TestCase):
 
     def test_bar_look_unchanged_and_version_bumped(self):
         self.assertNotIn("black", BAR_CSS.lower())
-        self.assertIn("Version: 0.2.127", STYLE)
+        self.assertIn("Version: 0.2.128", STYLE)  # Issue #388
 
 
 class CzechReviews(unittest.TestCase):

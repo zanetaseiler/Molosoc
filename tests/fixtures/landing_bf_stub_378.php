@@ -34,7 +34,7 @@ function wp_enqueue_style( ...$a ) { $GLOBALS['ENQ'][] = $a[0]; }
 function wp_dequeue_style() {} function wp_dequeue_script() {}
 function get_bloginfo() { return 'MOLOSOC'; }
 function molosoc_product_url( $l ) { return 'en' === $l ? 'https://molosoc.com/product/x/' : 'https://molosoc.com/cz/produkt/x/'; }
-function molosoc_cod_cz_text() { return 'Na dobírku (+39 Kč) můžete zaplatit při převzetí.'; }
+function molosoc_cod_cz_text() { return 'Zaplatíte při převzetí zásilky.'; }
 function molosoc_real_reviews_html( $l ) { return "<!-- reviews $l -->"; }
 function molosoc_landing_b_buy_links() { return array( 'M' => array( 'direct' => 1, 'url' => '/?add-to-cart=364&variation_id=1001&attribute_pa_size=m' ), 'L' => array( 'direct' => 1, 'url' => '/?add-to-cart=364&variation_id=1002&attribute_pa_size=l' ) ); }
 function get_header() {}

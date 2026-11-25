@@ -89,6 +89,61 @@
 }
 .lpx--bf .lpx-hero__link:focus-visible { outline-color: var(--bf-gold); }
 
+/* Issue #388: the offer in one prominent gold line under the benefit line. */
+.lpx--bf .lpx-bf-price {
+  margin: 0.9rem 0 0.6rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--bf-gold);
+  text-wrap: balance;
+}
+
+/* Issue #388: the ad clip over the ad image, 1 px inside its box: the browser
+   only replaces the LCP element by a larger one, so the image stays the LCP
+   (edge to edge the clip won by a rounding error and LCP moved to its start). Invisible until it really plays; taps
+   go through to the photo link. */
+.lpx--bf .lpx-hero__media { position: relative; }
+.lpx--bf .lpx-hero__copy { position: relative; } /* stays above the media's drop shadow */
+.lpx--bf .lpx-bf-clip {
+  position: absolute;
+  inset: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  object-fit: contain;
+  box-shadow: 0 0 0 1px var(--bf-charcoal);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+.lpx--bf .lpx-hero__media.is-playing .lpx-bf-clip { opacity: 1; }
+.lpx--bf .lpx-bf-clip__btn {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.72) linear-gradient(90deg, var(--bf-cream) 0 35%, transparent 35% 65%, var(--bf-cream) 65%) center / 0.7rem 0.8rem no-repeat;
+  cursor: pointer;
+}
+.lpx--bf .lpx-bf-clip__btn[hidden] { display: none; }
+.lpx--bf .lpx-bf-clip__btn.is-paused {
+  background: rgba(20, 20, 20, 0.72);
+}
+.lpx--bf .lpx-bf-clip__btn.is-paused::before {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  top: 0.6rem;
+  border-style: solid;
+  border-width: 0.4rem 0 0.4rem 0.65rem;
+  border-color: transparent transparent transparent var(--bf-cream);
+}
+.lpx--bf .lpx-bf-clip__btn:focus-visible { outline: 2px solid var(--bf-gold); outline-offset: 2px; }
+
 /* ---------- picker: charcoal selection, gold accent ---------- */
 .lpx--bf .lpx-bundle__body { border-radius: 10px; }
 .lpx--bf .lpx-bundle input:checked + .lpx-bundle__body {
@@ -116,13 +171,24 @@
 /* ---------- phone first screen (≤ 560 px): photo, headline, then the picker ---------- */
 @media (max-width: 560px) {
   /* Issue #380: the ad at 264 px (its BLACK FRIDAY lettering ~22 px tall,
-     larger than the headline) keeps "Do košíku" inside a 390 x 844 screen. */
+     larger than the headline) kept "Do košíku" inside a 390 x 844 screen.
+     Issue #388: same 264 px; the benefit line (hidden by landing-b.css), the gold
+     button and the COD line (hidden by #373) are back on phones, the button right
+     under the price line, all above the cookie card (670 px). The picker follows
+     just below the first screen. */
   .lpx--bf .lpx-hero { padding-top: 0.6rem; padding-bottom: 0.75rem; }
   .lpx--bf .lpx-hero__media { max-width: 264px; border-radius: 10px; }
   .lpx--bf .lpx-hero__title { font-size: 1.5rem; }
   .lpx--bf .lpx-hero__copy { text-align: center; }
   .lpx--bf .lpx-hero .lpb-eyebrow { font-size: 2rem; }
-  .lpx--bf .lpx-hero .lpb-hero__lede { font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.35rem; }
+  .lpx--bf .lpx-hero .lpb-hero__lede { display: block; font-size: 0.9rem; line-height: 1.4; margin: 0 0 0.35rem; }
   .lpx--bf .lpx-hero .lpb-price__meta { margin: 0; }
+  .lpx--bf .lpx-bf-price { font-size: 1.05rem; line-height: 1.25; margin: 0 0 0.35rem; }
+  .lpx--bf .lpx-hero > .lpx-hero__inner > .lpx-hero__copy { display: flex; flex-direction: column; align-items: center; }
+  .lpx--bf .lpx-hero > .lpx-hero__inner > .lpx-hero__copy > .lpb-btn { display: inline-flex; margin: 0.15rem 0 0.45rem; padding-top: 0.7rem; padding-bottom: 0.7rem; }
+  .lpx--bf .lpx-hero .lpx-deadline,
+  .lpx--bf .lpx-hero .lpb-price__meta,
+  .lpx--bf .lpx-hero .lpb-cod { order: 1; }
+  .lpx--bf .lpx-hero .lpb-cod { display: block; margin: 0; font-size: 0.85rem; }
   .lpx--bf .lpx-bundle__body { border-radius: 8px; }
 }

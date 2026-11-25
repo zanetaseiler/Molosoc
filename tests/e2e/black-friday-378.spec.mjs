@@ -42,6 +42,7 @@ for ( const [ lang, p ] of Object.entries( PAGES ) ) {
 			if ( process.env.MOLOSOC_SHOT_DIR ) {
 				await page.screenshot( { path: `${ process.env.MOLOSOC_SHOT_DIR }/bf-${ lang }-390x844.png` } );
 			}
+			await page.waitForSelector( '[data-bf-clip]', { state: 'attached', timeout: 10000 } ); // Issue #388: inserted after load.
 			const m = await page.evaluate( () => {
 				const img = document.querySelector( '.lpx-hero__media img' );
 				const r = img.getBoundingClientRect();
@@ -59,6 +60,10 @@ for ( const [ lang, p ] of Object.entries( PAGES ) ) {
 					ctaBottom: Math.round( cta.getBoundingClientRect().bottom + window.scrollY ),
 					ctaText: cta.textContent.trim(),
 					deadline: document.querySelector( '.lpx-deadline' ) !== null,
+					heroBtnBottom: Math.round( document.querySelector( '.lpx-hero__copy > .lpb-btn' ).getBoundingClientRect().bottom + window.scrollY ),
+					heroLede: document.querySelector( '.lpb-hero__lede' ).offsetHeight > 0,
+					heroPrice: document.querySelector( '.lpx-bf-price' ).offsetHeight > 0,
+					clip: ( ( v ) => v && { muted: v.muted, loop: v.loop, preload: v.preload } )( document.querySelector( '[data-bf-clip]' ) ),
 					bar: document.getElementById( 'molosoc-xmas-bar' ) !== null,
 					pill: ( document.getElementById( 'molosoc-sticky-cta' ) || {} ).textContent?.trim(),
 					prices: [ ...document.querySelectorAll( '#lpx-bundle .lpx-bundle__price' ) ].map( ( e ) => e.textContent.trim() ),
@@ -75,8 +80,11 @@ for ( const [ lang, p ] of Object.entries( PAGES ) ) {
 			assert.ok( m.scrollW <= VIEWPORT.width, `horizontal scroll ${ m.scrollW }` );
 			assert.equal( m.ctaText, p.cta );
 			assert.deepEqual( m.prices.slice( 0, 3 ), p.prices );
-			assert.ok( m.cards < VIEWPORT.height && m.ctaBottom <= VIEWPORT.height, JSON.stringify( m ) );
-			assert.equal( m.deadline, false );
+			// Issue #388: story, price line and the gold button above the cookie card (670 px); the set cards start in the first screen.
+			assert.ok( m.heroBtnBottom <= 670 && m.heroLede && m.heroPrice, JSON.stringify( m ) );
+			assert.ok( m.cards < VIEWPORT.height, JSON.stringify( m ) );
+			assert.equal( m.deadline, true ); // Issue #382: the offer's end date.
+			assert.ok( m.clip && m.clip.muted && m.clip.loop && m.clip.preload === 'none', 'Issue #388: hero clip' );
 			assert.equal( m.bar, false, 'Christmas announcement bar is off here' );
 			assert.equal( m.pill, p.pill );
 			assert.doesNotMatch( m.text, /Vánoc|vánoč|Christmas|prosince|December|dárek|gift/i );
