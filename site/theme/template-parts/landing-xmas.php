@@ -287,13 +287,15 @@ get_header();
 	<section class="lpx-hero" aria-label="<?php echo esc_attr( $t['label'] ); ?>">
 		<div class="lpx-hero__inner">
 			<?php if ( $lpx_hero_img ) : ?>
-				<div class="lpx-hero__media"><a class="lpx-hero__link" href="#lpx-bundle" aria-label="<?php echo esc_attr( $t['pick'] ); ?>" data-lpx-to-picker><?php echo $lpx_hero_img; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in molosoc_xmas_image(). ?></a></div>
+				<div class="lpx-hero__media"><a class="lpx-hero__link" href="#lpx-bundle" aria-label="<?php echo esc_attr( $t['pick'] ); ?>" data-lpx-to-picker><?php echo $lpx_hero_img; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in molosoc_xmas_image(). ?></a><?php echo $lpx_bf ? molosoc_bf_hero_clip( $t ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- Issue #388, escaped in molosoc_bf_hero_clip(). ?></div>
 			<?php endif; ?>
 			<div class="lpx-hero__copy">
 				<p class="lpb-eyebrow"><?php echo esc_html( $t['eyebrow'] ); ?></p>
 				<h1 class="lpx-hero__title"><?php echo esc_html( $t['h1'] ); ?></h1>
 				<p class="lpb-hero__lede"><?php echo esc_html( $t['sub'] ); ?></p>
-				<p class="lpb-price__meta"><?php echo esc_html( $lpx_fmt( $lpx_prices[1] ) . ' · ' . $t['ship'] ); ?></p>
+				<?php if ( $lpx_bf ) : // Issue #388: the whole offer in one gold line; shipping keeps its own line. ?><p class="lpx-bf-price" translate="no"><?php echo esc_html( $t['price_line'] ); ?></p>
+<?php endif; ?>
+				<p class="lpb-price__meta"><?php echo esc_html( $lpx_bf ? $t['ship'] : $lpx_fmt( $lpx_prices[1] ) . ' · ' . $t['ship'] ); ?></p>
 				<?php if ( '' !== $t['deadline'] ) : ?><p class="lpx-deadline"><?php echo esc_html( $t['deadline'] ); ?></p>
 <?php endif; ?>
 				<?php if ( $t['cod'] ) : ?>

@@ -194,7 +194,7 @@ class Photo(unittest.TestCase):
     def test_cz_keeps_czech_html_headline_with_the_english_ad(self):
         html = render(*PAGES["cz"])
         self.assertIn('lang="cs"', html)
-        self.assertIn('<h1 class="lpx-hero__title">Více párů, nižší cena za pár.</h1>', html)
+        self.assertIn('<h1 class="lpx-hero__title">Krém zůstane na noze. Vy se můžete hýbat.</h1>', html)
         self.assertIn('alt="Black Friday MOLOSOC: bílé nitrilové návleky na nohy před balením"', html)
 
     def test_no_christmas_photo_on_bf(self):
