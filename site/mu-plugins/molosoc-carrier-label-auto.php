@@ -549,11 +549,11 @@ function molosoc_la_ppl_gate( $constant, bool $loaded, bool $plugin ): bool {
 }
 
 function molosoc_la_ppl_on(): bool {
-	$loaded = function_exists( 'molosoc_lp_prepare_now' ) && function_exists( 'molosoc_lp_provider_now' ) && function_exists( 'molosoc_lp_plugin_available' );
+	$loaded = function_exists( 'molosoc_lppl_prepare_now' ) && function_exists( 'molosoc_lppl_provider_now' ) && function_exists( 'molosoc_lppl_plugin_available' );
 	return molosoc_la_ppl_gate(
 		defined( 'MOLOSOC_LABEL_AUTO_PPL_ENABLED' ) ? MOLOSOC_LABEL_AUTO_PPL_ENABLED : null,
 		$loaded,
-		$loaded && molosoc_lp_plugin_available()
+		$loaded && molosoc_lppl_plugin_available()
 	);
 }
 
@@ -697,7 +697,7 @@ function molosoc_la_worker( $order_id ): string {
 			return $meta_get( MOLOSOC_LA_PPL_STATE_META );
 		},
 		'ppl_prepare' => static function () use ( $order_id, $audit ) {
-			return molosoc_lp_prepare_now( $order_id, $audit );
+			return molosoc_lppl_prepare_now( $order_id, $audit );
 		},
 		'configured'  => static function () {
 			return '' !== molosoc_ll_packeta_password_now();
@@ -734,7 +734,7 @@ function molosoc_la_worker( $order_id ): string {
 					},
 					static function ( $carrier, $ref ) use ( $order_id, &$detail ) {
 						$r = ( 'PPL' === (string) $carrier && molosoc_la_ppl_on() )
-							? molosoc_lp_provider_now( $order_id, (string) $carrier, (string) $ref ) // Fetch only (#391).
+							? molosoc_lppl_provider_now( $order_id, (string) $carrier, (string) $ref ) // Fetch only (#391).
 							: molosoc_la_provider(
 								(string) $carrier,
 								(string) $ref,

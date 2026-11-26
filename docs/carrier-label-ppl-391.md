@@ -4,11 +4,14 @@ This adds a PPL path to the #369 automation, which has run Zásilkovna since 202
 
 The path is **OFF by default**. Merging and deploying it changes nothing until `MOLOSOC_LABEL_AUTO_PPL_ENABLED` is set. Until then PPL orders go to `attention` (`ppl_manual_label_required`) with one alert, as today.
 
+> **Incident 2026-11-26 (Issue #393).** The first deploy of this file (PR #392, merge `2072c92`, deployed 15:40 UTC) took molosoc.com down with HTTP 500 on every page: `molosoc_lp_gate()` was also declared by the #370 label preview mu-plugin (`molosoc-carrier-label-preview.php`), and WordPress loads all mu-plugins unconditionally, so the OFF-by-default constants could not prevent the `Cannot redeclare` fatal. See section 7.
+
 Files:
 
 - `site/mu-plugins/molosoc-carrier-label-ppl.php`: new. It holds the PPL steps (create or adopt, settle, fetch-only provider).
 - `site/mu-plugins/molosoc-carrier-label-auto.php`: routes PPL orders to that file only when the path is on. The #369 gate, cut-off, eligibility, queue, lock, audit, alerts and the at-most-once mail state machine are reused unchanged.
 - `tests/test_carrier_label_ppl_391.py`: 47 tests.
+- `tests/test_mu_plugins_coexist_393.py`: all mu-plugins load together (Issue #393).
 
 ## 1. Investigation (PPL CZ 1.1.3 source, tag `1.1.3` of `PPL-CZ/PPL-WooCommerce`)
 
@@ -116,3 +119,21 @@ Post the result on #391 without customer data. To stop at any point, remove `MOL
 - static checks: no `wp_mail`, hooks, status changes or secrets in the PPL file, one `createPackages` and one `wp_remote_get`, `creating` written before stage and submit, the provider never creates, and the #369 file has no PPL internals.
 
 The existing #345 to #369 carrier-label suites pass unchanged.
+
+## 7. Incident 2026-11-26 and fix (Issue #393)
+
+**What happened.** PR #392 shipped `molosoc-carrier-label-ppl.php` with the `molosoc_lp_` prefix, which the #370 label preview already uses (`lp` = label preview). `molosoc_lp_gate()` existed in both files. Production logged `PHP Fatal error: Cannot redeclare molosoc_lp_gate()` from 15:41:03 to 15:47:05 UTC and every page (shop, checkout, wp-admin) returned 500. The per-feature test suites each load only their own files, so none of them loaded the PPL and preview files together.
+
+**Mitigation on production (~15:50 UTC, by hand in cPanel).** `wp-content/mu-plugins/molosoc-carrier-label-ppl.php` was renamed to `molosoc-carrier-label-ppl.php.disabled-fatal-392`. WordPress only loads `*.php` files from `mu-plugins/`, so that copy is inert. wp-config was not changed: Zásilkovna automation stays ON, and no `MOLOSOC_LABEL_AUTO_PPL_*` constant exists. The status page shows `PPL automat: vypnuto (PPL ručně)`.
+
+**Fix (this PR).**
+
+- Every function and constant in `molosoc-carrier-label-ppl.php` now uses its own prefix: `molosoc_lppl_*` and `MOLOSOC_LPPL_*`. Callers in `molosoc-carrier-label-auto.php` and `tests/test_carrier_label_ppl_391.py` were updated. Behaviour is identical and still OFF by default. Stored names are unchanged: order meta `_molosoc_label_ppl_state` / `_molosoc_label_ppl_shipment` and the slot options `molosoc_lp_slot_1..N` (section 3) keep their values, so nothing already on the server needs to be migrated.
+- `tests/test_mu_plugins_coexist_393.py` loads **all** `site/mu-plugins/*.php` together in one PHP process (minimal WP stubs; constants OFF, then the registration constants ON, then in reverse order) and fails on any fatal, warning, notice or output. It also statically checks that no function name or `const`/`define()` name is declared in more than one mu-plugin. Two tests prove that both guards catch the #392 file.
+- `deploy-mu-plugins.yml` now runs that test before it touches the server. A collision like #392 fails the deploy job instead of reaching production.
+
+**What the deploy does with the files on the server.** The FTPS sync compares file hashes with its state file (`.molosoc-mu-plugins-state.json`). That file still records the #392 hash of `molosoc-carrier-label-ppl.php`. The fixed file has a different hash, so the deploy uploads it again to `molosoc-carrier-label-ppl.php`. The deploy does **not** delete `molosoc-carrier-label-ppl.php.disabled-fatal-392`: it removes only exact names it is told to, and that file is inert. It stays as evidence until it is deleted by hand (safe at any time).
+
+After the merge, check that the homepage, `/cz/`, a product page, checkout and wp-admin return 200, and that the status page still shows `PPL automat: vypnuto (PPL ručně)`. If a 500 appears, rename `molosoc-carrier-label-ppl.php` again as on 2026-11-26.
+
+**Activation plan unchanged.** Section 4 still applies. Step 0 is now "deploy this fix and verify the site". The Step 1 single-order PPL test still needs a separate ZANETA_DECISION after the fix is deployed and the site verified.

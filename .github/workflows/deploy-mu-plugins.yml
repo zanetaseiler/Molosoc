@@ -39,6 +39,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Refuse to deploy mu-plugins that cannot load together (Issue #393)
+        run: |
+          # WordPress loads every mu-plugin unconditionally: a duplicate
+          # function/constant across files is a site-wide HTTP 500 (#392).
+          # This runs before anything touches the server.
+          php -v | head -1
+          python3 -m unittest -v tests.test_mu_plugins_coexist_393
+
       - name: Remove superseded sitemap workarounds and trace artifacts
         env:
           HOST: ${{ secrets.PROD_SFTP_HOST }}
