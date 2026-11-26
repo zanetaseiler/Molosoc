@@ -58,7 +58,7 @@ The single-order path (`molosoc-carrier-label-live.php`) is unchanged in behavio
 
 ## Remaining blockers / unverified facts
 
-1. **PPL:** manual label only (see above). Automating it would need a separate decision on creating PPL shipments through CPL. Not done.
+1. **PPL:** manual label only (see above). Issue #391 adds an optional, OFF-by-default PPL path through the plugin's own batch: see `docs/carrier-label-ppl-391.md`.
 2. **Packeta external couriers:** manual (courier label). Not automated.
 3. **`packetLabelPdf` has never run against production.** It is expected to be read-only on Packeta's side, but that is not proven. The first live order is the end-to-end proof.
 4. **Packeta auto-submission on production:** unknown. If it is off for COD and Comgate, each Zásilkovna order waits for a manual export (up to 72 h) and is then mailed.
