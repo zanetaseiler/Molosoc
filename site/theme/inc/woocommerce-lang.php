@@ -665,7 +665,11 @@ function molosoc_cz_product_document_title( $title ) {
 	}
 	return 'Návlek na nohy Molosoc — Krém, který už doma máte, konečně funguje';
 }
-add_filter( 'pre_get_document_title', 'molosoc_cz_product_document_title' );
+// Priority 20 runs after Yoast SEO (15), so the Czech title wins on the CZ product page.
+add_filter( 'pre_get_document_title', 'molosoc_cz_product_document_title', 20 );
+add_filter( 'wpseo_title', 'molosoc_cz_product_document_title', 20 );
+add_filter( 'wpseo_opengraph_title', 'molosoc_cz_product_document_title', 20 );
+add_filter( 'wpseo_twitter_title', 'molosoc_cz_product_document_title', 20 );
 
 function molosoc_cz_product_meta_description() {
 	if ( ! molosoc_is_cz_product_364() ) {
