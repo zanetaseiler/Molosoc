@@ -12,7 +12,7 @@
  *     eligibility (processing + COD or Comgate-confirmed card), lock, audit, alerts and
  *     the at-most-once mail state machine. This file only adds the PPL steps.
  *   - Exactly one shipment per order. The idempotency key is the order itself: the order
- *     meta MOLOSOC_LP_STATE_META is written as `creating` BEFORE anything is saved in the
+ *     meta MOLOSOC_LPPL_STATE_META is written as `creating` BEFORE anything is saved in the
  *     PPL plugin or sent to PPL. Any later run that finds `creating` goes to `attention`
  *     (one alert) and never creates again, whatever happened in between (crash, timeout,
  *     exception, PPL error). A create is never retried automatically.
@@ -22,7 +22,7 @@
  *     order goes to `attention`. More than one remote shipment → `attention`.
  *   - Shipment data comes from the PPL plugin's own order → ShipmentModel conversion and
  *     its own validator (the same code the admin uses). Nothing is invented. On top of
- *     that, molosoc_lp_check() refuses (`attention`) anything unusual: not CZ, missing
+ *     that, molosoc_lppl_check() refuses (`attention`) anything unusual: not CZ, missing
  *     pickup point for SMAR/SBOX, COD amount/currency/variable symbol not matching the
  *     order, unexpected sender address, unknown method, more than one package.
  *   - The shipment is created through the plugin's own batch (BatchData + ShipmentData +
@@ -47,26 +47,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const MOLOSOC_LP_STATE_META    = '_molosoc_label_ppl_state';    // '' | creating | created | adopted
-const MOLOSOC_LP_SHIPMENT_META = '_molosoc_label_ppl_shipment'; // PPL plugin's local ppl_shipment_id
-const MOLOSOC_LP_SENDER_ID     = 3;                             // PPL plugin sender address (Issue #391).
-const MOLOSOC_LP_PRINT         = '4/PDF';                       // A4, 4 labels per page, first position.
-const MOLOSOC_LP_METHODS       = array( 'pplcz_SMAR', 'pplcz_SBOX', 'pplcz_PRIV' );
-const MOLOSOC_LP_PARCEL_METHODS = array( 'pplcz_SMAR', 'pplcz_SBOX' );
-const MOLOSOC_LP_REMOTE_STATES = array( 'InProgress', 'InProcess', 'Accepted', 'Complete', 'Error' );
-const MOLOSOC_LP_PENDING_STATES = array( 'InProgress', 'InProcess', 'Accepted' );
-const MOLOSOC_LP_LABEL_TIMEOUT = 30;
-const MOLOSOC_LP_SLOT_OPTION   = 'molosoc_lp_slot_';            // + 1..N: order id that took the slot.
-const MOLOSOC_LP_LIMIT_MAX     = 20;
+const MOLOSOC_LPPL_STATE_META    = '_molosoc_label_ppl_state';    // '' | creating | created | adopted
+const MOLOSOC_LPPL_SHIPMENT_META = '_molosoc_label_ppl_shipment'; // PPL plugin's local ppl_shipment_id
+const MOLOSOC_LPPL_SENDER_ID     = 3;                             // PPL plugin sender address (Issue #391).
+const MOLOSOC_LPPL_PRINT         = '4/PDF';                       // A4, 4 labels per page, first position.
+const MOLOSOC_LPPL_METHODS       = array( 'pplcz_SMAR', 'pplcz_SBOX', 'pplcz_PRIV' );
+const MOLOSOC_LPPL_PARCEL_METHODS = array( 'pplcz_SMAR', 'pplcz_SBOX' );
+const MOLOSOC_LPPL_REMOTE_STATES = array( 'InProgress', 'InProcess', 'Accepted', 'Complete', 'Error' );
+const MOLOSOC_LPPL_PENDING_STATES = array( 'InProgress', 'InProcess', 'Accepted' );
+const MOLOSOC_LPPL_LABEL_TIMEOUT = 30;
+const MOLOSOC_LPPL_SLOT_OPTION   = 'molosoc_lp_slot_';            // + 1..N: order id that took the slot.
+const MOLOSOC_LPPL_LIMIT_MAX     = 20;
 
 /** Pure gate: the PPL path is on only with the constant exactly true. */
-function molosoc_lp_gate( $enabled ): bool {
+function molosoc_lppl_gate( $enabled ): bool {
 	return true === $enabled;
 }
 
-/** Pure: the optional live-test limit is either not defined or an int 1..MOLOSOC_LP_LIMIT_MAX. */
-function molosoc_lp_limit_ok( bool $defined, $limit ): bool {
-	return ! $defined || ( is_int( $limit ) && $limit >= 1 && $limit <= MOLOSOC_LP_LIMIT_MAX );
+/** Pure: the optional live-test limit is either not defined or an int 1..MOLOSOC_LPPL_LIMIT_MAX. */
+function molosoc_lppl_limit_ok( bool $defined, $limit ): bool {
+	return ! $defined || ( is_int( $limit ) && $limit >= 1 && $limit <= MOLOSOC_LPPL_LIMIT_MAX );
 }
 
 /**
@@ -74,7 +74,7 @@ function molosoc_lp_limit_ok( bool $defined, $limit ): bool {
  * `$i` (0 = free), `$add($i, $order_id)` claims a free slot atomically (add_option: one
  * winner). True when this order holds or just won a slot.
  */
-function molosoc_lp_claim( int $limit, int $order_id, callable $get, callable $add ): bool {
+function molosoc_lppl_claim( int $limit, int $order_id, callable $get, callable $add ): bool {
 	for ( $i = 1; $i <= $limit; $i++ ) {
 		$v = (int) $get( $i );
 		if ( $v === $order_id ) {
@@ -91,9 +91,9 @@ function molosoc_lp_claim( int $limit, int $order_id, callable $get, callable $a
  * Pure: the shipment was sent to PPL (has a remote batch, or an import state set by the
  * plugin after createPackages). `None`/''/no batch is a local draft only.
  */
-function molosoc_lp_is_remote( array $s ): bool {
+function molosoc_lppl_is_remote( array $s ): bool {
 	return '' !== trim( (string) ( $s['batch_id'] ?? '' ) )
-		|| in_array( (string) ( $s['import_state'] ?? '' ), MOLOSOC_LP_REMOTE_STATES, true );
+		|| in_array( (string) ( $s['import_state'] ?? '' ), MOLOSOC_LPPL_REMOTE_STATES, true );
 }
 
 /**
@@ -103,7 +103,7 @@ function molosoc_lp_is_remote( array $s ): bool {
  * count), service_code, has_parcel, parcel_code, country, sender_id, payment_cod,
  * order_total, currency, cod_value, cod_currency, cod_vs, packages.
  */
-function molosoc_lp_check( array $f ): string {
+function molosoc_lppl_check( array $f ): string {
 	$ppl = array_values(
 		array_filter(
 			array_map( 'strval', (array) ( $f['method_ids'] ?? array() ) ),
@@ -116,7 +116,7 @@ function molosoc_lp_check( array $f ): string {
 		return 'ppl_method_ambiguous';
 	}
 	$method = $ppl[0];
-	if ( ! in_array( $method, MOLOSOC_LP_METHODS, true ) ) {
+	if ( ! in_array( $method, MOLOSOC_LPPL_METHODS, true ) ) {
 		return 'ppl_method_unknown';
 	}
 	if ( (int) ( $f['errors'] ?? 1 ) > 0 ) {
@@ -132,13 +132,13 @@ function molosoc_lp_check( array $f ): string {
 		return 'ppl_currency_unexpected';
 	}
 	$has_parcel = ! empty( $f['has_parcel'] ) && '' !== trim( (string) ( $f['parcel_code'] ?? '' ) );
-	if ( in_array( $method, MOLOSOC_LP_PARCEL_METHODS, true ) && ! $has_parcel ) {
+	if ( in_array( $method, MOLOSOC_LPPL_PARCEL_METHODS, true ) && ! $has_parcel ) {
 		return 'ppl_parcel_missing';
 	}
-	if ( ! in_array( $method, MOLOSOC_LP_PARCEL_METHODS, true ) && ! empty( $f['has_parcel'] ) ) {
+	if ( ! in_array( $method, MOLOSOC_LPPL_PARCEL_METHODS, true ) && ! empty( $f['has_parcel'] ) ) {
 		return 'ppl_parcel_unexpected';
 	}
-	if ( MOLOSOC_LP_SENDER_ID !== (int) ( $f['sender_id'] ?? 0 ) ) {
+	if ( MOLOSOC_LPPL_SENDER_ID !== (int) ( $f['sender_id'] ?? 0 ) ) {
 		return 'ppl_sender_mismatch';
 	}
 	$cod = $f['cod_value'] ?? null;
@@ -166,7 +166,7 @@ function molosoc_lp_check( array $f ): string {
  * import_state, import_errors, packages => [ [shipment_number, phase], ... ]).
  * Returns array( 'ready', shipment_number ) | array( 'wait', reason ) | array( 'attention', reason ).
  */
-function molosoc_lp_classify( array $s ): array {
+function molosoc_lppl_classify( array $s ): array {
 	$packages = array_values( (array) ( $s['packages'] ?? array() ) );
 	foreach ( $packages as $p ) {
 		if ( 'Canceled' === (string) ( $p['phase'] ?? '' ) ) {
@@ -184,7 +184,7 @@ function molosoc_lp_classify( array $s ): array {
 	if ( 'Error' === $state || '' !== trim( (string) ( $s['import_errors'] ?? '' ) ) ) {
 		return array( 'attention', 'ppl_import_error' );
 	}
-	if ( in_array( $state, MOLOSOC_LP_PENDING_STATES, true ) ) {
+	if ( in_array( $state, MOLOSOC_LPPL_PENDING_STATES, true ) ) {
 		return array( 'wait', 'ppl_import_pending' );
 	}
 	if ( '' === $state || 'None' === $state ) {
@@ -194,7 +194,7 @@ function molosoc_lp_classify( array $s ): array {
 }
 
 /** Pure: find a shipment by the plugin's local id in a normalized list. */
-function molosoc_lp_find( array $list, $id ): ?array {
+function molosoc_lppl_find( array $list, $id ): ?array {
 	foreach ( $list as $s ) {
 		if ( (int) ( $s['id'] ?? 0 ) > 0 && (int) $s['id'] === (int) $id ) {
 			return $s;
@@ -207,52 +207,52 @@ function molosoc_lp_find( array $list, $id ): ?array {
  * Settles one known shipment: refresh it from PPL while the import is still pending
  * (the plugin's own loadingShipmentNumbers), then classify.
  */
-function molosoc_lp_settle( array $s, array $io ): array {
-	[ $st ] = molosoc_lp_classify( $s );
+function molosoc_lppl_settle( array $s, array $io ): array {
+	[ $st ] = molosoc_lppl_classify( $s );
 	$batch  = trim( (string) ( $s['batch_id'] ?? '' ) );
 	if ( 'wait' === $st && '' !== $batch ) {
 		$io['refresh']( $batch );
-		$fresh = molosoc_lp_find( (array) $io['shipments'](), $s['id'] ?? 0 );
+		$fresh = molosoc_lppl_find( (array) $io['shipments'](), $s['id'] ?? 0 );
 		if ( null === $fresh ) {
 			return array( 'attention', 'ppl_shipment_missing' );
 		}
 		$s = $fresh;
 	}
-	return molosoc_lp_classify( $s );
+	return molosoc_lppl_classify( $s );
 }
 
 /**
  * The PPL step for one order. Runs under the automation's per-order worker lock.
  * Returns array( 'ready', shipment_number ) | array( 'wait', reason ) | array( 'attention', reason ).
  * Injected I/O:
- *   state() / set_state($s)              MOLOSOC_LP_STATE_META
- *   shipment_id() / set_shipment_id($id) MOLOSOC_LP_SHIPMENT_META
+ *   state() / set_state($s)              MOLOSOC_LPPL_STATE_META
+ *   shipment_id() / set_shipment_id($id) MOLOSOC_LPPL_SHIPMENT_META
  *   shipments()                          normalized shipments the PPL plugin has for the order
  *   refresh($remote_batch)               plugin's loadingShipmentNumbers for that batch
- *   facts()                              facts for molosoc_lp_check() from the plugin's model
+ *   facts()                              facts for molosoc_lppl_check() from the plugin's model
  *   api_ready()                          the plugin can obtain its CPL token
  *   stage()                              plugin draft + batch: array( ok, shipment_id, batch_local_id, reason )
  *   submit($batch_local_id)              plugin createPackages: array( ok, reason )
  *   claim()                              live-test limit slot (true when no limit is set)
  *   audit($row)
  */
-function molosoc_lp_prepare( int $order_id, array $io ): array {
+function molosoc_lppl_prepare( int $order_id, array $io ): array {
 	$state = (string) $io['state']();
 	if ( 'creating' === $state ) {
 		return array( 'attention', 'ppl_create_state_unknown' ); // Never a second create.
 	}
 	$list   = array_values( (array) $io['shipments']() );
-	$remote = array_values( array_filter( $list, 'molosoc_lp_is_remote' ) );
+	$remote = array_values( array_filter( $list, 'molosoc_lppl_is_remote' ) );
 
 	if ( 'created' === $state || 'adopted' === $state ) {
-		$own = molosoc_lp_find( $list, $io['shipment_id']() );
+		$own = molosoc_lppl_find( $list, $io['shipment_id']() );
 		if ( null === $own ) {
 			return array( 'attention', 'ppl_shipment_missing' );
 		}
 		if ( count( $remote ) > 1 || ( 1 === count( $remote ) && (int) $remote[0]['id'] !== (int) $own['id'] ) ) {
 			return array( 'attention', 'ppl_multiple_shipments' );
 		}
-		return molosoc_lp_settle( $own, $io );
+		return molosoc_lppl_settle( $own, $io );
 	}
 	if ( '' !== $state ) {
 		return array( 'attention', 'ppl_state_unknown' );
@@ -269,13 +269,13 @@ function molosoc_lp_prepare( int $order_id, array $io ): array {
 		$io['set_shipment_id']( (int) $remote[0]['id'] );
 		$io['set_state']( 'adopted' );
 		$io['audit']( array( 'order' => $order_id, 'result' => 'ppl_adopted', 'shipment' => (int) $remote[0]['id'] ) );
-		return molosoc_lp_settle( $remote[0], $io );
+		return molosoc_lppl_settle( $remote[0], $io );
 	}
 	if ( $list ) {
 		return array( 'attention', 'ppl_manual_draft_exists' );
 	}
 
-	$why = molosoc_lp_check( (array) $io['facts']() );
+	$why = molosoc_lppl_check( (array) $io['facts']() );
 	if ( '' !== $why ) {
 		return array( 'attention', $why );
 	}
@@ -312,7 +312,7 @@ function molosoc_lp_prepare( int $order_id, array $io ): array {
  * one shipment (the batch this automation creates). Returns null for a shared batch.
  * `$batch_shipments` are the plugin's shipments with that remote batch id.
  */
-function molosoc_lp_label_window( array $own, array $batch_shipments ): ?array {
+function molosoc_lppl_label_window( array $own, array $batch_shipments ): ?array {
 	if ( 1 !== count( $batch_shipments ) || (int) ( $batch_shipments[0]['id'] ?? 0 ) !== (int) ( $own['id'] ?? -1 ) ) {
 		return null;
 	}
@@ -321,12 +321,12 @@ function molosoc_lp_label_window( array $own, array $batch_shipments ): ?array {
 }
 
 /** Pure: CPL remote batch ids are UUIDs. */
-function molosoc_lp_batch_id_valid( $id ): bool {
+function molosoc_lppl_batch_id_valid( $id ): bool {
 	return is_string( $id ) && 1 === preg_match( '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $id );
 }
 
 /** Pure: the label URL, same endpoint and parameters as the plugin (A4, first position). */
-function molosoc_lp_label_url( string $base, string $batch, int $offset, int $limit ): string {
+function molosoc_lppl_label_url( string $base, string $batch, int $offset, int $limit ): string {
 	return rtrim( $base, '/' ) . '/shipment/batch/' . rawurlencode( $batch ) . '/label?' . http_build_query(
 		array(
 			'limit'    => $limit,
@@ -347,14 +347,14 @@ function molosoc_lp_label_url( string $base, string $batch, int $offset, int $li
  * fetch(batch, offset, limit) → bytes|false. The ref is the PPL shipment number, so the
  * state machine's `ref_changed` check stops a different shipment from ever being mailed.
  */
-function molosoc_lp_provider( string $carrier, string $stored_ref, array $d ): array {
+function molosoc_lppl_provider( string $carrier, string $stored_ref, array $d ): array {
 	if ( 'PPL' !== $carrier ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'unknown_carrier' );
 	}
 	if ( ! in_array( (string) ( $d['state'] ?? '' ), array( 'created', 'adopted' ), true ) || ! is_array( $d['own'] ?? null ) ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'ppl_shipment_not_ready' );
 	}
-	[ $st, $val ] = molosoc_lp_classify( $d['own'] );
+	[ $st, $val ] = molosoc_lppl_classify( $d['own'] );
 	if ( 'wait' === $st ) {
 		return array( 'ok' => false, 'live' => true, 'reason' => $val );
 	}
@@ -362,10 +362,10 @@ function molosoc_lp_provider( string $carrier, string $stored_ref, array $d ): a
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => $val );
 	}
 	$batch = trim( (string) ( $d['own']['batch_id'] ?? '' ) );
-	if ( ! molosoc_lp_batch_id_valid( $batch ) ) {
+	if ( ! molosoc_lppl_batch_id_valid( $batch ) ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'ppl_batch_id_invalid' );
 	}
-	$win = molosoc_lp_label_window( $d['own'], (array) ( $d['batch_shipments'] ?? array() ) );
+	$win = molosoc_lppl_label_window( $d['own'], (array) ( $d['batch_shipments'] ?? array() ) );
 	if ( null === $win ) {
 		return array( 'ok' => false, 'live' => true, 'permanent' => true, 'reason' => 'ppl_shared_batch_manual' );
 	}
@@ -379,13 +379,13 @@ function molosoc_lp_provider( string $carrier, string $stored_ref, array $d ): a
 /* ---------------------------------------------------------------- WP glue */
 
 /** True when the PPL path may run: constant on and the PPL CZ plugin classes are loaded. */
-function molosoc_lp_enabled_now(): bool {
-	return molosoc_lp_gate( defined( 'MOLOSOC_LABEL_AUTO_PPL_ENABLED' ) ? MOLOSOC_LABEL_AUTO_PPL_ENABLED : null )
-		&& molosoc_lp_plugin_available();
+function molosoc_lppl_enabled_now(): bool {
+	return molosoc_lppl_gate( defined( 'MOLOSOC_LABEL_AUTO_PPL_ENABLED' ) ? MOLOSOC_LABEL_AUTO_PPL_ENABLED : null )
+		&& molosoc_lppl_plugin_available();
 }
 
-function molosoc_lp_plugin_available(): bool {
-	return molosoc_lp_limit_ok( defined( 'MOLOSOC_LABEL_AUTO_PPL_LIMIT' ), defined( 'MOLOSOC_LABEL_AUTO_PPL_LIMIT' ) ? MOLOSOC_LABEL_AUTO_PPL_LIMIT : null )
+function molosoc_lppl_plugin_available(): bool {
+	return molosoc_lppl_limit_ok( defined( 'MOLOSOC_LABEL_AUTO_PPL_LIMIT' ), defined( 'MOLOSOC_LABEL_AUTO_PPL_LIMIT' ) ? MOLOSOC_LABEL_AUTO_PPL_LIMIT : null )
 		&& class_exists( '\PPLCZ\Admin\CPLOperation' ) && class_exists( '\PPLCZ\Data\ShipmentData' )
 		&& class_exists( '\PPLCZ\Data\BatchData' ) && class_exists( '\PPLCZ\Data\PackageData' )
 		&& class_exists( '\PPLCZ\Model\Model\ShipmentModel' ) && class_exists( '\PPLCZ\Admin\Errors' )
@@ -393,7 +393,7 @@ function molosoc_lp_plugin_available(): bool {
 }
 
 /** The plugin's ShipmentData as a plain array (ids, states, package numbers; no customer data). */
-function molosoc_lp_normalize( $data ): array {
+function molosoc_lppl_normalize( $data ): array {
 	$packages = array();
 	foreach ( (array) $data->get_package_ids() as $pid ) {
 		$p          = new \PPLCZ\Data\PackageData( (int) $pid );
@@ -412,20 +412,20 @@ function molosoc_lp_normalize( $data ): array {
 	);
 }
 
-function molosoc_lp_shipments_now( int $order_id ): array {
-	return array_map( 'molosoc_lp_normalize', (array) \PPLCZ\Data\ShipmentData::find_shipments_by_wc_order( $order_id ) );
+function molosoc_lppl_shipments_now( int $order_id ): array {
+	return array_map( 'molosoc_lppl_normalize', (array) \PPLCZ\Data\ShipmentData::find_shipments_by_wc_order( $order_id ) );
 }
 
 /** Builds the plugin's own ShipmentModel for the order and validates it with the plugin's validator. */
-function molosoc_lp_model_now( int $order_id ): array {
+function molosoc_lppl_model_now( int $order_id ): array {
 	$order  = new \WC_Order( $order_id );
 	$model  = pplcz_denormalize( $order, \PPLCZ\Model\Model\ShipmentModel::class );
 	$errors = pplcz_validate( $model, new \PPLCZ\Admin\Errors(), '' );
 	return array( $order, $model, $errors );
 }
 
-/** Facts for molosoc_lp_check(): codes and amounts only. */
-function molosoc_lp_facts( $order, $model, $errors ): array {
+/** Facts for molosoc_lppl_check(): codes and amounts only. */
+function molosoc_lppl_facts( $order, $model, $errors ): array {
 	$methods = array();
 	foreach ( (array) $order->get_shipping_methods() as $m ) {
 		$methods[] = (string) $m->get_method_id();
@@ -455,9 +455,9 @@ function molosoc_lp_facts( $order, $model, $errors ): array {
  * Plugin draft + one-shipment batch, exactly like the batch screen's "add order" step.
  * Re-checks the facts on the very model that is saved.
  */
-function molosoc_lp_stage_now( int $order_id ): array {
-	[ $order, $model, $errors ] = molosoc_lp_model_now( $order_id );
-	$why = molosoc_lp_check( molosoc_lp_facts( $order, $model, $errors ) );
+function molosoc_lppl_stage_now( int $order_id ): array {
+	[ $order, $model, $errors ] = molosoc_lppl_model_now( $order_id );
+	$why = molosoc_lppl_check( molosoc_lppl_facts( $order, $model, $errors ) );
 	if ( '' !== $why ) {
 		return array( 'ok' => false, 'reason' => $why );
 	}
@@ -474,22 +474,22 @@ function molosoc_lp_stage_now( int $order_id ): array {
 }
 
 /** The plugin's own create call (the batch screen's "Vytisknout zásilky"). */
-function molosoc_lp_submit_now( int $batch_local_id ): array {
-	( new \PPLCZ\Admin\CPLOperation() )->createPackages( $batch_local_id, MOLOSOC_LP_PRINT );
+function molosoc_lppl_submit_now( int $batch_local_id ): array {
+	( new \PPLCZ\Admin\CPLOperation() )->createPackages( $batch_local_id, MOLOSOC_LPPL_PRINT );
 	return array( 'ok' => true );
 }
 
 /** Same label endpoint as CPLOperation::getLabelContents(), returned instead of exit(). */
-function molosoc_lp_fetch_now( string $batch, int $offset, int $limit ) {
+function molosoc_lppl_fetch_now( string $batch, int $offset, int $limit ) {
 	$cpl   = new \PPLCZ\Admin\CPLOperation();
-	$token = $cpl->getAccessToken( MOLOSOC_LP_LABEL_TIMEOUT );
+	$token = $cpl->getAccessToken( MOLOSOC_LPPL_LABEL_TIMEOUT );
 	if ( ! is_string( $token ) || '' === $token ) {
 		return false;
 	}
 	$res = wp_remote_get(
-		molosoc_lp_label_url( \PPLCZ\Admin\CPLOperation::BASE_URL, $batch, $offset, $limit ),
+		molosoc_lppl_label_url( \PPLCZ\Admin\CPLOperation::BASE_URL, $batch, $offset, $limit ),
 		array(
-			'timeout' => MOLOSOC_LP_LABEL_TIMEOUT,
+			'timeout' => MOLOSOC_LPPL_LABEL_TIMEOUT,
 			'headers' => array( 'Authorization' => 'Bearer ' . $token ),
 		)
 	);
@@ -500,55 +500,55 @@ function molosoc_lp_fetch_now( string $batch, int $offset, int $limit ) {
 	return is_string( $body ) && '' !== $body ? $body : false;
 }
 
-/** Live I/O for molosoc_lp_prepare(). `$audit` is the automation's audit writer. */
-function molosoc_lp_io( int $order_id, callable $audit ): array {
+/** Live I/O for molosoc_lppl_prepare(). `$audit` is the automation's audit writer. */
+function molosoc_lppl_io( int $order_id, callable $audit ): array {
 	return array(
 		'state'           => static function () use ( $order_id ) {
-			return molosoc_ld3_meta_get( $order_id, MOLOSOC_LP_STATE_META );
+			return molosoc_ld3_meta_get( $order_id, MOLOSOC_LPPL_STATE_META );
 		},
 		'set_state'       => static function ( $s ) use ( $order_id ) {
-			molosoc_ld3_meta_set( $order_id, MOLOSOC_LP_STATE_META, (string) $s );
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LPPL_STATE_META, (string) $s );
 		},
 		'shipment_id'     => static function () use ( $order_id ) {
-			return (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LP_SHIPMENT_META );
+			return (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LPPL_SHIPMENT_META );
 		},
 		'set_shipment_id' => static function ( $id ) use ( $order_id ) {
-			molosoc_ld3_meta_set( $order_id, MOLOSOC_LP_SHIPMENT_META, (string) (int) $id );
+			molosoc_ld3_meta_set( $order_id, MOLOSOC_LPPL_SHIPMENT_META, (string) (int) $id );
 		},
 		'shipments'       => static function () use ( $order_id ) {
-			return molosoc_lp_shipments_now( $order_id );
+			return molosoc_lppl_shipments_now( $order_id );
 		},
 		'refresh'         => static function ( $batch ) {
-			if ( molosoc_lp_batch_id_valid( $batch ) ) {
+			if ( molosoc_lppl_batch_id_valid( $batch ) ) {
 				( new \PPLCZ\Admin\CPLOperation() )->loadingShipmentNumbers( array( $batch ) );
 			}
 		},
 		'facts'           => static function () use ( $order_id ) {
-			[ $order, $model, $errors ] = molosoc_lp_model_now( $order_id );
-			return molosoc_lp_facts( $order, $model, $errors );
+			[ $order, $model, $errors ] = molosoc_lppl_model_now( $order_id );
+			return molosoc_lppl_facts( $order, $model, $errors );
 		},
 		'api_ready'       => static function () {
-			$t = ( new \PPLCZ\Admin\CPLOperation() )->getAccessToken( MOLOSOC_LP_LABEL_TIMEOUT );
+			$t = ( new \PPLCZ\Admin\CPLOperation() )->getAccessToken( MOLOSOC_LPPL_LABEL_TIMEOUT );
 			return is_string( $t ) && '' !== $t;
 		},
 		'stage'           => static function () use ( $order_id ) {
-			return molosoc_lp_stage_now( $order_id );
+			return molosoc_lppl_stage_now( $order_id );
 		},
-		'submit'          => 'molosoc_lp_submit_now',
+		'submit'          => 'molosoc_lppl_submit_now',
 		'claim'           => static function () use ( $order_id ) {
 			if ( ! defined( 'MOLOSOC_LABEL_AUTO_PPL_LIMIT' ) ) {
 				return true;
 			}
-			return molosoc_lp_claim(
+			return molosoc_lppl_claim(
 				(int) MOLOSOC_LABEL_AUTO_PPL_LIMIT,
 				$order_id,
 				static function ( $i ) {
-					wp_cache_delete( MOLOSOC_LP_SLOT_OPTION . $i, 'options' );
+					wp_cache_delete( MOLOSOC_LPPL_SLOT_OPTION . $i, 'options' );
 					wp_cache_delete( 'notoptions', 'options' );
-					return (int) get_option( MOLOSOC_LP_SLOT_OPTION . $i, 0 );
+					return (int) get_option( MOLOSOC_LPPL_SLOT_OPTION . $i, 0 );
 				},
 				static function ( $i, $id ) {
-					return (bool) add_option( MOLOSOC_LP_SLOT_OPTION . $i, (string) (int) $id, '', 'no' );
+					return (bool) add_option( MOLOSOC_LPPL_SLOT_OPTION . $i, (string) (int) $id, '', 'no' );
 				}
 			);
 		},
@@ -557,24 +557,24 @@ function molosoc_lp_io( int $order_id, callable $audit ): array {
 }
 
 /** Entry point used by the automation worker for a PPL order. */
-function molosoc_lp_prepare_now( int $order_id, callable $audit ): array {
-	return molosoc_lp_prepare( $order_id, molosoc_lp_io( $order_id, $audit ) );
+function molosoc_lppl_prepare_now( int $order_id, callable $audit ): array {
+	return molosoc_lppl_prepare( $order_id, molosoc_lppl_io( $order_id, $audit ) );
 }
 
 /** Fetch-only provider for the automation's state machine (never creates). */
-function molosoc_lp_provider_now( int $order_id, string $carrier, string $ref ): array {
-	$own   = molosoc_lp_find( molosoc_lp_shipments_now( $order_id ), (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LP_SHIPMENT_META ) );
+function molosoc_lppl_provider_now( int $order_id, string $carrier, string $ref ): array {
+	$own   = molosoc_lppl_find( molosoc_lppl_shipments_now( $order_id ), (int) molosoc_ld3_meta_get( $order_id, MOLOSOC_LPPL_SHIPMENT_META ) );
 	$batch = is_array( $own ) ? trim( (string) $own['batch_id'] ) : '';
-	return molosoc_lp_provider(
+	return molosoc_lppl_provider(
 		$carrier,
 		$ref,
 		array(
-			'state'           => molosoc_ld3_meta_get( $order_id, MOLOSOC_LP_STATE_META ),
+			'state'           => molosoc_ld3_meta_get( $order_id, MOLOSOC_LPPL_STATE_META ),
 			'own'             => $own,
-			'batch_shipments' => molosoc_lp_batch_id_valid( $batch )
-				? array_map( 'molosoc_lp_normalize', (array) \PPLCZ\Data\ShipmentData::read_remote_batch_shipments( $batch ) )
+			'batch_shipments' => molosoc_lppl_batch_id_valid( $batch )
+				? array_map( 'molosoc_lppl_normalize', (array) \PPLCZ\Data\ShipmentData::read_remote_batch_shipments( $batch ) )
 				: array(),
-			'fetch'           => 'molosoc_lp_fetch_now',
+			'fetch'           => 'molosoc_lppl_fetch_now',
 		)
 	);
 }

@@ -62,8 +62,8 @@ def ship(id_=11, state="Complete", batch=UUID, errors="", number="40123456789", 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Gates(unittest.TestCase):
     def test_ppl_gate_strict_and_off_by_default(self):
-        r = php("echo json_encode([molosoc_lp_gate(true), molosoc_lp_gate(null), molosoc_lp_gate(1),"
-                "molosoc_lp_gate('true'), molosoc_lp_gate(false)]);")
+        r = php("echo json_encode([molosoc_lppl_gate(true), molosoc_lppl_gate(null), molosoc_lppl_gate(1),"
+                "molosoc_lppl_gate('true'), molosoc_lppl_gate(false)]);")
         self.assertEqual(r, [True, False, False, False, False])
 
     def test_auto_ppl_gate_needs_constant_file_and_plugin(self):
@@ -72,24 +72,24 @@ class Gates(unittest.TestCase):
         self.assertEqual(r, [True, False, False, False, False])
 
     def test_ppl_off_without_constant_and_without_plugin(self):
-        self.assertEqual(php("echo json_encode([molosoc_la_ppl_on(), molosoc_lp_enabled_now()]);"), [False, False])
+        self.assertEqual(php("echo json_encode([molosoc_la_ppl_on(), molosoc_lppl_enabled_now()]);"), [False, False])
         # Constant on, but the PPL CZ plugin classes are not loaded: still off (fail closed).
-        r = php("echo json_encode([molosoc_la_ppl_on(), molosoc_lp_enabled_now()]);",
+        r = php("echo json_encode([molosoc_la_ppl_on(), molosoc_lppl_enabled_now()]);",
                 pre_extra="define('MOLOSOC_LABEL_AUTO_PPL_ENABLED', true);")
         self.assertEqual(r, [False, False])
 
     def test_live_test_limit_validation(self):
-        r = php("echo json_encode([molosoc_lp_limit_ok(false,null), molosoc_lp_limit_ok(true,1), molosoc_lp_limit_ok(true,20),"
-                "molosoc_lp_limit_ok(true,0), molosoc_lp_limit_ok(true,21), molosoc_lp_limit_ok(true,'1'), molosoc_lp_limit_ok(true,null)]);")
+        r = php("echo json_encode([molosoc_lppl_limit_ok(false,null), molosoc_lppl_limit_ok(true,1), molosoc_lppl_limit_ok(true,20),"
+                "molosoc_lppl_limit_ok(true,0), molosoc_lppl_limit_ok(true,21), molosoc_lppl_limit_ok(true,'1'), molosoc_lppl_limit_ok(true,null)]);")
         self.assertEqual(r, [True, True, True, False, False, False, False])
 
     def test_slot_claim_first_n_orders_only(self):
         code = ("$S=[]; $get=function($i) use (&$S){ return $S[$i] ?? 0; };"
                 "$add=function($i,$id) use (&$S){ if (isset($S[$i])) return false; $S[$i]=$id; return true; };"
-                "$r=[molosoc_lp_claim(1,77,$get,$add), molosoc_lp_claim(1,78,$get,$add), molosoc_lp_claim(1,77,$get,$add),"
-                "molosoc_lp_claim(2,78,$get,$add), molosoc_lp_claim(2,79,$get,$add)];"
+                "$r=[molosoc_lppl_claim(1,77,$get,$add), molosoc_lppl_claim(1,78,$get,$add), molosoc_lppl_claim(1,77,$get,$add),"
+                "molosoc_lppl_claim(2,78,$get,$add), molosoc_lppl_claim(2,79,$get,$add)];"
                 # A lost race: the slot looks free but another request wins add_option.
-                "$race=molosoc_lp_claim(1,80,function($i){ return 0; },function($i,$id){ return false; });"
+                "$race=molosoc_lppl_claim(1,80,function($i){ return 0; },function($i,$id){ return false; });"
                 "echo json_encode([$r,$S,$race]);")
         r, S, race = php(code)
         self.assertEqual(r, [True, False, True, True, False])
@@ -97,7 +97,7 @@ class Gates(unittest.TestCase):
         self.assertFalse(race)
 
     def test_state_meta_key_shared(self):
-        self.assertEqual(php("echo json_encode(MOLOSOC_LA_PPL_STATE_META === MOLOSOC_LP_STATE_META);"), True)
+        self.assertEqual(php("echo json_encode(MOLOSOC_LA_PPL_STATE_META === MOLOSOC_LPPL_STATE_META);"), True)
 
     def test_ppl_file_registers_no_hooks(self):
         for pre in ("", "define('MOLOSOC_LABEL_AUTO_PPL_ENABLED', true);"):
@@ -107,7 +107,7 @@ class Gates(unittest.TestCase):
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Check(unittest.TestCase):
     def check(self, **kw):
-        return php("echo json_encode(molosoc_lp_check(%s));" % q(facts(**kw)))
+        return php("echo json_encode(molosoc_lppl_check(%s));" % q(facts(**kw)))
 
     def test_ok_for_smar_sbox_priv(self):
         self.assertEqual(self.check(), "")
@@ -140,14 +140,14 @@ class Check(unittest.TestCase):
         self.assertEqual(self.check(cod_value=None), "ppl_cod_mismatch")
 
     def test_missing_facts_fail_closed(self):
-        self.assertNotEqual(php("echo json_encode(molosoc_lp_check([]));"), "")
-        self.assertEqual(php("echo json_encode(molosoc_lp_check(['method_ids'=>['pplcz_SMAR']]));"), "ppl_validation_failed")
+        self.assertNotEqual(php("echo json_encode(molosoc_lppl_check([]));"), "")
+        self.assertEqual(php("echo json_encode(molosoc_lppl_check(['method_ids'=>['pplcz_SMAR']]));"), "ppl_validation_failed")
 
 
 @unittest.skipUnless(HAVE_PHP, "php not installed")
 class Classify(unittest.TestCase):
     def c(self, s):
-        return php("echo json_encode(molosoc_lp_classify(%s));" % q(s))
+        return php("echo json_encode(molosoc_lppl_classify(%s));" % q(s))
 
     def test_states(self):
         self.assertEqual(self.c(ship()), ["ready", "40123456789"])
@@ -164,13 +164,13 @@ class Classify(unittest.TestCase):
         self.assertEqual(self.c(ship(phase="Canceled")), ["attention", "ppl_shipment_cancelled"])
 
     def test_is_remote(self):
-        r = php("echo json_encode([molosoc_lp_is_remote(%s), molosoc_lp_is_remote(%s), molosoc_lp_is_remote(%s),"
-                "molosoc_lp_is_remote(%s)]);" % (q(ship()), q(ship(state="None", batch="")),
+        r = php("echo json_encode([molosoc_lppl_is_remote(%s), molosoc_lppl_is_remote(%s), molosoc_lppl_is_remote(%s),"
+                "molosoc_lppl_is_remote(%s)]);" % (q(ship()), q(ship(state="None", batch="")),
                                                  q(ship(state="InProgress", batch="")), q(ship(state="", batch=""))))
         self.assertEqual(r, [True, False, True, False])
 
 
-# Fake PPL plugin + order meta for molosoc_lp_prepare. $P is the plugin's table for ONE order.
+# Fake PPL plugin + order meta for molosoc_lppl_prepare. $P is the plugin's table for ONE order.
 PREP = r"""
 function mk_prep(array &$P, array &$M, array $cfg = []) {
  return [
@@ -202,7 +202,7 @@ function mk_prep(array &$P, array &$M, array $cfg = []) {
 class Prepare(unittest.TestCase):
     def run_prep(self, P=None, M=None, runs=1, **cfg):
         cfg.setdefault("facts", facts())
-        code = (PREP + "$P=%s; $M=%s; $out=[]; for($i=0;$i<%d;$i++){ $out[]=molosoc_lp_prepare(77, mk_prep($P,$M,%s)); }"
+        code = (PREP + "$P=%s; $M=%s; $out=[]; for($i=0;$i<%d;$i++){ $out[]=molosoc_lppl_prepare(77, mk_prep($P,$M,%s)); }"
                        " echo json_encode([$out,$P,$M]);" % (q(P) if P else "['shipments'=>[]]", q(M) if M else "[]", runs, q(cfg)))
         return php(code)
 
@@ -238,7 +238,7 @@ class Prepare(unittest.TestCase):
         self.assertEqual((out, P.get("stages"), M), ([["wait", "ppl_api_unavailable"]] * 2, None, []))
 
     def test_facts_exception_before_create_writes_nothing(self):
-        code = (PREP + "$P=['shipments'=>[]]; $M=[]; try { molosoc_lp_prepare(77, mk_prep($P,$M,%s)); $r='no'; }"
+        code = (PREP + "$P=['shipments'=>[]]; $M=[]; try { molosoc_lppl_prepare(77, mk_prep($P,$M,%s)); $r='no'; }"
                        " catch (RuntimeException $e) { $r='thrown'; } echo json_encode([$r,$P,$M]);" % q(dict(facts=facts(), facts_throw=True)))
         r, P, M = php(code)
         self.assertEqual((r, P.get("stages"), M), ("thrown", None, []))
@@ -276,7 +276,7 @@ class Prepare(unittest.TestCase):
         self.assertEqual(P["claims"], 1)
 
     def test_import_error_after_create(self):
-        code = (PREP + "$P=['shipments'=>[]]; $M=[]; $o=[]; for($i=0;$i<3;$i++){ $o[]=molosoc_lp_prepare(77, mk_prep($P,$M,%s)); }"
+        code = (PREP + "$P=['shipments'=>[]]; $M=[]; $o=[]; for($i=0;$i<3;$i++){ $o[]=molosoc_lppl_prepare(77, mk_prep($P,$M,%s)); }"
                        " echo json_encode([$o,$P]);" % q(dict(facts=facts(), **{"import": "Error"})))
         o, P = php(code)
         self.assertEqual(o, [["wait", "ppl_import_pending"], ["attention", "ppl_import_error"], ["attention", "ppl_import_error"]])
@@ -288,7 +288,7 @@ class ProviderAndLabel(unittest.TestCase):
     def prov(self, state="created", own=None, batch=None, fetch_ok=True, carrier="PPL"):
         own = ship() if own is None else own
         batch = [own] if batch is None else batch
-        code = ("$calls=[]; $r=molosoc_lp_provider(%s,'',['state'=>%s,'own'=>%s,'batch_shipments'=>%s,"
+        code = ("$calls=[]; $r=molosoc_lppl_provider(%s,'',['state'=>%s,'own'=>%s,'batch_shipments'=>%s,"
                 "'fetch'=>function($b,$o,$l) use (&$calls){ $calls[]=[$b,$o,$l]; return %s; }]);"
                 "if(isset($r['pdf'])) $r['pdf']=strlen($r['pdf']); echo json_encode([$r,$calls]);" % (
                     json.dumps(carrier), json.dumps(state), "null" if own == "null" else q(own), q(batch),
@@ -323,13 +323,13 @@ class ProviderAndLabel(unittest.TestCase):
         self.assertEqual((r["ok"], r["reason"], r.get("permanent")), (False, "ppl_label_fetch_failed", None))
 
     def test_label_window_and_url(self):
-        r = php("echo json_encode([molosoc_lp_label_window(%s,%s), molosoc_lp_label_window(%s,%s), molosoc_lp_label_window(%s,[])]);" % (
+        r = php("echo json_encode([molosoc_lppl_label_window(%s,%s), molosoc_lppl_label_window(%s,%s), molosoc_lppl_label_window(%s,[])]);" % (
             q(ship(packages=[{"shipment_number": "1"}, {"shipment_number": "2"}])),
             q([ship()]), q(ship()), q([ship(), ship(id_=2)]), q(ship())))
         self.assertEqual(r, [[0, 2], None, None])
-        url = php("echo json_encode(molosoc_lp_label_url('https://api.dhl.com/ecs/ppl/myapi2', %s, 0, 1));" % json.dumps(UUID))
+        url = php("echo json_encode(molosoc_lppl_label_url('https://api.dhl.com/ecs/ppl/myapi2', %s, 0, 1));" % json.dumps(UUID))
         self.assertEqual(url, "https://api.dhl.com/ecs/ppl/myapi2/shipment/batch/%s/label?limit=1&offset=0&pageSize=A4&position=1&orderBy=ReferenceId" % UUID)
-        self.assertEqual(php("echo json_encode([molosoc_lp_batch_id_valid(%s), molosoc_lp_batch_id_valid('x'), molosoc_lp_batch_id_valid(null)]);"
+        self.assertEqual(php("echo json_encode([molosoc_lppl_batch_id_valid(%s), molosoc_lppl_batch_id_valid('x'), molosoc_lppl_batch_id_valid(null)]);"
                              % json.dumps(UUID)), [True, False, False])
 
 
@@ -411,7 +411,7 @@ class Step(unittest.TestCase):
             self.assertNotIn("prepare", L["calls"])
 
 
-# End to end: REAL molosoc_la_step + REAL molosoc_lp_prepare (fake plugin) + REAL Phase 3 state
+# End to end: REAL molosoc_la_step + REAL molosoc_lppl_prepare (fake plugin) + REAL Phase 3 state
 # machine + REAL PPL provider + REAL fixed-recipient mailer (fake wp_mail).
 E2E = PREP + r"""
 function e2e(array $snap, array &$P, array &$M, array &$mails, array $cfg) {
@@ -424,9 +424,9 @@ function e2e(array $snap, array &$P, array &$M, array &$mails, array $cfg) {
   'lock'=>function(){ return true; }, 'unlock'=>function(){},
   'audit'=>function($r) use (&$M){ $M['audit'][]=$r; },
   'provider'=>function($c,$ref) use (&$P, &$M, $cfg){
-     $own = molosoc_lp_find(array_values($P['shipments']), $M['ppl_shipment'] ?? 0);
+     $own = molosoc_lppl_find(array_values($P['shipments']), $M['ppl_shipment'] ?? 0);
      $batch = $own ? array_values(array_filter($P['shipments'], function($s) use ($own){ return $s['batch_id']===$own['batch_id']; })) : [];
-     $r = molosoc_lp_provider($c,$ref,['state'=>$M['ppl_state'] ?? '','own'=>$own,'batch_shipments'=>$batch,
+     $r = molosoc_lppl_provider($c,$ref,['state'=>$M['ppl_state'] ?? '','own'=>$own,'batch_shipments'=>$batch,
         'fetch'=>function($b,$o,$l) use (&$P, $cfg){ $P['fetches'][]=[$b,$o,$l]; return empty($cfg['fetch_fail']) ? base64_decode('PDFB64') : false; }]);
      $M['detail']=$r['reason'] ?? ''; return $r; },
   'mailer'=>function($mail) use (&$mails){ return molosoc_ll_mail($mail, function($to,$s,$b,$h,$a) use (&$mails){ $mails[]=[$to,$s,$h,basename($a[0])]; return true; }, function($n,$b){ return '/tmp/'.$n; }, function($p){}); },
@@ -444,7 +444,7 @@ function e2e(array $snap, array &$P, array &$M, array &$mails, array $cfg) {
   'attention_reason'=>function() use (&$M){ return molosoc_la_attention_reason($M['audit'] ?? []); },
   'ppl_enabled'=>function(){ return true; },
   'ppl_state'=>function() use (&$M){ return $M['ppl_state'] ?? ''; },
-  'ppl_prepare'=>function() use (&$P, &$M, $cfg){ return molosoc_lp_prepare(77, mk_prep($P, $M, $cfg)); },
+  'ppl_prepare'=>function() use (&$P, &$M, $cfg){ return molosoc_lppl_prepare(77, mk_prep($P, $M, $cfg)); },
  ];
  return molosoc_la_step(77, $step);
 }
@@ -550,22 +550,22 @@ class SafetyContract(unittest.TestCase):
         self.assertEqual(code.count("->createPackages("), 1)
         self.assertEqual(code.count("wp_remote_get("), 1)
         self.assertIn("CPLOperation::BASE_URL", code)
-        # The create call is reachable only through molosoc_lp_prepare()'s `submit` after `creating`.
-        prep = re.search(r"function molosoc_lp_prepare\(.*?\n}\n", code, re.S).group(0)
+        # The create call is reachable only through molosoc_lppl_prepare()'s `submit` after `creating`.
+        prep = re.search(r"function molosoc_lppl_prepare\(.*?\n}\n", code, re.S).group(0)
         self.assertLess(prep.index("set_state']( 'creating' )"), prep.index("$io['stage']()"))
         self.assertLess(prep.index("$io['stage']()"), prep.index("$io['submit']("))
 
     def test_provider_never_creates(self):
         code = self.code()
-        for fn in ("molosoc_lp_provider", "molosoc_lp_provider_now", "molosoc_lp_fetch_now"):
+        for fn in ("molosoc_lppl_provider", "molosoc_lppl_provider_now", "molosoc_lppl_fetch_now"):
             body = re.search(r"function %s\(.*?\n}\n" % fn, code, re.S).group(0)
             for w in ("createPackages", "stage", "submit", "->save(", "meta_set"):
                 self.assertNotIn(w, body, (fn, w))
 
     def test_uses_the_plugins_own_batch_flow(self):
-        body = re.search(r"function molosoc_lp_stage_now\(.*?\n}\n", self.code(), re.S).group(0)
+        body = re.search(r"function molosoc_lppl_stage_now\(.*?\n}\n", self.code(), re.S).group(0)
         for w in ("pplcz_denormalize( $model, \\PPLCZ\\Data\\ShipmentData::class )", "new \\PPLCZ\\Data\\BatchData()",
-                  "set_batch_local_id", "reorder_batch_shipments", "molosoc_lp_check(", "find_shipments_by_wc_order"):
+                  "set_batch_local_id", "reorder_batch_shipments", "molosoc_lppl_check(", "find_shipments_by_wc_order"):
             self.assertIn(w, body, w)
 
     def test_auto_file_still_has_no_ppl_internals(self):
