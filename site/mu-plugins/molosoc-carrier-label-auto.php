@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: MOLOSOC Carrier Label Automation (OFF by default, all eligible new orders)
- * Description: Hands-off carrier label pipeline for every eligible NEW order: queue, wait for the Packeta packet, fetch its existing label PDF, mail it to the dispatcher via wp_mail, retry, alert on failure. PPL stays manual (alert only). Includes a read-only status page. Issue #369.
+ * Description: Hands-off carrier label pipeline for every eligible NEW order: queue, wait for the Packeta packet, fetch its existing label PDF, mail it to the dispatcher via wp_mail, retry, alert on failure. PPL stays manual (alert only) unless the separate PPL path (#391) is enabled. Includes a read-only status page. Issue #369.
  * Version: 0.1.0
  *
  * SAFETY CONTRACT
@@ -20,7 +20,9 @@
  *     courier, needs a courier label), a cancelled/handed-over packet or a malformed packet id
  *     goes to `attention`, nothing is mailed.
  *   - PPL CZ 1.1.3 has no headless label path (see docs): PPL orders go to `attention` with
- *     one alert, nothing is fetched or mailed.
+ *     one alert, nothing is fetched or mailed. Issue #391: only when MOLOSOC_LABEL_AUTO_PPL_ENABLED
+ *     === true and molosoc-carrier-label-ppl.php is loaded, PPL orders go through that file
+ *     instead (one shipment per order through the PPL plugin, then this same mail path).
  *   - Label mail: the existing fixed-recipient mailer (MOLOSOC_LD_RECIPIENT, Cc MOLOSOC_LD_CC)
  *     and the Phase 3 state machine: at-most-once mail, stored packet ref (`ref_changed` stops
  *     a duplicate), tries limit. Customers are never mailed.
@@ -56,6 +58,12 @@ const MOLOSOC_LA_CAP            = 'manage_woocommerce';
 const MOLOSOC_LA_LOG_SOURCE     = 'molosoc-carrier-label';
 // Packeta packet statuses for which the label is still the one to print (not yet handed over).
 const MOLOSOC_LA_PACKET_STATUS_OK = array( '', 'received data' );
+// Issue #391: PPL path. PPL imports a created shipment within minutes; check every 5 min,
+// give up (attention + one alert) 6 h after the order was first seen.
+const MOLOSOC_LA_PPL_WAIT_INTERVAL = 300;
+const MOLOSOC_LA_PPL_WAIT_MAX      = 21600;
+// Order meta the PPL file (#391) uses for its per-order idempotency state.
+const MOLOSOC_LA_PPL_STATE_META    = '_molosoc_label_ppl_state';
 
 /**
  * Pure gate. Returns array( bool allowed, string reason ).
@@ -115,11 +123,12 @@ function molosoc_la_packeta_check( $row ): string {
 
 /**
  * Pure plan for one order. Returns array( action, reason ), action one of:
- *   done | attention_existing | check (mailing) | skip | wait | attention | send
+ *   done | attention_existing | check (mailing) | skip | wait | attention | send | ppl
  * `$snap` is the delivery snapshot, `$state` the stored delivery state, `$row` Packeta's
- * row (Zásilkovna only), `$configured` whether a Packeta API password is available.
+ * row (Zásilkovna only), `$configured` whether a Packeta API password is available,
+ * `$ppl_auto` whether the PPL path (#391) is enabled and loaded.
  */
-function molosoc_la_plan( array $snap, string $state, $row, bool $configured ): array {
+function molosoc_la_plan( array $snap, string $state, $row, bool $configured, bool $ppl_auto = false ): array {
 	if ( 'mailed' === $state ) {
 		return array( 'done', 'already_mailed' );
 	}
@@ -135,7 +144,7 @@ function molosoc_la_plan( array $snap, string $state, $row, bool $configured ): 
 	}
 	$carrier = (string) ( $snap['carrier'] ?? '' );
 	if ( 'PPL' === $carrier ) {
-		return array( 'attention', 'ppl_manual_label_required' );
+		return $ppl_auto ? array( 'ppl', 'ppl_auto' ) : array( 'attention', 'ppl_manual_label_required' );
 	}
 	if ( 'Zásilkovna' !== $carrier ) {
 		return array( 'attention', 'unknown_carrier' );
@@ -197,6 +206,22 @@ function molosoc_la_hint( string $reason ): string {
 		'exception'                       => 'Automat opakovaně narazil na chybu (výjimku). Štítek nebyl odeslán, zkontrolujte log molosoc-carrier-label-auto.',
 		'unknown_carrier'                 => 'Neznámý dopravce.',
 		'needs_attention'                 => 'Objednávka vyžaduje ruční kontrolu, důvod najdete v auditu objednávky.',
+		// Issue #391: PPL path.
+		'ppl_create_state_unknown'        => 'PPL: vytvoření zásilky bylo přerušeno, zásilka možná v PPL vznikla. Zkontrolujte box PPL v objednávce a novou zásilku nevytvářejte naslepo.',
+		'ppl_create_failed'               => 'PPL: zásilku se nepodařilo vytvořit. Zkontrolujte box PPL v objednávce (chyby importu) a štítek vytvořte ručně.',
+		'ppl_import_error'                => 'PPL zásilku odmítlo (chyba importu). Opravte ji v boxu PPL a štítek vytvořte ručně.',
+		'ppl_wait_timeout'                => 'PPL zásilka nebyla do 6 hodin zpracována. Zkontrolujte ji v boxu PPL a štítek pošlete ručně.',
+		'ppl_multiple_shipments'          => 'K objednávce existuje víc PPL zásilek. Automat nic neposlal, zkontrolujte duplicitu v PPL.',
+		'ppl_manual_draft_exists'         => 'K objednávce už existuje ruční koncept PPL zásilky. Dokončete ho ručně.',
+		'ppl_shipment_missing'            => 'Zásilka vytvořená automatem chybí v pluginu PPL. Zkontrolujte box PPL v objednávce.',
+		'ppl_shipment_cancelled'          => 'PPL zásilka je zrušená. Nic nebylo odesláno.',
+		'ppl_shipment_number_missing'     => 'PPL zásilka nemá číslo balíku. Zkontrolujte ji v boxu PPL.',
+		'ppl_shared_batch_manual'         => 'PPL zásilka je v ručně vytvořené dávce s dalšími objednávkami. Štítek vytiskněte ručně.',
+		'ppl_validation_failed'           => 'PPL plugin hlásí chyby v údajích zásilky (adresa, výdejní místo, hmotnost). Opravte je a štítek vytvořte ručně.',
+		'ppl_parcel_missing'              => 'PPL: chybí výdejní místo nebo ParcelBox. Štítek vytvořte ručně.',
+		'ppl_not_cz'                      => 'PPL: doručení mimo ČR. Štítek vytvořte ručně.',
+		'ppl_cod_mismatch'                => 'PPL: dobírka nesouhlasí s objednávkou. Štítek vytvořte ručně.',
+		'ppl_sender_mismatch'             => 'PPL: neočekávaná adresa odesílatele v nastavení pluginu PPL. Štítek vytvořte ručně.',
 	);
 	return $hints[ $reason ] ?? 'Zkontrolujte audit objednávky.';
 }
@@ -349,11 +374,20 @@ function molosoc_la_step( int $order_id, array $io ): array {
 
 	$snap   = $io['snapshot']();
 	$is_zas = 'Zásilkovna' === ( $snap['carrier'] ?? '' );
+	$ppl_on = 'PPL' === ( $snap['carrier'] ?? '' ) && isset( $io['ppl_enabled'] ) && (bool) $io['ppl_enabled']();
+	if ( $ppl_on && 'creating' === (string) $io['ppl_state']() ) {
+		// Issue #391: an interrupted PPL create is settled BEFORE any eligibility check, so a
+		// later status change can never hide it. Never a second create.
+		$io['attention']( 'ppl_create_state_unknown' );
+		$io['alert']( 'ppl_create_state_unknown' );
+		return array( 'ppl_create_state_unknown', 0 );
+	}
 	[ $action, $reason ] = molosoc_la_plan(
 		$snap,
 		$state,
 		$is_zas ? $io['packeta_row']() : null,
-		$is_zas ? (bool) $io['configured']() : false
+		$is_zas ? (bool) $io['configured']() : false,
+		$ppl_on
 	);
 
 	if ( 'skip' === $action ) {
@@ -376,7 +410,24 @@ function molosoc_la_step( int $order_id, array $io ): array {
 		$io['alert']( $reason );
 		return array( $reason, 0 );
 	}
-	if ( 'send' !== $action ) {
+	if ( 'ppl' === $action ) {
+		// Issue #391: one shipment per order (created or adopted), then the same mail path.
+		[ $pst, $pwhy ] = $io['ppl_prepare']();
+		$pwhy           = (string) $pwhy;
+		if ( 'attention' === $pst ) {
+			$io['attention']( $pwhy );
+			$io['alert']( $pwhy );
+			return array( $pwhy, 0 );
+		}
+		if ( 'ready' !== $pst ) {
+			if ( $now - $seen >= MOLOSOC_LA_PPL_WAIT_MAX ) {
+				$io['attention']( 'ppl_wait_timeout' );
+				$io['alert']( 'ppl_wait_timeout' );
+				return array( 'ppl_wait_timeout', 0 );
+			}
+			return array( '' === $pwhy ? 'ppl_import_pending' : $pwhy, MOLOSOC_LA_PPL_WAIT_INTERVAL );
+		}
+	} elseif ( 'send' !== $action ) {
 		return array( $reason, 0 );
 	}
 
@@ -486,6 +537,23 @@ function molosoc_la_gate_now(): array {
 		defined( 'MOLOSOC_LABEL_DELIVERY_ENABLED' ) && true === MOLOSOC_LABEL_DELIVERY_ENABLED,
 		defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' ),
 		defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' ) ? MOLOSOC_LABEL_DISPATCH_SINCE : null
+	);
+}
+
+/**
+ * Pure: the PPL path (#391) runs only with the constant exactly true AND the PPL file's
+ * entry points loaded AND the PPL CZ plugin available.
+ */
+function molosoc_la_ppl_gate( $constant, bool $loaded, bool $plugin ): bool {
+	return true === $constant && $loaded && $plugin;
+}
+
+function molosoc_la_ppl_on(): bool {
+	$loaded = function_exists( 'molosoc_lp_prepare_now' ) && function_exists( 'molosoc_lp_provider_now' ) && function_exists( 'molosoc_lp_plugin_available' );
+	return molosoc_la_ppl_gate(
+		defined( 'MOLOSOC_LABEL_AUTO_PPL_ENABLED' ) ? MOLOSOC_LABEL_AUTO_PPL_ENABLED : null,
+		$loaded,
+		$loaded && molosoc_lp_plugin_available()
 	);
 }
 
@@ -623,6 +691,14 @@ function molosoc_la_worker( $order_id ): string {
 		'packeta_row' => static function () use ( $order_id ) {
 			return molosoc_la_packeta_row( $order_id );
 		},
+		// Issue #391: PPL path, only with MOLOSOC_LABEL_AUTO_PPL_ENABLED and the PPL file loaded.
+		'ppl_enabled' => 'molosoc_la_ppl_on',
+		'ppl_state'   => static function () use ( $meta_get ) {
+			return $meta_get( MOLOSOC_LA_PPL_STATE_META );
+		},
+		'ppl_prepare' => static function () use ( $order_id, $audit ) {
+			return molosoc_lp_prepare_now( $order_id, $audit );
+		},
 		'configured'  => static function () {
 			return '' !== molosoc_ll_packeta_password_now();
 		},
@@ -657,15 +733,17 @@ function molosoc_la_worker( $order_id ): string {
 						return molosoc_la_lock( $inner );
 					},
 					static function ( $carrier, $ref ) use ( $order_id, &$detail ) {
-						$r = molosoc_la_provider(
-							(string) $carrier,
-							(string) $ref,
-							array(
-								'row'          => molosoc_la_packeta_row( $order_id ),
-								'api_password' => molosoc_ll_packeta_password_now(),
-								'fetch'        => 'molosoc_ll_packeta_fetch',
-							)
-						);
+						$r = ( 'PPL' === (string) $carrier && molosoc_la_ppl_on() )
+							? molosoc_lp_provider_now( $order_id, (string) $carrier, (string) $ref ) // Fetch only (#391).
+							: molosoc_la_provider(
+								(string) $carrier,
+								(string) $ref,
+								array(
+									'row'          => molosoc_la_packeta_row( $order_id ),
+									'api_password' => molosoc_ll_packeta_password_now(),
+									'fetch'        => 'molosoc_ll_packeta_fetch',
+								)
+							);
 						$detail = (string) ( $r['reason'] ?? '' );
 						return $r;
 					}
@@ -903,6 +981,7 @@ function molosoc_la_render_page(): void {
 	$since_def     = defined( 'MOLOSOC_LABEL_DISPATCH_SINCE' );
 	$since         = $since_def ? molosoc_ld_since_ts( true, MOLOSOC_LABEL_DISPATCH_SINCE, null ) : 0;
 	$configured    = '' !== molosoc_ll_packeta_password_now();
+	$ppl_on        = molosoc_la_ppl_on();
 	$as            = molosoc_la_packeta_autosubmit_summary( get_option( 'packetery_auto_submission', null ) );
 	$query         = array(
 		'status'  => array( 'processing', 'completed', 'on-hold' ),
@@ -922,6 +1001,7 @@ function molosoc_la_render_page(): void {
 		'Automat (MOLOSOC_LABEL_AUTO_ENABLED)' => $ok ? 'ZAPNUTO' : 'vypnuto (' . $gate . ')',
 		'Cut-off (MOLOSOC_LABEL_DISPATCH_SINCE)' => $since > 0 ? gmdate( 'c', $since ) : ( $since_def ? 'neplatné' : 'nenastaveno' ),
 		'API heslo Packety'                    => $configured ? 'k dispozici' : 'CHYBÍ',
+		'PPL automat (MOLOSOC_LABEL_AUTO_PPL_ENABLED)' => $ppl_on ? 'ZAPNUTO' : 'vypnuto (PPL ručně)',
 		'Packeta auto-podání povoleno'         => $as['allow'],
 		'Packeta auto-podání: dobírka'         => $as['cod'],
 		'Packeta auto-podání: Comgate'         => $as['comgate'],
@@ -938,7 +1018,11 @@ function molosoc_la_render_page(): void {
 		$snap  = molosoc_ld3_snapshot( $id );
 		$state = molosoc_ld3_meta_get( $id, MOLOSOC_LD3_STATE_META );
 		$row   = 'Zásilkovna' === ( $snap['carrier'] ?? '' ) ? molosoc_la_packeta_row( $id ) : null;
-		[ $action, $why ] = molosoc_la_plan( $snap, $state, $row, $configured );
+		[ $action, $why ] = molosoc_la_plan( $snap, $state, $row, $configured, $ppl_on );
+		$pst              = 'PPL' === ( $snap['carrier'] ?? '' ) ? molosoc_ld3_meta_get( $id, MOLOSOC_LA_PPL_STATE_META ) : '';
+		if ( '' !== $pst ) {
+			$why .= ' (PPL: ' . $pst . ')'; // Read-only: the PPL idempotency state.
+		}
 		$cid   = is_array( $row ) ? trim( (string) ( $row['carrier_id'] ?? '' ) ) : '';
 		$pid   = is_array( $row ) ? trim( (string) ( $row['packet_id'] ?? '' ) ) : '';
 		$alert = molosoc_ld3_meta_get( $id, MOLOSOC_LA_ALERT_META );
